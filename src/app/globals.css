@@ -1,0 +1,213 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────
+   FLOWHUB by FLOWMTD Trading — "Night Ops" theme
+   Brand: black, heavy white type, one orange F. The UI stays cool and dark;
+   orange (--color-signal, the logo's orange) is used in tiny doses only:
+   the F mark, active tab tick, XP bar tip, primary button edge, live pulse.
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  --color-void: #030405;
+  --color-abyss: #07090c;
+  --color-panel: #0a0d12;
+  --color-panel-2: #0e1219;
+  --color-line: #1a2029;
+  --color-line-2: #28313e;
+  --color-ink: #e6ebf2;
+  --color-ink-2: #929fb2;
+  --color-ink-3: #58626f;
+  --color-ice: #9ccbff;
+  --color-ice-dim: #3b5f86;
+  --color-signal: #ff6a00;
+  --color-win: #3ee0a1;
+  --color-loss: #ff4f6d;
+  --color-lag: #b69cff;
+
+  --font-display: var(--font-archivo), "Arial Black", "Helvetica Neue", system-ui, sans-serif;
+  --font-hud: var(--font-orbitron), "Eurostile", "Bank Gothic", system-ui, sans-serif;
+  --font-sans: var(--font-rajdhani), "Barlow Semi Condensed", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --animate-rise: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-scan: scan 7s linear infinite;
+  --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
+  --animate-sweep: sweep 2.4s ease-in-out infinite;
+  --animate-grid: grid-drift 40s linear infinite;
+  --animate-flicker: flicker 5s linear infinite;
+
+  @keyframes rise { from { opacity: 0.001; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes scan { from { transform: translateY(-100%); } to { transform: translateY(100vh); } }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgb(255 106 0 / 0.55); } 50% { opacity: 0.6; box-shadow: 0 0 0 5px rgb(255 106 0 / 0); } }
+  @keyframes sweep { 0% { transform: translateX(-120%); } 100% { transform: translateX(220%); } }
+  @keyframes grid-drift { from { background-position: 0 0, 0 0; } to { background-position: 0 480px, 480px 0; } }
+  @keyframes flicker { 0%, 96%, 100% { opacity: 1; } 97% { opacity: 0.55; } 98% { opacity: 1; } 99% { opacity: 0.7; } }
+}
+
+@layer base {
+  html { color-scheme: dark; background: var(--color-void); }
+  body {
+    background: var(--color-void);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { text-wrap: balance; }
+  :focus-visible { outline: 1px solid var(--color-ice); outline-offset: 2px; }
+  ::selection { background: rgb(142 197 255 / 0.3); }
+  input, select, textarea { font: inherit; }
+}
+
+@layer components {
+  /* Animated perspective grid behind the whole app */
+  .grid-bg {
+    position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    background-image:
+      linear-gradient(to bottom, rgb(142 197 255 / 0.045) 1px, transparent 1px),
+      linear-gradient(to right, rgb(142 197 255 / 0.045) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 30%, transparent 85%);
+    animation: var(--animate-grid);
+  }
+  .vignette {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(900px 400px at 15% -10%, rgb(59 95 134 / 0.18), transparent 70%),
+      radial-gradient(700px 500px at 110% 10%, rgb(156 203 255 / 0.05), transparent 70%);
+  }
+  /* One slow scanline sweeping the screen */
+  .scanline {
+    position: fixed; left: 0; right: 0; top: 0; height: 120px; z-index: 50; pointer-events: none;
+    background: linear-gradient(to bottom, transparent, rgb(142 197 255 / 0.035), transparent);
+    animation: var(--animate-scan);
+  }
+
+  /* HUD panel: clipped corners + corner brackets */
+  .hud {
+    position: relative;
+    background: linear-gradient(180deg, rgb(14 18 25 / 0.92), rgb(10 13 18 / 0.92));
+    border: 1px solid var(--color-line);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+  .hud::before, .hud::after {
+    content: ""; position: absolute; width: 10px; height: 10px; pointer-events: none;
+    border-color: var(--color-ice-dim); border-style: solid;
+  }
+  .hud::before { top: 5px; left: 5px; border-width: 1px 0 0 1px; }
+  .hud::after { bottom: 5px; right: 5px; border-width: 0 1px 1px 0; }
+
+  .label { font-family: var(--font-hud); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-ink-3); }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 36px; padding-inline: 14px; border: 1px solid var(--color-line-2);
+    background: var(--color-panel-2); color: var(--color-ink);
+    font-family: var(--font-hud); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
+    cursor: pointer;
+  }
+  .btn:hover { border-color: var(--color-ice-dim); background: #121822; }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { position: relative; overflow: hidden; border-color: var(--color-ice-dim); background: linear-gradient(180deg, #131c28, #0d131c); color: #f2f6fb; }
+  .btn-primary::after { /* the orange edge */
+    content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 28%; background: var(--color-signal);
+  }
+  .btn-primary::before {
+    content: ""; position: absolute; inset: 0; width: 40%;
+    background: linear-gradient(90deg, transparent, rgb(142 197 255 / 0.18), transparent);
+    animation: var(--animate-sweep);
+  }
+  .btn-ghost { background: transparent; border-color: transparent; }
+  .btn-ghost:hover { background: rgb(142 197 255 / 0.06); border-color: var(--color-line); }
+
+  .field {
+    width: 100%; height: 38px; padding-inline: 10px; background: var(--color-abyss); color: var(--color-ink);
+    border: 1px solid var(--color-line-2); outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  textarea.field { height: auto; padding-block: 8px; }
+  .field:focus { border-color: var(--color-ice); box-shadow: 0 0 0 3px rgb(142 197 255 / 0.12); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; height: 22px; padding-inline: 8px;
+    font-family: var(--font-hud); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    border: 1px solid currentColor; background: color-mix(in oklab, currentColor 10%, transparent);
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 99px; background: var(--color-signal); animation: var(--animate-pulse-dot); }
+
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th { font-family: var(--font-hud); font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-ink-3); text-align: left; font-weight: 500; padding: 10px 10px; border-bottom: 1px solid var(--color-line); white-space: nowrap; }
+  .tbl td { padding: 10px 10px; border-bottom: 1px solid rgb(26 36 52 / 0.7); white-space: nowrap; }
+  .tbl tbody tr { transition: background 0.12s; }
+  .tbl tbody tr:hover { background: rgb(142 197 255 / 0.035); }
+
+  .glitch { position: relative; animation: var(--animate-flicker); }
+}
+
+
+/* ── Brand mark ─────────────────────────────────────────────── */
+@layer components {
+  .brand { font-family: var(--font-display); font-weight: 900; font-stretch: 112%; letter-spacing: -0.01em; line-height: 0.9; text-transform: uppercase; }
+  .brand-f { color: var(--color-signal); }
+  .brand-sub { font-family: var(--font-display); font-weight: 800; font-style: italic; letter-spacing: 0.02em; text-transform: uppercase; }
+}
+
+/* ── Login: "uplink" scene ──────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin-rev { to { transform: rotate(-360deg); } }
+@keyframes travel { 0% { left: 0; opacity: 0; } 12%, 88% { opacity: 1; } 100% { left: calc(100% - 6px); opacity: 0; } }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes type-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes glitch-x {
+  0%, 92%, 100% { transform: none; text-shadow: none; }
+  93% { transform: translateX(-2px); text-shadow: 2px 0 rgb(156 203 255 / 0.7), -2px 0 rgb(255 106 0 / 0.5); }
+  95% { transform: translateX(2px); text-shadow: -2px 0 rgb(156 203 255 / 0.7); }
+  97% { transform: translateX(-1px); }
+}
+@keyframes breathe { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.8; } }
+@keyframes horizon { from { background-position: 0 0; } to { background-position: 0 64px; } }
+
+@layer components {
+  .spin-slow { animation: spin 38s linear infinite; transform-origin: center; transform-box: fill-box; }
+  .spin-mid { animation: spin-rev 22s linear infinite; transform-origin: center; transform-box: fill-box; }
+  .spin-fast { animation: spin 9s linear infinite; transform-origin: center; transform-box: fill-box; }
+  .sweep-arm { animation: spin 4.5s linear infinite; transform-origin: center; transform-box: view-box; }
+  .breathe { animation: breathe 3.2s ease-in-out infinite; }
+  .caret::after { content: "_"; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+  .type-line { animation: type-in 0.7s steps(28) both; }
+  .glitch-hard { animation: glitch-x 4s linear infinite; }
+  .packet { position: absolute; top: 50%; left: 0; width: 6px; height: 6px; margin-top: -3px; background: var(--color-ice); box-shadow: 0 0 10px var(--color-ice); animation: travel 2.4s cubic-bezier(.6,0,.4,1) infinite; }
+  .fast .spin-slow { animation-duration: 6s; } .fast .spin-mid { animation-duration: 3s; } .fast .spin-fast { animation-duration: 1.2s; } .fast .sweep-arm { animation-duration: 0.9s; } .fast .packet { animation-duration: 0.8s; }
+  .horizon {
+    position: absolute; left: -50%; right: -50%; bottom: 0; height: 46vh; pointer-events: none;
+    background-image:
+      linear-gradient(to bottom, rgb(156 203 255 / 0.10) 1px, transparent 1px),
+      linear-gradient(to right, rgb(156 203 255 / 0.08) 1px, transparent 1px);
+    background-size: 64px 64px;
+    transform: perspective(420px) rotateX(62deg); transform-origin: bottom;
+    mask-image: linear-gradient(to top, #000 10%, transparent 90%);
+    animation: horizon 3s linear infinite;
+  }
+  .connect-btn {
+    position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+    height: 56px; padding-inline: 28px; width: 100%;
+    font-family: var(--font-hud); font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; color: #fff;
+    background: linear-gradient(180deg, #151c27, #0c1119); border: 1px solid var(--color-ice-dim);
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    transition: border-color .2s, box-shadow .2s, transform .1s; overflow: hidden; cursor: pointer;
+  }
+  .connect-btn::before { content: ""; position: absolute; inset: 0; width: 45%; background: linear-gradient(90deg, transparent, rgb(156 203 255 / 0.22), transparent); animation: var(--animate-sweep); }
+  .connect-btn::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 22%; background: var(--color-signal); transition: width .35s cubic-bezier(.2,.8,.2,1); }
+  .connect-btn:hover { border-color: var(--color-ice); box-shadow: 0 0 32px -6px rgb(156 203 255 / 0.45); }
+  .connect-btn:hover::after { width: 100%; }
+  .connect-btn:active { transform: translateY(1px); }
+  .connect-btn:disabled { cursor: wait; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  .scanline { display: none; }
+}

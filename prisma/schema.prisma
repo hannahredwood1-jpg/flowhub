@@ -1,0 +1,334 @@
+// Discord Trading Hub — PostgreSQL schema (Supabase) via Prisma
+// Money columns use Decimal(12,2). Catalog rule amounts are whole dollars (Int).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // Supabase pooled connection (port 6543, ?pgbouncer=true)
+  directUrl = env("DIRECT_URL")   // Supabase direct connection (port 5432) for migrations
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  MEMBER
+  COACH
+  ADMIN
+}
+
+enum DrawdownModel {
+  EOD_TRAILING
+  INTRADAY_TRAILING
+  STATIC
+}
+
+enum DataStatus {
+  OFFICIAL
+  SECONDARY
+  VERIFY
+}
+
+enum AccountStage {
+  EVALUATION
+  FUNDED
+  LIVE
+  PASSED     // passed eval, waiting to activate funded
+  FAILED
+  ARCHIVED
+}
+
+enum Direction {
+  LONG
+  SHORT
+}
+
+enum Outcome {
+  WIN
+  LOSS
+  BREAKEVEN
+}
+
+enum Emotion {
+  CALM
+  CONFIDENT
+  FOCUSED
+  HESITANT
+  FEARFUL
+  FOMO
+  FRUSTRATED
+  REVENGE
+  BORED
+  EUPHORIC
+}
+
+enum FeedbackKind {
+  NOTE
+  PRAISE
+  WARNING
+  ACTION_ITEM
+}
+
+enum StrategyMode {
+  DAILY_LEVELS // only taking the daily levels
+  INDICATORS   // AsiaFlow / NYFlow setups
+}
+
+enum Instrument {
+  NQ
+  MNQ
+  ES
+  MES
+  YM
+  MYM
+  RTY
+  M2K
+  CL
+  MCL
+  GC
+  MGC
+}
+
+// ─────────────────────────────────────────────────────────────
+// Users (Discord identity + synced guild roles)
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id              String    @id @default(cuid())
+  discordId       String    @unique
+  username        String
+  globalName      String?
+  avatarHash      String?
+  role            Role      @default(MEMBER)
+  guildRoleIds    String[]  // raw Discord role IDs from our guild, re-synced periodically
+  isGuildMember   Boolean   @default(true)
+
+  // Discord OAuth tokens — AES-256-GCM encrypted at rest (see src/lib/crypto.ts). Never sent to the browser.
+  accessTokenEnc  String?
+  refreshTokenEnc String?
+  tokenExpiresAt  DateTime?
+  rolesSyncedAt   DateTime?
+
+  createdAt       DateTime  @default(now())
+  lastLoginAt     DateTime  @default(now())
+
+  roadmap         Roadmap?
+  projection      Projection?
+  accounts        MemberAccount[]
+  journal         JournalEntry[]
+  payouts         Payout[]
+  feedbackGiven   CoachFeedback[] @relation("FeedbackCoach")
+  feedbackGot     CoachFeedback[] @relation("FeedbackTrader")
+  auditLogs       AuditLog[]      @relation("AuditActor")
+
+  @@index([role])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Prop firm catalog (seeded from prisma/data/prop_firm_accounts.json,
+// editable by coaches/admins in the portal)
+// ─────────────────────────────────────────────────────────────
+
+model PropFirm {
+  id        String            @id @default(cuid())
+  name      String            @unique
+  slug      String            @unique
+  website   String?
+  templates AccountTemplate[]
+}
+
+model AccountTemplate {
+  id                String        @id // stable slug, e.g. "my-funded-futures--rapid-intraday--50k"
+  firmId            String
+  firm              PropFirm      @relation(fields: [firmId], references: [id])
+  planName          String
+  accountSize       Int
+  profitTarget      Int?          // null = instant-funded (no evaluation)
+  maxLoss           Int           // max loss / drawdown in dollars
+  drawdownModel     DrawdownModel
+  drawdownNote      String
+  dailyLossLimit    Int?          // null = none
+  dailyLossNote     String
+  consistencyPct    Int?          // best day must be <= this % of profit (eval stage); null = none
+  consistencyNote   String
+  minDays           Int           // practical minimum days to pass (0 for instant-funded)
+  maxMinis          Int
+  maxMicros         Int
+  profitSplit       String?
+  notes             String?
+  sourceUrl         String
+  dataStatus        DataStatus
+  lastVerifiedAt    DateTime
+  isActive          Boolean       @default(true)
+  updatedById       String?
+  updatedAt         DateTime      @updatedAt
+
+  memberAccounts    MemberAccount[]
+
+  @@unique([firmId, planName, accountSize])
+  @@index([isActive])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Roadmap — one per user: income goal + strategy metrics that drive the planner
+// ─────────────────────────────────────────────────────────────
+
+/// Saved income projection — a member's multi-account plan. Rows reference catalog templates.
+model Projection {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   @default("My plan")
+  config    Json     // { months, riskLevel, rebuyOnFail, rows: ProjectionRowInput[] }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Roadmap {
+  id                  String     @id @default(cuid())
+  userId              String     @unique
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Income goal
+  monthlyIncomeGoal   Decimal    @db.Decimal(12, 2)   // take-home after profit split
+  tradingDaysPerWeek  Int        @default(5)
+
+  // Strategy — members pick FLOWMTD setups; win rates are fixed in src/lib/strategies.ts
+  strategyMode        StrategyMode @default(INDICATORS)
+  multiSession        Boolean    @default(false)      // trades both Asia and NY
+  strategies          String[]                        // StrategyKey[] e.g. ["NYFLOW_HL", "NYFLOW_PO3"]
+  avgRR               Decimal    @db.Decimal(6, 2)    // average reward per 1R risked on winners
+  tradesPerDay        Decimal    @db.Decimal(4, 1)
+  primaryInstrument   Instrument @default(NQ)
+  avgStopPoints       Decimal    @db.Decimal(8, 2)    // typical stop size in points
+
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// Member accounts — the exact prop firm accounts a trader holds
+// (links a user to a catalog template + their pass-plan inputs)
+// ─────────────────────────────────────────────────────────────
+
+model MemberAccount {
+  id                    String          @id @default(cuid())
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateId            String
+  template              AccountTemplate @relation(fields: [templateId], references: [id])
+
+  nickname              String?         // e.g. "MFFU #2"
+  stage                 AccountStage    @default(EVALUATION)
+  startDate             DateTime        @db.Date
+  quantity              Int             @default(1) // copy-traded identical accounts count as one row × quantity
+
+  // Pass-plan inputs (targets are computed by src/lib/planner.ts, not stored)
+  targetPassDays        Int?            // trading days the trader wants to pass in
+  riskPerTradeOverride  Decimal?        @db.Decimal(10, 2)
+  dailyLossLimitOverride Int?           // e.g. optional DLL add-on chosen at checkout
+
+  // Rule snapshot at purchase — firms change rules; the account keeps the rules it was bought under
+  ruleSnapshot          Json
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  journal               JournalEntry[]
+  payouts               Payout[]
+  feedback              CoachFeedback[]
+
+  @@index([userId, stage])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Trading journal
+// ─────────────────────────────────────────────────────────────
+
+model JournalEntry {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberAccountId String?
+  memberAccount   MemberAccount? @relation(fields: [memberAccountId], references: [id], onDelete: SetNull)
+
+  tradeDate       DateTime       @db.Date
+  ticker          String         // NQ, MNQ, ES...
+  direction       Direction
+  setupType       String         // e.g. "FVG retest", "Rejection block"
+  contracts       Int?
+  riskPct         Decimal?       @db.Decimal(5, 2)    // % of account risked
+  riskDollars     Decimal?       @db.Decimal(10, 2)
+  rrPlanned       Decimal?       @db.Decimal(6, 2)
+  rrRealized      Decimal?       @db.Decimal(6, 2)
+  outcome         Outcome
+  pnl             Decimal        @db.Decimal(12, 2)   // net P/L in dollars (after fees)
+  emotion         Emotion
+  followedPlan    Boolean        @default(true)
+  screenshotUrl   String?
+  notes           String?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  feedback        CoachFeedback[]
+
+  @@index([userId, tradeDate])
+  @@index([memberAccountId, tradeDate])
+}
+
+model Payout {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberAccountId String
+  memberAccount   MemberAccount @relation(fields: [memberAccountId], references: [id], onDelete: Cascade)
+  amount          Decimal       @db.Decimal(12, 2)   // amount received after split
+  paidAt          DateTime      @db.Date
+  createdAt       DateTime      @default(now())
+
+  @@index([userId, paidAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Coach feedback — on a trade, on an account plan, or general
+// ─────────────────────────────────────────────────────────────
+
+model CoachFeedback {
+  id              String         @id @default(cuid())
+  coachId         String
+  coach           User           @relation("FeedbackCoach", fields: [coachId], references: [id])
+  traderId        String
+  trader          User           @relation("FeedbackTrader", fields: [traderId], references: [id], onDelete: Cascade)
+  journalEntryId  String?
+  journalEntry    JournalEntry?  @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  memberAccountId String?
+  memberAccount   MemberAccount? @relation(fields: [memberAccountId], references: [id], onDelete: Cascade)
+
+  kind            FeedbackKind   @default(NOTE)
+  body            String
+  readAt          DateTime?
+  createdAt       DateTime       @default(now())
+
+  @@index([traderId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Audit log — every coach/admin read of another member's data, and every catalog edit
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  actor     User     @relation("AuditActor", fields: [actorId], references: [id])
+  action    String   // "VIEW_MEMBER", "FEEDBACK_CREATE", "CATALOG_UPDATE"
+  targetId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+}
