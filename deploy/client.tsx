@@ -65,7 +65,7 @@ function App() {
   const active = view === "coach" && !staff ? "dashboard" : view;
   const reload = async () => { const data = await api.dashboard(); setState((s) => (s.kind === "app" ? { ...s, data } : s)); };
   return (
-    <AppShell viewer={state.data.viewer} active={active} links={{ dashboard: "#dashboard", plan: "#plan", school: "/school", coach: "#coach" }} signOutHref="/auth/logout">
+    <AppShell viewer={state.data.viewer} active={active} links={{ dashboard: "#dashboard", plan: "#plan", school: "/school", practice: "/practice", coach: "#coach" }} signOutHref="/auth/logout">
       {active === "coach"
         ? directory
           ? <CoachPortal key="c" initial={directory} today={todayET()} />

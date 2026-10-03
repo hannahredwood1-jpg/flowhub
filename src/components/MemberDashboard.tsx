@@ -13,6 +13,7 @@ import { Panel, Stat, XPBar } from "./ui";
 import { IconChat } from "./icons";
 import { TradingPlanCard } from "./Projections";
 import { RoutineRow, TiltGuard } from "./Routine";
+import { PracticeCard } from "./PracticeCard";
 
 type ModalState =
   | { kind: "none" }
@@ -42,6 +43,7 @@ export function MemberDashboard({ initial, catalog, planHref = "/plan" }: { init
       )}
 
       <RoutineRow data={data} />
+      <PracticeCard data={data} />
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 xl:grid-cols-[minmax(380px,5fr)_minmax(0,7fr)]">
         <PlanPanel

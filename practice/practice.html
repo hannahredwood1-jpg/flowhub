@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#030405">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23030405'/%3E%3Ctext x='16' y='25' font-family='Arial Black,Arial' font-weight='900' font-size='24' text-anchor='middle' fill='%23ff6a00'%3EF%3C/text%3E%3C/svg%3E">
+<title>Practice · FLOWHUB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,700..900;1,100..125,700..900&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: FLOWHUB top bar → HUD strip (XP, level, streak, today's reps) → one stage that swaps between the home grid and a drill. Single dark theme, same tokens as the app. */
+:root{
+  color-scheme:dark;
+  --void:#030405; --abyss:#07090c; --panel:#0a0d12; --panel2:#0e1219;
+  --line:#1a2029; --line2:#28313e;
+  --ink:#e6ebf2; --ink2:#929fb2; --ink3:#5f6a78;
+  --ice:#9ccbff; --icedim:#3b5f86; --signal:#ff6a00;
+  --win:#3ee0a1; --loss:#ff4f6d; --lag:#b69cff; --gold:#f2c14e;
+  --f-display:"Archivo","Arial Black","Helvetica Neue",system-ui,sans-serif;
+  --f-hud:"Orbitron","Eurostile",system-ui,sans-serif;
+  --f-body:"Rajdhani","Barlow Semi Condensed",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{background:var(--void);color:var(--ink)}
+body{font-family:var(--f-body);font-size:16px;font-weight:500;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:default;opacity:.45}
+:focus-visible{outline:1px solid var(--ice);outline-offset:2px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.hud{font-family:var(--f-hud);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3)}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px}
+
+/* top bar */
+.top{border-bottom:1px solid var(--line);background:var(--abyss)}
+.top .wrap{display:flex;align-items:center;gap:18px;min-height:58px;flex-wrap:wrap;padding-block:8px}
+.logo{font-family:var(--f-display);font-weight:900;font-size:22px;letter-spacing:-.01em;line-height:1}
+.logo b{color:var(--signal)}
+.by{display:block;font-family:var(--f-display);font-style:italic;font-weight:800;font-size:8.5px;letter-spacing:.14em;color:var(--ink3);margin-top:2px}
+.nav{display:flex;gap:2px;flex-wrap:wrap}
+.nav span{position:relative;padding:8px 10px;font-family:var(--f-hud);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3)}
+.nav span[aria-current]{color:var(--ink)}
+.nav span[aria-current]::after{content:"";position:absolute;left:10px;right:10px;bottom:-4px;height:2px;background:linear-gradient(90deg,var(--signal) 8px,var(--ice) 8px)}
+.nav .new{color:var(--signal);font-size:8px;margin-left:4px}
+.preview-tag{margin-left:auto;font-family:var(--f-hud);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--lag);border:1px solid #4d3f7a;padding:4px 8px}
+
+/* HUD */
+.hudbar{border-bottom:1px solid var(--line)}
+.hudbar .wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);padding:0;margin-block:0}
+.stat{background:var(--void);padding:12px 16px;display:grid;gap:4px;min-width:0}
+.stat .v{font-family:var(--f-mono);font-size:20px;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .v small{font-size:12px;color:var(--ink3)}
+.meter{height:4px;background:var(--line);position:relative;overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--ice)}
+.meter.sig i{background:var(--signal)}
+.flame{color:var(--signal)}
+
+main{padding-block:22px 60px}
+.h1{font-family:var(--f-display);font-weight:900;font-size:clamp(26px,4vw,38px);letter-spacing:-.01em;line-height:1.05;margin:0;text-wrap:balance}
+.h1 em{font-style:italic;font-weight:800;color:var(--signal)}
+.lede{color:var(--ink2);max-width:62ch;margin:8px 0 0}
+.sec{margin-top:28px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.sec-h h2{font-family:var(--f-hud);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink2);margin:0;font-weight:500}
+
+/* daily reps hero */
+.daily{border:1px solid var(--line2);background:linear-gradient(180deg,var(--panel2),var(--abyss));padding:20px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;margin-top:20px}
+.daily .pips{display:flex;gap:5px;margin-top:12px;flex-wrap:wrap}
+.daily .pip{width:26px;height:8px;background:var(--line2)}
+.daily .pip.ok{background:var(--win)}.daily .pip.miss{background:var(--loss)}
+.daily p{margin:6px 0 0;color:var(--ink2);max-width:60ch}
+@media (max-width:640px){.daily{grid-template-columns:1fr}}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 16px;border:1px solid var(--line2);background:var(--panel2);font-family:var(--f-hud);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--icedim)}
+.btn.primary{border-color:var(--ice);color:var(--ice);background:rgb(156 203 255 / .08);box-shadow:inset 0 -2px 0 var(--signal)}
+.btn.big{min-height:48px;padding:0 22px;font-size:11px}
+.btn.ghost{background:transparent;color:var(--ink2)}
+.btn.on{border-color:var(--signal);color:var(--signal)}
+
+/* drill grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.card{border:1px solid var(--line);background:var(--panel);padding:16px;display:grid;gap:8px;text-align:left;align-content:start;min-width:0}
+button.card:hover{border-color:var(--icedim);background:var(--panel2)}
+.card h3{margin:0;font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:-.005em}
+.card p{margin:0;color:var(--ink2);font-size:15px}
+.card .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{font-family:var(--f-hud);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ice);border:1px solid var(--icedim);padding:3px 6px;white-space:nowrap}
+.chip.sig{color:var(--signal);border-color:#6b3510}
+.chip.win{color:var(--win);border-color:#1d6b4f}
+.chip.loss{color:var(--loss);border-color:#7a2636}
+.chip.lag{color:var(--lag);border-color:#4d3f7a}
+.chip.dim{color:var(--ink3);border-color:var(--line2)}
+.card.lab{border-color:#6b3510;background:linear-gradient(180deg,rgb(255 106 0 / .07),var(--panel))}
+.card.locked{opacity:.6}
+
+/* mastery */
+.mastery{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.m{border:1px solid var(--line);background:var(--panel);padding:14px;display:grid;gap:8px}
+.m .t{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.m .t b{font-family:var(--f-display);font-weight:800;font-size:16px}
+.tier{font-family:var(--f-hud);font-size:9px;letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;border:1px solid}
+.tier.none{color:var(--ink3);border-color:var(--line2)}
+.tier.bronze{color:#d39a6a;border-color:#6e4a2c}
+.tier.silver{color:#cfd8e3;border-color:#5b6573}
+.tier.gold{color:var(--gold);border-color:#7a6224}
+.tier.elite{color:var(--lag);border-color:#4d3f7a}
+.m .sub{display:flex;justify-content:space-between;color:var(--ink3);font-size:13px}
+
+/* coach */
+.coach{border:1px dashed var(--line2);padding:16px;display:grid;gap:14px}
+.coach table{width:100%;border-collapse:collapse;font-size:15px}
+.coach td,.coach th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}
+.coach th{font-family:var(--f-hud);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);font-weight:500}
+.bar{height:6px;background:var(--line);min-width:80px;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0}
+.tblwrap{overflow-x:auto}
+
+/* stage */
+.stage-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.stage-head .t{font-family:var(--f-display);font-weight:900;font-size:24px;letter-spacing:-.01em}
+.crumbs{margin-left:auto;display:flex;gap:8px;align-items:center}
+.drill{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px}
+@media (max-width:880px){.drill{grid-template-columns:1fr}}
+.chartbox{border:1px solid var(--line);background:var(--abyss);min-width:0;display:flex;flex-direction:column}
+.chart-top{display:flex;gap:6px;align-items:center;padding:7px 9px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.sym{font-family:var(--f-mono);font-size:13px;padding:3px 8px;border:1px solid var(--line2);background:var(--panel)}
+.cv{width:100%;height:380px;display:block;touch-action:manipulation}
+@media (max-width:640px){.cv{height:300px}}
+.chart-foot{display:flex;gap:6px;align-items:center;padding:8px 9px;border-top:1px solid var(--line);flex-wrap:wrap}
+.side{border:1px solid var(--line);background:var(--panel);padding:16px;display:grid;gap:12px;align-content:start;min-width:0}
+.side .task{font-size:17px;line-height:1.4}
+.side .task b{color:var(--ink)}
+.side .hint{color:var(--ink2);font-size:15px}
+.opts{display:grid;gap:6px}
+.opt{border:1px solid var(--line2);background:var(--panel2);padding:10px 12px;text-align:left;font-size:16px;font-weight:600}
+.opt:hover:not(:disabled){border-color:var(--icedim)}
+.opt.right{border-color:var(--win);color:var(--win)}
+.opt.wrong{border-color:var(--loss);color:var(--loss)}
+.fb{border-left:2px solid var(--line2);padding:8px 0 8px 12px;display:grid;gap:6px;font-size:15.5px}
+.fb.good{border-color:var(--win)} .fb.bad{border-color:var(--loss)}
+.fb .v{font-family:var(--f-hud);font-size:10px;letter-spacing:.16em;text-transform:uppercase}
+.fb.good .v{color:var(--win)} .fb.bad .v{color:var(--loss)}
+.fb ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.fb li.ok::marker{color:var(--win)} .fb li.no::marker{color:var(--loss)}
+.xpfloat{font-family:var(--f-mono);color:var(--signal);font-size:13px}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.tool{border:1px solid var(--line2);background:var(--panel2);padding:7px 10px;font-family:var(--f-hud);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;display:flex;gap:6px;align-items:center}
+.tool .sw{width:10px;height:2px}
+.tool.active{border-color:var(--ice);color:var(--ice)}
+.tool .pv{font-family:var(--f-mono);font-size:11px;letter-spacing:0;color:var(--ink2);text-transform:none}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:15px}
+.kv dt{color:var(--ink3)} .kv dd{margin:0;font-family:var(--f-mono);font-size:13.5px;align-self:center}
+
+/* ticket */
+.ticket{border:1px solid var(--line2);background:var(--panel2);display:grid;gap:10px;padding:14px}
+.ticket .r{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center}
+.ticket label{font-family:var(--f-hud);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.seg{display:flex;border:1px solid var(--line2)}
+.seg button{flex:1;border:0;background:transparent;padding:8px 6px;font-family:var(--f-hud);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button.on{background:rgb(156 203 255 / .1);color:var(--ice)}
+.seg.side-seg button.on.buy{background:rgb(62 224 161 / .12);color:var(--win)}
+.seg.side-seg button.on.sell{background:rgb(255 79 109 / .12);color:var(--loss)}
+input.in{width:100%;background:var(--abyss);border:1px solid var(--line2);color:var(--ink);font-family:var(--f-mono);font-size:15px;padding:8px 10px;min-width:0}
+input.in:focus{border-color:var(--ice);outline:none}
+.sigcard{border:1px solid #6b3510;background:rgb(255 106 0 / .06);padding:12px;display:grid;gap:6px}
+.sigcard .hd{font-family:var(--f-hud);font-size:10px;letter-spacing:.16em;color:var(--signal)}
+
+/* big question (size/clock/speed) */
+.qbox{border:1px solid var(--line);background:var(--panel);padding:22px;display:grid;gap:16px;max-width:760px}
+.qbox .q{font-size:22px;line-height:1.35;font-weight:600;text-wrap:balance}
+.qbox .q .num{color:var(--ice)}
+.clockface{font-family:var(--f-mono);font-size:44px;color:var(--ink);line-height:1}
+.ansrow{display:flex;gap:8px;flex-wrap:wrap}
+.timer{height:4px;background:var(--line);position:relative}
+.timer i{position:absolute;inset:0 auto 0 0;background:var(--signal);transition:width .2s linear}
+.mini{width:100%;max-width:420px;height:200px;display:block;background:var(--abyss);border:1px solid var(--line)}
+.speedgrid{display:grid;grid-template-columns:minmax(0,420px) 1fr;gap:16px;align-items:center}
+@media (max-width:700px){.speedgrid{grid-template-columns:1fr}}
+.score{font-family:var(--f-mono);font-size:30px}
+
+/* lab summary */
+.sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.sum{border:1px solid var(--line);background:var(--panel);padding:16px;display:grid;gap:6px}
+.sum .v{font-family:var(--f-mono);font-size:28px}
+.pos{color:var(--win)} .neg{color:var(--loss)}
+.labhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid #6b3510;background:rgb(255 106 0 / .06);padding:10px 12px;margin-bottom:12px}
+.labhead b{font-family:var(--f-display);font-weight:800}
+.ctx{display:flex;gap:6px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--signal);padding:10px 16px;font-family:var(--f-hud);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--signal);z-index:5}
+@media (prefers-reduced-motion:no-preference){.pop{animation:pop .35s ease-out}@keyframes pop{from{transform:translateY(4px);opacity:.3}to{transform:none;opacity:1}}}
+body{margin:0}
+.fh-nav{display:flex;gap:2px;flex-wrap:wrap}
+.fh-nav a{position:relative;padding:8px 10px;font-family:var(--f-hud);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);text-decoration:none}
+.fh-nav a:hover{color:var(--ink2)}
+.fh-nav a[aria-current]{color:var(--ink)}
+.fh-nav a[aria-current]::after{content:"";position:absolute;left:10px;right:10px;bottom:-4px;height:2px;background:linear-gradient(90deg,var(--signal) 8px,var(--ice) 8px)}
+</style>
+</head><body>
+
+<header class="top"><div class="wrap">
+  <div><div class="logo">FLOW<b>HUB</b></div><span class="by">BY FLOWMTD TRADING</span></div>
+  <!--FH_NAV-->
+</div></header>
+
+<div class="hudbar"><div class="wrap" id="hud"></div></div>
+<main class="wrap" id="stage"></main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+// ───────────────────────── utils ─────────────────────────
+const $ = (s, r = document) => r.querySelector(s);
+const R = (a, b) => a + Math.random() * (b - a);
+const RI = (a, b) => Math.floor(R(a, b + 1));
+const qt = (p) => Math.round(p * 4) / 4;
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const fmt = (p) => p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pts = (v) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2) + " pts";
+const usd = (v) => (v >= 0 ? "+$" : "−$") + Math.abs(Math.round(v)).toLocaleString("en-US");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const PV = { NQ: 20, MNQ: 2 };
+function toast(t) { const el = $("#toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (el.hidden = true), 1800); }
+function timeLabel(min) { min = ((min % 1440) + 1440) % 1440; let h = Math.floor(min / 60), m = min % 60; const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return `${h}:${String(m).padStart(2, "0")} ${ap}`; }
+
+const MODELS = { dl: "Daily Levels", hl: "NYFlow · H/L", po3: "NYFlow · PO3", asia: "AsiaFlow · PO3" };
+const DRILLS = {
+  mark: { name: "Mark the trade", desc: "Place entry, stop and target on a live NQ setup. Graded line by line." },
+  replay: { name: "Replay & decide", desc: "The session plays candle by candle. At each pause: take it, wait, or skip." },
+  levels: { name: "Draw the levels", desc: "Mark the pre-market range or the Asia range yourself, then see the real lines." },
+  ticket: { name: "Order ticket", desc: "A signal fires. Fill the order panel: side, order type, size, stop, target." },
+  size: { name: "Size it", desc: "Account, risk and stop. How many NQ or MNQ? Until it's automatic." },
+  clock: { name: "Session clock", desc: "Is this a valid time to trade your model? Quick-fire timing reps." },
+  speed: { name: "Speed round", desc: "45 seconds. Spot real gaps and real flips as fast as you can." },
+  limit: { name: "Set the limit", desc: "Today's Daily Level from the Discord. Limit or wait for confirmation? Then place it, manage it, see it play out." },
+};
+const TAGS = {
+  "early-entry": "Enters before the flip closes",
+  "traded-range": "Trades while the range is still building",
+  "sold-the-trap": "Trades the fake move (the sweep) as if it's real",
+  "counter-trend": "Takes setups against the 4H trend",
+  "forced-trade": "Forces a trade on a no-sweep day",
+  "stop-inside": "Stop inside the swept wick",
+  "stop-wide": "Stop far wider than needed",
+  "wrong-target": "Target not at the draw",
+  "entry-off": "Entry not at the flip close",
+  "wrong-side": "Stop on the wrong side of entry",
+  "level-off": "Marks levels at closes, not wicks",
+  "window": "Uses candles outside the session window",
+  "oversize": "Sizes too big for the risk",
+  "order-type": "Wrong order type for the entry",
+  "timing": "Trades outside the model's hours",
+  "fvg-read": "Misreads fair value gaps",
+  "flip-read": "Counts a wick as a flip",
+  "missed-setup": "Skips valid A+ setups",
+  "limit-no-lrl": "Sets limits without LRL and a short-term low",
+  "limit-news": "Sets limits into the open or news",
+  "entry-zone": "Limit outside the posted level",
+  "stop-50": "Stop not at 50 ticks",
+  "be-missed": "Doesn't move the stop to breakeven at 1:1",
+};
+
+// ───────────────────────── state ─────────────────────────
+const KEY = "fh-practice-preview-v1";
+const LIVE = /^https?:$/.test(location.protocol);
+let S = blank();
+function blank() { return { xp: 0, reps: [], review: [], best: { speed: 0, streak: 0 }, streak: 0, lastDaily: null, daily: null }; }
+function stateOnly() { const { reps, ...rest } = S; rest.review = (rest.review || []).slice(-40); return rest; }
+let saveT = null, saveFails = 0;
+function save() {
+  if (!LIVE) { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} return; }
+  clearTimeout(saveT);
+  saveT = setTimeout(() => fetch("/api/practice/state", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(stateOnly()) }).then((r) => { if (!r.ok) throw 0; saveFails = 0; }).catch(() => { if (++saveFails === 1) toast("Couldn't save progress. Check your connection."); }), 400);
+}
+function sendRep(r, xp) {
+  if (!LIVE) return;
+  fetch("/api/practice/rep", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ m: r.m, d: r.d, ok: r.ok, tags: r.tags, xp }) }).catch(() => toast("Couldn't save that rep. Check your connection."));
+}
+async function loadState() {
+  if (LIVE) {
+    try { const r = await fetch("/api/practice"); if (r.ok) { const j = await r.json(); S = { ...blank(), ...(j.state || {}), reps: j.reps || [] }; S.best = { ...blank().best, ...(S.best || {}) }; } }
+    catch (e) { toast("Couldn't load your progress."); }
+  } else { try { const v = JSON.parse(localStorage.getItem(KEY)); if (v && v.reps) S = { ...blank(), ...v }; } catch (e) {} }
+  // a missed weekday breaks the streak (weekends don't count)
+  if (S.lastDaily && S.streak) { let d = new Date(S.lastDaily + "T12:00:00Z"); const today = todayKey(); let gap = 0; for (;;) { d.setUTCDate(d.getUTCDate() + 1); const k = d.toISOString().slice(0, 10); if (k >= today) break; const wd = d.getUTCDay(); if (wd !== 0 && wd !== 6) gap++; } if (gap > 0) { S.streak = 0; save(); } }
+}
+function record(m, d, ok, tags = [], xp) {
+  const gain = xp ?? (ok ? 15 : 4);
+  const r = { t: Date.now(), m, d, ok, tags }; S.reps.push(r); sendRep(r, gain);
+  S.xp += gain;
+  if (S.daily && S.daily.active) { S.daily.res.push(ok); }
+  save(); renderHud();
+  return gain;
+}
+const level = () => Math.floor(Math.sqrt(S.xp / 100)) + 1;
+function modelStats(m) {
+  const r = S.reps.filter((x) => x.m === m); const n = r.length; const recent = r.slice(-40);
+  const acc = recent.length ? recent.filter((x) => x.ok).length / recent.length : 0;
+  let tier = "none", next = "Bronze: 5 reps";
+  if (n >= 100 && acc >= 0.88) tier = "elite", next = "Top tier";
+  else if (n >= 50 && acc >= 0.8) tier = "gold", next = "Elite: 100 reps at 88%+";
+  else if (n >= 20 && acc >= 0.7) tier = "silver", next = "Gold: 50 reps at 80%+";
+  else if (n >= 5) tier = "bronze", next = "Silver: 20 reps at 70%+";
+  return { n, acc, tier, next };
+}
+function topMistakes(k = 3) {
+  const c = {}; for (const r of S.reps.slice(-120)) for (const t of r.tags || []) c[t] = (c[t] || 0) + 1;
+  return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, k);
+}
+const todayKey = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+
+// ───────────────────────── chart engine ─────────────────────────
+class Chart {
+  constructor(canvas, opt = {}) {
+    this.cv = canvas; this.ctx = canvas.getContext("2d"); this.bars = []; this.shown = 0; this.slots = 40;
+    this.t0 = 420; this.step = 5; this.lines = []; this.zones = []; this.windows = []; this.marks = []; this.keep = [];
+    this.small = !!opt.small; this.onTap = null; this.hover = null;
+    canvas.addEventListener("click", (e) => { if (!this.onTap) return; const p = this.at(e); if (p) this.onTap(p); });
+    canvas.addEventListener("mousemove", (e) => { if (!this.onTap) return; this.hover = this.at(e); this.draw(); });
+    canvas.addEventListener("mouseleave", () => { this.hover = null; this.draw(); });
+    this.ro = new ResizeObserver(() => this.draw()); this.ro.observe(canvas);
+  }
+  set(bars, o = {}) { this.bars = bars; this.shown = o.shown ?? bars.length; this.slots = o.slots ?? Math.max(bars.length + 2, 20); this.t0 = o.t0 ?? 420; this.lines = []; this.zones = []; this.windows = o.windows || []; this.marks = []; this.keep = o.keep || []; this.step = o.step ?? 5; this.draw(); }
+  geom() {
+    const w = this.cv.clientWidth, h = this.cv.clientHeight; const axR = this.small ? 6 : 70, axB = this.small ? 6 : 22, padT = 10, padL = 6;
+    const vis = this.bars.slice(0, this.shown);
+    let lo = Infinity, hi = -Infinity;
+    for (const b of vis) { lo = Math.min(lo, b.l); hi = Math.max(hi, b.h); }
+    for (const p of this.keep) { lo = Math.min(lo, p); hi = Math.max(hi, p); }
+    for (const l of this.lines) if (l.fit !== false) { lo = Math.min(lo, l.p); hi = Math.max(hi, l.p); }
+    for (const z of this.zones) if (z.fit !== false) { lo = Math.min(lo, z.a, z.b); hi = Math.max(hi, z.a, z.b); }
+    if (!isFinite(lo)) { lo = 0; hi = 1; }
+    const pad = (hi - lo) * 0.08 + 1; lo -= pad; hi += pad;
+    const pw = w - axR - padL, ph = h - axB - padT, cw = pw / this.slots;
+    return { w, h, axR, axB, padT, padL, pw, ph, cw, lo, hi, x: (i) => padL + (i + 0.5) * cw, y: (p) => padT + (hi - p) / (hi - lo) * ph };
+  }
+  at(e) {
+    const r = this.cv.getBoundingClientRect(); const g = this.geom(); const mx = e.clientX - r.left, my = e.clientY - r.top;
+    if (mx < g.padL || mx > g.padL + g.pw || my < g.padT || my > g.padT + g.ph) return null;
+    const i = Math.floor((mx - g.padL) / g.cw); const price = qt(g.hi - (my - g.padT) / g.ph * (g.hi - g.lo));
+    return { i, price, mx, my };
+  }
+  draw() {
+    const cv = this.cv, dpr = window.devicePixelRatio || 1; const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const c = this.ctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+    const g = this.geom(); const C = { line: css("--line"), ink2: css("--ink2"), ink3: css("--ink3"), win: css("--win"), loss: css("--loss"), ice: css("--ice"), sig: css("--signal"), lag: css("--lag") };
+    // grid + axis
+    c.font = "10.5px 'JetBrains Mono', monospace"; c.textBaseline = "middle";
+    const span = g.hi - g.lo; const stepP = [1, 2, 2.5, 5, 10, 20, 25, 50, 100].find((s) => span / s <= (this.small ? 4 : 7)) || 100;
+    for (let p = Math.ceil(g.lo / stepP) * stepP; p <= g.hi; p += stepP) {
+      const y = g.y(p); c.strokeStyle = C.line; c.lineWidth = 1; c.beginPath(); c.moveTo(g.padL, Math.round(y) + 0.5); c.lineTo(g.padL + g.pw, Math.round(y) + 0.5); c.stroke();
+      if (!this.small) { c.fillStyle = C.ink3; c.textAlign = "left"; c.fillText(fmt(p), g.padL + g.pw + 6, y); }
+    }
+    if (!this.small) { c.fillStyle = C.ink3; c.textAlign = "center"; c.textBaseline = "top"; const every = this.slots > 60 ? 12 : 6; for (let i = 0; i < this.slots; i += every) c.fillText(timeLabel(this.t0 + i * this.step), g.x(i), g.padT + g.ph + 6); c.textBaseline = "middle"; }
+    // windows (session shading)
+    for (const wdw of this.windows) { const x0 = g.padL + wdw.i0 * g.cw, x1 = g.padL + (wdw.i1 + 1) * g.cw; c.fillStyle = wdw.color || "rgba(156,203,255,.05)"; c.fillRect(x0, g.padT, x1 - x0, g.ph); if (wdw.label && !this.small) { c.fillStyle = wdw.ink || C.ink3; c.textAlign = "left"; c.font = "9px Orbitron, sans-serif"; c.fillText(wdw.label, x0 + 5, g.padT + 9); c.font = "10.5px 'JetBrains Mono', monospace"; } }
+    // zones
+    for (const z of this.zones) { const y0 = g.y(Math.max(z.a, z.b)), y1 = g.y(Math.min(z.a, z.b)); const x0 = z.i0 != null ? g.x(z.i0) - g.cw / 2 : g.padL; const x1 = z.i1 != null ? g.x(z.i1) + g.cw / 2 : g.padL + g.pw; c.fillStyle = z.fill; c.fillRect(x0, y0, x1 - x0, Math.max(2, y1 - y0)); if (z.stroke) { c.strokeStyle = z.stroke; c.setLineDash([4, 3]); c.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0 - 1, Math.max(2, y1 - y0) - 1); c.setLineDash([]); } if (z.label && !this.small) { c.fillStyle = z.ink || z.stroke || C.ink2; c.textAlign = "left"; c.font = "9px Orbitron, sans-serif"; c.fillText(z.label, x0 + 5, y0 - 7); c.font = "10.5px 'JetBrains Mono', monospace"; } }
+    // candles
+    const bw = Math.max(1.5, Math.min(11, g.cw * 0.66));
+    for (let i = 0; i < this.shown && i < this.bars.length; i++) {
+      const b = this.bars[i]; const up = b.c >= b.o; const col = b.col || (up ? C.win : C.loss); const x = g.x(i);
+      c.strokeStyle = col; c.lineWidth = 1; c.beginPath(); c.moveTo(Math.round(x) + 0.5, g.y(b.h)); c.lineTo(Math.round(x) + 0.5, g.y(b.l)); c.stroke();
+      const y0 = g.y(Math.max(b.o, b.c)), y1 = g.y(Math.min(b.o, b.c)); c.fillStyle = col; c.fillRect(x - bw / 2, y0, bw, Math.max(1, y1 - y0));
+    }
+    // lines
+    for (const l of this.lines) {
+      const y = Math.round(g.y(l.p)) + 0.5; const x0 = l.i0 != null ? g.x(l.i0) - g.cw / 2 : g.padL; const x1 = l.i1 != null ? g.x(l.i1) + g.cw / 2 : g.padL + g.pw;
+      c.strokeStyle = l.color; c.lineWidth = l.w || 1.4; c.setLineDash(l.dash || []); c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.setLineDash([]);
+      if (!this.small) {
+        const txt = fmt(l.p); const tw = c.measureText(txt).width + 8; c.fillStyle = l.color; c.fillRect(g.padL + g.pw + 1, y - 8, tw, 16); c.fillStyle = "#030405"; c.textAlign = "left"; c.fillText(txt, g.padL + g.pw + 5, y);
+        if (l.label) { c.font = "9px Orbitron, sans-serif"; c.fillStyle = l.color; c.textAlign = l.left ? "left" : "right"; c.fillText(l.label, l.left ? x0 + 6 : x1 - 6, l.left ? y + 9 : y - 8); c.font = "10.5px 'JetBrains Mono', monospace"; }
+      }
+    }
+    // markers
+    for (const m of this.marks) {
+      const x = g.x(m.i), y = g.y(m.p); c.fillStyle = m.color || C.sig; c.strokeStyle = m.color || C.sig;
+      if (m.shape === "ring") { c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, Math.max(7, g.cw * 0.6), 0, Math.PI * 2); c.stroke(); }
+      else if (m.shape === "up" || m.shape === "down") { const d = m.shape === "up" ? 1 : -1; const yy = y + d * 10; c.beginPath(); c.moveTo(x, yy - d * 6); c.lineTo(x - 6, yy + d * 4); c.lineTo(x + 6, yy + d * 4); c.closePath(); c.fill(); }
+      if (m.text && !this.small) { c.font = "9px Orbitron, sans-serif"; c.textAlign = "center"; const d = m.shape === "down" ? -1 : 1; c.fillText(m.text, x, y + d * 28); c.font = "10.5px 'JetBrains Mono', monospace"; }
+    }
+    // hover crosshair
+    if (this.hover && this.onTap) { const y = g.y(this.hover.price); c.strokeStyle = C.ink3; c.setLineDash([2, 3]); c.beginPath(); c.moveTo(g.padL, y); c.lineTo(g.padL + g.pw, y); c.stroke(); c.setLineDash([]); const t = fmt(this.hover.price); c.fillStyle = css("--panel2"); c.fillRect(g.padL + g.pw + 1, y - 8, c.measureText(t).width + 8, 16); c.fillStyle = C.ink2; c.textAlign = "left"; c.fillText(t, g.padL + g.pw + 5, y); }
+  }
+}
+
+// ───────────────────────── scenario generators (long form, mirrored for shorts) ─────────────────────────
+function bar(o, c, h, l) { return { o: qt(o), c: qt(c), h: qt(Math.max(h, o, c)), l: qt(Math.min(l, o, c)) }; }
+function walk(bars, to, n, o = {}) {
+  const noise = o.noise ?? 3, wick = o.wick ?? 2.5; let p = bars.length ? bars[bars.length - 1].c : o.from;
+  const from = p;
+  for (let k = 1; k <= n; k++) {
+    let c = k === n ? to : from + (to - from) * k / n + R(-noise, noise);
+    if (o.lo != null) c = Math.max(c, o.lo + 0.5); if (o.hi != null) c = Math.min(c, o.hi - 0.5);
+    let h = Math.max(p, c) + R(0.25, wick), l = Math.min(p, c) - R(0.25, wick);
+    if (o.hi != null) h = Math.min(h, o.hi); if (o.lo != null) l = Math.max(l, o.lo);
+    bars.push(bar(p, c, h, l)); p = qt(c);
+  }
+}
+function chop(bars, lo, hi, n) { for (let k = 0; k < n; k++) { const p = bars[bars.length - 1].c; const c = Math.min(hi - 1, Math.max(lo + 1, p + R(-6, 6))); bars.push(bar(p, c, Math.min(hi, Math.max(p, c) + R(0.25, 2.5)), Math.max(lo, Math.min(p, c) - R(0.25, 2.5)))); } }
+// The trap: run below X (the sweep), leave a bearish gap, then a candle CLOSES back above the gap (the flip).
+function trap(bars, X, o = {}) {
+  if (o.approach !== false) walk(bars, X + 6, 2, { noise: 1.5, lo: X + 1.5 });
+  const d = qt(R(6, 13)); const p0 = bars[bars.length - 1].c;
+  const c1I = bars.length; bars.push(bar(p0, X + 3, Math.max(p0, X + 3) + 1, X + 1.5));
+  const sweepI = bars.length; bars.push(bar(X + 3, X - 5, X + 3.5, X - d));
+  bars.push(bar(X - 5, X - 2.5, X - 1.75, Math.min(X - 5.25, X - d + R(1, 4))));
+  const flipC = qt(X + 1.5 + R(1.5, 4)); const flipI = bars.length; bars.push(bar(X - 2.5, flipC, flipC + R(0.5, 1.5), X - 2.5 - R(0.25, 1)));
+  const sweepLow = X - d;
+  return { c1I, sweepI, flipI, gapTop: X + 1.5, gapBot: X - 1.75, sweepLow, entry: flipC, stop: qt(sweepLow - 1) };
+}
+function outcome(bars, k, kind, o = {}) {
+  const { entry, stop, target } = k;
+  if (kind === "win") { walk(bars, target + R(1, 5), RI(10, 16), { noise: 3, lo: Math.max(stop + 3, entry - 7) }); walk(bars, bars[bars.length - 1].c - R(3, 8), 3, { noise: 2 }); return target - entry; }
+  if (kind === "blocked") { const z = o.zone; walk(bars, z.a + R(0, 1.5), RI(6, 9), { noise: 2.5, lo: entry - 6, hi: z.b }); walk(bars, stop - R(2, 6), RI(5, 7), { noise: 2 }); walk(bars, bars[bars.length - 1].c + R(-3, 3), 2); return stop - entry; }
+  walk(bars, entry + R(3, 8), 3, { noise: 1.5, lo: stop + 2 }); walk(bars, stop - R(2, 6), RI(5, 7), { noise: 2 }); walk(bars, bars[bars.length - 1].c + R(-4, 4), 3); return stop - entry;
+}
+function mirror(sc) {
+  const B = sc.B, m = (p) => qt(2 * B - p);
+  sc.bars = sc.bars.map((b) => ({ o: m(b.o), c: m(b.c), h: m(b.l), l: m(b.h) }));
+  const k = sc.k; const mk = { ...k };
+  for (const n of ["sweepLow", "entry", "stop", "target", "E", "AH", "AL", "tgt", "O6", "O0", "stlP", "soupLow", "flushLow"]) if (typeof k[n] === "number") mk[n] = m(k[n]);
+  if ("RH" in k) { mk.RH = m(k.RL); mk.RL = m(k.RH); }
+  if ("gapTop" in k) { mk.gapTop = m(k.gapBot); mk.gapBot = m(k.gapTop); }
+  if ("zHi" in k) { mk.zHi = m(k.zLo); mk.zLo = m(k.zHi); }
+  if ("boxHi" in k) { mk.boxHi = m(k.boxLo); mk.boxLo = m(k.boxHi); }
+  sc.k = mk; if (sc.zones) sc.zones = sc.zones.map((z) => ({ ...z, a: m(z.b), b: m(z.a), side: z.side === "long" ? "short" : "long" }));
+  sc.dir = "short"; return sc;
+}
+// NYFlow H/L: range 7:00–9:25, sweep one side after 9:30, gap flips, target the other side.
+function genHL(o = {}) {
+  const dir = o.dir || pick(["long", "short"]); const B = qt(R(24300, 24900)); const W = qt(R(34, 56));
+  const bars = []; let p = qt(B + R(-W / 5, W / 5)); bars.push(bar(p, p + R(-3, 3), p + 2, p - 2));
+  chop(bars, B - W / 2, B + W / 2, 29);
+  let H = -Infinity, L = Infinity, iH = 0, iL = 0;
+  bars.forEach((b, i) => { if (b.h > H) H = b.h, iH = i; if (b.l < L) L = b.l, iL = i; });
+  const k = { RH: H, RL: L, iH, iL, rangeEnd: 29 };
+  if (o.noSweep) { chop(bars, L + 3, H - 3, 26); return { model: "hl", dir, B, bars, k: { ...k, noTrade: true }, t0: 420 }; }
+  if (o.late) chop(bars, L + 4, H - 4, 13); else chop(bars, L + 3, H - 3, RI(0, 1));
+  const t = trap(bars, L); Object.assign(k, t, { target: H });
+  const zones = [];
+  if (o.levelAt === "sweep") zones.push({ a: qt(t.sweepLow - R(1, 3)), b: qt(L - R(0, 1.5)), side: "long", label: "DAILY LEVEL · LONG" });
+  if (o.levelAt === "block") { const mid = qt(t.entry + (H - t.entry) * R(0.4, 0.55)); zones.push({ a: mid - 2, b: mid + 3, side: "short", label: "DAILY LEVEL · SHORT" }); }
+  if (o.levelAt === "far") zones.push({ a: qt(H + R(14, 22)), b: qt(H + R(25, 30)), side: "short", label: "DAILY LEVEL · SHORT" });
+  const res = outcome(bars, k, o.outcome || (Math.random() < 0.72 ? "win" : "loss"), { zone: zones[0] });
+  const sc = { model: "hl", dir: "long", B, bars, k: { ...k, result: res }, zones, t0: 420 };
+  return dir === "short" ? mirror(sc) : sc;
+}
+// NYFlow PO3: 4H trend, equal highs = the draw, accumulation box, manipulation against trend at 10:00, flip, target the draw.
+function genPO3(o = {}) {
+  const dir = o.dir || pick(["long", "short"]); const S0 = qt(R(24300, 24800)); const bars = [];
+  bars.push(bar(S0, S0 + 2, S0 + 3, S0 - 1));
+  walk(bars, S0 + R(24, 32), 8, { noise: 3 });
+  const E = qt(bars[bars.length - 1].c + R(6, 10));
+  bars.push(bar(bars[bars.length - 1].c, E - 3, E, E - 6));
+  walk(bars, E - R(9, 13), 2, { noise: 1.5, hi: E - 1 });
+  bars.push(bar(bars[bars.length - 1].c, E - 4, E, E - 9));
+  const Bx = qt(E - R(32, 44));
+  walk(bars, Bx, 30 - bars.length, { noise: 3, hi: E - 1 });
+  const lo = qt(Bx - 6), hi = qt(Bx + 6);
+  chop(bars, lo, hi, 6); const boxStart = 30; const boxEnd = 35; bars[RI(31, 35)].l = lo; bars[RI(31, 35)].h = Math.max(bars[33].h, hi - 0.5);
+  const t = trap(bars, lo, { approach: false });
+  const k = { E, boxLo: lo, boxHi: hi, boxStart, boxEnd, ...t, target: E, trend: o.counter ? "down" : "up" };
+  const res = outcome(bars, k, o.outcome || (o.counter ? (Math.random() < 0.8 ? "loss" : "win") : (Math.random() < 0.7 ? "win" : "loss")));
+  const zones = o.levelAt === "far" ? [{ a: qt(E + R(10, 16)), b: qt(E + R(18, 24)), side: "short", label: "DAILY LEVEL · SHORT" }] : [];
+  const sc = { model: "po3", dir: "long", B: Bx, bars, k: { ...k, result: res }, zones, t0: 420 };
+  if (dir === "short") { mirror(sc); sc.k.trend = o.counter ? "up" : "down"; }
+  return sc;
+}
+// Asia: 6 PM – 1 AM. The model's session is 8 PM – 12 AM; a bigger extreme sits outside it to test the window.
+function genAsia() {
+  const B = qt(R(24300, 24900)); const bars = []; bars.push(bar(B, B + 1, B + 3, B - 2));
+  walk(bars, B + R(-10, 10), 23, { noise: 5, wick: 3 });
+  walk(bars, B + R(-18, 18), 48, { noise: 6, wick: 3.5 });
+  walk(bars, B + R(-20, 20), 13, { noise: 6, wick: 3.5 });
+  const i0 = 24, i1 = 71; let hi = -Infinity, lo = Infinity, iH = 0, iL = 0;
+  for (let i = i0; i <= i1; i++) { if (bars[i].h > hi) hi = bars[i].h, iH = i; if (bars[i].l < lo) lo = bars[i].l, iL = i; }
+  const trapI = RI(4, 18); if (Math.random() < 0.5) bars[trapI].h = qt(hi + R(4, 9)); else bars[trapI].l = qt(lo - R(4, 9));
+  return { model: "asia", B, bars, k: { AH: hi, AL: lo, iH, iL, i0, i1 }, t0: 1080 };
+}
+const sideWord = (d) => (d === "long" ? "LONG" : "SHORT");
+
+// ───────────────────────── HUD + home ─────────────────────────
+function renderHud() {
+  const lv = level(), cur = (lv - 1) ** 2 * 100, nxt = lv * lv * 100; const pct = Math.min(100, ((S.xp - cur) / (nxt - cur)) * 100);
+  const done = S.daily && S.daily.date === todayKey() ? S.daily.res.length : 0;
+  const week = S.reps.filter((r) => r.t > Date.now() - 7 * 864e5).length;
+  $("#hud").innerHTML = `
+    <div class="stat"><span class="hud">Level</span><span class="v">${lv} <small>· ${S.xp.toLocaleString()} XP</small></span><div class="meter"><i style="width:${pct}%"></i></div></div>
+    <div class="stat"><span class="hud">Daily streak</span><span class="v"><span class="flame">▲</span> ${S.streak} <small>days</small></span><span class="hud" style="font-size:8.5px">10 reps a day keeps it alive</span></div>
+    <div class="stat"><span class="hud">Today's reps</span><span class="v">${Math.min(done, 10)} <small>/ 10</small></span><div class="meter sig"><i style="width:${Math.min(100, done * 10)}%"></i></div></div>
+    <div class="stat"><span class="hud">Reps this week</span><span class="v">${week}</span><span class="hud" style="font-size:8.5px">${S.review.length} missed reps queued to come back</span></div>`;
+}
+function home() {
+  stopTimers();
+  const daily = S.daily && S.daily.date === todayKey() ? S.daily : null; const done = daily ? daily.res.length : 0;
+  const ms = ["hl", "po3", "dl", "asia"].map((m) => [m, modelStats(m)]);
+  const silver = (m) => ["silver", "gold", "elite"].includes(modelStats(m).tier);
+  const simOpen = silver("hl") && silver("po3");
+  const mist = topMistakes();
+  $("#stage").innerHTML = `
+    <h1 class="h1">Practice. <em>Reps</em> make it automatic.</h1>
+    <p class="lede">Every drill runs on NQ, follows the same rules as the Trading School, and grades you line by line. Anything you miss comes back a few days later until you get it.</p>
+    <section class="daily">
+      <div>
+        <span class="hud" style="color:var(--signal)">Today's 10 reps</span>
+        <div style="font-family:var(--f-display);font-weight:900;font-size:26px;margin-top:4px">${done >= 10 ? "Done for today. Streak extended." : done ? `${done} of 10 done` : "Your daily set is ready"}</div>
+        <p>A mix of chart drills, sizing and timing across your models. Reps you missed earlier are mixed back in first.</p>
+        <div class="pips">${Array.from({ length: 10 }, (_, i) => `<span class="pip ${daily && i < done ? (daily.res[i] ? "ok" : "miss") : ""}"></span>`).join("")}</div>
+      </div>
+      <button class="btn primary big" id="go-daily">${done >= 10 ? "Do 10 more" : done ? "Continue" : "Start reps"}</button>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>Drills</h2><span class="hud">Unlimited reps · every chart is new</span></div>
+      <div class="grid">
+        <button class="card lab" data-d="limit"><div class="row"><span class="chip sig">Daily Levels · from the Discord</span></div><h3>Set the limit</h3><p>${DRILLS.limit.desc}</p></button>
+        ${["mark", "replay", "levels", "ticket", "size", "clock", "speed"].map((d) => `<button class="card" data-d="${d}"><div class="row">${drillChips(d)}</div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc}</p></button>`).join("")}
+        <div class="card locked"><div class="row"><span class="chip dim">Locked</span></div><h3>Sim day</h3><p>Trade a full NQ session start to finish and get an end-of-day report card. ${simOpen ? "Unlocked." : "Unlocks at <b>Silver</b> in NYFlow · H/L and PO3."}</p></div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>Model mastery</h2><span class="hud">Bronze → Silver → Gold → Elite · based on your last 40 reps</span></div>
+      <div class="mastery">${ms.map(([m, s]) => `<div class="m"><div class="t"><b>${MODELS[m]}</b><span class="tier ${s.tier}">${s.tier === "none" ? "Unranked" : s.tier}</span></div><div class="meter"><i style="width:${Math.round(s.acc * 100)}%;background:${s.acc >= 0.7 ? "var(--win)" : s.acc >= 0.55 ? "var(--gold)" : "var(--loss)"}"></i></div><div class="sub"><span class="num">${Math.round(s.acc * 100)}% · ${s.n} reps</span><span>${s.next}</span></div></div>`).join("")}</div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>Personal bests</h2></div>
+      <div class="sumgrid">
+        <div class="sum"><span class="hud">Speed round</span><span class="v">${S.best.speed}</span><span class="hud">correct in 45s</span></div>
+        <div class="sum"><span class="hud">Longest streak</span><span class="v">${Math.max(S.streak, S.best.streak || 0)}</span><span class="hud">days</span></div>
+        <div class="sum"><span class="hud">Daily Levels</span><span class="v">${S.reps.filter((r) => r.d === "limit" && r.ok).length}</span><span class="hud">levels handled perfectly</span></div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>What your coach sees</h2><span class="hud">Coach Portal · per member</span></div>
+      <div class="coach">
+        <div class="tblwrap"><table><thead><tr><th>Model</th><th>Accuracy</th><th></th><th>Reps</th><th>Tier</th></tr></thead><tbody>
+          ${ms.map(([m, s]) => `<tr><td>${MODELS[m]}</td><td class="num">${Math.round(s.acc * 100)}%</td><td><div class="bar"><i style="width:${Math.round(s.acc * 100)}%;background:${s.acc >= 0.7 ? "var(--win)" : s.acc >= 0.55 ? "var(--gold)" : "var(--loss)"}"></i></div></td><td class="num">${s.n}</td><td><span class="tier ${s.tier}">${s.tier === "none" ? "–" : s.tier}</span></td></tr>`).join("")}
+        </tbody></table></div>
+        <div><span class="hud">Struggling with</span>
+          <div style="display:grid;gap:6px;margin-top:8px">${mist.length ? mist.map(([t, n], i) => `<div style="display:flex;gap:10px;align-items:center"><span class="chip ${i === 0 ? "loss" : "dim"}">${n}×</span><span>${TAGS[t] || t}</span></div>`).join("") : '<span style="color:var(--ink3)">No pattern yet.</span>'}</div>
+        </div>
+      </div>
+    </section>`;
+  $("#go-daily").onclick = startDaily;
+  document.querySelectorAll("[data-d]").forEach((b) => (b.onclick = () => runDrill(b.dataset.d)));
+}
+function drillChips(d) {
+  const m = { mark: ["hl", "po3"], replay: ["hl", "po3"], levels: ["hl", "asia"], ticket: ["hl"], size: [], clock: ["hl", "po3", "asia", "dl"], speed: [] }[d] || [];
+  if (d === "size") return '<span class="chip">NQ · MNQ</span>';
+  if (d === "speed") return '<span class="chip sig">45 sec</span>';
+  return m.map((x) => `<span class="chip">${MODELS[x].replace("NYFlow · ", "").replace("AsiaFlow · PO3", "Asia")}</span>`).join("");
+}
+
+// ───────────────────────── drill frame ─────────────────────────
+let RUN = null; // current run: {queue, i, onDone}
+let timers = [];
+function stopTimers() { timers.forEach(clearInterval); timers.forEach(clearTimeout); timers = []; }
+function startDaily() {
+  if (!S.daily || S.daily.date !== todayKey() || S.daily.res.length >= 10) S.daily = { date: todayKey(), res: [], active: true };
+  S.daily.active = true; save();
+  const base = ["limit", "mark", "replay", "levels", "ticket", "size", "clock", "limit", "size", "speedq"];
+  const fromReview = S.review.splice(0, 3).map((r) => r.d);
+  const q = shuffle([...fromReview, ...base]).slice(0, 10 - S.daily.res.length);
+  RUN = { queue: q, i: 0, daily: true }; save(); next();
+}
+function runDrill(d) { RUN = { queue: [d], i: 0, loop: true }; next(); }
+function next() {
+  stopTimers(); window.scrollTo({ top: 0, behavior: "smooth" });
+  if (!RUN) return home();
+  if (RUN.daily && S.daily.res.length >= 10) { finishDaily(); return; }
+  const d = RUN.loop ? RUN.queue[0] : RUN.queue[RUN.i++];
+  if (!d) { RUN = null; return home(); }
+  ({ mark: drillMark, replay: drillReplay, levels: drillLevels, ticket: drillTicket, size: drillSize, clock: drillClock, speed: drillSpeed, speedq: drillSpeedQuick, limit: drillLimit })[d]();
+}
+function finishDaily() {
+  S.daily.active = false; const ok = S.daily.res.filter(Boolean).length;
+  if (S.lastDaily !== todayKey()) { S.streak += 1; S.lastDaily = todayKey(); S.xp += 50; S.best.streak = Math.max(S.best.streak || 0, S.streak); }
+  save(); renderHud(); RUN = null;
+  $("#stage").innerHTML = `<div class="qbox pop"><span class="hud" style="color:var(--signal)">Daily reps complete</span><div class="q">${ok} / 10 correct. Streak: <span class="num">${S.streak}</span> days. <span class="xpfloat">+50 XP bonus</span></div><p style="margin:0;color:var(--ink2)">${10 - ok ? `The ${10 - ok} you missed are queued and will come back in a later set.` : "Clean set. Nothing queued for review."}</p><div class="ansrow"><button class="btn primary" id="hm">Back to Practice</button></div></div>`;
+  $("#hm").onclick = home;
+}
+function frame(title, chips, bodyHtml) {
+  const prog = RUN && RUN.daily ? `<span class="hud">Rep ${S.daily.res.length + 1} / 10</span>` : "";
+  $("#stage").innerHTML = `<div class="stage-head"><button class="btn ghost" id="back">← Practice</button><span class="t">${title}</span>${chips}<div class="crumbs">${prog}</div></div>${bodyHtml}`;
+  $("#back").onclick = () => { RUN = null; if (S.daily) S.daily.active = false; home(); };
+}
+function chartLayout(extraTop = "", tf = "5m") {
+  return `<div class="drill"><div class="chartbox"><div class="chart-top"><span class="sym">NQ1! · ${tf}</span>${extraTop}</div><canvas class="cv" id="cv"></canvas><div class="chart-foot" id="foot"></div></div><aside class="side" id="side"></aside></div>`;
+}
+function missed(d, m, tags) { S.review.push({ d, m, tags, t: Date.now() }); save(); }
+function nextBtn(label = "Next rep") { return `<div class="ansrow"><button class="btn primary" id="nx">${label} →</button><button class="btn ghost" id="lesson">Review the lesson</button></div>`; }
+function wireNext() { $("#nx").onclick = next; const l = $("#lesson"); if (l) l.onclick = () => { location.href = "/school"; }; }
+function fbBox(ok, title, items, extra = "") {
+  return `<div class="fb ${ok ? "good" : "bad"} pop"><span class="v">${title}</span>${items.length ? `<ul>${items.map(([g, t]) => `<li class="${g ? "ok" : "no"}">${t}</li>`).join("")}</ul>` : ""}${extra}</div>`;
+}
+const ctxChips = (sc) => { const k = sc.k; let h = `<span class="chip">${MODELS[sc.model]}</span>`; if (sc.model === "po3") h += `<span class="chip ${k.trend === "up" ? "win" : "loss"}">4H trend: ${k.trend.toUpperCase()}</span>`; return h; };
+function hlOverlays(ch, sc, upto) {
+  const k = sc.k; ch.windows = [{ i0: 0, i1: 29, label: "PRE-MARKET RANGE 7:00–9:25" }, { i0: 30, i1: 35, color: "rgba(255,106,0,.06)", label: "A+ 9:30–10:00", ink: css("--signal") }];
+  if (upto > 29) { ch.lines.push({ p: k.RH, color: css("--ice"), dash: [5, 4], label: "RANGE HIGH", i0: 0 }, { p: k.RL, color: css("--ice"), dash: [5, 4], label: "RANGE LOW", i0: 0 }); }
+}
+function po3Overlays(ch, sc, upto) {
+  const k = sc.k; ch.windows = [{ i0: k.boxStart, i1: k.boxEnd, label: "ACCUMULATION" }];
+  if (upto > k.boxEnd) ch.zones.push({ a: k.boxLo, b: k.boxHi, i0: k.boxStart, i1: k.boxEnd, fill: "rgba(146,159,178,.08)", stroke: css("--line2") });
+  ch.lines.push({ p: k.E, color: css("--lag"), dash: [5, 4], label: "EQUAL HIGHS · THE DRAW", i0: 7 });
+}
+function zoneOverlays(ch, sc) { for (const z of sc.zones || []) ch.zones.push({ a: z.a, b: z.b, fill: z.side === "long" ? "rgba(62,224,161,.10)" : "rgba(255,79,109,.10)", stroke: z.side === "long" ? css("--win") : css("--loss"), label: z.label + " (DISCORD)", ink: z.side === "long" ? css("--win") : css("--loss") }); }
+
+// ───────────────────────── 1. Mark the trade ─────────────────────────
+function drillMark() {
+  const sc = Math.random() < 0.6 ? genHL() : genPO3(); const k = sc.k; const long = sc.dir === "long";
+  frame(DRILLS.mark.name, ctxChips(sc), chartLayout(`<span class="chip sig">FIRE · ${sideWord(sc.dir)}</span>`));
+  const ch = new Chart($("#cv")); ch.set(sc.bars, { shown: k.flipI + 1, slots: k.flipI + 16, t0: sc.t0, keep: [k.target] });
+  sc.model === "hl" ? hlOverlays(ch, sc, k.flipI) : po3Overlays(ch, sc, k.flipI);
+  ch.marks.push({ i: k.flipI, p: long ? k.entry : k.entry, shape: "ring", color: css("--signal") });
+  const placed = { entry: null, stop: null, target: null }; let tool = "entry";
+  const colors = { entry: css("--ice"), stop: css("--loss"), target: css("--win") };
+  const redraw = () => { ch.lines = ch.lines.filter((l) => !l.user); for (const t of ["entry", "stop", "target"]) if (placed[t] != null) ch.lines.push({ p: placed[t], color: colors[t], label: t.toUpperCase(), user: true, w: 1.8 }); ch.draw(); paintSide(); };
+  function paintSide() {
+    $("#side").innerHTML = `<div class="task">The model just fired <b>${sideWord(sc.dir)}</b> on the ringed candle. <b>Place your entry, stop and target</b> on the chart.</div>
+      <div class="hint">Pick a line, then click the chart at that price. Click again to move it.</div>
+      <div class="tools">${["entry", "stop", "target"].map((t) => `<button class="tool ${tool === t ? "active" : ""}" data-t="${t}"><span class="sw" style="background:${colors[t]}"></span>${t}<span class="pv">${placed[t] != null ? fmt(placed[t]) : "—"}</span></button>`).join("")}</div>
+      <button class="btn primary" id="check" ${placed.entry != null && placed.stop != null && placed.target != null ? "" : "disabled"}>Check my trade</button>`;
+    document.querySelectorAll("[data-t]").forEach((b) => (b.onclick = () => { tool = b.dataset.t; paintSide(); }));
+    $("#check").onclick = grade;
+  }
+  ch.onTap = ({ price }) => { placed[tool] = price; const order = ["entry", "stop", "target"]; const nx = order.find((t) => placed[t] == null); if (nx) tool = nx; redraw(); };
+  redraw();
+  function grade() {
+    ch.onTap = null; const tags = []; const items = []; const sgn = long ? 1 : -1;
+    const eOk = Math.abs(placed.entry - k.entry) <= 2;
+    items.push([eOk, eOk ? `Entry ${fmt(placed.entry)}: at the close that flipped the gap (${fmt(k.entry)}).` : `Entry ${fmt(placed.entry)}: the entry is the close that flipped the gap, ${fmt(k.entry)}. ${sgn * (placed.entry - k.entry) > 0 ? "Yours chases price." : "Yours waits for a price that may never come back."}`]);
+    if (!eOk) tags.push("entry-off");
+    const ext = long ? k.sweepLow : k.sweepLow; // mirrored already
+    const beyond = sgn * (ext - placed.stop); // >0 means past the extreme
+    let sOk = false;
+    if (sgn * (placed.entry - placed.stop) <= 0) { items.push([false, `Stop ${fmt(placed.stop)} is on the wrong side of your entry. A ${sideWord(sc.dir).toLowerCase()} stop goes ${long ? "below" : "above"} entry.`]); tags.push("wrong-side"); }
+    else if (beyond <= 0) { items.push([false, `Stop ${fmt(placed.stop)} sits inside the ${sc.model === "po3" ? "manipulation" : "sweep"} wick (${fmt(ext)}). Normal noise takes it out. Put it just past the extreme.`]); tags.push("stop-inside"); }
+    else if (beyond > 8) { items.push([false, `Stop ${fmt(placed.stop)} is ${beyond.toFixed(2)} pts past the extreme. Just past ${fmt(ext)} is enough; extra room only shrinks your size.`]); tags.push("stop-wide"); }
+    else { sOk = true; items.push([true, `Stop ${fmt(placed.stop)}: just past the ${sc.model === "po3" ? "manipulation" : "swept"} extreme (${fmt(ext)}). If price gets back there, the idea is wrong.`]); }
+    const tOk = Math.abs(placed.target - k.target) <= 4;
+    items.push([tOk, tOk ? `Target ${fmt(placed.target)}: ${sc.model === "po3" ? "the equal highs (the draw)" : "the other side of the range"}.` : `Target ${fmt(placed.target)}: the target is ${sc.model === "po3" ? `the draw, the equal ${long ? "highs" : "lows"} at ${fmt(k.target)}` : `the other side of the range, ${fmt(k.target)}`}.`]);
+    if (!tOk) tags.push("wrong-target");
+    const ok = eOk && sOk && tOk; const gain = record(sc.model, "mark", ok, tags, ok ? 20 : 4); if (!ok) missed("mark", sc.model, tags);
+    ch.lines.push({ p: k.entry, color: css("--ice"), dash: [2, 3], label: "MODEL ENTRY", left: true }, { p: k.stop, color: css("--loss"), dash: [2, 3], label: "MODEL STOP", left: true }, { p: k.target, color: css("--win"), dash: [2, 3], label: "MODEL TARGET", left: true });
+    ch.draw();
+    const risk = Math.abs(k.entry - k.stop), rew = Math.abs(k.target - k.entry);
+    $("#side").innerHTML = fbBox(ok, ok ? `Clean trade · +${gain} XP` : `Not quite · +${gain} XP`, items, `<dl class="kv"><dt>Risk</dt><dd>${risk.toFixed(2)} pts · $${Math.round(risk * 20)} / NQ</dd><dt>Reward</dt><dd>${rew.toFixed(2)} pts · ${(rew / risk).toFixed(1)}R</dd></dl>`) + `<button class="btn" id="play">▶ Play it out</button>` + nextBtn();
+    $("#play").onclick = () => { $("#play").disabled = true; let n = ch.shown; const h = setInterval(() => { n++; ch.shown = Math.min(n, sc.bars.length); ch.slots = Math.max(ch.slots, sc.bars.length + 1); ch.draw(); if (n >= sc.bars.length) { clearInterval(h); $("#play").outerHTML = `<div class="hud" style="color:${k.result >= 0 ? "var(--win)" : "var(--loss)"}">Result: ${pts(k.result)} · ${usd(k.result * 20)} on 1 NQ${k.result < 0 ? " · right trade, losing outcome. It happens." : ""}</div>`; } }, 120); timers.push(h); };
+    wireNext();
+  }
+}
+
+// ───────────────────────── 2. Replay & decide ─────────────────────────
+function drillReplay() {
+  const roll = Math.random(); let sc;
+  if (roll < 0.4) sc = genHL(); else if (roll < 0.55) sc = genHL({ noSweep: true }); else if (roll < 0.8) sc = genPO3(); else sc = genPO3({ counter: true });
+  const k = sc.k; const long = sc.dir === "long";
+  frame(DRILLS.replay.name, ctxChips(sc), chartLayout());
+  const ch = new Chart($("#cv")); const total = sc.bars.length;
+  ch.set(sc.bars, { shown: 1, slots: total + 1, t0: sc.t0, keep: k.target ? [k.target] : [] });
+  const L = sideWord(sc.dir), O = long ? "SHORT" : "LONG";
+  const stops = [];
+  if (sc.model === "hl") {
+    stops.push({ at: 20, q: "8:40 AM. The pre-market range is still building. What do you do?", opts: [["Wait", true, "Right. 7:00–9:25 only builds the range. No trades until it locks and one side gets swept."], ["Take a long", false, "Too early: the range isn't locked. The model only trades after 9:30.", "traded-range"], ["Take a short", false, "Too early: the range isn't locked. The model only trades after 9:30.", "traded-range"]] });
+    if (k.noTrade) stops.push({ at: total - 1, q: "10:40 AM. Price stayed inside the range all morning. What now?", opts: [["No trade today", true, "Right. No sweep = no trade that session. Not trading is a position."], [`Buy the range low`, false, "Without a sweep there's no trap and no fuel. That's a forced trade.", "forced-trade"], [`Sell the range high`, false, "Without a sweep there's no trap and no fuel. That's a forced trade.", "forced-trade"]] });
+    else {
+      stops.push({ at: k.sweepI + 1, q: `Price just ran through the range ${long ? "low" : "high"}. What do you do?`, opts: [["Wait for the flip", true, `Right. The sweep is the trap. You need a candle to close back ${long ? "above" : "below"} the gap.`], [`${O} the breakout`, false, `That's the trap: the run through the ${long ? "low" : "high"} grabs stops, then reverses.`, "sold-the-trap"], [`${L} right now`, false, "Early. No confirmation yet; the sweep can keep going.", "early-entry"]] });
+      stops.push({ at: k.flipI + 1, q: `A candle just closed back ${long ? "above" : "below"} the gap. The model fires.`, opts: [[`Take the ${L.toLowerCase()}`, true, `Yes. Sweep + flip in the A+ window. Stop past the sweep, target the range ${long ? "high" : "low"}.`], ["Wait for more", false, "This is the confirmation. Waiting more means a worse entry and a bigger stop.", "missed-setup"], [`Take the ${O.toLowerCase()}`, false, "That fights the setup the model just confirmed.", "sold-the-trap"]] });
+    }
+  } else {
+    const withT = (k.trend === "up") === long;
+    stops.push({ at: k.boxEnd + 1, q: "9:55 AM. Price is chopping sideways in a tight box. What do you do?", opts: [["Nothing. Accumulation = no trade", true, "Right. No edge yet, only chop."], ["Buy the next breakout", false, "Breakouts from the box are exactly what manipulation traps.", "sold-the-trap"], ["Fade the box edges", false, "Fading the edges in accumulation gets you chopped up.", "traded-range"]] });
+    stops.push({ at: k.sweepI + 1, q: `The box just broke ${long ? "down" : "up"}. 4H trend is ${k.trend.toUpperCase()}. What is this?`, opts: withT ? [["Manipulation. Wait for the flip", true, "Right. A break against the trend is the trap before the real move."], [`${O} it, the move is real`, false, "The #1 PO3 mistake: treating manipulation as confirmation.", "sold-the-trap"], [`${L} now`, false, "No confirmation yet. Wait for the gap to flip.", "early-entry"]] : [["Wait and see", true, "Fine. But note this break is WITH the 4H trend, so a reversal here would be counter-trend."], [`${O} it right now`, false, "No confirmation. Even with-trend, wait for your trigger.", "early-entry"], [`${L} now`, false, "Counter-trend and unconfirmed.", "counter-trend"]] });
+    stops.push({ at: k.flipI + 1, q: `The gap flipped and the indicator fires ${L}. 4H trend: ${k.trend.toUpperCase()}.`, opts: withT ? [[`Take the ${L.toLowerCase()}`, true, "Yes. Manipulation against the trend, flip with it. Target the draw."], ["Skip it", false, "This is the textbook PO3: with the trend, after the trap.", "missed-setup"], [`Fade it`, false, "That fights both the trend and the confirmation.", "counter-trend"]] : [["Skip: it's counter-trend", true, "Right. The 4H trend is against this signal. The model trades with the trend."], [`Take the ${L.toLowerCase()}`, false, "This fights the 4H trend. The best PO3 trades go with it.", "counter-trend"], ["Take it with double size", false, "Counter-trend and oversized.", "counter-trend"]] });
+  }
+  let si = 0, n = 1, playing = false, correct = 0, tags = [];
+  const overlays = () => { ch.lines = []; ch.zones = []; ch.marks = []; sc.model === "hl" ? hlOverlays(ch, sc, n) : po3Overlays(ch, sc, n); if (!k.noTrade && n > k.flipI) ch.marks.push({ i: k.flipI, p: k.entry, shape: long ? "up" : "down", text: "FIRE " + L, color: css("--signal") }); if (!k.noTrade && sc.model === "hl" && n > k.sweepI) ch.marks.push({ i: k.sweepI, p: k.sweepLow, shape: "ring", color: css("--lag") }); };
+  function side(html) { $("#side").innerHTML = html; }
+  function playTo(stopAt, then) {
+    playing = true; $("#foot").innerHTML = `<span class="hud">Playing…</span>`;
+    const h = setInterval(() => { n++; ch.shown = n; overlays(); ch.draw(); if (n >= stopAt) { clearInterval(h); playing = false; then(); } }, 90); timers.push(h);
+  }
+  function ask() {
+    if (si >= stops.length) return finish();
+    const s = stops[si];
+    playTo(s.at, () => {
+      $("#foot").innerHTML = `<span class="hud" style="color:var(--signal)">Paused · ${timeLabel(sc.t0 + (n - 1) * 5)}</span>`;
+      side(`<span class="hud">Decision ${si + 1} of ${stops.length}</span><div class="task">${s.q}</div><div class="opts">${shuffle(s.opts).map((o, i) => `<button class="opt" data-i="${s.opts.indexOf(o)}">${o[0]}</button>`).join("")}</div>`);
+      document.querySelectorAll(".opt").forEach((b) => (b.onclick = () => {
+        const o = s.opts[+b.dataset.i]; document.querySelectorAll(".opt").forEach((x) => { x.disabled = true; if (s.opts[+x.dataset.i][1]) x.classList.add("right"); }); if (!o[1]) b.classList.add("wrong");
+        if (o[1]) correct++; else if (o[3]) tags.push(o[3]);
+        $("#side").insertAdjacentHTML("beforeend", fbBox(o[1], o[1] ? "Correct" : "Not the play", [], `<div>${o[2]}</div>`) + `<button class="btn primary" id="cont">${si + 1 < stops.length ? "Keep playing ▶" : "See how it played out ▶"}</button>`);
+        $("#cont").onclick = () => { si++; ask(); };
+      }));
+    });
+  }
+  function finish() {
+    playTo(total, () => {
+      const ok = correct === stops.length; const gain = record(sc.model, "replay", ok, tags, correct * 8 + (ok ? 10 : 0)); if (!ok) missed("replay", sc.model, tags);
+      const res = k.noTrade ? "No trade taken. Capital protected." : `${k.result >= 0 ? "The setup worked" : "The setup lost"}: ${pts(k.result)} (${usd(k.result * 20)} on 1 NQ).`;
+      const extra = !k.noTrade && sc.model === "po3" && (k.trend === "up") !== long ? " Skipping it was the rule either way: counter-trend." : (!k.noTrade && k.result < 0 ? " Taking it was still correct: good trades lose sometimes. Over many reps the rules win." : "");
+      side(fbBox(ok, `${correct} / ${stops.length} decisions right · +${gain} XP`, [], `<div>${res}${extra}</div>`) + nextBtn());
+      $("#foot").innerHTML = `<span class="hud">Session complete</span>`; wireNext();
+    });
+  }
+  overlays(); side(`<div class="task">Watch the session build. It will pause at each decision.</div><button class="btn primary" id="startp">▶ Start replay</button>`); $("#startp").onclick = ask;
+}
+
+// ───────────────────────── 3. Draw the levels ─────────────────────────
+function drillLevels() {
+  const asia = Math.random() < 0.45; const sc = asia ? genAsia() : genHL({ noSweep: true }); const k = sc.k;
+  const hiP = asia ? k.AH : k.RH, loP = asia ? k.AL : k.RL; const shown = asia ? sc.bars.length : 34;
+  frame(DRILLS.levels.name, `<span class="chip">${asia ? MODELS.asia : MODELS.hl}</span>`, chartLayout());
+  const ch = new Chart($("#cv")); ch.set(sc.bars, { shown, slots: shown + 2, t0: sc.t0 });
+  ch.windows = asia ? [{ i0: 24, i1: 71, label: "ASIA SESSION 8 PM – 12 AM" }] : [{ i0: 0, i1: 29, label: "PRE-MARKET 7:00–9:25" }];
+  const placed = { high: null, low: null }; let tool = "high"; const col = { high: css("--ice"), low: css("--lag") };
+  function paint() {
+    ch.lines = ch.lines.filter((l) => !l.user); for (const t of ["high", "low"]) if (placed[t] != null) ch.lines.push({ p: placed[t], color: col[t], label: (asia ? "ASIA " : "RANGE ") + t.toUpperCase(), user: true }); ch.draw();
+    $("#side").innerHTML = `<div class="task"><b>Mark the ${asia ? "Asia session" : "pre-market range"} high and low.</b></div><div class="hint">${asia ? "Only candles inside 8 PM – 12 AM count." : "Highest high and lowest low from 7:00 to 9:25."} Wicks, not closes.</div>
+      <div class="tools">${["high", "low"].map((t) => `<button class="tool ${tool === t ? "active" : ""}" data-t="${t}"><span class="sw" style="background:${col[t]}"></span>${t}<span class="pv">${placed[t] != null ? fmt(placed[t]) : "—"}</span></button>`).join("")}</div>
+      <button class="btn primary" id="check" ${placed.high != null && placed.low != null ? "" : "disabled"}>Check my levels</button>`;
+    document.querySelectorAll("[data-t]").forEach((b) => (b.onclick = () => { tool = b.dataset.t; paint(); }));
+    $("#check").onclick = grade;
+  }
+  ch.onTap = ({ price }) => { placed[tool] = price; if (tool === "high" && placed.low == null) tool = "low"; paint(); };
+  paint();
+  function grade() {
+    ch.onTap = null; const tags = []; const items = [];
+    for (const [t, real, iReal] of [["high", hiP, asia ? k.iH : k.iH], ["low", loP, asia ? k.iL : k.iL]]) {
+      const d = Math.abs(placed[t] - real); const ok = d <= 1.5;
+      let why = ok ? `${t === "high" ? "High" : "Low"} ${fmt(placed[t])}: on the wick at ${fmt(real)}.` : `${t === "high" ? "High" : "Low"} ${fmt(placed[t])}: the real ${t} is ${fmt(real)} (${d.toFixed(2)} pts off).`;
+      if (!ok) {
+        const vis = sc.bars.slice(0, shown); const outside = asia && vis.some((b, i) => (i < 24 || i > 71) && Math.abs((t === "high" ? b.h : b.l) - placed[t]) <= 1.5);
+        const atClose = vis.some((b, i) => Math.abs(Math.max(b.o, b.c) - placed[t]) <= 1 || Math.abs(Math.min(b.o, b.c) - placed[t]) <= 1);
+        if (outside) { why += " That extreme is outside the session window."; tags.push("window"); } else if (atClose) { why += " You marked a candle body; use the wick."; tags.push("level-off"); } else tags.push("level-off");
+      }
+      items.push([ok, why]);
+      ch.marks.push({ i: iReal, p: real, shape: "ring", color: ok ? css("--win") : css("--loss") });
+    }
+    ch.lines.push({ p: hiP, color: css("--win"), dash: [2, 3], label: "REAL HIGH", left: true }, { p: loP, color: css("--win"), dash: [2, 3], label: "REAL LOW", left: true }); ch.draw();
+    const ok = items.every((x) => x[0]); const gain = record(asia ? "asia" : "hl", "levels", ok, [...new Set(tags)], ok ? 15 : 4); if (!ok) missed("levels", asia ? "asia" : "hl", tags);
+    $("#side").innerHTML = fbBox(ok, ok ? `Both levels right · +${gain} XP` : `Close, not exact · +${gain} XP`, items, `<div class="hint">${asia ? "The session window decides what counts. A bigger high at 7 PM is not the Asia high." : "Stops sit just past these wicks. That's the fuel the model trades."}</div>`) + nextBtn();
+    wireNext();
+  }
+}
+
+// ───────────────────────── 4. Order ticket ─────────────────────────
+function drillTicket() {
+  const sc = genHL(); const k = sc.k; const long = sc.dir === "long"; const inst = pick(["MNQ", "MNQ", "NQ"]);
+  const stopPts = Math.abs(k.entry - k.stop); let risk = inst === "NQ" ? pick([800, 1000, 1200, 1500]) : pick([150, 200, 250, 300, 400]);
+  if (Math.floor(risk / (stopPts * PV[inst])) < 1) risk = Math.ceil(stopPts * PV[inst] / 50) * 50 + 50;
+  const qty = Math.floor(risk / (stopPts * PV[inst]));
+  frame(DRILLS.ticket.name, `<span class="chip">${MODELS.hl}</span>`, chartLayout(`<span class="chip sig">FIRE · ${sideWord(sc.dir)}</span>`));
+  const ch = new Chart($("#cv")); ch.set(sc.bars, { shown: k.flipI + 1, slots: k.flipI + 10, t0: sc.t0, keep: [k.target, k.stop] }); hlOverlays(ch, sc, k.flipI);
+  ch.marks.push({ i: k.flipI, p: k.entry, shape: long ? "up" : "down", text: "FIRE " + sideWord(sc.dir), color: css("--signal") }); ch.draw();
+  const t = { side: null, type: null, qty: "", stop: "", tp: "" };
+  $("#side").innerHTML = `<div class="sigcard"><span class="hd">NYFLOW · H/L ${sideWord(sc.dir)}</span><dl class="kv"><dt>Entry</dt><dd>${fmt(k.entry)} (this close)</dd><dt>Stop</dt><dd>${fmt(k.stop)}</dd><dt>Target</dt><dd>${fmt(k.target)}</dd></dl></div>
+    <div class="task">You trade <b>${inst}</b> and risk <b>$${risk}</b> per trade. Fill the ticket.</div>
+    <form class="ticket" id="tk">
+      <div class="r"><label>Side</label><div class="seg side-seg" id="sd"><button type="button" class="buy" data-v="buy">Buy</button><button type="button" class="sell" data-v="sell">Sell</button></div></div>
+      <div class="r"><label>Order</label><div class="seg" id="ty"><button type="button" data-v="market">Market</button><button type="button" data-v="limit">Limit</button><button type="button" data-v="stop">Stop</button></div></div>
+      <div class="r"><label for="q-qty">Contracts</label><input class="in" id="q-qty" inputmode="numeric" placeholder="${inst}"></div>
+      <div class="r"><label for="q-sl">Stop loss</label><input class="in" id="q-sl" inputmode="decimal" placeholder="price"></div>
+      <div class="r"><label for="q-tp">Take profit</label><input class="in" id="q-tp" inputmode="decimal" placeholder="price"></div>
+      <button class="btn primary" id="send" type="submit">Place bracket order</button>
+    </form>`;
+  const seg = (id, key) => document.querySelectorAll(`#${id} button`).forEach((b) => (b.onclick = () => { t[key] = b.dataset.v; document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle("on", x === b)); }));
+  seg("sd", "side"); seg("ty", "type");
+  $("#tk").onsubmit = (e) => {
+    e.preventDefault(); const q = parseInt($("#q-qty").value, 10), sl = parseFloat(String($("#q-sl").value).replace(/,/g, "")), tp = parseFloat(String($("#q-tp").value).replace(/,/g, ""));
+    const items = [], tags = [];
+    const sOk = t.side === (long ? "buy" : "sell"); items.push([sOk, sOk ? `${long ? "Buy" : "Sell"}: matches the ${sideWord(sc.dir).toLowerCase()} signal.` : `Side: a ${sideWord(sc.dir).toLowerCase()} signal is a ${long ? "BUY" : "SELL"}.`]); if (!sOk) tags.push("wrong-side");
+    const tyOk = t.type === "market" || t.type === "limit"; items.push([tyOk, t.type === "stop" ? `A stop order only fills if price moves further ${long ? "up" : "down"} first. You'd chase the entry. Use market now, or a limit at ${fmt(k.entry)}.` : tyOk ? `${t.type === "market" ? "Market: fills now at the signal close." : `Limit at ${fmt(k.entry)}: fills if price trades back to the signal close.`}` : "Pick an order type."]); if (!tyOk) tags.push("order-type");
+    const qOk = q === qty; items.push([qOk, qOk ? `${qty} ${inst}: ${stopPts.toFixed(2)} pts × $${PV[inst]} × ${qty} = $${(stopPts * PV[inst] * qty).toFixed(0)} risk.` : `Size: ${stopPts.toFixed(2)}-pt stop × $${PV[inst]}/pt = $${(stopPts * PV[inst]).toFixed(2)} per ${inst}. $${risk} ÷ that = <b>${qty}</b>.${q > qty ? ` ${q} risks $${(stopPts * PV[inst] * q).toFixed(0)}.` : ""}`]); if (!qOk) tags.push(q > qty ? "oversize" : "entry-off");
+    const slOk = Math.abs(sl - k.stop) <= 0.25; items.push([slOk, slOk ? `Stop ${fmt(k.stop)}.` : isNaN(sl) ? "No stop entered. Every trade has a stop." : `Stop should be ${fmt(k.stop)}${(long ? sl > k.entry : sl < k.entry) ? ". Yours is on the wrong side of entry, it would trigger instantly" : ""}.`]); if (!slOk) tags.push(isNaN(sl) || (long ? sl > k.entry : sl < k.entry) ? "wrong-side" : "stop-inside");
+    const tpOk = Math.abs(tp - k.target) <= 0.25; items.push([tpOk, tpOk ? `Target ${fmt(k.target)}.` : `Take profit should be ${fmt(k.target)} (the signal target).`]); if (!tpOk) tags.push("wrong-target");
+    const ok = items.every((x) => x[0]); const gain = record("hl", "ticket", ok, [...new Set(tags)], ok ? 15 : 4); if (!ok) missed("ticket", "hl", tags);
+    $("#side").innerHTML = fbBox(ok, ok ? `Order placed correctly · +${gain} XP` : `Order has mistakes · +${gain} XP`, items) + nextBtn(); wireNext();
+  };
+}
+
+// ───────────────────────── 5. Size it ─────────────────────────
+function drillSize() {
+  const acct = pick([25, 50, 100, 150]); const inst = pick(["MNQ", "MNQ", "NQ"]); const stop = pick([8, 10, 12, 15, 15, 18, 20, 25, 30]);
+  let risk = inst === "NQ" ? pick([300, 500, 750, 1000, 1500]) : pick([100, 150, 200, 250, 300, 400, 500]);
+  const ans = Math.floor(risk / (stop * PV[inst]));
+  frame(DRILLS.size.name, `<span class="chip">NQ · MNQ</span>`, `<div class="qbox pop"><span class="hud">${acct}K account</span><div class="q">Stop is <span class="num">${stop} pts</span>. You're risking <span class="num">$${risk}</span>. How many <b>${inst}</b>?</div><div class="hint" style="color:var(--ink3)">NQ = $20 per point · MNQ = $2 per point · round down</div><div class="ansrow"><input class="in" id="a" inputmode="numeric" style="max-width:140px" aria-label="Contracts"><button class="btn primary" id="ck">Check</button></div><div id="fbk"></div></div>`);
+  const go = () => {
+    const v = parseInt($("#a").value, 10); if (isNaN(v)) return; const ok = v === ans; const per = stop * PV[inst];
+    const tags = ok ? [] : [v > ans ? "oversize" : "missed-setup"]; const gain = record("dl", "size", ok, ok ? [] : ["oversize"].filter(() => v > ans), ok ? 10 : 3); if (!ok) missed("size", "dl", tags);
+    let extra = ans === 0 ? ` Even 1 ${inst} risks $${per}, more than $${risk}. ${inst === "NQ" ? `Switch to MNQ: ${Math.floor(risk / (stop * 2))} contracts.` : "Tighten the stop or skip the trade."}` : "";
+    $("#fbk").innerHTML = fbBox(ok, ok ? `Correct · +${gain} XP` : `Answer: ${ans} · +${gain} XP`, [], `<div><span class="num">${stop} pts × $${PV[inst]} = $${per}</span> per ${inst}. <span class="num">$${risk} ÷ $${per} = ${(risk / per).toFixed(2)}</span> → <b>${ans}</b>.${extra}</div>`) + nextBtn(); wireNext(); $("#ck").disabled = true;
+  };
+  $("#ck").onclick = go; $("#a").onkeydown = (e) => { if (e.key === "Enter") go(); }; $("#a").focus();
+}
+
+// ───────────────────────── 6. Session clock ─────────────────────────
+const CLOCK = [
+  { m: "hl", t: 525, q: "NYFlow · H/L. Price is pushing up hard. Take a trade?", a: false, why: "8:45 AM is inside 7:00–9:25: the model is still building the range. No trades until it locks." },
+  { m: "hl", t: 580, q: "NYFlow · H/L. The range low was swept and the gap just flipped. Take it?", a: true, why: "9:40 AM, sweep and flip done, inside the first 30 minutes after 9:30: that's the A+ window." },
+  { m: "hl", t: 565, q: "NYFlow · H/L. The range just locked. Can a setup form from here?", a: true, why: "From 9:30 the model waits for a sweep of one side. 9:25 lock, 9:30 onward is live." },
+  { m: "hl", t: 450, q: "NYFlow · H/L. Price swept yesterday's low. Is this the H/L sweep?", a: false, why: "7:30 AM: the pre-market range is still forming. The H/L sweep is of the 7:00–9:25 range, after 9:30." },
+  { m: "asia", t: 1290, q: "AsiaFlow · PO3. Both filters passed and price is in your key level. In session?", a: true, why: "9:30 PM is inside the Asia session, 8:00 PM – 12:00 AM ET." },
+  { m: "asia", t: 90, q: "AsiaFlow · PO3. A clean setup just formed. Inside the Asia session?", a: false, why: "1:30 AM is after the session closes at 12:00 AM ET." },
+  { m: "asia", t: 1170, q: "AsiaFlow · PO3. NY expanded hard today. Trade Asia tonight?", a: false, why: "Filter 1: when NY expanded hard, skip Asia. It's the clean session only after NY chops." },
+  { m: "asia", t: 1200, q: "AsiaFlow · PO3. Watching the 8 PM candle dip into your key level for a long. Is this the candle the model watches?", a: true, why: "Yes. For longs the 8 PM candle should go Open → Low → High → Close: dip into the level first." },
+  { m: "dl", t: 180, q: "Daily Levels. Does Range Settlement pull price right now?", a: false, why: "3:00 AM is overnight. RS forms at 9:30 and only applies after the open." },
+  { m: "dl", t: 510, q: "Daily Levels. Price is near your level right at the 8:30 news. Set a limit order?", a: false, why: "Limits only when everything lines up and not near the open, news or high volatility. Wait for confirmation." },
+  { m: "dl", t: 585, q: "Daily Levels. Price opened below Range Settlement. Does that favor longs?", a: true, why: "Below RS → longs, unfilled orders sit above. Above RS → shorts." },
+  { m: "po3", t: 600, q: "NYFlow · PO3. Is 10:00 AM a key time the model marks?", a: true, why: "Yes. The 10:00 ET open is the key candle: for longs it should dip first, then close higher." },
+  { m: "po3", t: 590, q: "NYFlow · PO3. Price is still chopping sideways. Trade it?", a: false, why: "Accumulation is a no-trade zone. Wait for the manipulation and the flip." },
+];
+function drillClock() {
+  const c = pick(CLOCK);
+  frame(DRILLS.clock.name, `<span class="chip">${MODELS[c.m]}</span>`, `<div class="qbox pop"><span class="hud">Time (ET)</span><div class="clockface">${timeLabel(c.t)}</div><div class="q">${c.q}</div><div class="ansrow"><button class="btn big" data-a="1">Yes</button><button class="btn big" data-a="0">No</button></div><div id="fbk"></div></div>`);
+  document.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => {
+    const ok = (b.dataset.a === "1") === c.a; document.querySelectorAll("[data-a]").forEach((x) => (x.disabled = true)); if (ok) b.classList.add("on");
+    const gain = record(c.m, "clock", ok, ok ? [] : ["timing"], ok ? 10 : 3); if (!ok) missed("clock", c.m, ["timing"]);
+    $("#fbk").innerHTML = fbBox(ok, ok ? `Correct · +${gain} XP` : `${c.a ? "Yes" : "No"} · +${gain} XP`, [], `<div>${c.why}</div>`) + nextBtn(); wireNext();
+  }));
+}
+
+// ───────────────────────── 7. Speed round ─────────────────────────
+function speedQ() {
+  if (Math.random() < 0.55) {
+    const bull = Math.random() < 0.5; const yes = Math.random() < 0.5; const b0 = qt(R(24400, 24800)); const bars = [];
+    const c1 = bar(b0, b0 + 4, b0 + 6, b0 - 1); const gapTop = yes ? c1.h + qt(R(2.5, 6)) : c1.h - qt(R(0.5, 2.5));
+    const c2 = bar(c1.c, gapTop + 9, gapTop + 10, c1.c - 0.5); const c3 = bar(c2.c, c2.c + 3, c2.c + 5, gapTop);
+    bars.push(bar(b0 - 3, b0, b0 + 1, b0 - 4), c1, c2, c3, bar(c3.c, c3.c + 2, c3.c + 3, c3.c - 1));
+    let sc = { bars, B: b0 + 10, k: {} }; if (!bull) { sc = mirror({ ...sc, k: {}, zones: [] }); }
+    return { kind: "fvg", bars: sc.bars, yes, q: `Is there a ${bull ? "bullish" : "bearish"} fair value gap between candles 2–4?`, why: yes ? "Candle 2 and candle 4 don't overlap: the empty space is the gap." : "Candle 2 and candle 4 overlap, so there's no gap." };
+  }
+  const yes = Math.random() < 0.5; const top = qt(R(24400, 24800)); const bars = [bar(top + 2, top - 6, top + 3, top - 7), bar(top - 6, top - 9, top - 4, top - 11), bar(top - 9, top - 7, top - 5, top - 10)];
+  const c = yes ? top + qt(R(1, 3)) : top - qt(R(1, 3)); bars.push(bar(top - 7, c, yes ? c + 1 : top + qt(R(1.5, 4)), top - 8));
+  return { kind: "flip", bars, zone: { a: top - 4, b: top }, yes, q: "Did the last candle flip the gap (iFVG)?", why: yes ? "It CLOSED above the top of the gap. The close is what counts." : "Only the wick went through. It closed back inside, so no flip yet." };
+}
+function speedPaint(cv, s) {
+  const ch = new Chart(cv, { small: true }); ch.set(s.bars, { slots: s.bars.length + 1 });
+  if (s.zone) ch.zones.push({ a: s.zone.a, b: s.zone.b, fill: "rgba(255,79,109,.12)", stroke: css("--loss") });
+  if (s.kind === "fvg") s.bars.forEach((b, i) => i >= 1 && i <= 3 && ch.marks.push({ i, p: b.h, shape: "ring", color: css("--ink3") }));
+  ch.draw(); return ch;
+}
+function drillSpeed() {
+  let score = 0, wrong = 0, left = 45, cur = null, ch = null; const missedKinds = new Set();
+  frame(DRILLS.speed.name, `<span class="chip sig">45 sec</span>`, `<div class="qbox" style="max-width:900px"><div class="timer"><i id="tm" style="width:100%"></i></div><div class="speedgrid"><canvas class="mini" id="mc"></canvas><div style="display:grid;gap:14px"><div class="q" id="sq" style="font-size:20px"></div><div class="ansrow"><button class="btn big" data-a="1">Yes</button><button class="btn big" data-a="0">No</button></div><div class="hud">Score <span class="score num" id="sc">0</span> · best ${S.best.speed}</div><div id="last" class="hint"></div></div></div></div>`);
+  const show = () => { cur = speedQ(); $("#sq").textContent = cur.q; ch = speedPaint($("#mc"), cur); };
+  show();
+  const answer = (y) => { if (left <= 0) return; const ok = y === cur.yes; if (ok) score++; else { wrong++; missedKinds.add(cur.kind); } $("#sc").textContent = score; $("#last").innerHTML = `<span style="color:${ok ? "var(--win)" : "var(--loss)"}">${ok ? "✓" : "✗"}</span> ${cur.why}`; show(); };
+  document.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => answer(b.dataset.a === "1")));
+  const h = setInterval(() => { left -= 0.25; $("#tm").style.width = (left / 45 * 100) + "%"; if (left <= 0) { clearInterval(h); end(); } }, 250); timers.push(h);
+  function end() {
+    const best = score > S.best.speed; if (best) S.best.speed = score; const ok = score >= 8 && wrong <= 2;
+    const gain = record("hl", "speed", ok, [...missedKinds].map((k) => (k === "fvg" ? "fvg-read" : "flip-read")), score * 3); save();
+    $(".qbox").innerHTML = `<span class="hud" style="color:var(--signal)">Time</span><div class="q">${score} correct, ${wrong} wrong. ${best ? '<span class="xpfloat">New personal best</span>' : ""}</div><div class="hint">+${gain} XP${missedKinds.size ? ` · Watch for: ${[...missedKinds].map((k) => (k === "fvg" ? "reading gaps" : "wick vs. close on flips")).join(", ")}` : ""}</div>${nextBtn("Go again")}`;
+    wireNext();
+  }
+}
+function drillSpeedQuick() {
+  let i = 0, ok = 0; const qs = [speedQ(), speedQ(), speedQ()];
+  frame("Quick recognition", `<span class="chip sig">3 questions</span>`, `<div class="qbox" style="max-width:900px"><div class="speedgrid"><canvas class="mini" id="mc"></canvas><div style="display:grid;gap:14px"><span class="hud" id="qi"></span><div class="q" id="sq" style="font-size:20px"></div><div class="ansrow"><button class="btn big" data-a="1">Yes</button><button class="btn big" data-a="0">No</button></div><div id="last" class="hint"></div></div></div></div>`);
+  const show = () => { $("#qi").textContent = `${i + 1} / 3`; $("#sq").textContent = qs[i].q; speedPaint($("#mc"), qs[i]); };
+  show();
+  document.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => {
+    if (i >= 3) return; const c = (b.dataset.a === "1") === qs[i].yes; if (c) ok++; $("#last").innerHTML = `<span style="color:${c ? "var(--win)" : "var(--loss)"}">${c ? "✓" : "✗"}</span> ${qs[i].why}`; i++;
+    if (i < 3) show(); else { document.querySelectorAll("[data-a]").forEach((x) => (x.disabled = true)); const all = ok === 3; const gain = record("hl", "speed", all, all ? [] : ["fvg-read"], ok * 4); $("#last").insertAdjacentHTML("afterend", fbBox(all, `${ok} / 3 · +${gain} XP`, []) + nextBtn()); wireNext(); }
+  }));
+}
+
+// ───────────────────────── 8. Daily Levels: set the limit ─────────────────────────
+// Long form, 15m candles from 6 PM. Mirrored for short levels.
+function genDL(o = {}) {
+  const dir = o.dir || pick(["long", "short"]);
+  const lrl = o.lrl ?? Math.random() < 0.62, stl = o.stl ?? Math.random() < 0.7, news = o.news ?? Math.random() < 0.18;
+  const O6 = qt(R(24400, 24900)); const bars = [bar(O6, O6 + 1.5, O6 + 4, O6 - 2.5)];
+  walk(bars, O6 + R(-6, 6), 7, { noise: 4, wick: 3 });
+  const tgt = qt(O6 + R(28, 44));
+  walk(bars, tgt - 4, 8, { noise: 4, hi: tgt - 0.5 });
+  bars.push(bar(bars[bars.length - 1].c, tgt - 7, tgt, tgt - 10));
+  walk(bars, tgt - R(14, 22), 7, { noise: 3, hi: tgt - 1 });
+  const O0 = bars[bars.length - 1].c;
+  const zHi = qt(O0 - R(48, 70)), zLo = qt(zHi - R(6, 10));
+  const arrive = news ? 58 : RI(32, 44);
+  let stlP = null;
+  if (lrl) {
+    let p = bars[bars.length - 1].c; const legs = arrive - bars.length - (stl ? 4 : 1); const goal = zHi + R(9, 14);
+    for (let k = 1; k <= legs; k++) { const t = O0 + (goal - O0) * k / legs; const c = k % 3 === 0 ? t + R(2, 4) : t - R(0, 2); bars.push(bar(p, c, Math.max(p, c) + R(0.5, 2.5), Math.min(p, c) - R(0.5, 2))); p = qt(c); }
+  } else {
+    chop(bars, O0 - 14, O0 + 4, arrive - bars.length - (stl ? 6 : 3));
+    walk(bars, zHi + R(9, 13), 2, { noise: 1, wick: 1.5 });
+  }
+  if (stl) { stlP = qt(zHi + R(2, 4.5)); const p = bars[bars.length - 1].c; bars.push(bar(p, stlP + 2, p + 1, stlP)); walk(bars, stlP + R(6, 9), 2, { noise: 1, lo: stlP + 1 }); walk(bars, stlP + R(3, 5), 1, { noise: 0.5, lo: stlP + 1 }); }
+  else { const p = bars[bars.length - 1].c; bars.push(bar(p, zHi + 3, p + 1, zHi + 2.25)); }
+  const decI = bars.length - 1; const okLimit = lrl && stl && !news;
+  const k = { zLo, zHi, tgt, O6, O0, stlP, decI, lrl, stl, news, okLimit };
+  if (okLimit) {
+    const soupLow = qt(R(zLo + 0.25, zLo + 2)); const p = bars[bars.length - 1].c;
+    bars.push(bar(p, soupLow + 5, p + 1, soupLow)); k.soupLow = soupLow;
+    walk(bars, zHi + R(8, 12), 3, { noise: 2, lo: zHi - 1 });
+    walk(bars, tgt + R(2, 6), RI(9, 13), { noise: 3, lo: zHi + 2 });
+    walk(bars, bars[bars.length - 1].c - R(4, 8), 3, { noise: 2 });
+  } else {
+    const p = bars[bars.length - 1].c; const deep = qt(zLo - R(16, 26));
+    if (news) { bars.push(bar(p, zLo - 8, p + 2, deep)); }
+    else walk(bars, deep + 3, 3, { noise: 2, wick: 3 });
+    k.flushLow = Math.min(deep, bars[bars.length - 1].l);
+    chop(bars, k.flushLow, k.flushLow + 10, 3);
+    walk(bars, zHi + R(4, 10), 6, { noise: 3 });
+  }
+  const sc = { model: "dl", dir: "long", B: O0, bars, k, t0: 1080, step: 15, zones: [] };
+  return dir === "short" ? mirror(sc) : sc;
+}
+function drillLimit() {
+  const sc = genDL(); const k = sc.k; const long = sc.dir === "long"; const sg = long ? 1 : -1;
+  const lvlTxt = `${fmt(Math.min(k.zLo, k.zHi))} – ${fmt(Math.max(k.zLo, k.zHi))}`;
+  frame(DRILLS.limit.name, `<span class="chip sig">Daily Levels · from the Discord</span>`, `<div class="labhead"><span class="chip sig">Daily Levels</span><b>DAILY LEVEL · ${sideWord(sc.dir)} ${lvlTxt}</b><span class="hud">As posted in the FLOWMTD Discord · NQ</span></div>` + chartLayout(`<span class="chip">From 6 PM</span><span class="chip ${long ? "win" : "loss"}">Level ${long ? "below" : "above"} the opens → ${long ? "longs" : "shorts"}</span>`, "15m"));
+  const ch = new Chart($("#cv")); ch.set(sc.bars, { shown: k.decI + 1, slots: sc.bars.length + 1, t0: sc.t0, step: 15, keep: [k.tgt, long ? k.zLo - 13 : k.zHi + 13] });
+  const base = () => {
+    ch.windows = [{ i0: 8, i1: 23, label: "ASIA 8 PM – 12 AM" }, { i0: 57, i1: 58, color: "rgba(255,106,0,.08)", label: "8:30 NEWS", ink: css("--signal") }];
+    ch.zones = [{ a: k.zLo, b: k.zHi, fill: long ? "rgba(62,224,161,.12)" : "rgba(255,79,109,.12)", stroke: long ? css("--win") : css("--loss"), label: `DAILY LEVEL · ${sideWord(sc.dir)} (DISCORD)`, ink: long ? css("--win") : css("--loss") }];
+    ch.lines = [{ p: k.O6, color: css("--lag"), dash: [4, 4], label: "6 PM OPEN", i0: 0 }, { p: k.O0, color: css("--lag"), dash: [4, 4], label: "MIDNIGHT OPEN", i0: 24 }, { p: k.tgt, color: css("--ice"), dash: [6, 4], label: long ? "ASIA HIGH" : "ASIA LOW", i0: 8 }];
+  };
+  base(); ch.draw();
+  const now = timeLabel(sc.t0 + k.decI * 15);
+  const checks = { lrl: null, stl: null, time: null };
+  const qs = [["lrl", "LRL into the level", "Price stepping toward the level, low after low (high after high for shorts)"], ["stl", `Short-term ${long ? "low" : "high"} just ${long ? "above" : "below"} the level`, "A small swing right before the level: the turtle soup fuel"], ["time", "Away from the open and news", `It's ${now}. Not near 8:30 news or the 9:30 open`]];
+  const truth = { lrl: k.lrl, stl: k.stl, time: !k.news };
+  function paintCheck() {
+    $("#side").innerHTML = `<div class="task">Price is coming to today's level. It's <b>${now} ET</b>. <b>Can you set a limit, or do you wait for confirmation?</b></div>
+      <div class="hint">Tick what you see on the chart.</div>
+      <div class="opts">${qs.map(([id, t, h]) => `<div style="display:grid;gap:4px"><div style="font-weight:700">${t}</div><div class="hint" style="font-size:13.5px">${h}</div><div class="seg" data-c="${id}"><button type="button" data-v="1" class="${checks[id] === true ? "on" : ""}">Yes</button><button type="button" data-v="0" class="${checks[id] === false ? "on" : ""}">No</button></div></div>`).join("")}</div>
+      <div class="ansrow"><button class="btn primary" data-dec="limit" ${Object.values(checks).includes(null) ? "disabled" : ""}>Set a limit</button><button class="btn" data-dec="wait" ${Object.values(checks).includes(null) ? "disabled" : ""}>Wait for confirmation</button></div>`;
+    document.querySelectorAll("[data-c] button").forEach((b) => (b.onclick = () => { checks[b.parentElement.dataset.c] = b.dataset.v === "1"; paintCheck(); }));
+    document.querySelectorAll("[data-dec]").forEach((b) => (b.onclick = () => decide(b.dataset.dec)));
+  }
+  paintCheck();
+  const tags = []; let score = { checks: 0, dec: false, place: null, be: null };
+  function decide(dec) {
+    const items = qs.map(([id, t]) => { const ok = checks[id] === truth[id]; if (ok) score.checks++; return [ok, `${t}: ${truth[id] ? "yes" : "no"}.${ok ? "" : id === "lrl" ? (truth.lrl ? " Price stepped down slowly, low after low." : " The move was one fast push, not a slow staircase.") : id === "stl" ? (truth.stl ? ` The swing at ${fmt(k.stlP)} is it.` : " Price ran straight into the level with no swing before it.") : (truth.time ? "" : " 8:30 news is right here. No limits into news.")}`]; });
+    score.dec = (dec === "limit") === k.okLimit;
+    if (!score.dec) tags.push(k.okLimit ? "missed-setup" : k.news ? "limit-news" : "limit-no-lrl");
+    const verdict = k.okLimit ? "All three line up → a limit at the level is allowed." : "Not everything lines up → wait for confirmation: a reaction within ~50 ticks, then an IFVG or change of structure, a retrace, and entry at the first PD-array.";
+    $("#side").innerHTML = fbBox(score.dec, score.dec ? (dec === "limit" ? "Right: set the limit" : "Right: wait") : (dec === "limit" ? "Not a limit day" : "This one could be limited"), items, `<div>${verdict}</div>`) + (k.okLimit ? `<button class="btn primary" id="go">Place the limit →</button>` : `<button class="btn primary" id="go">▶ See what happened</button>`);
+    $("#go").onclick = k.okLimit ? place : showNoLimit;
+  }
+  function showNoLimit() {
+    $("#go").disabled = true; let n = ch.shown; const h = setInterval(() => { n++; ch.shown = n; ch.draw(); if (n >= sc.bars.length) { clearInterval(h); end(`Price ran ${long ? "through" : "above"} the level to ${fmt(k.flushLow)}. A limit with a 50-tick stop would have been stopped out. ${k.news ? "That's the news spike. " : ""}Confirmation keeps you out of this, and if price reacts and flips, you get a cleaner entry after it.`); } }, 70); timers.push(h);
+  }
+  function place() {
+    const placed = { entry: null, stop: null, target: null }; let tool = "entry"; const colors = { entry: css("--ice"), stop: css("--loss"), target: css("--win") };
+    const redraw = () => { base(); for (const t of ["entry", "stop", "target"]) if (placed[t] != null) ch.lines.push({ p: placed[t], color: colors[t], label: t.toUpperCase(), w: 1.8 }); ch.draw(); paint(); };
+    function paint() {
+      $("#side").innerHTML = `<div class="task"><b>Place the limit order</b> on the chart: entry, stop, first target.</div><div class="hint">Entry inside the posted level · stop 50 ticks (12.5 pts) · first target: session liquidity.</div>
+        <div class="tools">${["entry", "stop", "target"].map((t) => `<button class="tool ${tool === t ? "active" : ""}" data-t="${t}"><span class="sw" style="background:${colors[t]}"></span>${t}<span class="pv">${placed[t] != null ? fmt(placed[t]) : "—"}</span></button>`).join("")}</div>
+        <button class="btn primary" id="check" ${placed.entry != null && placed.stop != null && placed.target != null ? "" : "disabled"}>Send the order</button>`;
+      document.querySelectorAll("[data-t]").forEach((b) => (b.onclick = () => { tool = b.dataset.t; paint(); }));
+      $("#check").onclick = () => grade(placed);
+    }
+    ch.onTap = ({ price }) => { placed[tool] = price; const nx = ["entry", "stop", "target"].find((t) => placed[t] == null); if (nx) tool = nx; redraw(); };
+    redraw();
+  }
+  function grade(pl) {
+    ch.onTap = null; const items = []; const lo = Math.min(k.zLo, k.zHi), hi = Math.max(k.zLo, k.zHi);
+    const eOk = pl.entry >= lo && pl.entry <= hi; items.push([eOk, eOk ? `Entry ${fmt(pl.entry)}: inside the level.` : `Entry ${fmt(pl.entry)} is outside the posted level (${lvlTxt}). The limit goes at the level.`]); if (!eOk) tags.push("entry-zone");
+    const want = qt(pl.entry - sg * 12.5); const sOk = Math.abs(pl.stop - want) <= 0.75;
+    items.push([sOk, sOk ? `Stop ${fmt(pl.stop)}: 50 ticks from entry. Past that, the level is invalid.` : sg * (pl.entry - pl.stop) <= 0 ? `Stop ${fmt(pl.stop)} is on the wrong side of entry.` : `Stop ${fmt(pl.stop)} is ${(sg * (pl.entry - pl.stop) * 4).toFixed(0)} ticks away. The rule is 50 ticks: ${fmt(want)}.`]); if (!sOk) tags.push(sg * (pl.entry - pl.stop) <= 0 ? "wrong-side" : "stop-50");
+    const tOk = Math.abs(pl.target - k.tgt) <= 2; items.push([tOk, tOk ? `Target ${fmt(pl.target)}: the Asia ${long ? "high" : "low"}, session liquidity.` : `First target: the Asia ${long ? "high" : "low"} at ${fmt(k.tgt)}, the nearest session liquidity.`]); if (!tOk) tags.push("wrong-target");
+    score.place = eOk && sOk && tOk;
+    const E = eOk ? pl.entry : qt((lo + hi) / 2), SL = qt(E - sg * 12.5), risk = 12.5, rew = Math.abs(k.tgt - E);
+    base(); ch.lines.push({ p: E, color: css("--ice"), label: `LIMIT ${fmt(E)}`, w: 1.8 }, { p: SL, color: css("--loss"), label: "STOP −50 TICKS", w: 1.8 }, { p: k.tgt, color: css("--win"), label: "TARGET", w: 1.8 }); ch.draw();
+    $("#side").innerHTML = fbBox(score.place, score.place ? "Order placed right" : "Order corrected", items, `<dl class="kv"><dt>Risk</dt><dd>12.5 pts · $250 / NQ · $25 / MNQ</dd><dt>Reward</dt><dd>${rew.toFixed(2)} pts · ${(rew / risk).toFixed(1)}R</dd></dl>${eOk ? "" : `<div class="hint">Playing it out from the middle of the level, ${fmt(E)}.</div>`}`) + `<button class="btn primary" id="go">▶ Play</button>`;
+    $("#go").onclick = () => run(E, SL);
+  }
+  function run(E, SL) {
+    $("#go").disabled = true; const after = sc.bars.slice(k.decI + 1); const fillJ = after.findIndex((b) => (long ? b.l <= E : b.h >= E));
+    if (fillJ < 0) { playTo(sc.bars.length, () => end(`Price turned at ${fmt(k.soupLow)} without reaching your ${fmt(E)} limit, so no fill. Deeper in the level is safer but can miss the trade.`)); return; }
+    const beJ = after.findIndex((b, j) => j >= fillJ && (long ? b.h >= E + 12.5 : b.l <= E - 12.5));
+    playTo(k.decI + 1 + beJ + 1, () => {
+      $("#side").innerHTML = `<div class="hud" style="color:var(--win)">Filled at ${fmt(E)} · turtle soup into the level</div><div class="task">Price is now <b>50 ticks in your favor (1:1)</b>. What do you do?</div><div class="opts"><button class="opt" data-b="be">Move the stop to breakeven</button><button class="opt" data-b="tp">Close the whole trade now</button><button class="opt" data-b="no">Leave everything as is</button></div>`;
+      document.querySelectorAll("[data-b]").forEach((b) => (b.onclick = () => {
+        score.be = b.dataset.b === "be"; if (!score.be) tags.push("be-missed");
+        document.querySelectorAll("[data-b]").forEach((x) => { x.disabled = true; if (x.dataset.b === "be") x.classList.add("right"); }); if (!score.be) b.classList.add("wrong");
+        const why = score.be ? "Right. At 1:1 the stop goes to breakeven: worst case is now $0." : b.dataset.b === "tp" ? "That cuts a winner at 1R. The rule is breakeven at 1:1, then let it deliver to the target." : "Leaving the full stop risks a winner turning into a full loss. Breakeven at 1:1.";
+        $("#side").insertAdjacentHTML("beforeend", fbBox(score.be, score.be ? "Managed right" : "Not the rule", [], `<div>${why}</div>`));
+        ch.lines = ch.lines.map((l) => (l.label === "STOP −50 TICKS" ? { ...l, p: E, label: "STOP · BREAKEVEN" } : l)); ch.draw();
+        playTo(sc.bars.length, () => end(`Target hit: ${pts(sg * (k.tgt - E))} from a 12.5-point stop · ${usd(sg * (k.tgt - E) * 20)} on 1 NQ, ${usd(sg * (k.tgt - E) * 2)} on 1 MNQ.`));
+      }));
+    });
+  }
+  function playTo(to, then) { let n = ch.shown; const h = setInterval(() => { n++; ch.shown = Math.min(n, to); ch.draw(); if (n >= to) { clearInterval(h); then(); } }, 75); timers.push(h); }
+  function end(msg) {
+    const ok = score.checks === 3 && score.dec && score.place !== false && score.be !== false;
+    const gain = record("dl", "limit", ok, [...new Set(tags)], score.checks * 3 + (score.dec ? 8 : 0) + (score.place ? 8 : 0) + (score.be ? 6 : 0)); if (!ok) missed("limit", "dl", tags);
+    $("#side").insertAdjacentHTML("beforeend", `<div class="hud" style="color:var(--ink2)">${msg}</div><div class="hud" style="color:var(--signal)">+${gain} XP</div>` + nextBtn()); wireNext();
+  }
+}
+
+// ───────────────────────── boot ─────────────────────────
+loadState().then(() => { renderHud(); home(); });
+</script>
+</body></html>

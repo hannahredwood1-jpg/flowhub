@@ -19,6 +19,7 @@ import { blendedWinRate, type StrategyKey } from "../src/lib/strategies";
 import { accountInput, accountPatch, feedbackInput, journalInput, journalPatch, projectionInput, roadmapSchema, templatePatch } from "../src/lib/validators";
 import { todayET, type CatalogFirm, type DashboardData, type PersonDTO, type ProjectionDTO, type RulesDTO } from "../src/lib/types";
 import type { Instrument } from "../src/lib/planner";
+import { PRACTICE_MODELS, summarizePractice } from "../src/lib/practice";
 
 // ─────────────────────────────────────────────────────────────
 // Config
@@ -173,7 +174,7 @@ async function syncRolesIfStale(u: UserRow): Promise<UserRow> {
 async function loadDashboard(viewer: UserRow, traderId: string): Promise<DashboardData> {
   const [trader] = await sql`select * from "User" where id = ${traderId}`;
   if (!trader) throw new HttpError(404, "Not found");
-  const [[rm], accounts, journal, feedback, [pj]] = await Promise.all([
+  const [[rm], accounts, journal, feedback, [pj], practiceRows] = await Promise.all([
     sql`select * from "Roadmap" where "userId" = ${traderId}`,
     sql`select *, to_char("startDate", 'YYYY-MM-DD') as "startISO" from "MemberAccount" where "userId" = ${traderId} order by "createdAt"`,
     sql`select j.*, to_char(j."tradeDate", 'YYYY-MM-DD') as "dateISO",
@@ -182,6 +183,7 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
     sql`select f.*, c."globalName" as "cName", c.username as "cUser", c."discordId" as "cDid", c."avatarHash" as "cAv"
         from "CoachFeedback" f join "User" c on c.id = f."coachId" where f."traderId" = ${traderId} order by f."createdAt" desc limit 100`,
     sql`select name, config, "updatedAt" from "Projection" where "userId" = ${traderId}`,
+    sql`select model, drill, ok, tags, "createdAt" from "PracticeRep" where "userId" = ${traderId} and "createdAt" > now() - interval '120 days' order by "createdAt"`,
   ]);
   const strategies = (rm?.strategies ?? []) as StrategyKey[];
   return buildDashboard({
@@ -211,6 +213,7 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
       journalEntryId: f.journalEntryId, memberAccountId: f.memberAccountId,
       createdAt: new Date(f.createdAt).toISOString(), readAt: f.readAt ? new Date(f.readAt).toISOString() : null,
     })),
+    practice: summarizePractice(practiceRows as { model: string; drill: string; ok: boolean; tags: string[]; createdAt: Date }[]),
     projection: pj
       ? { ...((typeof pj.config === "string" ? JSON.parse(pj.config) : pj.config) as Omit<ProjectionDTO, "name" | "updatedAt">), name: pj.name, updatedAt: new Date(pj.updatedAt).toISOString() }
       : null,
@@ -446,6 +449,33 @@ app.put("/api/log", async (c) => {
   return c.json({ ok: true });
 });
 
+// Practice tab: graded reps (coaches see a summary) + the member's progress state (XP, streak, review queue).
+const PRACTICE_MODEL_SET = new Set<string>(PRACTICE_MODELS);
+app.get("/api/practice", async (c) => {
+  const uid = c.get("user").id;
+  const [[st], reps] = await Promise.all([
+    sql`select state from "PracticeState" where "userId" = ${uid}`,
+    sql`select model, drill, ok, tags, "createdAt" from "PracticeRep" where "userId" = ${uid} and "createdAt" > now() - interval '120 days' order by "createdAt" desc limit 1500`,
+  ]);
+  const state = st ? (typeof st.state === "string" ? JSON.parse(st.state) : st.state) : null;
+  return c.json({ state, reps: (reps as { model: string; drill: string; ok: boolean; tags: string[]; createdAt: Date }[]).reverse().map((r) => ({ t: new Date(r.createdAt).getTime(), m: r.model, d: r.drill, ok: r.ok, tags: r.tags ?? [] })) });
+});
+app.post("/api/practice/rep", async (c) => {
+  const b = (await c.req.json()) as { m?: string; d?: string; ok?: boolean; tags?: unknown; xp?: number };
+  if (!b.m || !PRACTICE_MODEL_SET.has(b.m) || !b.d || !/^[a-z]{2,20}$/.test(b.d) || typeof b.ok !== "boolean") throw new HttpError(400, "Bad rep");
+  const tags = Array.isArray(b.tags) ? b.tags.filter((t): t is string => typeof t === "string" && /^[a-z0-9-]{2,30}$/.test(t)).slice(0, 6) : [];
+  const xp = Math.max(0, Math.min(200, Math.round(Number(b.xp) || 0)));
+  await sql`insert into "PracticeRep" (id, "userId", model, drill, ok, tags, xp) values (${randomUUID()}, ${c.get("user").id}, ${b.m}, ${b.d}, ${b.ok}, ${pgArray(tags)}::text[], ${xp})`;
+  return c.json({ ok: true });
+});
+app.put("/api/practice/state", async (c) => {
+  const json = JSON.stringify((await c.req.json()) ?? {});
+  if (json.length > 8000) throw new HttpError(400, "Too long");
+  await sql`insert into "PracticeState" ("userId", state) values (${c.get("user").id}, ${json}::jsonb)
+            on conflict ("userId") do update set state = excluded.state, "updatedAt" = now()`;
+  return c.json({ ok: true });
+});
+
 // Projection (multi-account income plan) — one per member, it becomes their trading plan
 app.put("/api/projection", async (c) => {
   const u = c.get("user");
@@ -512,7 +542,7 @@ app.patch("/api/admin/catalog/:id", async (c) => {
 app.all("/api/*", () => { throw new HttpError(404, "Not found"); });
 
 // ── Static app: gzipped files shipped next to server.js (repo deploys), else the "AppAsset" table ─
-const ASSET_TYPES: Record<string, string> = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8" };
+const ASSET_TYPES: Record<string, string> = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8", "practice.html": "text/html; charset=utf-8" };
 const assetCache = new Map<string, { type: string; body: Uint8Array; etag: string }>();
 async function asset(path: string) {
   const hit = assetCache.get(path);
@@ -561,17 +591,23 @@ const SHELL = `<!doctype html>
 }}</script>
 <script type="module" src="/assets/app.js?v=__V__"></script>
 </body></html>`;
-// Trading School: its own page, members only, with the FLOWHUB tabs filled in.
-const schoolHtml = new Map<string, string>();
-app.get("/school", async (c) => {
-  const user = await currentUser(c);
-  if (!user) return c.redirect("/");
-  const a = await asset("school.html");
-  if (!a) return c.text("Trading School isn't installed yet.", 404);
-  if (!schoolHtml.has(a.etag)) schoolHtml.set(a.etag, gunzipSync(a.body).toString("utf8"));
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Projections</a><a href="/school" aria-current="page">Trading School</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-  return c.html(schoolHtml.get(a.etag)!.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-cache" });
-});
+// Trading School + Practice: their own pages, members only, with the FLOWHUB tabs filled in.
+const pageHtml = new Map<string, string>();
+const fhNav = (user: UserRow, current: "school" | "practice") =>
+  `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Projections</a>` +
+  `<a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>` +
+  `${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+for (const page of ["school", "practice"] as const) {
+  app.get(`/${page}`, async (c) => {
+    const user = await currentUser(c);
+    if (!user) return c.redirect("/");
+    const a = await asset(`${page}.html`);
+    if (!a) return c.text("This page isn't installed yet.", 404);
+    const key = `${page}:${a.etag}`;
+    if (!pageHtml.has(key)) pageHtml.set(key, gunzipSync(a.body).toString("utf8"));
+    return c.html(pageHtml.get(key)!.replace("<!--FH_NAV-->", fhNav(user, page)), 200, { "Cache-Control": "no-cache" });
+  });
+}
 
 app.get("*", async (c) => {
   const js = await asset("app.js");

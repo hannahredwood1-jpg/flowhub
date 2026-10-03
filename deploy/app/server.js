@@ -471,6 +471,7 @@ function buildDashboard(raw) {
     feedback: raw.feedback,
     strategyStats,
     projection: raw.projection ?? null,
+    practice: raw.practice ?? null,
     stats: {
       todayPnl: sum(raw.today),
       weekPnl: sum(weekStart(raw.today)),
@@ -603,6 +604,62 @@ var templatePatch = z.object({
   sourceUrl: z.string().url().optional(),
   isActive: z.boolean().optional()
 });
+
+// src/lib/practice.ts
+var PRACTICE_MODELS = ["hl", "po3", "dl", "asia"];
+var PRACTICE_MODEL_LABEL = { dl: "Daily Levels", hl: "NYFlow \xB7 H/L", po3: "NYFlow \xB7 PO3", asia: "AsiaFlow \xB7 PO3" };
+var PRACTICE_TAGS = {
+  "early-entry": "Enters before the flip closes",
+  "traded-range": "Trades while the range is still building",
+  "sold-the-trap": "Trades the fake move (the sweep) as if it's real",
+  "counter-trend": "Takes setups against the 4H trend",
+  "forced-trade": "Forces a trade on a no-sweep day",
+  "stop-inside": "Stop inside the swept wick",
+  "stop-wide": "Stop far wider than needed",
+  "wrong-target": "Target not at the draw",
+  "entry-off": "Entry not at the flip close",
+  "wrong-side": "Stop on the wrong side of entry",
+  "level-off": "Marks levels at closes, not wicks",
+  window: "Uses candles outside the session window",
+  oversize: "Sizes too big for the risk",
+  "order-type": "Wrong order type for the entry",
+  timing: "Trades outside the model's hours",
+  "fvg-read": "Misreads fair value gaps",
+  "flip-read": "Counts a wick as a flip",
+  "missed-setup": "Skips valid A+ setups",
+  "limit-no-lrl": "Sets limits without LRL and a short-term low",
+  "limit-news": "Sets limits into the open or news",
+  "entry-zone": "Limit outside the posted level",
+  "stop-50": "Stop not at 50 ticks",
+  "be-missed": "Doesn't move the stop to breakeven at 1:1"
+};
+function practiceTier(reps, acc) {
+  if (reps >= 100 && acc >= 0.88) return "elite";
+  if (reps >= 50 && acc >= 0.8) return "gold";
+  if (reps >= 20 && acc >= 0.7) return "silver";
+  if (reps >= 5) return "bronze";
+  return "none";
+}
+function summarizePractice(rows, now = Date.now()) {
+  if (!rows.length) return null;
+  const t = (r) => new Date(r.createdAt).getTime();
+  const models = PRACTICE_MODELS.map((model) => {
+    const mine = rows.filter((r) => r.model === model);
+    const recent = mine.slice(-40);
+    const accuracy = recent.length ? recent.filter((r) => r.ok).length / recent.length : null;
+    return { model, label: PRACTICE_MODEL_LABEL[model], reps: mine.length, accuracy, tier: practiceTier(mine.length, accuracy ?? 0) };
+  });
+  const counts = /* @__PURE__ */ new Map();
+  for (const r of rows.slice(-120)) for (const tag of r.tags ?? []) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  const mistakes = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([tag, count]) => ({ tag, label: PRACTICE_TAGS[tag] ?? tag, count }));
+  return {
+    totalReps: rows.length,
+    repsThisWeek: rows.filter((r) => t(r) > now - 7 * 864e5).length,
+    lastRepAt: new Date(t(rows[rows.length - 1])).toISOString(),
+    models,
+    mistakes
+  };
+}
 
 // deploy/server.ts
 var env = Bun.env;
@@ -737,7 +794,7 @@ async function syncRolesIfStale(u) {
 async function loadDashboard(viewer, traderId) {
   const [trader] = await sql`select * from "User" where id = ${traderId}`;
   if (!trader) throw new HttpError(404, "Not found");
-  const [[rm], accounts, journal, feedback, [pj]] = await Promise.all([
+  const [[rm], accounts, journal, feedback, [pj], practiceRows] = await Promise.all([
     sql`select * from "Roadmap" where "userId" = ${traderId}`,
     sql`select *, to_char("startDate", 'YYYY-MM-DD') as "startISO" from "MemberAccount" where "userId" = ${traderId} order by "createdAt"`,
     sql`select j.*, to_char(j."tradeDate", 'YYYY-MM-DD') as "dateISO",
@@ -745,7 +802,8 @@ async function loadDashboard(viewer, traderId) {
         from "JournalEntry" j where j."userId" = ${traderId} and j."tradeDate" >= current_date - 400`,
     sql`select f.*, c."globalName" as "cName", c.username as "cUser", c."discordId" as "cDid", c."avatarHash" as "cAv"
         from "CoachFeedback" f join "User" c on c.id = f."coachId" where f."traderId" = ${traderId} order by f."createdAt" desc limit 100`,
-    sql`select name, config, "updatedAt" from "Projection" where "userId" = ${traderId}`
+    sql`select name, config, "updatedAt" from "Projection" where "userId" = ${traderId}`,
+    sql`select model, drill, ok, tags, "createdAt" from "PracticeRep" where "userId" = ${traderId} and "createdAt" > now() - interval '120 days' order by "createdAt"`
   ]);
   const strategies = rm?.strategies ?? [];
   return buildDashboard({
@@ -806,6 +864,7 @@ async function loadDashboard(viewer, traderId) {
       createdAt: new Date(f.createdAt).toISOString(),
       readAt: f.readAt ? new Date(f.readAt).toISOString() : null
     })),
+    practice: summarizePractice(practiceRows),
     projection: pj ? { ...typeof pj.config === "string" ? JSON.parse(pj.config) : pj.config, name: pj.name, updatedAt: new Date(pj.updatedAt).toISOString() } : null
   });
 }
@@ -1040,6 +1099,31 @@ app.put("/api/log", async (c) => {
             on conflict ("userId", kind, day) do update set data = excluded.data, "updatedAt" = now()`;
   return c.json({ ok: true });
 });
+var PRACTICE_MODEL_SET = new Set(PRACTICE_MODELS);
+app.get("/api/practice", async (c) => {
+  const uid = c.get("user").id;
+  const [[st], reps] = await Promise.all([
+    sql`select state from "PracticeState" where "userId" = ${uid}`,
+    sql`select model, drill, ok, tags, "createdAt" from "PracticeRep" where "userId" = ${uid} and "createdAt" > now() - interval '120 days' order by "createdAt" desc limit 1500`
+  ]);
+  const state = st ? typeof st.state === "string" ? JSON.parse(st.state) : st.state : null;
+  return c.json({ state, reps: reps.reverse().map((r) => ({ t: new Date(r.createdAt).getTime(), m: r.model, d: r.drill, ok: r.ok, tags: r.tags ?? [] })) });
+});
+app.post("/api/practice/rep", async (c) => {
+  const b = await c.req.json();
+  if (!b.m || !PRACTICE_MODEL_SET.has(b.m) || !b.d || !/^[a-z]{2,20}$/.test(b.d) || typeof b.ok !== "boolean") throw new HttpError(400, "Bad rep");
+  const tags = Array.isArray(b.tags) ? b.tags.filter((t) => typeof t === "string" && /^[a-z0-9-]{2,30}$/.test(t)).slice(0, 6) : [];
+  const xp = Math.max(0, Math.min(200, Math.round(Number(b.xp) || 0)));
+  await sql`insert into "PracticeRep" (id, "userId", model, drill, ok, tags, xp) values (${randomUUID()}, ${c.get("user").id}, ${b.m}, ${b.d}, ${b.ok}, ${pgArray(tags)}::text[], ${xp})`;
+  return c.json({ ok: true });
+});
+app.put("/api/practice/state", async (c) => {
+  const json = JSON.stringify(await c.req.json() ?? {});
+  if (json.length > 8e3) throw new HttpError(400, "Too long");
+  await sql`insert into "PracticeState" ("userId", state) values (${c.get("user").id}, ${json}::jsonb)
+            on conflict ("userId") do update set state = excluded.state, "updatedAt" = now()`;
+  return c.json({ ok: true });
+});
 app.put("/api/projection", async (c) => {
   const u = c.get("user");
   const { name, ...config } = projectionInput.parse(await c.req.json());
@@ -1102,7 +1186,7 @@ app.patch("/api/admin/catalog/:id", async (c) => {
 app.all("/api/*", () => {
   throw new HttpError(404, "Not found");
 });
-var ASSET_TYPES = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8" };
+var ASSET_TYPES = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8", "practice.html": "text/html; charset=utf-8" };
 var assetCache = /* @__PURE__ */ new Map();
 async function asset(path) {
   const hit = assetCache.get(path);
@@ -1154,16 +1238,19 @@ var SHELL = `<!doctype html>
 }}</script>
 <script type="module" src="/assets/app.js?v=__V__"></script>
 </body></html>`;
-var schoolHtml = /* @__PURE__ */ new Map();
-app.get("/school", async (c) => {
-  const user = await currentUser(c);
-  if (!user) return c.redirect("/");
-  const a = await asset("school.html");
-  if (!a) return c.text("Trading School isn't installed yet.", 404);
-  if (!schoolHtml.has(a.etag)) schoolHtml.set(a.etag, gunzipSync(a.body).toString("utf8"));
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Projections</a><a href="/school" aria-current="page">Trading School</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-  return c.html(schoolHtml.get(a.etag).replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-cache" });
-});
+var pageHtml = /* @__PURE__ */ new Map();
+var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Projections</a><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+for (const page of ["school", "practice"]) {
+  app.get(`/${page}`, async (c) => {
+    const user = await currentUser(c);
+    if (!user) return c.redirect("/");
+    const a = await asset(`${page}.html`);
+    if (!a) return c.text("This page isn't installed yet.", 404);
+    const key = `${page}:${a.etag}`;
+    if (!pageHtml.has(key)) pageHtml.set(key, gunzipSync(a.body).toString("utf8"));
+    return c.html(pageHtml.get(key).replace("<!--FH_NAV-->", fhNav(user, page)), 200, { "Cache-Control": "no-cache" });
+  });
+}
 app.get("*", async (c) => {
   const js = await asset("app.js");
   return c.html(SHELL.replaceAll("__V__", js?.etag.replaceAll('"', "") ?? "0"), 200, { "Cache-Control": "no-cache" });
