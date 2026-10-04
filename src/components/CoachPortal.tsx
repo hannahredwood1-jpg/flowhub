@@ -94,7 +94,7 @@ function MemberRow({ r, today, open, onToggle, index }: { r: CoachDirectoryRow; 
   const riskTone = r.drawdownRisk > 0.75 ? "loss" : r.drawdownRisk > 0.5 ? "lag" : "win";
   return (
     <div className={cx("hud animate-rise", open && "!border-ice-dim")} style={{ animationDelay: `${Math.min(index, 12) * 35}ms` }}>
-      <button onClick={onToggle} aria-expanded={open} className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-3 px-4 py-3 text-left md:grid-cols-[auto_minmax(180px,1.3fr)_minmax(150px,1fr)_110px_110px_100px_auto]">
+      <button onClick={onToggle} aria-expanded={open} className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-3 px-4 py-3 text-left md:grid-cols-[auto_minmax(180px,1.3fr)_minmax(150px,1fr)_minmax(120px,0.8fr)_110px_110px_100px_auto]">
         <Avatar src={r.trader.avatarUrl} name={r.trader.name} size={36} />
         <div className="min-w-0">
           <div className="flex items-center gap-2 truncate">
@@ -109,6 +109,10 @@ function MemberRow({ r, today, open, onToggle, index }: { r: CoachDirectoryRow; 
         <div className="hidden md:block">
           <div className="mb-1.5 flex justify-between"><span className="label">Drawdown used</span><span className="num text-xs text-ink-2">{Math.round(r.drawdownRisk * 100)}%</span></div>
           <Meter value={r.drawdownRisk} tone={riskTone} segments={16} label="Drawdown used" />
+        </div>
+        <div className="hidden md:block">
+          <div className="mb-1.5 flex justify-between gap-2"><span className="label truncate">School · {r.school ? r.school.current : "not started"}</span><span className="num text-xs text-ink-2">{Math.round((r.school?.pct ?? 0) * 100)}%</span></div>
+          <div className="relative h-1.5 bg-line"><div className={cx("absolute inset-y-0 left-0", r.school?.certified ? "bg-win" : "bg-ice")} style={{ width: `${Math.round((r.school?.pct ?? 0) * 100)}%` }} /></div>
         </div>
         <Cell l="Last trade" v={relDays(r.lastTradeDate, today)} />
         <Cell l="Month P/L" v={<span className={r.monthPnl >= 0 ? "text-win" : "text-loss"}>{usd(r.monthPnl, { sign: true })}</span>} />

@@ -26,3 +26,17 @@ test("trading plan validates and drives the checklist", () => {
   assert.match(c[3], /15-pt stop, 40-pt target, 3 MNQ/);
   assert.equal(c[c.length - 1], "No trades after a 2R win");
 });
+
+import { sniperOptions, recommended, minWinningDays } from "./evalSniper";
+test("eval sniper: contracts to pass in N wins", () => {
+  const o = sniperOptions({ remaining: 3000, drawdownRoom: 2000, dailyLossLimit: null, maxMinis: 5, maxMicros: 50, consistencyPct: 0.5, tp: 50, sl: 30 });
+  const one = o.find((x) => x.wins === 1)!;
+  assert.equal(one.instrument, "MNQ"); assert.equal(one.contracts, 30); assert.equal(one.perWin, 3000); assert.equal(one.risk, 1800);
+  const nq = sniperOptions({ remaining: 3000, drawdownRoom: 2000, dailyLossLimit: null, maxMinis: 5, maxMicros: 20, consistencyPct: null, tp: 50, sl: 30 })[0];
+  assert.equal(nq.instrument, "NQ"); assert.equal(nq.contracts, 3);
+  assert.ok(!one.ok); // consistency needs 2+ days
+  const r = recommended(o)!;
+  assert.ok(r.ok && r.lossesToFail >= 2); assert.equal(r.wins, 2); assert.equal(r.contracts, 15);
+  assert.equal(minWinningDays(0.4), 3);
+  assert.equal(minWinningDays(null), 1);
+});

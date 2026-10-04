@@ -145,6 +145,12 @@ export function buildDashboard(raw: RawInput): DashboardData {
   };
 }
 
+const schoolProgress = (s: SchoolSummary) => {
+  let done = 0, total = 0;
+  for (const l of s.levels) { done += l.lessonsDone + l.checkpointsPassed + (l.exam?.pass ? 1 : 0); total += l.lessons + l.checkpoints + (l.exam ? 1 : 0); }
+  const certified = s.levels.every((l) => l.lessonsDone >= l.lessons && l.checkpointsPassed >= l.checkpoints && (!l.exam || l.exam.pass));
+  return { current: certified ? "Certified" : s.current, pct: total ? done / total : 0, certified };
+};
 export function buildDirectoryRow(d: DashboardData): CoachDirectoryRow {
   const live = d.accounts.filter((a) => ACTIVE.includes(a.stage));
   const summary = memberRiskSummary(live.map((a) => a.pace));
@@ -160,6 +166,7 @@ export function buildDirectoryRow(d: DashboardData): CoachDirectoryRow {
     monthPnl: d.stats.monthPnl,
     unreadFeedback: d.feedback.filter((f) => !f.readAt).length,
     statuses: live.map((a) => ({ label: a.label, status: a.pace.status })),
+    school: d.school ? schoolProgress(d.school) : null,
   };
 }
 

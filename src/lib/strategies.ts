@@ -9,16 +9,16 @@ export type Strategy = { key: StrategyKey; indicator: string; name: string; winR
 
 export const STRATEGIES: Record<StrategyKey, Strategy> = {
   DAILY_LEVELS:  { key: "DAILY_LEVELS",  indicator: "ECHO X ORBIT", name: "ECHO X ORBIT", winRate: 0.94,  session: null },
-  ASIAFLOW_PO3:  { key: "ASIAFLOW_PO3",  indicator: "AsiaFlow",     name: "PO3",          winRate: 0.70,  session: "ASIA" },
+  ASIAFLOW_PO3:  { key: "ASIAFLOW_PO3",  indicator: "ASIAFLOW",     name: "PO3",          winRate: 0.70,  session: "ASIA" },
   // A3IA is retired: kept only so old roadmaps and journal rows still resolve. Not selectable.
-  ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "AsiaFlow",     name: "A3IA",         winRate: 0.81,  session: "ASIA" },
-  NYFLOW_PO3:    { key: "NYFLOW_PO3",    indicator: "NYFlow",       name: "PO3",          winRate: 0.745, session: "NY" },
-  NYFLOW_HL:     { key: "NYFLOW_HL",     indicator: "NYFlow",       name: "H/L",          winRate: 0.84,  session: "NY" },
+  ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "ASIAFLOW",     name: "A3IA",         winRate: 0.81,  session: "ASIA" },
+  NYFLOW_PO3:    { key: "NYFLOW_PO3",    indicator: "NYFLOW",       name: "PO3",          winRate: 0.745, session: "NY" },
+  NYFLOW_HL:     { key: "NYFLOW_HL",     indicator: "NYFLOW",       name: "H/L",          winRate: 0.84,  session: "NY" },
 };
 
 export const INDICATORS: { name: string; session: Session; strategies: StrategyKey[] }[] = [
-  { name: "AsiaFlow", session: "ASIA", strategies: ["ASIAFLOW_PO3"] },
-  { name: "NYFlow", session: "NY", strategies: ["NYFLOW_PO3", "NYFLOW_HL"] },
+  { name: "ASIAFLOW", session: "ASIA", strategies: ["ASIAFLOW_PO3"] },
+  { name: "NYFLOW", session: "NY", strategies: ["NYFLOW_PO3", "NYFLOW_HL"] },
 ];
 
 export const STRATEGY_KEYS = Object.keys(STRATEGIES) as StrategyKey[];

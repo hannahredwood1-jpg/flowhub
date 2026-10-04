@@ -10,7 +10,7 @@ export const SCHOOL_LEVELS = [
     { id: "i4", lessons: ["d:psych"] }, { id: "i5", lessons: ["d:day", "d:planlesson"] },
   ], exam: true },
   { id: "advanced", name: "Advanced", modules: [
-    { id: "a1", lessons: ["d:rs", "c:dl"] }, { id: "a2", lessons: ["c:hl", "c:po3", "c:asia"] },
+    { id: "a1", lessons: ["d:rs", "c:dl"] }, { id: "a2", lessons: ["c:hl", "c:po3+asia"] },
   ], exam: true },
   { id: "exo", name: "ECHO X ORBIT", modules: [
     { id: "x1", lessons: ["d:exo-intro", "d:echo", "d:orbit", "d:exo-rules", "d:exo-replay"] },
@@ -19,7 +19,7 @@ export const SCHOOL_LEVELS = [
 export const SCHOOL_LEVEL_IDS = SCHOOL_LEVELS.map((l) => l.id) as string[];
 // Section counts per dive, so "done" means every part is finished.
 export const DIVE_PARTS: Record<string, number> = {
-  futures: 5, charts: 5, orders: 3, risk: 3, rs: 3, planlesson: 2, setup: 5, prop: 4, math: 4, manage: 3, mistakes: 4, psych: 1, day: 4,
+  futures: 5, charts: 6, orders: 3, risk: 3, rs: 3, planlesson: 2, setup: 5, prop: 4, math: 4, manage: 3, mistakes: 4, psych: 1, day: 4,
   "exo-intro": 3, echo: 4, orbit: 4, "exo-rules": 4, "exo-replay": 2,
 };
 type Best = { best?: number; pass?: boolean; n?: number; at?: number };
@@ -32,7 +32,7 @@ export type SchoolSummary = {
 };
 const MODULE_LABEL: Record<string, string> = {
   b1: "How futures & NQ work", b2: "Reading charts", b3: "Platform & orders", b4: "Risk basics", i1: "Prop Firm 101", i2: "Why the math works",
-  i3: "Trade management", i4: "Trading psychology", i5: "Day in the life & plan", a1: "Extended Learning", a2: "Indicator models", x1: "ECHO X ORBIT",
+  i3: "Trade management", i4: "Trading psychology", i5: "Day in the life & plan", a1: "Extended Learning", a2: "H/L & PO3", x1: "ECHO X ORBIT",
 };
 export function summarizeSchool(state: SchoolState | null, unlocks: string[], attempts: SchoolAttemptRow[]): SchoolSummary {
   const s = state ?? {}, ch = new Set(s.ch ?? []), dives = s.dives ?? {};

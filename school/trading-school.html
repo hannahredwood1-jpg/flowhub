@@ -403,8 +403,9 @@ input.in:focus{outline:2px solid var(--ice);outline-offset:1px}
 .exo-cv{position:relative;width:100%;border:1px solid var(--line);background:radial-gradient(ellipse at center,color-mix(in srgb,var(--ice) 6%,transparent),transparent 70%),var(--abyss);overflow:hidden}
 .exo-cv canvas{display:block;width:100%}
 .exo-mark{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;align-items:baseline;gap:10px;font-family:var(--f-display);font-weight:900;font-stretch:115%;font-size:clamp(22px,5vw,40px);letter-spacing:.06em;color:var(--ink);text-shadow:0 0 18px rgb(156 203 255 / .35);pointer-events:none}
-.exo-mark b{color:var(--signal);font-size:.6em}
+.exo-mark b{color:var(--signal);font-size:.8em}
 [data-exo-hero] .exo-cv{margin-bottom:6px}
+.lv-cert{border-color:var(--signal);background:linear-gradient(120deg,rgb(255 106 0 / .08),transparent 60%),var(--panel)}
 .w > figure.t-vis{max-width:620px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:620px){
@@ -1075,7 +1076,7 @@ function finishModel(m) {
 }
 const ET = (h, mi) => h * 3600 + mi * 60;
 
-// ── NYFlow · H/L (range, sweep, iFVG) ───────────────────────
+// ── H/L (range, sweep, iFVG) ───────────────────────
 const HL = (() => {
   const RH = 24642.25, RL = 24561.5;
   const candles = buildSession({
@@ -1096,7 +1097,7 @@ const HL = (() => {
   });
   const sig = { i: 34, entry: 24579.25, stop: 24549.0, target: RH, name: 'H/L LONG' };
   return finishModel({
-    id: 'hl', name: 'NYFlow · H/L', t0: ET(7, 0), candles, signal: sig, extraPrices: [sig.stop],
+    id: 'hl', name: 'H/L', t0: ET(7, 0), candles, signal: sig, extraPrices: [sig.stop],
     stages: ['Mark the range', 'Wait for a sweep', 'Gap forms', 'Gap flips', 'Signal', 'Target'],
     stageAt(k) { return k < 29 ? 0 : k < 32 ? 1 : k < 34 ? 3 : k < 42 ? 4 : 6; },
     RH, RL, gap: { i0: 30, i2: 32, lo: 24568, hi: 24576 }, sweepI: 32, highI: 12, flipI: 34, hitI: 42,
@@ -1156,7 +1157,7 @@ const HL = (() => {
   });
 })();
 
-// ── NYFlow · PO3 (AMD) ─────────────────────────────────────
+// ── PO3 · New York (AMD) ─────────────────────────────────────
 const PO3 = (() => {
   const EQH = 24650;
   const candles = buildSession({
@@ -1178,7 +1179,7 @@ const PO3 = (() => {
   });
   const sig = { i: 16, entry: 24614.25, stop: 24597.5, target: EQH, name: 'PO3 LONG' };
   return finishModel({
-    id: 'po3', name: 'NYFlow · PO3', t0: ET(9, 0), candles, signal: sig, extraPrices: [sig.stop],
+    id: 'po3', name: 'PO3 · New York', t0: ET(9, 0), candles, signal: sig, extraPrices: [sig.stop],
     stages: ['Trend', 'Accumulation', 'Draw', 'Manipulation', 'Confirmation', 'Distribution'],
     stageAt(k) { return k < 0 ? 0 : k < 11 ? 1 : k < 12 ? 2 : k < 16 ? 3 : k < 17 ? 4 : k < 23 ? 5 : 6; },
     EQH, gap: { i0: 12, i2: 14, lo: 24604.5, hi: 24609 }, open10: 24621.5, accLo: 24612, accHi: 24633.25, hitI: 23,
@@ -1224,7 +1225,7 @@ const PO3 = (() => {
   });
 })();
 
-// ── AsiaFlow · PO3 (filters, key level, 8 PM candle, IFG) ──
+// ── PO3 · Asia (filters, key level, 8 PM candle, IFG) ──
 const ASIA = (() => {
   const candles = buildSession({
     n: 42, open: 24580, seed: 93, wick: 1.8, noise: 1.6,
@@ -1248,7 +1249,7 @@ const ASIA = (() => {
   });
   const sig = { i: 27, entry: 24601.25, stop: 24587.0, target: 24615.5, name: 'ASIA PO3 LONG' };
   return finishModel({
-    id: 'asia', name: 'AsiaFlow · PO3', t0: ET(18, 0), candles, signal: sig, extraPrices: [24648, sig.stop],
+    id: 'asia', name: 'PO3 · Asia', t0: ET(18, 0), candles, signal: sig, extraPrices: [24648, sig.stop],
     stages: ['Filter: NY', 'Filter: gaps', 'Draw + level', 'Manipulation', 'IFG confirm', '1 win = done'],
     stageAt(k) { return k < 0 ? 0 : k < 23 ? 1 : k < 24 ? 2 : k < 27 ? 3 : k < 31 ? 4 : 6; },
     key: { lo: 24584, hi: 24592 }, decoy: { lo: 24615, hi: 24621 }, gap: { lo: 24594, hi: 24599 }, draw: { lo: 24640, hi: 24648 }, open8: 24601, hitI: 31,
@@ -1635,7 +1636,7 @@ const VIS = {
 const CH = [
   { id: 'chart', name: 'Your chart' }, { id: 'connect', name: 'Connect' }, { id: 'order', name: 'Build the order' },
   { id: 'manage', name: 'Manage it' }, { id: 'limits', name: 'Your limits' },
-  { id: 'dl', name: 'Extended Learning', model: true }, { id: 'hl', name: 'NYFlow · H/L', model: true }, { id: 'po3', name: 'NYFlow · PO3', model: true }, { id: 'asia', name: 'AsiaFlow · PO3', model: true },
+  { id: 'dl', name: 'Extended Learning', model: true }, { id: 'hl', name: 'H/L', model: true }, { id: 'po3', name: 'PO3 · New York', model: true }, { id: 'asia', name: 'PO3 · Asia', model: true },
   { id: 'end', name: 'Bare minimum' },
 ];
 const q = (text, options) => ({ text, options });
@@ -1692,7 +1693,7 @@ function replaySteps(id) {
     { id: 'dl-recap', ch: 'dl', title: 'Extended Learning checklist', body: '<ul style="margin:0;padding-left:18px;display:grid;gap:4px"><li>Start at 6 PM. Opening prices: below → longs, above → shorts.</li><li>4H first: PLC/PHC. Level below a PLC (longs) or above a PHC (shorts). If it’s already protected (PL/PH), trade its rejection block instead.</li><li>Refine: 4H PD-array → 1H → 15m/5m (→ 1m) to cut the drawdown.</li><li>3+ confluences, not counting opening prices.</li><li>Limit only with LRL <b>and</b> a short-term low (turtle soup). Otherwise confirmation: reaction within ~50 ticks → IFVG or COS → retrace → first PD-array.</li><li>Stop 50 ticks (or the reacting leg’s high/low). Breakeven at 1:1. Trail behind structure.</li><li>Targets: PDH/PDL, session highs/lows, RS (after 9:30, if realistic). Take profit at a PHC/PLC that sits before your target.</li><li>Skip all-time highs and mid-range. Lock your daily loss limit, and lock the lockout.</li></ul>', info: true },
   ];
   if (id === 'hl') return [
-    { id: 'hl-intro', ch: 'hl', title: 'NYFlow · H/L: how it thinks', body: '<p>The whole model in one sentence: <b>mark the pre-market high and low, wait for price to sweep one side, then take the reversal back toward the other side.</b></p><p>You’ll replay a morning one candle at a time. The <b>model brain</b> under the chart says what the model sees as each candle closes.</p>', visual: VIS.sweep, why: 'Members who understand why the label fires don’t take bad ones. The label is the end of a checklist, not the start.', task: 'Press Next to load the session.', info: true, enter() { if (!RP.m || RP.m.id !== 'hl' || S.mode !== 'replay') loadReplay('hl'); } },
+    { id: 'hl-intro', ch: 'hl', title: 'H/L: how it thinks', body: '<p class="k">H/L runs on both NYFLOW and ASIAFLOW. Times: New York range 7:00–9:25, A+ window 9:30–10:00 · Asia 8:00 PM–12:00 AM. This replay is a New York morning.</p><p>The whole model in one sentence: <b>mark the pre-market high and low, wait for price to sweep one side, then take the reversal back toward the other side.</b></p><p>You’ll replay a morning one candle at a time. The <b>model brain</b> under the chart says what the model sees as each candle closes.</p>', visual: VIS.sweep, why: 'Members who understand why the label fires don’t take bad ones. The label is the end of a checklist, not the start.', task: 'Press Next to load the session.', info: true, enter() { if (!RP.m || RP.m.id !== 'hl' || S.mode !== 'replay') loadReplay('hl'); } },
     { id: 'hl-range', ch: 'hl', title: 'Step 1: mark the range', body: '<p>From <b>7:00 to 9:25 AM ET</b> the model tracks the highest high and the lowest low. Every new extreme moves a line. At 9:25 the range locks.</p>', why: 'Stops pile up just above the range high and just below the range low. Those two lines are where the fuel is.', task: 'Press ▶ Play (bottom left of the chart) and watch the lines move.', target: '#play', enter() { playTo(29); }, check: () => RP.shown >= 29, ok: 'Range locked: high 24,642.25, low 24,561.50.' },
     { id: 'hl-tap-high', ch: 'hl', title: 'Find the range high', body: '<p>The range high is the <b>highest wick</b> inside the shaded 7:00–9:25 window, not the highest close.</p>', why: 'Wicks are where the orders actually traded. That’s where the stops sit.', task: 'Tap the candle that made the range high.', target: '#cv', tap(i, p) { if (nearCandle(m.highI, i, p, m.RH)) { RP.flags.tapHigh = true; good('That 8:00 candle wicked to 24,642.25, the top of the range.'); onEvent('tap'); } else if (i >= 0 && i <= 29) bad(`That candle’s high is ${fmt(m.candles[i].h)}. Look for the one whose wick touches the top line (24,642.25).`); else bad('Stay inside the shaded range window (7:00–9:25).'); }, check: () => RP.flags.tapHigh },
     { id: 'hl-bias', ch: 'hl', title: 'Step 2: wait for a sweep', body: '<p>From 9:30 the model waits for price to trade <b>through</b> one side. That run through the level is the <b>sweep</b>: it grabs the stops parked there.</p><p>No sweep by the end of the window = no trade that session.</p>', why: 'A sweep traps traders on the wrong side. Their exits fuel the move back the other way.', quiz: q('If price sweeps the range LOW first, which way does the model look to trade?', [opt('Long, back up toward the range high', true, 'Right. Low swept → look for longs → target the range high.'), opt('Short. It broke down, so keep selling', false, 'That’s the trap. Breaking the low is the sweep, not the move. The model looks for the reversal back up.'), opt('No trade. The range is broken', false, 'The range being taken is the trigger, not a reason to stop. No trade only happens if neither side gets swept.')]) },
@@ -1701,12 +1702,12 @@ function replaySteps(id) {
     { id: 'hl-gap', ch: 'hl', title: 'Step 3: find the gap', body: '<p>Fast moves leave a <b>fair value gap</b> (FVG): 3 candles where candle 1’s low and candle 3’s high don’t overlap. The empty space between them is the gap. The numbered candles on the chart are 1, 2 and 3.</p>', visual: VIS.fvg, why: 'The gap shows where sellers were aggressive. If buyers take it back, those sellers are trapped.', task: 'Tap inside the gap: between candle 1’s low and candle 3’s high.', target: '#cv', enter() { RP.flags.numbers = true; }, tap(i, p) { const g = m.gap; if (i >= 30 && i <= 34 && p >= g.lo - 1 && p <= g.hi + 1) { RP.flags.gap = true; RP.flags.numbers = false; good(`Gap: ${fmt(g.lo)} – ${fmt(g.hi)}. Candle 1 low 24,576.00, candle 3 high 24,568.00.`); onEvent('tap'); } else if (i >= 30 && i <= 34) bad(p > g.hi ? `Too high. The gap runs from ${fmt(g.lo)} up to ${fmt(g.hi)} (candle 1’s low).` : `Too low. The gap starts at ${fmt(g.lo)} (candle 3’s high).`); else bad('Tap near candles 1, 2 and 3 (9:30 – 9:40).'); }, check: () => RP.flags.gap },
     { id: 'hl-flip-q', ch: 'hl', title: 'Step 4: wait for the flip', body: '<p>Sellers made that gap. If buyers close a candle back <b>above the top</b> of it, the gap has <b>inverted</b> (iFVG): old resistance becomes support.</p>', visual: VIS.flip, quiz: q('Which of these turns the gap into an iFVG?', [opt(`A candle CLOSE above ${fmt(24576)}, the top of the gap`, true, 'Yes. The close is what counts.'), opt('A wick poking into the gap', false, 'A wick inside isn’t enough. The model waits for a candle to close above the top.'), opt('A close below the sweep low', false, 'That would mean sellers are still in control. No flip, no trade.')]) },
     { id: 'hl-play-flip', ch: 'hl', title: 'Watch it flip', body: '<p>Watch candle 9:45 (back into the gap, closes inside: not yet) and then 9:50.</p>', task: 'Press ▶ Play until the model fires.', target: '#play', enter() { playTo(34); }, check: () => RP.shown >= 34, ok: 'FIRE: H/L LONG at 9:50, inside the A+ window.' },
-    { id: 'hl-signal', ch: 'hl', title: 'Read the signal', body: `<p>NYFlow prints the label with <b>entry</b> ${fmt(sig.entry)} (the close that flipped the gap), <b>stop</b> ${fmt(sig.stop)} (just past the swept low) and <b>target</b> ${fmt(sig.target)} (the other side of the range).</p>`, quiz: q('Why is the stop just under the swept low?', [opt('If price goes back under the sweep, the idea is wrong', true, 'Exactly. The trade idea is “the low was a trap”. Back below it, the trap wasn’t real.'), opt('It’s a round number', false, 'Stops go where the idea is proven wrong, not at round numbers.'), opt('To give the trade more room to make money', false, 'The stop doesn’t make money. It limits the loss when the idea is wrong.')]) },
+    { id: 'hl-signal', ch: 'hl', title: 'Read the signal', body: `<p>NYFLOW prints the label with <b>entry</b> ${fmt(sig.entry)} (the close that flipped the gap), <b>stop</b> ${fmt(sig.stop)} (just past the swept low) and <b>target</b> ${fmt(sig.target)} (the other side of the range).</p>`, quiz: q('Why is the stop just under the swept low?', [opt('If price goes back under the sweep, the idea is wrong', true, 'Exactly. The trade idea is “the low was a trap”. Back below it, the trap wasn’t real.'), opt('It’s a round number', false, 'Stops go where the idea is proven wrong, not at round numbers.'), opt('To give the trade more room to make money', false, 'The stop doesn’t make money. It limits the loss when the idea is wrong.')]) },
     common.trade, common.result,
     { id: 'hl-recap', ch: 'hl', title: 'H/L checklist', body: '<ul style="margin:0;padding-left:18px;display:grid;gap:4px"><li>Range = highest high and lowest low, 7:00–9:25 ET.</li><li>Wait for a sweep of one side. Low swept → longs. High swept → shorts.</li><li>Entry: a gap that flips (iFVG), or a structure break that leaves a gap.</li><li>Stop at the swept extreme. Target the other side of the range.</li><li>First 30 minutes after 9:30 = A+.</li><li>No sweep by the end of the window = no trade. That’s a win for discipline.</li><li>Skip big news days (e.g. the day before NFP). Take partials; don’t squeeze the last point.</li></ul>', info: true },
   ];
   if (id === 'po3') return [
-    { id: 'po3-intro', ch: 'po3', title: 'NYFlow · PO3: how it thinks', body: '<p><b>Power of Three</b>: price moves in three phases. <b>Accumulation</b> (sideways chop), <b>Manipulation</b> (a fake move that sweeps stops), <b>Distribution</b> (the real move).</p><p>The model waits for the fake move <b>against</b> the trend, then trades the real move <b>with</b> it.</p>', visual: VIS.amd, why: 'It’s fractal: the same three phases show up on the 1m, the 5m and the 4H. Learn to see them once and you’ll see them everywhere.', task: 'Press Next to load the session.', info: true, enter() { if (!RP.m || RP.m.id !== 'po3' || S.mode !== 'replay') loadReplay('po3'); } },
+    { id: 'po3-intro', ch: 'po3', title: 'PO3: how it thinks', body: '<p class="k">PO3 runs on both NYFLOW and ASIAFLOW. This lesson plays it at its New York time (the 10:00 candle), then at its Asia time (the 8 PM candle).</p><p><b>Power of Three</b>: price moves in three phases. <b>Accumulation</b> (sideways chop), <b>Manipulation</b> (a fake move that sweeps stops), <b>Distribution</b> (the real move).</p><p>The model waits for the fake move <b>against</b> the trend, then trades the real move <b>with</b> it.</p>', visual: VIS.amd, why: 'It’s fractal: the same three phases show up on the 1m, the 5m and the 4H. Learn to see them once and you’ll see them everywhere.', task: 'Press Next to load the session.', info: true, enter() { if (!RP.m || RP.m.id !== 'po3' || S.mode !== 'replay') loadReplay('po3'); } },
     { id: 'po3-trend', ch: 'po3', title: 'First: the trend', body: '<p>The #1 rule: trade with the higher-timeframe trend. The 4H chart in the brain panel is making higher highs and respecting bullish gaps.</p>', quiz: q('The 4H trend is up. Which trades does the model look for?', [opt('Longs only', true, 'Right. Manipulation down, distribution up, with the trend.'), opt('Shorts', false, 'That fights the trend. The best PO3 trades go with it.'), opt('Both equally', false, 'A counter-trend scalp can exist, but it’s the lower-quality trade. The model sticks with the trend.')]), target: '#widget' },
     { id: 'po3-acc', ch: 'po3', title: 'Phase 1: accumulation', body: '<p>Watch price chop sideways before 10:00.</p>', why: 'This is where most beginners lose money: it always looks like it’s about to break out.', task: 'Press ▶ Play.', target: '#play', enter() { playTo(11); }, check: () => RP.shown >= 11, ok: 'Accumulation range: 24,612.00 – 24,633.25.' },
     { id: 'po3-acc-q', ch: 'po3', title: 'What do you do here?', body: '<p>Price is going back and forth inside the grey box.</p>', quiz: q('Price is chopping sideways in a range. What do you do?', [opt('Nothing. Accumulation is a no-trade zone', true, 'Yes. No edge yet, only chop.'), opt('Buy the next breakout', false, 'Breakouts from the range are exactly what the manipulation phase traps.'), opt('Sell the top of the range', false, 'Fading the range edges in accumulation gets you chopped up. Wait.')]) },
@@ -1720,7 +1721,7 @@ function replaySteps(id) {
     { id: 'po3-recap', ch: 'po3', title: 'PO3 checklist', body: '<ul style="margin:0;padding-left:18px;display:grid;gap:4px"><li>Check the 4H trend first. Trade with it.</li><li>Accumulation = no trades.</li><li>Manipulation = the fake move against the trend that sweeps stops. Not confirmation.</li><li>Distribution = the real move. Enter on a gap that flips in the trend direction.</li><li>Confluence: gap with a swing inside it, gap not closed through, key time (9:30 / 10:00), equal highs/lows as the draw, order block respected.</li><li>Always ask: is this break the real move, or the trap?</li></ul>', info: true },
   ];
   return [
-    { id: 'asia-intro', ch: 'asia', title: 'AsiaFlow · PO3: how it thinks', body: '<p>Asia runs <b>8:00 PM – 12:00 AM ET</b>. It isn’t clean every day, so the model starts with <b>two filters</b> before it looks for any entry.</p>', visual: VIS.filters, why: 'Most Asia losses come from trading it on the wrong days. The filters decide whether you trade at all.', task: 'Press Next to load the session.', info: true, enter() { if (!RP.m || RP.m.id !== 'asia' || S.mode !== 'replay') loadReplay('asia'); } },
+    { id: 'asia-intro', ch: 'asia', title: 'PO3 at the Asia time', body: '<p>Asia runs <b>8:00 PM – 12:00 AM ET</b>. It isn’t clean every day, so the model starts with <b>two filters</b> before it looks for any entry.</p>', visual: VIS.filters, why: 'Most Asia losses come from trading it on the wrong days. The filters decide whether you trade at all.', task: 'Press Next to load the session.', info: true, enter() { if (!RP.m || RP.m.id !== 'asia' || S.mode !== 'replay') loadReplay('asia'); } },
     { id: 'asia-f1', ch: 'asia', title: 'Filter 1: what did NY do?', body: '<p>Sessions take turns. The card in the brain panel says what New York did today.</p>', target: '#widget', quiz: q('NY chopped and took no big highs or lows. What should you expect from Asia?', [opt('Asia is likely the clean session. Look for trades', true, 'Right. NY accumulated, so Asia is next in line to manipulate and deliver.'), opt('Asia will chop. Skip it', false, 'That’s the rule for days when NY already made a big move (500+ points). Today NY chopped.'), opt('It doesn’t matter what NY did', false, 'It matters a lot. It’s the first filter.')]) },
     { id: 'asia-f2', ch: 'asia', title: 'Filter 2: are gaps respected?', body: '<p>On the 5m you want fair value gaps <b>forming</b> and price <b>reacting</b> off them, not slicing back and forth through them (“barcode” chop).</p>', task: 'Press ▶ Play and watch the second gap.', target: '#play', enter() { playTo(22); }, check: () => RP.shown >= 22 },
     { id: 'asia-f2-q', ch: 'asia', title: 'Did the gap hold?', body: '<p>Look at the gap tagged on the chart around 6:40 PM.</p>', quiz: q('Was that gap respected?', [opt('Yes. Price dipped in and bounced, so both filters pass', true, 'Yes. Gaps forming and holding = real direction. Both filters pass: trade Asia.'), opt('No. It’s barcode chop', false, 'Barcode chop is price slicing through gaps both ways. Here price dipped in, held, and bounced.')]) },
@@ -2394,7 +2395,7 @@ const TERMS = [
       { k: 'band', lo: 17.6, hi: 20.8, i0: 4, col: 'win', t: 'iFVG · now support', tx: 'r', tpos: 'below', at: 5, say: 'A candle CLOSES above the gap. It has inverted: support now.' },
       { k: 'arrow', i: 5, p: 17.4, dir: 'up', col: 'win', at: 5 }] };
   }, cap: 'A wick inside isn’t enough. It needs a close back through the gap.', rel: ['FVG', 'SWEEP'], ch: 'hl' },
-  { ab: 'RANGE H/L', full: 'Range High / Range Low', cat: 6, def: 'NYFlow H/L: the highest high and lowest low from 7:00 to 9:25 AM ET. At 9:25 the range locks.', vis() {
+  { ab: 'RANGE H/L', full: 'Range High / Range Low', cat: 6, def: 'NYFLOW H/L: the highest high and lowest low from 7:00 to 9:25 AM ET. At 9:25 the range locks.', vis() {
     const c = cs([20, 21.4, 20.2, 22.6, 21.4, 19.6, 18.6, 20.4, 21.8, 20.6, 19.4, 20.8, 17.6, 19.8, 22.4], { 11: { l: 16.8 } });
     return { c, ann: [
       { k: 'band', lo: c[5].l, hi: c[2].h, i0: -0.5, i1: 9.5, col: 'ice', fill: 0.06, t: '7:00–9:25', at: 9, say: 'The range locks at 9:25.' },
@@ -2417,7 +2418,7 @@ const TERMS = [
       { k: 'tag', i: 1, p: 26, dx: 22, t: 'H', col: 'win', anchor: 'start', dy: 4, at: 1 },
       { k: 'tag', i: 1, p: 25, dx: 22, dy: 12, t: 'C · closes high', col: 'win', anchor: 'start', at: 1, say: 'Then it drives up and closes near the high: distribution.' }] };
   }, cap: 'Press play: the candle dips first, then runs. That’s the order you want for longs.', rel: ['PO3', 'HTF'], ch: 'po3' },
-  { ab: 'KEY LEVEL', full: 'Key Level', cat: 6, def: 'AsiaFlow: a level that lines up with the draw, somewhere price can dip into during the manipulation before going your way.', vis() {
+  { ab: 'KEY LEVEL', full: 'Key Level', cat: 6, def: 'ASIAFLOW: a level that lines up with the draw, somewhere price can dip into during the manipulation before going your way.', vis() {
     const c = cs([23, 22.4, 23, 22, 21, 19.4, 18.4, 19.6, 21.6, 23.4, 25.2]);
     return { c, ann: [
       { k: 'band', lo: 17.6, hi: 19.2, i0: -0.5, col: 'win', t: 'KEY LEVEL', tx: 'r', tpos: 'below', at: 0, say: 'Your landing spot, marked before the session.' },
@@ -2425,7 +2426,7 @@ const TERMS = [
       { k: 'dot', i: 6, p: c[6].l, col: 'signal', t: 'manipulation into it', pos: 'below', dx: -34, at: 6, say: 'Price dips into the level. That’s the manipulation you were waiting for.' },
       { k: 'arrow', i: 9, p: c[9].h, dir: 'up', col: 'win', at: 9, say: 'Then it drives toward the draw.' }] };
   }, cap: 'No key level, nowhere to wait. It’s where the fake move should land.', rel: ['NWOG', 'PO3'], ch: 'asia' },
-  { ab: 'NWOG', full: 'New Week Opening Gap', cat: 6, def: 'The gap between Friday’s close and Sunday’s 6 PM open. In AsiaFlow it’s the highest-priority draw.', vis() {
+  { ab: 'NWOG', full: 'New Week Opening Gap', cat: 6, def: 'The gap between Friday’s close and Sunday’s 6 PM open. In ASIAFLOW it’s the highest-priority draw.', vis() {
     const c = [...cs([20, 21, 20.4, 21.6, 22]), null, ...cs([26.5, 26, 25, 24, 23.4, 24.6, 23.8, 22.4])];
     return { c, ann: [
       { k: 'band', lo: 22, hi: 26.5, i0: 3.5, col: 'lag', t: 'NWOG', tx: 'r', at: 5, say: 'Friday closed at 22. Sunday opened at 26.5. The empty space is the NWOG.' },
@@ -2991,7 +2992,7 @@ function wJournal(el, done) {
   const row = (k, label, opts) => `<div class="grid" style="gap:4px"><span class="tk-lbl">${label}</span><div class="pick">${opts.map((o) => `<button type="button" data-f="${k}" data-v="${o}" aria-pressed="${f[k] === o}">${o}</button>`).join('')}</div></div>`;
   const draw = (saved) => {
     box.innerHTML = saved ? fbHtml(f.outcome === 'Win' && f.plan === 'Yes', 'Logged', f.outcome !== 'Win' ? 'Check the outcome: this trade hit the 40-point target. An honest journal is the whole point.' : f.plan !== 'Yes' ? 'You followed every step: range, sweep, flip, 15/40, breakeven at 1:1. That’s “followed plan: yes”.' : `Win · followed plan · ${f.emo}. In FLOWHUB this goes straight into your journal, and your stats and weekly review build from it.`) + `<div class="actions"><button type="button" class="btn ghost" data-edit>Edit</button></div>`
-      : `<div class="mock" style="padding:12px;display:grid;gap:10px"><div class="w-row"><span class="chipx">MNQ · Long</span><span class="chipx">1 contract</span><span class="chipx">NYFlow H/L</span><span class="chipx win">+$80</span></div>
+      : `<div class="mock" style="padding:12px;display:grid;gap:10px"><div class="w-row"><span class="chipx">MNQ · Long</span><span class="chipx">1 contract</span><span class="chipx">NYFLOW H/L</span><span class="chipx win">+$80</span></div>
         ${row('outcome', 'Outcome', ['Win', 'Loss', 'Breakeven'])}${row('plan', 'Followed my plan?', ['Yes', 'No'])}${row('emo', 'How did you feel?', ['Calm', 'Confident', 'FOMO', 'Frustrated'])}
         <label class="grid" style="gap:4px"><span class="tk-lbl">One-line note</span><input class="field" maxlength="140" placeholder="e.g. Waited for the flip instead of buying the sweep"></label>
         <div class="actions"><button type="button" class="btn primary" data-save ${f.outcome && f.plan && f.emo ? '' : 'disabled'}>Log trade</button></div></div>`;
@@ -3117,7 +3118,7 @@ const DIVES = [
     { id: 'check', title: 'The pre-click check', body: '<p>Before every order, two seconds, left to right:</p>', w: (el, d) => wChecklist(el, d, ['Symbol is <b>MNQ1!</b> (or NQ1! if that’s your plan)', 'The right <b>account</b> is selected', '<b>Size</b> matches your plan', 'Stop <b>60 ticks</b> and target <b>160 ticks</b> are on', 'No red-folder news in the next 15 minutes'], 'That’s the habit. It saves accounts.') },
   ] },
   { id: 'day', title: 'A Day in the Life', sub: 'One full session from checklist to journal, with every decision in order.', secs: [
-    { id: 'pre', title: '7:00 AM · Before the session', body: '<p>Coffee, then the checklist. No chart clicking until it’s done.</p>', w: (el, d) => wChecklist(el, d, ['Checked the news calendar', 'Marked opening prices and levels', 'Know my model for today: NYFlow H/L', 'Bracket preset 15/40 is selected', 'Daily stop known: 2 losses = done'], 'Cleared to trade.') },
+    { id: 'pre', title: '7:00 AM · Before the session', body: '<p>Coffee, then the checklist. No chart clicking until it’s done.</p>', w: (el, d) => wChecklist(el, d, ['Checked the news calendar', 'Marked opening prices and levels', 'Know my model for today: NYFLOW H/L', 'Bracket preset 15/40 is selected', 'Daily stop known: 2 losses = done'], 'Cleared to trade.') },
     { id: 'session', title: '9:25 → 10:30 · The session', body: '<p>The range builds, the sweep, the flip, the trade. Make every call.</p>', w: (el, d) => wScenario(el, d, SC.day) },
     { id: 'journal', title: '10:35 · Log it', body: '<p>Log while it’s fresh. Be honest. The journal only helps if it’s true.</p>', w: (el, d) => wJournal(el, d) },
     { id: 'review', title: 'After · Close the charts', body: '<p>One trade, target hit. What now?</p>', w: (el, d) => wQuiz(el, d, { q: 'It’s 10:40, you’re +$80 and another setup is forming.', opts: [{ t: 'Done for the day. Close the charts.', ok: true, fb: 'One clean win is a great day. Protect it. Most giveback happens after the best trade of the day.' }, { t: 'Take it, you’re in the zone', fb: '“In the zone” is how good mornings turn red. The plan was one A+ trade.' }, { t: 'Take it at double size with house money', fb: 'There’s no house money. It’s your money now.' }] }) },
@@ -3322,26 +3323,47 @@ function cvs(el, ratio = 0.42, cap = 440) {
   return { wrap, cv, ctx, fit };
 }
 function exoHero(el) {
-  const { ctx, fit, wrap } = cvs(el, 0.36, 340); let sz = fit(), t0 = performance.now(), raf = 0, stars = [];
-  const mk = () => { stars = Array.from({ length: 60 }, () => [Math.random(), Math.random(), Math.random() * 0.8 + 0.2]); };
-  mk();
+  const { ctx, fit, wrap } = cvs(el, 0.36, 340); let sz = fit(), t0 = performance.now(), raf = 0;
+  const stars = Array.from({ length: 60 }, () => [Math.random(), Math.random(), Math.random() * 0.8 + 0.2]);
+  const CL = [0, 0.07, 0.04, 0.15, 0.24, 0.19, 0.31, 0.42, 0.37, 0.52, 0.63, 0.58, 0.76, 0.9, 1];
   const ro = new ResizeObserver(() => { sz = fit(); }); ro.observe(wrap);
+  const CYCLE = 13, ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
   const frame = (now) => {
     if (!wrap.isConnected) { cancelAnimationFrame(raf); ro.disconnect(); return; }
-    const t = RM() ? 2.2 : Math.max(0, now - t0) / 1000, { w, h: hh } = sz, cx = w / 2, cy = hh / 2;
+    const t = RM() ? 9.5 : Math.max(0, now - t0) / 1000, u = t % CYCLE, { w, h: hh } = sz, cx = w / 2, cy = hh / 2;
     ctx.clearRect(0, 0, w, hh);
     for (const [sx, sy, a] of stars) { ctx.fillStyle = alpha(COL.ink2, 0.15 * a + 0.1 * Math.sin(t * 2 + sx * 10) ** 2); ctx.fillRect(sx * w, sy * hh, 1.5, 1.5); }
-    // echo rings
-    for (let k = 0; k < 4; k++) { const ph = ((t * 0.55 + k / 4) % 1); const r = 12 + ph * Math.min(w, hh * 2.2) * 0.42; ctx.strokeStyle = alpha(k % 2 ? COL.ice : COL.signal, (1 - ph) * 0.55); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(cx, cy, r, r * 0.62, 0, 0, Math.PI * 2); ctx.stroke(); }
-    // orbit path + body with trail
-    const rx = Math.min(w * 0.36, 300), ry = hh * 0.3, tilt = -0.18;
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(tilt);
-    ctx.setLineDash([3, 6]); ctx.strokeStyle = alpha(COL.ice, 0.35); ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-    for (let k = 14; k >= 0; k--) { const a = t * 1.1 - k * 0.045; const x = Math.cos(a) * rx, y = Math.sin(a) * ry; ctx.fillStyle = alpha(COL.signal, (1 - k / 15) * 0.6); ctx.beginPath(); ctx.arc(x, y, 3.2 - k * 0.15, 0, Math.PI * 2); ctx.fill(); }
-    const a0 = t * 1.1, bx = Math.cos(a0) * rx, by = Math.sin(a0) * ry; const g = ctx.createRadialGradient(bx, by, 0, bx, by, 14); g.addColorStop(0, alpha(COL.signal, 0.9)); g.addColorStop(1, alpha(COL.signal, 0)); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, 14, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-    // core
-    const pulse = 0.6 + 0.4 * Math.sin(t * 3.4); const gc = ctx.createRadialGradient(cx, cy, 0, cx, cy, 26); gc.addColorStop(0, alpha(COL.ice, 0.85 * pulse)); gc.addColorStop(1, alpha(COL.ice, 0)); ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(cx, cy, 26, 0, Math.PI * 2); ctx.fill();
+    // 0–5s orbit · 5–6.4s spiral in · 6.4–12s candles + P&L · 12–13s fade
+    const orbitA = u < 5 ? 1 : u < 6.4 ? 1 - (u - 5) / 1.4 : 0, chartA = u < 6.1 ? 0 : u < 12 ? Math.min(1, (u - 6.1) / 0.5) : 1 - (u - 12);
+    if (orbitA > 0) {
+      for (let k = 0; k < 4; k++) { const ph = ((t * 0.55 + k / 4) % 1); const r = 12 + ph * Math.min(w, hh * 2.2) * 0.42; ctx.strokeStyle = alpha(k % 2 ? COL.ice : COL.signal, (1 - ph) * 0.55 * orbitA); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(cx, cy, r, r * 0.62, 0, 0, Math.PI * 2); ctx.stroke(); }
+      const shrink = u < 5 ? 1 : Math.max(0.02, 1 - (u - 5) / 1.4), rx = Math.min(w * 0.36, 300) * shrink, ry = hh * 0.3 * shrink;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.18);
+      ctx.setLineDash([3, 6]); ctx.strokeStyle = alpha(COL.ice, 0.35 * orbitA); ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+      const spin = u < 5 ? 1.1 : 1.1 + (u - 5) * 3;
+      for (let k = 14; k >= 0; k--) { const a = t * spin - k * 0.045; ctx.fillStyle = alpha(COL.signal, (1 - k / 15) * 0.6 * orbitA); ctx.beginPath(); ctx.arc(Math.cos(a) * rx, Math.sin(a) * ry, Math.max(0.5, 3.2 - k * 0.15), 0, Math.PI * 2); ctx.fill(); }
+      const a0 = t * spin, bx = Math.cos(a0) * rx, by = Math.sin(a0) * ry, g = ctx.createRadialGradient(bx, by, 0, bx, by, 14); g.addColorStop(0, alpha(COL.signal, 0.9 * orbitA)); g.addColorStop(1, alpha(COL.signal, 0)); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    // core pulse, flares as the orbit lands
+    const flare = u > 5.9 && u < 6.9 ? 1 + 2.5 * Math.sin(((u - 5.9) / 1) * Math.PI) : 1;
+    const pulse = (0.6 + 0.4 * Math.sin(t * 3.4)) * Math.max(orbitA, u > 5.9 && u < 6.9 ? 1 : 0.25), R = 26 * flare, gc = ctx.createRadialGradient(cx, cy, 0, cx, cy, R); gc.addColorStop(0, alpha(COL.ice, 0.85 * pulse)); gc.addColorStop(1, alpha(COL.ice, 0)); ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+    if (chartA > 0) {
+      const n = CL.length - 1, prog = RM() ? 1 : ease((u - 6.4) / 4.6), shown = Math.max(0, Math.min(n, Math.ceil(prog * n)));
+      const x0 = w * 0.16, x1 = w * 0.84, yLo = hh * 0.74, yHi = hh * 0.3, X = (i) => x0 + (i + 0.5) * ((x1 - x0) / n), Y = (p) => yLo - p * (yLo - yHi), cw = Math.max(4, Math.min(14, ((x1 - x0) / n) * 0.55));
+      ctx.globalAlpha = chartA;
+      for (let i = 0; i < shown; i++) {
+        const o = CL[i], c = CL[i + 1], up = c >= o, col = up ? COL.ice : COL.ink3, hi = Math.max(o, c) + 0.03, lo = Math.min(o, c) - 0.03;
+        ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(X(i), Y(hi)); ctx.lineTo(X(i), Y(lo)); ctx.stroke();
+        ctx.fillStyle = col; ctx.fillRect(X(i) - cw / 2, Y(Math.max(o, c)), cw, Math.max(1.5, Math.abs(Y(o) - Y(c))));
+      }
+      if (shown) { ctx.setLineDash([4, 4]); ctx.strokeStyle = alpha(COL.signal, 0.6); ctx.beginPath(); ctx.moveTo(X(0), Y(CL[0])); ctx.lineTo(x1, Y(CL[0])); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = alpha(COL.signal, 0.8); ctx.font = '600 10px JetBrains Mono, monospace'; ctx.fillText('ENTRY', X(0) - cw, Y(CL[0]) + 14); }
+      const pnl = Math.round((RM() ? 1 : ease((u - 6.4) / 4.6)) * 10000);
+      ctx.textAlign = 'center'; ctx.font = `900 ${Math.round(Math.min(46, w * 0.07))}px Archivo, "Arial Black", system-ui, sans-serif`; ctx.fillStyle = COL.win; ctx.shadowColor = alpha(COL.win, 0.5); ctx.shadowBlur = 18;
+      ctx.fillText('+$' + pnl.toLocaleString('en-US'), cx, hh * 0.2); ctx.shadowBlur = 0;
+      ctx.font = '600 10px JetBrains Mono, monospace'; ctx.fillStyle = COL.ink3; ctx.fillText('P&L', cx, hh * 0.2 + 16); ctx.textAlign = 'start';
+      ctx.globalAlpha = 1;
+    }
     if (!RM()) raf = requestAnimationFrame(frame);
   };
   raf = requestAnimationFrame(frame);
@@ -3453,7 +3475,8 @@ DIVES.push({ id: 'futures', title: 'How futures & NQ work', sub: 'What you’re 
 ] });
 
 // ════════ Beginner · Module 2: Reading charts ════════
-DIVES.push({ id: 'charts', title: 'Reading charts', sub: 'Candles, wicks, timeframes, highs and lows. Tap the chart until you can read it at a glance.', secs: [
+DIVES.push({ id: 'charts', title: 'Reading charts', sub: 'Candle colors, candles, wicks, timeframes, highs and lows. Tap the chart until you can read it at a glance.', secs: [
+  { id: 'colors', title: 'First: change your candle colors', body: '<p>Green and red are wired into your brain as <b>winning</b> and <b>losing</b>. A wall of red candles feels like danger even when it’s exactly the move you’re waiting for, and green feels like “buy now”. That pushes you into emotional clicks.</p><p>Switch your candles to <b>neutral colors</b> so you read structure, not feelings. For example: up candles <b>white</b>, down candles <b>gray</b> (or a light blue and a dark blue).</p>', w: (el, d) => { const box = h('div', 'w'); box.innerHTML = `<div class="w-stats"><div><span class="hud">Default · emotional</span><figure class="t-vis sm" style="margin:0">${tSvg({ c: CH_BEAR })}</figure></div><div><span class="hud">Neutral · structure</span><figure class="t-vis sm" style="margin:0">${tSvg({ c: CH_BEAR, mono: true })}</figure></div></div>`; el.append(box); wChecklist(el, d, ['TradingView: right-click the chart → <b>Settings</b> → <b>Symbol</b>', '<b>Body</b>: up candles white (or light blue), down candles gray (or dark blue)', '<b>Borders</b> and <b>Wick</b>: same colors as the bodies', 'Bottom-left <b>Template</b> → <b>Save as default</b> so every chart opens this way'], 'Done. Same chart, less emotion. You’ll still see who won each candle from where it closed.'); } },
   { id: 'candle', title: 'One candle, four prices', body: '<p>Each candle shows one slice of time: where price <b>opened</b>, the <b>high</b>, the <b>low</b>, and where it <b>closed</b>. The body is open → close. The thin lines are <b>wicks</b>: prices that were reached but rejected.</p><p><b>Green</b> = closed higher than it opened. <b>Red</b> = closed lower.</p>', w: (el, d) => wTap(el, d, { spec: { c: CH_WICK }, q: 'Tap the candle with the <b>longest upper wick</b>: buyers pushed up, sellers slammed it back.', hit: hitCandle([6], 'That wick shows rejection: price went up there and couldn’t stay.', 'Look for the tallest thin line above a body.') }) },
   { id: 'bear', title: 'Who won the candle?', body: '<p>A big body means one side was in control. A small body with long wicks means a fight nobody won.</p>', w: (el, d) => wTap(el, d, { spec: { c: CH_BEAR }, q: 'Tap the candle where <b>sellers took control</b>.', hit: hitCandle([5], 'Big red body, closed near its low. Sellers won that candle clearly.', 'Find the biggest red body.') }) },
   { id: 'tf', title: 'Timeframes', body: '<p>The same price action can be shown as 1-minute, 5-minute, 1-hour or 4-hour candles. <b>Higher timeframes (HTF)</b> show the big picture and stronger levels. <b>Lower timeframes (LTF)</b> show the detail for entries.</p>', w: (el, d) => wQs(el, d, [
@@ -3721,11 +3744,11 @@ const POOLS = {
     Q('Does RS apply at 3 AM?', ['No', 'Yes', 'Only Fridays'], 'Only after 9:30.'),
   ],
   a2: [
-    Q('NYFlow H/L first marks…', ['The pre-market high and low', 'The Asia range', 'Nothing'], 'Then waits for a sweep.'),
+    Q('NYFLOW H/L first marks…', ['The pre-market high and low', 'The Asia range', 'Nothing'], 'Then waits for a sweep.'),
     Q('In H/L, after the sweep you want…', ['The flip back inside', 'A breakout trade', 'A news spike'], 'Sweep, gap, flip.'),
     Q('PO3 stands for…', ['Power of three: accumulation, manipulation, distribution', 'Three positions', 'Price of 3 candles'], 'AMD.'),
     Q('In PO3, the manipulation is…', ['The fake move that runs stops', 'The real trend', 'The close'], 'You trade against it.'),
-    Q('AsiaFlow PO3 uses…', ['The Asia session and its key level', 'The NY open', 'London only'], 'Filters, key level, the 8 PM candle.'),
+    Q('ASIAFLOW PO3 uses…', ['The Asia session and its key level', 'The NY open', 'London only'], 'Filters, key level, the 8 PM candle.'),
     Q('Counting a wick as a flip is…', ['A mistake: flips need a close', 'Fine', 'Required'], 'Wait for the close.'),
     Q('A no-sweep day in H/L means…', ['No trade', 'Force one', 'Trade the range'], 'No sweep, no setup.'),
   ],
@@ -3782,9 +3805,9 @@ const LEVELS = [
     { id: 'i4', title: 'Trading psychology', lessons: [L('dive', 'psych', 'Trading Psychology', 'Tilt, FOMO, boredom, overconfidence')] },
     { id: 'i5', title: 'A day in the life & your plan', lessons: [L('dive', 'day', 'A Day in the Life', 'One full session, checklist to journal'), L('dive', 'planlesson', 'Build your trading plan', 'Your plan card in the Trading Plan tab')] },
   ] },
-  { id: 'advanced', name: 'Advanced', tone: 'lag', tag: 'Read the market', who: 'Trading the FLOWMTD concepts', desc: 'Extended Learning (Range Settlement, opening prices, PLC/PHC, refining, limit vs confirmation), then the indicator models one candle at a time.', pass: 0.85, exam: { n: 14, charts: 3, extraCharts: ['b3', 'b4'] }, modules: [
+  { id: 'advanced', name: 'Advanced', tone: 'lag', tag: 'Read the market', who: 'Trading the FLOWMTD concepts', desc: 'Extended Learning (Range Settlement, opening prices, PLC/PHC, refining, limit vs confirmation), then H/L and PO3 one candle at a time.', pass: 0.85, exam: { n: 14, charts: 3, extraCharts: ['b3', 'b4'] }, modules: [
     { id: 'a1', title: 'Extended Learning', lessons: [L('dive', 'rs', 'Range Settlement', 'The 9:30 draw for the AM session'), L('ch', 'dl', 'Levels: bias, PLC, refine, limit vs confirm', 'Opening prices, PLC/PHC, refining, LRL & turtle soup')] },
-    { id: 'a2', title: 'Indicator models', lessons: [L('ch', 'hl', 'NYFlow · H/L', 'Range, sweep, gap, flip'), L('ch', 'po3', 'NYFlow · PO3', 'Accumulation, manipulation, distribution'), L('ch', 'asia', 'AsiaFlow · PO3', 'Filters, key level, the 8 PM candle')] },
+    { id: 'a2', title: 'Models: H/L & PO3', lessons: [L('ch', 'hl', 'H/L', 'Range, sweep, gap, flip · runs in New York (range 7:00–9:25, A+ 9:30–10:00) and Asia (8 PM–12 AM)'), L('ch', 'po3', 'PO3', 'Accumulation, manipulation, distribution · New York (the 10:00 candle) and Asia (the 8 PM candle)', ['asia'])] },
   ] },
   { id: 'exo', name: 'ECHO X ORBIT', tone: 'signal', tag: 'The FLOWMTD model', who: 'The 94% win rate model behind the Discord calls', desc: 'Echo and Orbit: the two engines behind every daily call, the shared rules, and replays where you make the call.', pass: 0.8, modules: [
     { id: 'x1', title: 'ECHO X ORBIT', lessons: [L('dive', 'exo-intro', 'Two engines', 'What ECHO X ORBIT is, Confluence Master setup, the four words'), L('dive', 'echo', 'Echo', 'Sweep, CISD, rejection block inside the FVG'), L('dive', 'orbit', 'Orbit', 'Big swing, fib, OTE, inversion on the leg in'), L('dive', 'exo-rules', 'The shared rules', 'The draw, 2× the stop, ES confirmation'), L('dive', 'exo-replay', 'Replays', 'One to take, one to skip')] },
@@ -3802,7 +3825,7 @@ function stepDone(st) {
 }
 
 // ── Server sync + practice data ──
-const SYNC = { staff: false, unlocks: [], t: 0, loaded: false };
+const SYNC = { staff: false, unlocks: [], t: 0, loaded: false, name: '' };
 const PR = { reps: [], streak: 0, loaded: false };
 const snapshot = () => ({ ch: [...CHD], dives: DP, ck: PROG.ck, ex: PROG.ex });
 function syncSoon() { if (!LIVE || !SYNC.loaded) return; clearTimeout(SYNC.t); SYNC.t = setTimeout(() => { fetch('/api/school', { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(snapshot()) }).catch(() => {}); }, 700); }
@@ -3820,7 +3843,7 @@ async function loadServer() {
   if (!LIVE) return;
   const get = (u) => fetch(u, { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const [s, p] = await Promise.all([get('/api/school'), get('/api/practice')]);
-  if (s) { SYNC.staff = !!s.staff; SYNC.unlocks = s.unlocks || []; SYNC.loaded = true; if (mergeServer(s.state || {})) syncSoon(); }
+  if (s) { SYNC.name = s.name || ''; SYNC.staff = !!s.staff; SYNC.unlocks = s.unlocks || []; SYNC.loaded = true; if (mergeServer(s.state || {})) syncSoon(); }
   if (p) { PR.reps = p.reps || []; PR.streak = (p.state && p.state.streak) || 0; PR.loaded = true; }
   if (TV_ST.view === 'levels') renderLevels(LV_ST.open);
 }
@@ -3837,7 +3860,7 @@ function reqs(l) {
   const tier = (label, filter, need) => { const t = practiceTierOf(PR.reps.filter(filter)); return { label, done: t >= need, detail: `Now: ${TIER_NAMES[t]}`, practice: true }; };
   if (l.id === 'intermediate') return [exam('beginner', 0.8), count('Size it: 10 correct reps', okReps('size'), 10), count('Order ticket: 10 correct reps', okReps('ticket'), 10)];
   if (l.id === 'advanced') { const n = PR.reps.length, acc = n ? PR.reps.slice(-40).filter((r) => r.ok).length / Math.min(40, n) : 0; return [exam('intermediate', 0.8), { label: '20 practice reps at 70%+ accuracy', done: n >= 20 && acc >= 0.7, detail: `${n} reps · ${Math.round(acc * 100)}%`, practice: true }, count('3-day daily reps streak', PR.streak, 3)]; }
-  if (l.id === 'exo') return [exam('advanced', 0.85), tier('Silver in Set the limit', (r) => r.d === 'limit', 2), tier('Bronze in NYFlow · H/L', (r) => r.m === 'hl', 1), tier('Bronze in NYFlow · PO3', (r) => r.m === 'po3', 1)];
+  if (l.id === 'exo') return [exam('advanced', 0.85), tier('Silver in Set the limit', (r) => r.d === 'limit', 2), tier('Bronze in H/L', (r) => r.m === 'hl', 1), tier('Bronze in PO3 · New York', (r) => r.m === 'po3', 1)];
   return [];
 }
 const bypass = () => SYNC.staff || LV_ST.all;
@@ -3976,6 +3999,49 @@ function quizResult() {
   QZS.run = null;
 }
 
+
+// ── Certificate of completion (every module, every exam, ECHO X ORBIT) ──
+const schoolDone = () => LEVELS.every((l) => l.modules.every(moduleComplete) && (!l.exam || examPassed(l.id)));
+function certCard() {
+  if (!schoolDone()) return '';
+  return `<div class="card lv-cert"><div class="card-in"><div class="eyebrow"><span class="hud" style="color:var(--signal)">Certificate of completion</span></div>
+    <p style="margin:0 0 10px">You passed every module and exam in the Trading School and the ECHO X ORBIT section. Download your certificate.</p>
+    <div class="w-row">${LIVE && SYNC.name ? '' : `<input class="in" id="cert-name" placeholder="Your name" maxlength="40" value="${esc(SYNC.name || '')}" style="max-width:260px">`}<button type="button" class="btn primary" data-cert>⇩ Download certificate</button></div></div></div>`;
+}
+function drawCertificate(name) {
+  const W = 1600, H = 1130, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
+  const done = Math.max(0, ...Object.values(PROG.ck).map((x) => x.at || 0), ...Object.values(PROG.ex).map((x) => x.at || 0)) || Date.now();
+  const date = new Date(done).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  let hsh = 0; for (const ch of name + done) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0; const id = 'FMTD-' + hsh.toString(36).toUpperCase().padStart(7, '0');
+  const bg = c.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#05070b'); bg.addColorStop(1, '#0b1018'); c.fillStyle = bg; c.fillRect(0, 0, W, H);
+  c.strokeStyle = 'rgba(156,203,255,.35)'; c.lineWidth = 2; c.strokeRect(40, 40, W - 80, H - 80); c.strokeStyle = 'rgba(255,106,0,.8)'; c.lineWidth = 6; c.beginPath(); c.moveTo(40, 40); c.lineTo(220, 40); c.stroke(); c.beginPath(); c.moveTo(W - 220, H - 40); c.lineTo(W - 40, H - 40); c.stroke();
+  for (let k = 0; k < 4; k++) { c.strokeStyle = `rgba(156,203,255,${0.07 - k * 0.012})`; c.lineWidth = 1.5; c.beginPath(); c.ellipse(W / 2, 560, 360 + k * 120, (360 + k * 120) * 0.42, -0.18, 0, Math.PI * 2); c.stroke(); }
+  c.textAlign = 'center';
+  c.font = '900 64px Archivo, "Arial Black", sans-serif'; c.fillStyle = '#ff6a00'; const lw = c.measureText('FLOWHUB').width; c.fillText('F', W / 2 - lw / 2 + c.measureText('F').width / 2, 170); c.fillStyle = '#eef3fa'; c.textAlign = 'left'; c.fillText('LOWHUB', W / 2 - lw / 2 + c.measureText('F').width, 170); c.textAlign = 'center';
+  c.font = 'italic 700 20px Archivo, sans-serif'; c.fillStyle = '#8b97a8'; c.fillText('BY FLOWMTD TRADING', W / 2, 204);
+  c.font = '600 22px "JetBrains Mono", monospace'; c.fillStyle = '#ff6a00'; c.fillText('C E R T I F I C A T E   O F   C O M P L E T I O N', W / 2, 300);
+  c.font = '400 26px Inter, system-ui, sans-serif'; c.fillStyle = '#9aa6b8'; c.fillText('This certifies that', W / 2, 380);
+  c.font = '900 84px Archivo, "Arial Black", sans-serif'; c.fillStyle = '#eef3fa'; let fs = 84; while (c.measureText(name).width > W - 260 && fs > 40) { fs -= 4; c.font = `900 ${fs}px Archivo, "Arial Black", sans-serif`; } c.fillText(name, W / 2, 480);
+  c.strokeStyle = 'rgba(156,203,255,.4)'; c.lineWidth = 1; c.beginPath(); c.moveTo(W / 2 - 380, 512); c.lineTo(W / 2 + 380, 512); c.stroke();
+  c.font = '400 28px Inter, system-ui, sans-serif'; c.fillStyle = '#c9d3e1';
+  c.fillText('has completed the FLOWMTD Trading School (Beginner, Intermediate and Advanced)', W / 2, 580);
+  c.fillText('and successfully learned the', W / 2, 622);
+  c.font = '900 56px Archivo, "Arial Black", sans-serif'; const e = 'ECHO', o = 'ORBIT', gap = 22; c.font = '900 56px Archivo, "Arial Black", sans-serif'; const we = c.measureText(e).width, wo = c.measureText(o).width; c.font = '900 46px Archivo, sans-serif'; const wx = c.measureText('X').width; const tot = we + wx + wo + gap * 2; let x = W / 2 - tot / 2;
+  c.textAlign = 'left'; c.font = '900 56px Archivo, "Arial Black", sans-serif'; c.fillStyle = '#eef3fa'; c.fillText(e, x, 700); x += we + gap; c.font = '900 46px Archivo, sans-serif'; c.fillStyle = '#ff6a00'; c.fillText('X', x, 700); x += wx + gap; c.font = '900 56px Archivo, "Arial Black", sans-serif'; c.fillStyle = '#eef3fa'; c.fillText(o, x, 700); c.textAlign = 'center';
+  c.font = '400 26px Inter, system-ui, sans-serif'; c.fillStyle = '#9aa6b8'; c.fillText('model, passing every module checkpoint and level exam.', W / 2, 752);
+  c.font = '600 20px "JetBrains Mono", monospace'; c.fillStyle = '#8b97a8';
+  c.textAlign = 'left'; c.fillText('DATE', 160, 900); c.fillStyle = '#eef3fa'; c.font = '600 26px "JetBrains Mono", monospace'; c.fillText(date, 160, 940);
+  c.textAlign = 'right'; c.fillStyle = '#8b97a8'; c.font = '600 20px "JetBrains Mono", monospace'; c.fillText('CERTIFICATE ID', W - 160, 900); c.fillStyle = '#eef3fa'; c.font = '600 26px "JetBrains Mono", monospace'; c.fillText(id, W - 160, 940);
+  c.textAlign = 'center'; c.fillStyle = '#eef3fa'; c.font = 'italic 700 30px Archivo, sans-serif'; c.fillText('FLOWMTD Trading', W / 2, 930); c.strokeStyle = 'rgba(156,203,255,.4)'; c.beginPath(); c.moveTo(W / 2 - 170, 890); c.lineTo(W / 2 + 170, 890); c.stroke();
+  c.font = '400 16px Inter, system-ui, sans-serif'; c.fillStyle = '#5f6b7c'; c.fillText('Educational certificate of course completion. Not a trading license, qualification or financial advice.', W / 2, 1040);
+  return cv;
+}
+function downloadCertificate() {
+  const inp = $('#cert-name'), name = ((inp && inp.value) || SYNC.name || '').trim();
+  if (!name) { toastSchool('Type your name for the certificate.'); if (inp) inp.focus(); return; }
+  const a = document.createElement('a'); a.download = `FLOWMTD-certificate-${name.replace(/[^a-z0-9]+/gi, '-')}.png`; a.href = drawCertificate(name).toDataURL('image/png'); document.body.append(a); a.click(); a.remove();
+}
+
 // ── Level picker + level pages ──
 function reqPanel(l) {
   const rs = reqs(l); if (!rs.length) return '';
@@ -3990,7 +4056,7 @@ function renderLevels(open) {
       <div class="lv-grid">${LEVELS.map((l, i) => { const [d, t] = levelProg(l), open = levelUnlocked(l); return `<button type="button" class="lv-card ${l.tone}${open ? '' : ' locked'}${l.id === 'exo' ? ' exo' : ''}" data-level="${l.id}">
         ${l.id === 'exo' ? '<span class="lv-exo" data-exo></span>' : ''}<span class="lv-n">0${i + 1}</span><span class="hud lv-tag">${open ? esc(l.tag) : '🔒 Locked'}</span><h2>${esc(l.name)}</h2><p class="lv-who">“${esc(l.who)}”</p><p>${esc(l.desc)}</p>
         ${open ? `<span class="dv-meta"><span class="pbar"><i style="width:${(d / t) * 100}%"></i></span><span class="hud num">${levelComplete(l) ? 'Complete ✓' : d ? `${d}/${t} done` : `${l.modules.length} module${l.modules.length > 1 ? 's' : ''} · Start →`}</span></span>` : `<span class="hud" style="color:var(--ink3)">To unlock</span>${reqPanel(l).replace(/<a [^>]*>.*?<\/a>/, '').replace(/<p class="hud lv-pnote">.*?<\/p>/, '')}`}</button>`; }).join('')}</div>
-      <button type="button" class="lv-terms" data-terms><span class="hud">Reference · always open</span><b>Terminology</b><span>Every term with a chart you can play, tagged by level.</span><span class="grow"></span><span aria-hidden="true">→</span></button>`;
+      ${certCard()}<button type="button" class="lv-terms" data-terms><span class="hud">Reference · always open</span><b>Terminology</b><span>Every term with a chart you can play, tagged by level.</span><span class="grow"></span><span aria-hidden="true">→</span></button>`;
     const ex = body.querySelector('[data-exo]'); if (ex) exoHero(ex);
     return;
   }
@@ -4010,6 +4076,7 @@ function renderLevels(open) {
     ${l.modules.map((m, mi) => { const mu = moduleUnlocked(l, m); return `<section class="lv-mod${mu ? '' : ' locked'}"><div class="lv-mh"><span class="hud">Module ${mi + 1}</span><h2>${esc(m.title)}</h2>${moduleComplete(m) ? '<span class="chipx win">Complete ✓</span>' : mu ? '' : '<span class="hud">🔒 Pass the module before</span>'}</div>
       <ol class="lv-path">${m.lessons.map((s, k) => lessonRow(s, k, m)).join('')}${ckRow(m)}</ol></section>`; }).join('')}
     ${exRow()}
+    ${l.id === 'exo' ? certCard() : ''}
     ${nl ? `<button type="button" class="lv-terms" data-level="${nl.id}"><span class="hud">Next section</span><b>${esc(nl.name)}</b><span>${levelUnlocked(nl) ? `“${esc(nl.who)}”` : '🔒 See what unlocks it'}</span><span class="grow"></span><span aria-hidden="true">→</span></button>` : `<button type="button" class="lv-terms" data-terms><span class="hud">Keep sharp</span><b>Terminology quiz</b><span>Test yourself on every term.</span><span class="grow"></span><span aria-hidden="true">→</span></button>`}`;
   const eh = body.querySelector('[data-exo-hero]'); if (eh) exoHero(eh);
 }
@@ -4017,6 +4084,7 @@ function openLevel(id) { LV_ST.open = id; QZS.run = null; setView('levels'); win
 document.addEventListener('click', (e) => {
   const inSchool = e.target.closest('#levels-view, #courses-view, #crumb'); if (!inSchool) return;
   if (e.target.closest('[data-nolevel]')) { e.stopPropagation(); return; }
+  if (e.target.closest('[data-cert]')) { downloadCertificate(); return; }
   const qk = e.target.closest('[data-qk]'); if (qk && QZS.run && QZS.run.picked == null) { const R = QZS.run; R.picked = +qk.dataset.qk; if (R.picked === 0) R.score++; else R.missed.push(R.items[R.i].mod); drawQuiz(); return; }
   if (e.target.closest('[data-qnext]') && QZS.run) { const R = QZS.run; R.i++; R.picked = null; R.order = []; drawQuiz(); window.scrollTo({ top: 0 }); return; }
   const qz = e.target.closest('[data-quiz]'); if (qz) { const o = JSON.parse(qz.dataset.quiz); startQuiz(o.k, o.id); return; }

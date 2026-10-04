@@ -146,6 +146,7 @@ export type CoachDirectoryRow = {
   monthPnl: number;
   unreadFeedback: number;
   statuses: { label: string; status: AccountPace["status"] }[];
+  school: { current: string; pct: number; certified: boolean } | null; // Trading School progress
 };
 
 /** Trading day in New York time (futures session dates). */

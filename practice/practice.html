@@ -225,7 +225,7 @@ const PV = { NQ: 20, MNQ: 2 };
 function toast(t) { const el = $("#toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (el.hidden = true), 1800); }
 function timeLabel(min) { min = ((min % 1440) + 1440) % 1440; let h = Math.floor(min / 60), m = min % 60; const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return `${h}:${String(m).padStart(2, "0")} ${ap}`; }
 
-const MODELS = { dl: "Extended Learning", hl: "NYFlow · H/L", po3: "NYFlow · PO3", asia: "AsiaFlow · PO3", exo: "ECHO X ORBIT" };
+const MODELS = { dl: "Extended Learning", hl: "H/L", po3: "PO3 · New York", asia: "PO3 · Asia", exo: "ECHO X ORBIT" };
 const DRILLS = {
   mark: { name: "Mark the trade", desc: "Place entry, stop and target on a live NQ setup. Graded line by line." },
   replay: { name: "Replay & decide", desc: "The session plays candle by candle. At each pause: take it, wait, or skip." },
@@ -452,7 +452,7 @@ function mirror(sc) {
   sc.k = mk; if (sc.zones) sc.zones = sc.zones.map((z) => ({ ...z, a: m(z.b), b: m(z.a), side: z.side === "long" ? "short" : "long" }));
   sc.dir = "short"; return sc;
 }
-// NYFlow H/L: range 7:00–9:25, sweep one side after 9:30, gap flips, target the other side.
+// NYFLOW H/L: range 7:00–9:25, sweep one side after 9:30, gap flips, target the other side.
 function genHL(o = {}) {
   const dir = o.dir || pick(["long", "short"]); const B = qt(R(24300, 24900)); const W = qt(R(34, 56));
   const bars = []; let p = qt(B + R(-W / 5, W / 5)); bars.push(bar(p, p + R(-3, 3), p + 2, p - 2));
@@ -471,7 +471,7 @@ function genHL(o = {}) {
   const sc = { model: "hl", dir: "long", B, bars, k: { ...k, result: res }, zones, t0: 420 };
   return dir === "short" ? mirror(sc) : sc;
 }
-// NYFlow PO3: 4H trend, equal highs = the draw, accumulation box, manipulation against trend at 10:00, flip, target the draw.
+// NYFLOW PO3: 4H trend, equal highs = the draw, accumulation box, manipulation against trend at 10:00, flip, target the draw.
 function genPO3(o = {}) {
   const dir = o.dir || pick(["long", "short"]); const S0 = qt(R(24300, 24800)); const bars = [];
   bars.push(bar(S0, S0 + 2, S0 + 3, S0 - 1));
@@ -543,7 +543,7 @@ function home() {
         ${GATE.adv ? `<button class="card lab" data-d="limit"><div class="row"><span class="chip sig">Extended Learning</span></div><h3>Set the limit</h3><p>${DRILLS.limit.desc}</p></button>` : ""}
         ${["mark", "replay", "levels", "ticket", "size", "clock", "speed"].map((d) => drillOpen(d) ? `<button class="card" data-d="${d}"><div class="row">${drillChips(d)}</div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc}</p></button>` : `<div class="card locked"><div class="row"><span class="chip dim">Locked</span></div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc} Unlocks after the Intermediate exam in the Trading School.</p></div>`).join("")}
         ${GATE.adv ? "" : `<div class="card locked"><div class="row"><span class="chip dim">Locked</span></div><h3>Set the limit</h3><p>Extended Learning practice. Unlocks after the Intermediate exam in the Trading School.</p></div>`}
-        <div class="card locked"><div class="row"><span class="chip dim">Locked</span></div><h3>Sim day</h3><p>Trade a full NQ session start to finish and get an end-of-day report card. ${simOpen ? "Unlocked." : "Unlocks at <b>Silver</b> in NYFlow · H/L and PO3."}</p></div>
+        <div class="card locked"><div class="row"><span class="chip dim">Locked</span></div><h3>Sim day</h3><p>Trade a full NQ session start to finish and get an end-of-day report card. ${simOpen ? "Unlocked." : "Unlocks at <b>Silver</b> in H/L and PO3."}</p></div>
       </div>
     </section>
 
@@ -579,7 +579,7 @@ function drillChips(d) {
   const m = { mark: ["hl", "po3"], replay: ["hl", "po3"], levels: ["hl", "asia"], ticket: ["hl"], size: [], clock: ["hl", "po3", "asia", "dl"], speed: [] }[d] || [];
   if (d === "size") return '<span class="chip">NQ · MNQ</span>';
   if (d === "speed") return '<span class="chip sig">45 sec</span>';
-  return m.map((x) => `<span class="chip">${MODELS[x].replace("NYFlow · ", "").replace("AsiaFlow · PO3", "Asia")}</span>`).join("");
+  return m.map((x) => `<span class="chip">${MODELS[x].replace("NYFLOW · ", "").replace("PO3 · Asia", "Asia")}</span>`).join("");
 }
 
 // ───────────────────────── drill frame ─────────────────────────
@@ -828,19 +828,19 @@ function drillSize() {
 
 // ───────────────────────── 6. Session clock ─────────────────────────
 const CLOCK = [
-  { m: "hl", t: 525, q: "NYFlow · H/L. Price is pushing up hard. Take a trade?", a: false, why: "8:45 AM is inside 7:00–9:25: the model is still building the range. No trades until it locks." },
-  { m: "hl", t: 580, q: "NYFlow · H/L. The range low was swept and the gap just flipped. Take it?", a: true, why: "9:40 AM, sweep and flip done, inside the first 30 minutes after 9:30: that's the A+ window." },
-  { m: "hl", t: 565, q: "NYFlow · H/L. The range just locked. Can a setup form from here?", a: true, why: "From 9:30 the model waits for a sweep of one side. 9:25 lock, 9:30 onward is live." },
-  { m: "hl", t: 450, q: "NYFlow · H/L. Price swept yesterday's low. Is this the H/L sweep?", a: false, why: "7:30 AM: the pre-market range is still forming. The H/L sweep is of the 7:00–9:25 range, after 9:30." },
-  { m: "asia", t: 1290, q: "AsiaFlow · PO3. Both filters passed and price is in your key level. In session?", a: true, why: "9:30 PM is inside the Asia session, 8:00 PM – 12:00 AM ET." },
-  { m: "asia", t: 90, q: "AsiaFlow · PO3. A clean setup just formed. Inside the Asia session?", a: false, why: "1:30 AM is after the session closes at 12:00 AM ET." },
-  { m: "asia", t: 1170, q: "AsiaFlow · PO3. NY expanded hard today. Trade Asia tonight?", a: false, why: "Filter 1: when NY expanded hard, skip Asia. It's the clean session only after NY chops." },
-  { m: "asia", t: 1200, q: "AsiaFlow · PO3. Watching the 8 PM candle dip into your key level for a long. Is this the candle the model watches?", a: true, why: "Yes. For longs the 8 PM candle should go Open → Low → High → Close: dip into the level first." },
+  { m: "hl", t: 525, q: "H/L. Price is pushing up hard. Take a trade?", a: false, why: "8:45 AM is inside 7:00–9:25: the model is still building the range. No trades until it locks." },
+  { m: "hl", t: 580, q: "H/L. The range low was swept and the gap just flipped. Take it?", a: true, why: "9:40 AM, sweep and flip done, inside the first 30 minutes after 9:30: that's the A+ window." },
+  { m: "hl", t: 565, q: "H/L. The range just locked. Can a setup form from here?", a: true, why: "From 9:30 the model waits for a sweep of one side. 9:25 lock, 9:30 onward is live." },
+  { m: "hl", t: 450, q: "H/L. Price swept yesterday's low. Is this the H/L sweep?", a: false, why: "7:30 AM: the pre-market range is still forming. The H/L sweep is of the 7:00–9:25 range, after 9:30." },
+  { m: "asia", t: 1290, q: "PO3 · Asia. Both filters passed and price is in your key level. In session?", a: true, why: "9:30 PM is inside the Asia session, 8:00 PM – 12:00 AM ET." },
+  { m: "asia", t: 90, q: "PO3 · Asia. A clean setup just formed. Inside the Asia session?", a: false, why: "1:30 AM is after the session closes at 12:00 AM ET." },
+  { m: "asia", t: 1170, q: "PO3 · Asia. NY expanded hard today. Trade Asia tonight?", a: false, why: "Filter 1: when NY expanded hard, skip Asia. It's the clean session only after NY chops." },
+  { m: "asia", t: 1200, q: "PO3 · Asia. Watching the 8 PM candle dip into your key level for a long. Is this the candle the model watches?", a: true, why: "Yes. For longs the 8 PM candle should go Open → Low → High → Close: dip into the level first." },
   { m: "dl", t: 180, q: "Extended Learning. Does Range Settlement pull price right now?", a: false, why: "3:00 AM is overnight. RS forms at 9:30 and only applies after the open." },
   { m: "dl", t: 510, q: "Extended Learning. Price is near your level right at the 8:30 news. Set a limit order?", a: false, why: "Limits only when everything lines up and not near the open, news or high volatility. Wait for confirmation." },
   { m: "dl", t: 585, q: "Extended Learning. Price opened below Range Settlement. Does that favor longs?", a: true, why: "Below RS → longs, unfilled orders sit above. Above RS → shorts." },
-  { m: "po3", t: 600, q: "NYFlow · PO3. Is 10:00 AM a key time the model marks?", a: true, why: "Yes. The 10:00 ET open is the key candle: for longs it should dip first, then close higher." },
-  { m: "po3", t: 590, q: "NYFlow · PO3. Price is still chopping sideways. Trade it?", a: false, why: "Accumulation is a no-trade zone. Wait for the manipulation and the flip." },
+  { m: "po3", t: 600, q: "PO3 · New York. Is 10:00 AM a key time the model marks?", a: true, why: "Yes. The 10:00 ET open is the key candle: for longs it should dip first, then close higher." },
+  { m: "po3", t: 590, q: "PO3 · New York. Price is still chopping sideways. Trade it?", a: false, why: "Accumulation is a no-trade zone. Wait for the manipulation and the flip." },
 ];
 function drillClock() {
   const c = pick(CLOCK);

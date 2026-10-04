@@ -353,11 +353,11 @@ function memberRiskSummary(paces) {
 // src/lib/strategies.ts
 var STRATEGIES = {
   DAILY_LEVELS: { key: "DAILY_LEVELS", indicator: "ECHO X ORBIT", name: "ECHO X ORBIT", winRate: 0.94, session: null },
-  ASIAFLOW_PO3: { key: "ASIAFLOW_PO3", indicator: "AsiaFlow", name: "PO3", winRate: 0.7, session: "ASIA" },
+  ASIAFLOW_PO3: { key: "ASIAFLOW_PO3", indicator: "ASIAFLOW", name: "PO3", winRate: 0.7, session: "ASIA" },
   // A3IA is retired: kept only so old roadmaps and journal rows still resolve. Not selectable.
-  ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "AsiaFlow", name: "A3IA", winRate: 0.81, session: "ASIA" },
-  NYFLOW_PO3: { key: "NYFLOW_PO3", indicator: "NYFlow", name: "PO3", winRate: 0.745, session: "NY" },
-  NYFLOW_HL: { key: "NYFLOW_HL", indicator: "NYFlow", name: "H/L", winRate: 0.84, session: "NY" }
+  ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "ASIAFLOW", name: "A3IA", winRate: 0.81, session: "ASIA" },
+  NYFLOW_PO3: { key: "NYFLOW_PO3", indicator: "NYFLOW", name: "PO3", winRate: 0.745, session: "NY" },
+  NYFLOW_HL: { key: "NYFLOW_HL", indicator: "NYFLOW", name: "H/L", winRate: 0.84, session: "NY" }
 };
 var STRATEGY_KEYS = Object.keys(STRATEGIES);
 var RETIRED_STRATEGIES = ["ASIAFLOW_A3IA"];
@@ -490,6 +490,15 @@ function buildDashboard(raw) {
     }
   };
 }
+var schoolProgress = (s) => {
+  let done = 0, total = 0;
+  for (const l of s.levels) {
+    done += l.lessonsDone + l.checkpointsPassed + (l.exam?.pass ? 1 : 0);
+    total += l.lessons + l.checkpoints + (l.exam ? 1 : 0);
+  }
+  const certified = s.levels.every((l) => l.lessonsDone >= l.lessons && l.checkpointsPassed >= l.checkpoints && (!l.exam || l.exam.pass));
+  return { current: certified ? "Certified" : s.current, pct: total ? done / total : 0, certified };
+};
 function buildDirectoryRow(d) {
   const live = d.accounts.filter((a) => ACTIVE.includes(a.stage));
   const summary = memberRiskSummary(live.map((a) => a.pace));
@@ -504,7 +513,8 @@ function buildDirectoryRow(d) {
     behind: summary.behind,
     monthPnl: d.stats.monthPnl,
     unreadFeedback: d.feedback.filter((f) => !f.readAt).length,
-    statuses: live.map((a) => ({ label: a.label, status: a.pace.status }))
+    statuses: live.map((a) => ({ label: a.label, status: a.pace.status })),
+    school: d.school ? schoolProgress(d.school) : null
   };
 }
 function sortDirectory(rows, sort) {
@@ -527,7 +537,7 @@ function todayET(d = /* @__PURE__ */ new Date()) {
 }
 
 // src/lib/tradingPlan.ts
-var PLAN_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+var PLAN_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
 
 // src/lib/validators.ts
 var isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD");
@@ -615,10 +625,11 @@ var templatePatch = z.object({
 var planTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM");
 var tradingPlanInput = z.object({
   schedule: z.object({
-    days: z.array(z.enum(PLAN_DAYS)).min(1, "Pick at least one day").max(5),
+    days: z.array(z.enum(PLAN_DAYS)).min(1, "Pick at least one day").max(6),
     sessions: z.array(z.enum(["ASIA", "LONDON", "NY"])).min(1, "Pick at least one session").max(3),
     start: planTime,
-    end: planTime
+    end: planTime,
+    windows: z.record(z.enum(["ASIA", "LONDON", "NY"]), z.object({ start: planTime, end: planTime })).optional()
   }),
   models: z.array(z.enum(["ECHO_X_ORBIT", "NYFLOW_HL", "NYFLOW_PO3", "ASIAFLOW_PO3"])).min(1, "Pick at least one model").max(4),
   entries: z.object({
@@ -645,7 +656,7 @@ var tradingPlanInput = z.object({
 
 // src/lib/practice.ts
 var PRACTICE_MODELS = ["hl", "po3", "dl", "asia", "exo"];
-var PRACTICE_MODEL_LABEL = { dl: "Extended Learning", exo: "ECHO X ORBIT", hl: "NYFlow \xB7 H/L", po3: "NYFlow \xB7 PO3", asia: "AsiaFlow \xB7 PO3" };
+var PRACTICE_MODEL_LABEL = { dl: "Extended Learning", exo: "ECHO X ORBIT", hl: "H/L", po3: "PO3 \xB7 New York", asia: "PO3 \xB7 Asia" };
 var PRACTICE_TAGS = {
   "early-entry": "Enters before the flip closes",
   "traded-range": "Trades while the range is still building",
@@ -723,7 +734,7 @@ var SCHOOL_LEVELS = [
   ], exam: true },
   { id: "advanced", name: "Advanced", modules: [
     { id: "a1", lessons: ["d:rs", "c:dl"] },
-    { id: "a2", lessons: ["c:hl", "c:po3", "c:asia"] }
+    { id: "a2", lessons: ["c:hl", "c:po3+asia"] }
   ], exam: true },
   { id: "exo", name: "ECHO X ORBIT", modules: [
     { id: "x1", lessons: ["d:exo-intro", "d:echo", "d:orbit", "d:exo-rules", "d:exo-replay"] }
@@ -732,7 +743,7 @@ var SCHOOL_LEVELS = [
 var SCHOOL_LEVEL_IDS = SCHOOL_LEVELS.map((l) => l.id);
 var DIVE_PARTS = {
   futures: 5,
-  charts: 5,
+  charts: 6,
   orders: 3,
   risk: 3,
   rs: 3,
@@ -761,7 +772,7 @@ var MODULE_LABEL = {
   i4: "Trading psychology",
   i5: "Day in the life & plan",
   a1: "Extended Learning",
-  a2: "Indicator models",
+  a2: "H/L & PO3",
   x1: "ECHO X ORBIT"
 };
 function summarizeSchool(state, unlocks, attempts) {
@@ -1294,7 +1305,7 @@ function cleanSchoolState(b) {
 app.get("/api/school", async (c) => {
   const u = c.get("user");
   const [row] = await sql`select state, unlocks from "SchoolProgress" where "userId" = ${u.id}`;
-  return c.json({ state: row ? typeof row.state === "string" ? JSON.parse(row.state) : row.state : null, unlocks: row?.unlocks ?? [], staff: isStaff(u) });
+  return c.json({ state: row ? typeof row.state === "string" ? JSON.parse(row.state) : row.state : null, unlocks: row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username });
 });
 app.put("/api/school", async (c) => {
   const json = JSON.stringify(cleanSchoolState(await c.req.json()));

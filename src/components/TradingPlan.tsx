@@ -5,21 +5,22 @@ import { useState } from "react";
 import { api } from "@/lib/api-client";
 import type { CatalogFirm, DashboardData } from "@/lib/types";
 import {
-  PLAN_DAYS, PLAN_ENTRY, PLAN_MODELS, PLAN_SESSIONS, fmtTime, planMaxDailyLoss, planRewardPerTrade, planRiskPerTrade,
+  PLAN_DAYS, PLAN_ENTRY, PLAN_MODELS, PLAN_SESSIONS, SESSION_RANGE, fmtTime, planWindows, windowsText, planMaxDailyLoss, planRewardPerTrade, planRiskPerTrade,
   type PlanModel, type PlanSession, type TradingPlanDTO, type TradingPlanInput,
 } from "@/lib/tradingPlan";
 import { usd } from "@/lib/format";
 import { ErrorLine, Field, Panel, Stat, cx } from "./ui";
 import { IconTarget } from "./icons";
 import { ProjectionsPage } from "./Projections";
+import { EvalSniperPage } from "./EvalSniper";
 
 const STEPS = ["Schedule", "Models", "Entries & targets", "Risk & limits", "Your numbers", "Plan card"] as const;
 
 function defaults(data: DashboardData): TradingPlanInput {
-  if (data.tradingPlan) { const { done: _d, updatedAt: _u, ...p } = data.tradingPlan; return p; }
+  if (data.tradingPlan) { const { done: _d, updatedAt: _u, ...p } = data.tradingPlan; if (!p.schedule.windows && p.schedule.sessions[0]) p.schedule = { ...p.schedule, windows: { [p.schedule.sessions[0]]: { start: p.schedule.start, end: p.schedule.end } } }; return p; }
   const rm = data.roadmap;
   return {
-    schedule: { days: ["Mon", "Tue", "Wed", "Thu", "Fri"], sessions: ["NY"], start: "09:30", end: "11:00" },
+    schedule: { days: ["Mon", "Tue", "Wed", "Thu", "Fri"], sessions: ["NY"], start: "09:30", end: "11:00", windows: { NY: { start: "09:30", end: "11:00" } } },
     models: ["ECHO_X_ORBIT"],
     entries: { entry: "both", stopPts: rm?.avgStopPoints ?? 15, targetPts: 40, beAt1R: true, partials: false },
     risk: { instrument: rm?.primaryInstrument === "NQ" ? "NQ" : "MNQ", contracts: 1, maxLossesPerDay: 2, maxTradesPerDay: 3, dailyProfitStop: null, noNews: true },
@@ -29,16 +30,16 @@ function defaults(data: DashboardData): TradingPlanInput {
 }
 
 export function TradingPlanPage({ data, catalog, onSaved }: { data: DashboardData; catalog: CatalogFirm[]; onSaved: () => Promise<void> }) {
-  const [tab, setTab] = useState<"build" | "proj">(() => (typeof location !== "undefined" && location.hash === "#plan-projections" ? "proj" : "build"));
+  const [tab, setTab] = useState<"build" | "proj" | "sniper">(() => (typeof location !== "undefined" && location.hash === "#plan-projections" ? "proj" : typeof location !== "undefined" && location.hash === "#plan-sniper" ? "sniper" : "build"));
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Trading Plan">
-        {([["build", "Build your plan"], ["proj", "Projections"]] as const).map(([k, t]) => (
+        {([["build", "Build your plan"], ["proj", "Projections"], ["sniper", "EVAL SNIPER"]] as const).map(([k, t]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
             className={cx("border px-4 py-2 font-hud text-[10.5px] uppercase tracking-[0.16em]", tab === k ? "border-ice bg-ice/10 text-ice shadow-[inset_0_-2px_0_var(--color-signal)]" : "border-line text-ink-3 hover:text-ink-2")}>{t}</button>
         ))}
       </div>
-      {tab === "build" ? <PlanBuilder data={data} onSaved={onSaved} onProjections={() => setTab("proj")} /> : <ProjectionsPage data={data} catalog={catalog} onSaved={onSaved} />}
+      {tab === "build" ? <PlanBuilder data={data} onSaved={onSaved} onProjections={() => setTab("proj")} /> : tab === "sniper" ? <EvalSniperPage data={data} /> : <ProjectionsPage data={data} catalog={catalog} onSaved={onSaved} />}
     </div>
   );
 }
@@ -65,8 +66,11 @@ function PlanBuilder({ data, onSaved, onProjections }: { data: DashboardData; on
   const [saved, setSaved] = useState<string | null>(data.tradingPlan?.updatedAt ?? null);
   const set = <K extends keyof TradingPlanInput>(k: K, v: Partial<TradingPlanInput[K]>) => setP((x) => ({ ...x, [k]: Array.isArray(v) ? v : { ...(x[k] as object), ...v } }));
 
+  const syncWin = (sessions: PlanSession[], windows: NonNullable<TradingPlanInput["schedule"]["windows"]>) => { const first = sessions[0] && (windows[sessions[0]] ?? SESSION_RANGE[sessions[0]]); return { sessions, windows, ...(first ? { start: first.start, end: first.end } : {}) }; };
+  const toggleSession = (s: PlanSession) => { const sessions = toggleIn(p.schedule.sessions, s); const windows = { ...(p.schedule.windows ?? {}) }; if (sessions.includes(s) && !windows[s]) windows[s] = { ...SESSION_RANGE[s] }; if (!sessions.includes(s)) delete windows[s]; set("schedule", syncWin(sessions, windows)); };
+  const setWindow = (s: PlanSession, w: { start: string; end: string }) => set("schedule", syncWin(p.schedule.sessions, { ...(p.schedule.windows ?? {}), [s]: w }));
   const problems: (string | null)[] = [
-    !p.schedule.days.length ? "Pick at least one day." : !p.schedule.sessions.length ? "Pick at least one session." : p.schedule.start >= p.schedule.end && !p.schedule.sessions.includes("ASIA") ? "End time must be after start time." : null,
+    !p.schedule.days.length ? "Pick at least one day." : !p.schedule.sessions.length ? "Pick at least one session." : planWindows(p).some((w) => w.start >= w.end) ? "Each window’s end time must be after its start time." : null,
     !p.models.length ? "Pick at least one model." : null,
     p.entries.stopPts <= 0 || p.entries.targetPts <= 0 ? "Stop and target must be above 0." : null,
     p.risk.contracts < 1 ? "At least 1 contract." : p.risk.maxLossesPerDay < 1 ? "Max losses must be at least 1." : null,
@@ -108,10 +112,16 @@ function PlanBuilder({ data, onSaved, onProjections }: { data: DashboardData; on
             <>
               <p className="text-sm text-ink-2">When do you trade? Pick the days and sessions you’ll actually be at the screen, and your window. Outside it, you don’t trade.</p>
               <div className="flex flex-wrap gap-2">{PLAN_DAYS.map((d) => <Chip key={d} on={p.schedule.days.includes(d)} onClick={() => set("schedule", { days: toggleIn(p.schedule.days, d) })}>{d}</Chip>)}</div>
-              <div className="flex flex-wrap gap-2">{(Object.keys(PLAN_SESSIONS) as PlanSession[]).map((s) => <Chip key={s} on={p.schedule.sessions.includes(s)} onClick={() => set("schedule", { sessions: toggleIn(p.schedule.sessions, s) })}>{PLAN_SESSIONS[s]}</Chip>)}</div>
-              <div className="grid max-w-md grid-cols-2 gap-3">
-                <Field label="Window starts (ET)" htmlFor="pl-start"><input id="pl-start" type="time" className="field" value={p.schedule.start} onChange={(e) => set("schedule", { start: e.target.value })} /></Field>
-                <Field label="Window ends (ET)" htmlFor="pl-end"><input id="pl-end" type="time" className="field" value={p.schedule.end} onChange={(e) => set("schedule", { end: e.target.value })} /></Field>
+              <div className="flex flex-wrap gap-2">{(Object.keys(PLAN_SESSIONS) as PlanSession[]).map((s) => <Chip key={s} on={p.schedule.sessions.includes(s)} onClick={() => toggleSession(s)}>{PLAN_SESSIONS[s]}</Chip>)}</div>
+              {p.schedule.days.includes("Sun") && !p.schedule.sessions.includes("ASIA") && <p className="text-xs text-ink-3">Sunday only has the Asia open (from 6 PM). Add Asia if you trade Sunday night.</p>}
+              <div className="grid gap-2">
+                <div className="label">Your windows (ET) · pick the part of each session that fits your day</div>
+                {p.schedule.sessions.map((s) => { const w = p.schedule.windows?.[s] ?? SESSION_RANGE[s]; return (
+                  <div key={s} className="grid max-w-xl grid-cols-[110px_1fr_1fr] items-end gap-3">
+                    <span className="pb-2 text-sm">{PLAN_SESSIONS[s].split(" ·")[0]}</span>
+                    <Field label="From" htmlFor={`pl-${s}-a`}><input id={`pl-${s}-a`} type="time" className="field" value={w.start} onChange={(e) => setWindow(s, { ...w, start: e.target.value })} /></Field>
+                    <Field label="To" htmlFor={`pl-${s}-b`}><input id={`pl-${s}-b`} type="time" className="field" value={w.end} onChange={(e) => setWindow(s, { ...w, end: e.target.value })} /></Field>
+                  </div>); })}
               </div>
             </>
           )}
@@ -203,7 +213,7 @@ function PlanCardBody({ plan }: { plan: TradingPlanInput }) {
   return (
     <div className="grid gap-4">
       <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
-        <Stat label="Window (ET)" value={`${fmtTime(plan.schedule.start)}–${fmtTime(plan.schedule.end)}`} sub={`${plan.schedule.days.length === 5 ? "Mon–Fri" : plan.schedule.days.join(" ")} · ${plan.schedule.sessions.map((s) => PLAN_SESSIONS[s].split(" ·")[0]).join(", ")}`} />
+        <Stat label="Window (ET)" value={windowsText(plan)} sub={plan.schedule.days.join(" ")} />
         <Stat label="Bracket" value={`${plan.entries.stopPts} / ${plan.entries.targetPts}`} sub={`${plan.risk.contracts} ${plan.risk.instrument} · ${usd(risk)} risk`} />
         <Stat label="Daily stop" value={`${plan.risk.maxLossesPerDay} L · ${plan.risk.maxTradesPerDay} T`} tone="loss" sub={`max ${usd(planMaxDailyLoss(plan))}`} />
         <Stat label="Goal" value={usd(plan.numbers.monthlyGoal)} tone="ice" sub={`${plan.numbers.tradingDays} days · ${usd(plan.numbers.monthlyGoal / Math.max(1, plan.numbers.tradingDays))}/day`} />
