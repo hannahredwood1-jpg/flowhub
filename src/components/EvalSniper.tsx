@@ -1,7 +1,7 @@
 "use client";
 // EVAL SNIPER: how the indicator works + a calculator for the contracts needed to pass an eval.
 import { useMemo, useState } from "react";
-import type { DashboardData } from "@/lib/types";
+import type { CatalogFirm, DashboardData } from "@/lib/types";
 import { SNIPER_DEFAULTS, minWinningDays, recommended, sniperOptions } from "@/lib/evalSniper";
 import { usd } from "@/lib/format";
 import { Field, Panel, Stat, cx } from "./ui";
@@ -29,14 +29,25 @@ function Diagram({ pad, tp, sl }: { pad: number; tp: number; sl: number }) {
   );
 }
 
-export function EvalSniperPage({ data }: { data: DashboardData }) {
-  const evals = data.accounts.filter((a) => a.stage === "EVAL" && a.rules.profitTarget);
-  const [acctId, setAcctId] = useState<string>(evals[0]?.id ?? "manual");
+// Firm rules store consistency as a percent (50 = 50%); the sizing math wants a fraction.
+const pctOf = (v: number | null) => (v == null ? null : v > 1 ? v / 100 : v);
+
+export function EvalSniperPage({ data, catalog }: { data: DashboardData; catalog: CatalogFirm[] }) {
+  const evals = data.accounts.filter((a) => a.rules.profitTarget);
+  const [acctId, setAcctId] = useState<string>(evals[0]?.id ?? (catalog.length ? "catalog" : "manual"));
   const acct = evals.find((a) => a.id === acctId);
+  const [firm, setFirm] = useState(catalog[0]?.firm ?? "");
+  const plans = catalog.find((f) => f.firm === firm)?.plans ?? [];
+  const [plan, setPlan] = useState(plans[0]?.plan ?? "");
+  const sizes = (plans.find((p) => p.plan === plan) ?? plans[0])?.sizes.filter((z) => z.profitTarget) ?? [];
+  const [sizeId, setSizeId] = useState(sizes[0]?.id ?? "");
+  const size = sizes.find((z) => z.id === sizeId) ?? sizes[0];
   const [m, setM] = useState({ remaining: 3000, room: 2000, dll: "", maxMinis: 5, maxMicros: 50, consistency: "50" });
   const [s, setS] = useState({ ...SNIPER_DEFAULTS });
-  const input = acct
-    ? { remaining: Math.max(0, (acct.rules.profitTarget ?? 0) - acct.pace.profit), drawdownRoom: acct.pace.drawdownRoom, dailyLossLimit: acct.dailyLossLimitOverride ?? acct.rules.dailyLossLimit, maxMinis: acct.rules.maxMinis, maxMicros: acct.rules.maxMicros, consistencyPct: acct.rules.consistencyPct }
+  const input = acctId === "catalog" && size
+    ? { remaining: size.profitTarget ?? 0, drawdownRoom: size.maxLoss, dailyLossLimit: size.dailyLossLimit, maxMinis: size.maxMinis, maxMicros: size.maxMicros, consistencyPct: pctOf(size.consistencyPct) }
+    : acct
+    ? { remaining: Math.max(0, (acct.rules.profitTarget ?? 0) - acct.pace.profit), drawdownRoom: acct.pace.drawdownRoom, dailyLossLimit: acct.dailyLossLimitOverride ?? acct.rules.dailyLossLimit, maxMinis: acct.rules.maxMinis, maxMicros: acct.rules.maxMicros, consistencyPct: pctOf(acct.rules.consistencyPct) }
     : { remaining: +m.remaining, drawdownRoom: +m.room, dailyLossLimit: m.dll === "" ? null : +m.dll, maxMinis: +m.maxMinis, maxMicros: +m.maxMicros, consistencyPct: m.consistency === "" ? null : +m.consistency / 100 };
   const opts = useMemo(() => sniperOptions({ ...input, tp: s.tp, sl: s.sl }), [JSON.stringify(input), s.tp, s.sl]); // eslint-disable-line react-hooks/exhaustive-deps
   const rec = recommended(opts);
@@ -50,16 +61,16 @@ export function EvalSniperPage({ data }: { data: DashboardData }) {
       <header className="hud animate-rise px-4 py-4">
         <div className="label flex items-center gap-2 !text-ice"><IconTarget size={13} /> Eval pass indicator</div>
         <h1 className="mt-1 font-display text-[clamp(22px,3vw,30px)] font-black uppercase leading-none">EVAL SNIPER</h1>
-        <p className="mt-2 max-w-3xl text-sm text-ink-2">Built to pass evaluations fast. It doesn’t predict direction: it sets a trap on both sides of price and lets the market pick. Size it so one or two clean wins hit your profit target without one loss ending the account.</p>
+        <p className="mt-2 max-w-3xl text-sm text-ink-2">Built to pass evaluations fast during <b className="text-ink">red-folder news events</b>. It doesn’t predict direction: it sets a trap on both sides of price and lets the news spike pick the side. Run it on the <b className="text-ink">1-minute chart</b>, and size it so one or two clean wins hit your profit target without one loss ending the account.</p>
       </header>
 
       <Panel title="How it works">
         <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)]">
           <Diagram pad={s.pad} tp={s.tp} sl={s.sl} />
           <ol className="grid content-start gap-2 text-sm text-ink-2">
-            <li><b className="text-ink">1 · Current price.</b> The blue line follows price on every candle.</li>
-            <li><b className="text-ink">2 · Two pads.</b> A <span className="text-win">Buy Pad</span> {s.pad} pts above and a <span className="text-signal">Sell Pad</span> {s.pad} pts below. Place a buy stop on the Buy Pad and a sell stop on the Sell Pad.</li>
-            <li><b className="text-ink">3 · Price picks a side.</b> Whichever pad price runs into first fills. Cancel the other order straight away.</li>
+            <li><b className="text-ink">1 · 1-minute chart, red-folder news.</b> Only use it on the <b className="text-ink">1m</b> chart, and only into a red-folder release (CPI, NFP, FOMC…). The blue line follows current price.</li>
+            <li><b className="text-ink">2 · Two pads.</b> A <span className="text-win">Buy Pad</span> {s.pad} pts above and a <span className="text-signal">Sell Pad</span> {s.pad} pts below. Place a <b className="text-ink">buy stop</b> on the Buy Pad and a <b className="text-ink">sell stop</b> on the Sell Pad <b className="text-signal">seconds before the news drops</b>, not earlier: the pads move with price, so set them off the last 1m price.</li>
+            <li><b className="text-ink">3 · The release picks a side.</b> The news spike runs into one pad and fills it. Cancel the other order straight away.</li>
             <li><b className="text-ink">4 · Bracket off the pad.</b> Take profit {s.tp} pts past the pad, stop loss {s.sl} pts back through it. The pad distance keeps you out of the chop around current price.</li>
             <li><b className="text-ink">5 · Size to pass.</b> Use the calculator below so a win (or two) reaches the target and a loss doesn’t touch the drawdown.</li>
           </ol>
@@ -71,14 +82,22 @@ export function EvalSniperPage({ data }: { data: DashboardData }) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Account" htmlFor="sn-acct" className="sm:col-span-2">
               <select id="sn-acct" className="field" value={acctId} onChange={(e) => setAcctId(e.target.value)}>
-                {evals.map((a) => <option key={a.id} value={a.id}>{a.label} · {usd(Math.max(0, (a.rules.profitTarget ?? 0) - a.pace.profit))} to go</option>)}
+                {evals.length > 0 && <optgroup label="My accounts">{evals.map((a) => <option key={a.id} value={a.id}>{a.label} · {usd(Math.max(0, (a.rules.profitTarget ?? 0) - a.pace.profit))} to go</option>)}</optgroup>}
+                <option value="catalog">Any firm account (new eval)…</option>
                 <option value="manual">Enter numbers myself</option>
               </select>
             </Field>
             {numIn("sn-tp", "Take profit (pts)", s.tp, (v) => setS({ ...s, tp: +v }))}
             {numIn("sn-sl", "Stop loss (pts)", s.sl, (v) => setS({ ...s, sl: +v }))}
           </div>
-          {!acct && (
+          {acctId === "catalog" && (
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Firm" htmlFor="sn-firm"><select id="sn-firm" className="field" value={firm} onChange={(e) => { const f = catalog.find((x) => x.firm === e.target.value); setFirm(e.target.value); setPlan(f?.plans[0]?.plan ?? ""); setSizeId(f?.plans[0]?.sizes.find((z) => z.profitTarget)?.id ?? ""); }}>{catalog.map((f) => <option key={f.firm}>{f.firm}</option>)}</select></Field>
+              <Field label="Plan" htmlFor="sn-plan"><select id="sn-plan" className="field" value={plan} onChange={(e) => { setPlan(e.target.value); setSizeId(plans.find((p) => p.plan === e.target.value)?.sizes.find((z) => z.profitTarget)?.id ?? ""); }}>{plans.map((p) => <option key={p.plan}>{p.plan}</option>)}</select></Field>
+              <Field label="Size" htmlFor="sn-size"><select id="sn-size" className="field" value={size?.id ?? ""} onChange={(e) => setSizeId(e.target.value)}>{sizes.map((z) => <option key={z.id} value={z.id}>{Math.round(z.accountSize / 1000)}K · target {usd(z.profitTarget ?? 0)}</option>)}</select></Field>
+            </div>
+          )}
+          {acctId === "manual" && (
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
               {numIn("sn-rem", "$ left to target", m.remaining, (v) => setM({ ...m, remaining: +v }))}
               {numIn("sn-room", "$ drawdown left", m.room, (v) => setM({ ...m, room: +v }))}
@@ -88,7 +107,7 @@ export function EvalSniperPage({ data }: { data: DashboardData }) {
               {numIn("sn-con", "Consistency %", m.consistency, (v) => setM({ ...m, consistency: v }), "Blank = none")}
             </div>
           )}
-          {acct && (
+          {acctId !== "manual" && (acct || size) && (
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
               <Stat label="Left to target" value={usd(input.remaining)} tone="ice" />
               <Stat label="Drawdown left" value={usd(input.drawdownRoom)} tone="loss" />

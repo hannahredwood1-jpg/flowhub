@@ -39,7 +39,7 @@ export function TradingPlanPage({ data, catalog, onSaved }: { data: DashboardDat
             className={cx("border px-4 py-2 font-hud text-[10.5px] uppercase tracking-[0.16em]", tab === k ? "border-ice bg-ice/10 text-ice shadow-[inset_0_-2px_0_var(--color-signal)]" : "border-line text-ink-3 hover:text-ink-2")}>{t}</button>
         ))}
       </div>
-      {tab === "build" ? <PlanBuilder data={data} onSaved={onSaved} onProjections={() => setTab("proj")} /> : tab === "sniper" ? <EvalSniperPage data={data} /> : <ProjectionsPage data={data} catalog={catalog} onSaved={onSaved} />}
+      {tab === "build" ? <PlanBuilder data={data} onSaved={onSaved} onProjections={() => setTab("proj")} /> : tab === "sniper" ? <EvalSniperPage data={data} catalog={catalog} /> : <ProjectionsPage data={data} catalog={catalog} onSaved={onSaved} />}
     </div>
   );
 }
