@@ -20,7 +20,7 @@ export const SCHOOL_LEVEL_IDS = SCHOOL_LEVELS.map((l) => l.id) as string[];
 // Section counts per dive, so "done" means every part is finished.
 export const DIVE_PARTS: Record<string, number> = {
   futures: 5, charts: 6, orders: 3, risk: 3, rs: 3, planlesson: 2, setup: 5, prop: 4, math: 4, manage: 3, mistakes: 4, psych: 1, day: 4,
-  "exo-intro": 3, echo: 4, orbit: 4, "exo-rules": 4, "exo-replay": 2,
+  "exo-intro": 5, echo: 5, orbit: 5, "exo-rules": 4, "exo-replay": 2,
 };
 type Best = { best?: number; pass?: boolean; n?: number; at?: number };
 export type SchoolState = { ch?: string[]; dives?: Record<string, Record<string, number>>; ck?: Record<string, Best>; ex?: Record<string, Best> };

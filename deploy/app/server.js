@@ -755,9 +755,9 @@ var DIVE_PARTS = {
   mistakes: 4,
   psych: 1,
   day: 4,
-  "exo-intro": 3,
-  echo: 4,
-  orbit: 4,
+  "exo-intro": 5,
+  echo: 5,
+  orbit: 5,
   "exo-rules": 4,
   "exo-replay": 2
 };

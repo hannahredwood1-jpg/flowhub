@@ -407,6 +407,12 @@ input.in:focus{outline:2px solid var(--ice);outline-offset:1px}
 [data-exo-hero] .exo-cv{margin-bottom:6px}
 .lv-cert{border-color:var(--signal);background:linear-gradient(120deg,rgb(255 106 0 / .08),transparent 60%),var(--panel)}
 .w > figure.t-vis{max-width:620px}
+.learn{border-left:3px solid var(--ice)}
+.learn-h{margin:4px 0 2px;font-family:var(--f-display);font-weight:900;font-size:20px;text-transform:uppercase;letter-spacing:.01em}
+.learn-p{color:var(--ink2);font-size:15.5px;max-width:680px}
+.learn-p p{margin:6px 0}.learn-p ul{margin:6px 0;padding-left:18px;display:grid;gap:4px}
+.learn-fig{max-width:620px}
+.learn-dots{display:flex;gap:4px}.learn-dots i{flex:1;max-width:46px;height:3px;background:var(--line2)}.learn-dots i.on{background:var(--ice)}.learn-dots i.now{background:var(--signal)}
 .cert-ov{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgb(2 3 6 / .82);backdrop-filter:blur(6px);animation:certIn .4s ease-out}
 .cert-box{display:grid;gap:12px;width:min(1100px,100%)}
 .cert-box canvas{width:100%;height:auto;box-shadow:0 0 0 1px rgb(156 203 255 / .2),0 30px 90px rgb(255 106 0 / .18)}
@@ -3412,6 +3418,36 @@ const rings = (api, x, y, t, col, n = 3) => { const { ctx } = api; for (let k = 
 const hline = (api, p, i0, col, label, dash = [5, 4]) => { const { ctx, m } = api; const y = m.y(p); ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash(dash); ctx.beginPath(); ctx.moveTo(m.x(i0), y); ctx.lineTo(m.R, y); ctx.stroke(); ctx.setLineDash([]); if (label) { ctx.font = '10px JetBrains Mono, monospace'; ctx.fillStyle = col; ctx.fillText(label, m.R + 4, y + 3); } };
 const zone = (api, i0, i1, a, b, col, label, up) => { const { ctx, m } = api; const y0 = m.y(Math.max(a, b)), y1 = m.y(Math.min(a, b)), x0 = m.x(i0) - m.bw / 2, x1 = m.x(i1) + m.bw / 2; ctx.fillStyle = alpha(col, 0.12); ctx.fillRect(x0, y0, x1 - x0, y1 - y0); ctx.strokeStyle = alpha(COL.ink2, 0.7); ctx.lineWidth = 1; ctx.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0 - 1, y1 - y0 - 1); if (label) api.tab(x0, up ? y0 : y1, label, col, up); };
 
+// ── Lesson player: step through slides, each with context and a chart you can play. done() on the last slide. ──
+// slide: { t: title, p: explanation (html), spec?: tSvg spec | term?: 'CISD' (uses that term's chart), html?: extra html }
+function wLearn(el, done, slides) {
+  const box = h('div', 'w learn'); el.append(box); let i = 0, timer = null, finished = false;
+  const T = (s) => (s.term ? termById(s.term) : null);
+  const has = (s) => !!(s.spec || T(s));
+  const svgAt = (s, f) => (s.spec ? tSvg(s.spec, f) : termSvg(T(s), f));
+  const framesOf = (s) => (s.spec ? tFrames(s.spec) : termFrames(T(s)));
+  const draw = () => {
+    clearInterval(timer); const s = slides[i], sp = has(s);
+    box.innerHTML = `<div class="dv-top"><span class="hud">Step ${i + 1} / ${slides.length}</span><span class="grow"></span>${sp && framesOf(s) ? '<button type="button" class="btn ghost" data-play>▶ Play it</button>' : ''}</div>
+      <div class="learn-dots">${slides.map((_, k) => `<i class="${k < i ? 'on' : k === i ? 'now' : ''}"></i>`).join('')}</div>
+      <h4 class="learn-h">${s.t}</h4>
+      ${sp ? `<figure class="t-vis learn-fig" style="margin:0">${svgAt(s)}</figure>` : ''}${s.html || ''}
+      <div class="learn-p">${s.p}</div>
+      <div class="actions">${i > 0 ? '<button type="button" class="btn ghost" data-prev>← Back</button>' : ''}${i < slides.length - 1 ? `<button type="button" class="btn primary" data-nx>Next: ${esc(slides[i + 1].t.replace(/<[^>]+>/g, ''))} →</button>` : '<span class="hud" style="color:var(--win);align-self:center">✓ Lesson done. Now prove it below.</span>'}</div>`;
+    if (i === slides.length - 1 && !finished) { finished = true; done(); }
+  };
+  const play = () => {
+    const s = slides[i]; if (!has(s) || !framesOf(s)) return; clearInterval(timer); const fig = box.querySelector('.learn-fig'), total = framesOf(s), step = s.spec || !T(s).custom ? 110 : 650; let f = 0;
+    timer = setInterval(() => { if (!fig.isConnected) return clearInterval(timer); fig.innerHTML = svgAt(s, f); f++; if (f >= total) { clearInterval(timer); setTimeout(() => { if (fig.isConnected) fig.innerHTML = svgAt(s); }, step); } }, RM() ? 1 : step);
+  };
+  box.addEventListener('click', (e) => {
+    if (e.target.closest('[data-nx]')) { i++; draw(); play(); }
+    else if (e.target.closest('[data-prev]')) { i--; draw(); }
+    else if (e.target.closest('[data-play]')) play();
+  });
+  draw();
+}
+
 // ════════ New lessons: Beginner modules, Extended Learning, plan lesson, ECHO X ORBIT ════════
 // Running inside FLOWHUB (server injects the top nav) vs. a standalone preview.
 const LIVE = !!document.querySelector('.fh-nav');
@@ -3593,22 +3629,78 @@ const SC_EXO_SKIP = (() => {
     ], end: 'Price tagged that nearby high and rolled over through the stop area. Skipping it was the trade.', endAt: 17 };
 })();
 
+// ════════ ECHO X ORBIT teaching slides (shown before every question) ════════
+const E_ = ECHO, O_ = ORBIT;
+const eSpec = (n, ann) => ({ c: ECHO_C.slice(0, n), slots: ECHO_C.length, ann });
+const oSpec = (n, ann) => ({ c: ORBIT_C.slice(0, n), slots: ORBIT_C.length, ann });
+const OLD_LOW = { k: 'h', p: E_.oldLow, i0: 4, col: 'ink2', t: 'old low', below: true };
+const FVG_BAND = { k: 'band', lo: E_.fvgLo, hi: E_.fvgHi, i0: 7.5, i1: 10.5, col: 'ice', t: 'FVG' };
+const FIB_LINES = [[0, 'ice'], [0.5, 'ink2'], [0.62, 'signal'], [0.79, 'signal'], [1, 'ice']].map(([r, col]) => ({ k: 'h', p: fibLvl(r), i0: 0, col, t: String(r), tpos: 'l', dash: '3 3', w: 1 }));
+const OTE_BAND = { k: 'band', lo: fibLvl(0.79), hi: fibLvl(0.62), i0: 0, col: 'signal', t: 'OTE 0.62–0.79', tx: 'r', fill: 0.14 };
+const GAP_BAND = { k: 'band', lo: O_.ifvgLo, hi: O_.ifvgHi, i0: 9.5, i1: 12.5, col: 'lag', t: 'gap on the leg in', tpos: 'above' };
+const LEARN = {
+  flow: [
+    { t: 'Every trade starts with liquidity', p: '<p>Price moves toward places where lots of orders are waiting: old highs and lows, session highs and lows, equal highs and lows. Stop losses sit just past them. That pool of orders is <b>liquidity</b>, and where price is heading next is <b>the draw</b>.</p>', term: 'LIQUIDITY' },
+    { t: 'Then an engine finds the entry', p: '<p>ECHO X ORBIT doesn’t guess. It waits for one of two patterns that show price is turning <b>toward</b> the draw:</p><ul><li><b>Echo</b>: price sweeps a low, flips with a CISD, and gets rejected inside a fair value gap.</li><li><b>Orbit</b>: after a big swing, price pulls back deep into the OTE zone and flips back.</li></ul>' },
+    { t: 'And it must pay at least 2×', p: '<p>No trade unless the draw is at least <b>2× your stop</b> away. That rule is why a small number of losses never wipes out the wins. You’ll practise each piece next, one at a time.</p>' },
+  ],
+  liquidity: [
+    { t: 'Equal highs and lows', p: '<p>When price makes two highs (or lows) at the same level, traders put stops right past them. Two touches = a pool of orders. Confluence Master marks <b>EQH / EQL</b> for you on the 4H and daily.</p>', term: 'EQH' },
+    { t: 'The sweep', p: '<p>Price runs through the level, fills those stops, and often snaps back. That run is a <b>sweep</b>. It’s the first thing Echo waits for, but on its own it is <b>not</b> an entry.</p>', term: 'SWEEP' },
+    { t: 'Session and daily highs and lows', p: '<p>The Asia, London and New York highs and lows, and yesterday’s high and low, are liquidity too. Confluence Master draws the session levels. These are your <b>draws</b>: where you take profit.</p>', term: 'PDH / PDL' },
+  ],
+  words: [
+    { t: 'FVG · Fair Value Gap', p: '<p>Three candles: when the middle one moves so fast that the 1st candle’s high and the 3rd candle’s low don’t overlap, the empty space is a <b>fair value gap</b>. Price often comes back to it. Echo’s rejection block has to sit <b>inside</b> one.</p>', term: 'FVG' },
+    { t: 'CISD · Change in State of Delivery', p: '<p>Price was being delivered down. When a candle <b>closes back above the opening price</b> of that down-move, delivery has changed direction. Press Play and watch the close cross the line. You read this by eye: Confluence Master doesn’t mark it.</p>', term: 'CISD' },
+    { t: 'RB · Rejection Block', p: '<p>Price pushes into a zone and gets slapped back out, leaving a long <b>wick</b>. That wick area is the rejection block. In Echo, it’s the entry. Set Confluence Master’s zone type to <b>RB / iRB</b>.</p>', term: 'RB' },
+    { t: 'OTE · Optimal Trade Entry', p: '<p>Draw a fib from the start to the end of a big swing. The <b>0.62–0.79</b> band is the deep part of the pullback, the OTE zone. Orbit only looks for entries in there.</p>', term: 'OTE' },
+    { t: 'ES confirmation', p: '<p>Put <b>ES</b> (S&P 500 futures) next to NQ. When ES sweeps, rejects or shifts at the same moment as NQ, the idea is stronger. It’s a confluence: nice to have, never required.</p>', term: 'ES CONF' },
+  ],
+  echo: [
+    { t: 'Liquidity under an old low', p: '<p>Here’s an old low. Stops are sitting just under it. That’s liquidity Echo expects price to go and take first.</p>', spec: eSpec(7, [OLD_LOW]) },
+    { t: 'The sweep', p: '<p>Price dips under the old low, takes the stops, then the selling dries up. Remember: <b>a sweep alone is not an entry</b>.</p>', spec: eSpec(9, [OLD_LOW, { k: 'dot', i: 7, p: 21481, col: 'signal', t: 'sweep', pos: 'below', at: 7 }]) },
+    { t: 'Displacement and the FVG', p: '<p>A strong candle rips back up. It moves so fast it leaves a <b>fair value gap</b> between the candle before and the candle after. That gap is where you’ll look for the entry later.</p>', spec: eSpec(11, [OLD_LOW, { ...FVG_BAND, at: 10 }, { k: 'arrow', i: 9, p: 21485, dir: 'up', col: 'win', at: 9 }]) },
+    { t: 'The CISD', p: '<p>Look at where the down-move started (the dashed line). The big candle <b>closes above it</b>. That close is the CISD: sellers were delivering price, now buyers are.</p>', spec: eSpec(11, [OLD_LOW, FVG_BAND, { k: 'h', p: E_.cisd, i0: 6, i1: 10, col: 'ice', t: 'open of the down-move', tpos: 'l' }, { k: 'tag', i: 9, p: 21506, dy: -8, t: 'CISD ↑', col: 'signal', big: true, at: 9 }]) },
+    { t: 'The rejection block inside the gap', p: '<p>Price comes back down <b>into the FVG</b> and gets rejected, leaving a long lower wick. That wick is the <b>rejection block</b>: the Echo entry. A gap from the 1H or 4H chart beats one from the 5m.</p>', spec: eSpec(14, [OLD_LOW, FVG_BAND, { k: 'band', lo: E_.rbLo, hi: E_.rbHi, i0: 11.6, i1: 12.4, col: 'signal', t: 'RB', tpos: 'below', at: 12 }]) },
+    { t: 'Entry, stop and the draw', p: '<p>Enter at the rejection block. Stop just past the wick. Target the next liquidity above: the old high. It’s <b>more than 2× the stop</b> away, so the trade is valid.</p>', spec: { c: ECHO_C, ann: [FVG_BAND, { k: 'h', p: E_.entry, i0: 12, col: 'ice', t: 'entry', tpos: 'l' }, { k: 'h', p: E_.stop, i0: 12, col: 'loss', t: 'stop', tpos: 'l', below: true }, { k: 'h', p: E_.draw, i0: 0, col: 'win', t: 'draw · old high', tpos: 'l' }, { k: 'vr', i: 16.6, p0: E_.entry, p1: E_.draw, col: 'win', t: '40 pts', tl: true }, { k: 'vr', i: 12.6, p0: E_.entry, p1: E_.stop, col: 'loss', t: '15', tl: false }] } },
+  ],
+  orbit: [
+    { t: 'Find the big swing', p: '<p>Orbit starts with a large, obvious move. Mark where it started (the swing low) and where it ended (the swing high). Small wiggles don’t count.</p>', spec: oSpec(8, [{ k: 'dot', i: 0, p: O_.low, col: 'ice', t: 'swing low', pos: 'below' }, { k: 'dot', i: 7, p: O_.high, col: 'ice', t: 'swing high' }, { k: 'line', pts: [[0, O_.low], [7, O_.high]], col: 'ice', dash: '4 4' }]) },
+    { t: 'Draw the fib', p: '<p>Drag a fib from the swing low to the swing high. 0 sits at the high, 1 at the low. You draw this yourself: Confluence Master doesn’t.</p>', spec: oSpec(8, FIB_LINES) },
+    { t: 'The OTE zone', p: '<p>The band between <b>0.62 and 0.79</b> is the OTE zone. Orbit ignores shallow pullbacks and waits for price to come deep into this band. Press Play.</p>', spec: oSpec(13, [...FIB_LINES, OTE_BAND, { k: 'dot', i: 12, p: 21418, col: 'signal', t: 'in OTE', pos: 'below', at: 12 }]) },
+    { t: 'The leg in leaves a gap', p: '<p>The pullback into OTE (the “leg in”) falls fast enough to leave its own fair value gap on the way down. Watch that gap.</p>', spec: oSpec(13, [OTE_BAND, GAP_BAND]) },
+    { t: 'Inversion: the pullback is done', p: '<p>Price <b>closes back above</b> that gap. The gap is now inverted (an iFVG). That’s Orbit’s sign the leg in is finished and price is heading back to the draw.</p>', spec: oSpec(15, [OTE_BAND, GAP_BAND, { k: 'tag', i: 13, p: 21449, dy: -8, t: 'inverted ↑', col: 'lag', big: true, at: 13 }]) },
+    { t: 'Entry, stop and the draw', p: '<p>Enter after the inversion. Stop under the low of the leg in. Target the swing high’s liquidity, at least 2× the stop away.</p>', spec: { c: ORBIT_C, ann: [OTE_BAND, { k: 'h', p: O_.entry, i0: 13, col: 'ice', t: 'entry', tpos: 'l' }, { k: 'h', p: O_.stop, i0: 12, col: 'loss', t: 'stop', tpos: 'l', below: true }, { k: 'h', p: O_.draw, i0: 7, col: 'win', t: 'draw · swing high', tpos: 'l' }] } },
+  ],
+  draw: [
+    { t: 'Measure the stop, then the draw', p: '<p>Your stop distance is the risk. The distance to the next liquidity is the reward. Here: 15 pts of risk, 40 pts to the old high. 40 ÷ 15 ≈ <b>2.7×</b>. Valid.</p>', spec: { c: ECHO_C, ann: [{ k: 'h', p: E_.entry, i0: 12, col: 'ice', t: 'entry', tpos: 'l' }, { k: 'h', p: E_.stop, i0: 12, col: 'loss', t: 'stop', tpos: 'l', below: true }, { k: 'h', p: E_.draw, i0: 0, col: 'win', t: 'draw', tpos: 'l' }, { k: 'vr', i: 16.6, p0: E_.entry, p1: E_.draw, col: 'win', t: '40', tl: true }, { k: 'vr', i: 12.6, p0: E_.entry, p1: E_.stop, col: 'loss', t: '15' }] } },
+    { t: 'When the draw is too close', p: '<p>Same setup, but the only liquidity above is 16 pts away. 16 ÷ 15 ≈ 1×. Even a perfect entry isn’t worth it: <b>skip</b>. Every box can be ticked and this one rule still says no.</p>', spec: { c: [...ECHO_C.slice(0, 14), K(21510, 21516, 21505, 21507), K(21507, 21509, 21494, 21496), K(21496, 21498, 21484, 21486)], ann: [{ k: 'h', p: E_.entry, i0: 12, col: 'ice', t: 'entry', tpos: 'l' }, { k: 'h', p: E_.stop, i0: 12, col: 'loss', t: 'stop', tpos: 'l', below: true }, { k: 'h', p: 21516, i0: 0, col: 'lag', t: 'only draw · 16 pts', tpos: 'l' }] } },
+  ],
+};
+
 DIVES.push({ id: 'exo-intro', title: 'ECHO X ORBIT', sub: 'The FLOWMTD model behind the daily calls in the Discord. Two engines, one set of rules.', secs: [
-  { id: 'hero', title: 'Two engines', body: '<p><b>ECHO X ORBIT</b> is the model behind the levels called out in the Discord. It has two engines that look for the same thing from different angles: a place where price is likely to turn <b>toward liquidity</b>.</p><ul><li><b>Echo</b>: a sweep, a change in delivery (CISD), and a <b>rejection block inside a fair value gap</b>.</li><li><b>Orbit</b>: a <b>big swing</b>, a fib, a deep pullback into the <b>OTE zone</b>, and an inversion on the leg in.</li></ul><p>Together they’ve run at a <b>94% win rate</b>. Everything here is the concepts, so you can read the calls and recognise them yourself.</p>', w: (el, d) => { exoHero(el); wQs(el, d, [
-    { q: 'Which engine trades a rejection block inside a fair value gap?', o: ['Echo', 'Orbit', 'Both, the same way'], why: 'Echo = sweep, CISD, RB in an FVG.' },
-    { q: 'Which engine uses a fib on a big swing?', o: ['Orbit', 'Echo', 'Neither'], why: 'Orbit = big swing, fib, OTE, inversion on the leg in.' },
-    { q: 'What do both engines need before any entry?', o: ['A draw on liquidity at least 2× the stop away', 'A news event', 'Three green candles'], why: 'No valid draw, no trade. That’s shared by both.' },
-  ]); } },
+  { id: 'hero', title: 'Two engines', body: '<p><b>ECHO X ORBIT</b> is the model behind the levels called out in the Discord. It has two engines that look for the same thing from different angles: a place where price is likely to turn <b>toward liquidity</b>.</p><ul><li><b>Echo</b>: a sweep, a change in delivery (CISD), and a <b>rejection block inside a fair value gap</b>.</li><li><b>Orbit</b>: a <b>big swing</b>, a fib, a deep pullback into the <b>OTE zone</b>, and an inversion on the leg in.</li></ul><p>Together they’ve run at a <b>94% win rate</b>. Everything here is the concepts, so you can read the calls and recognise them yourself.</p>', w: (el, d) => { exoHero(el); wLearn(el, d, LEARN.flow); } },
+  { id: 'liquidity', title: 'Liquidity and the draw', body: '<p>Before any engine: where are the orders, and where is price going?</p>', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'Where do stop losses usually sit?', o: ['Just past obvious highs and lows', 'In the middle of a range', 'At round numbers only'], why: 'Past the obvious highs and lows: that’s the liquidity.' },
+    { q: 'Price runs under an old low and snaps back. What was that?', o: ['A sweep of liquidity', 'A guaranteed reversal', 'A breakout'], why: 'A sweep. It’s step one for Echo, not an entry by itself.' },
+    { q: 'In ECHO X ORBIT, “the draw” is…', o: ['The next liquidity price is heading to: your target', 'Your stop', 'The entry candle'], why: 'The draw is where you take profit.' },
+  ]), LEARN.liquidity) },
   { id: 'cm', title: 'Set up Confluence Master', body: '<p>Members find these trades with the <b>Confluence Master</b> indicator. Turn these on once:</p>', w: (el, d) => wChecklist(el, d, ['Zone type: <b>RB / iRB</b> (rejection blocks)', '<b>FVGs and iFVGs</b> on', 'Session highs/lows: <b>Asia, London, New York</b>', '<b>True Day Open</b> (midnight ET) and <b>HOD / LOD</b>', '<b>EQH / EQL</b> on the 4H and daily', '<b>Failure swings</b> on the 1H and 4H', 'I know CM doesn’t mark CISDs or fibs: I read the CISD by eye and draw the fib myself'], 'Your chart now shows the liquidity, the gaps and the rejection blocks both engines use.') },
-  { id: 'words', title: 'The four words', body: '<p>Four terms you’ll see in every ECHO X ORBIT call. Each has a card in Terminology.</p>', w: (el, d) => wQs(el, d, [
+  { id: 'words', title: 'The words in every call', body: '<p>Step through each one and press Play to watch it form. Then answer the questions.</p>', w: (el, d) => wLearn(el, () => wQs(el, d, [
     { q: '<b>CISD</b> means…', o: ['Change in State of Delivery: price closes back through the open of the move that just ran', 'A type of order', 'A session'], why: 'It’s the first proof that delivery flipped direction.' },
     { q: '<b>RB</b> means…', o: ['Rejection Block: the wick area where price was rejected', 'Range Break', 'Risk Budget'], why: 'In Echo, the RB has to sit inside an FVG.' },
     { q: '<b>OTE</b> means…', o: ['Optimal Trade Entry: the 0.62–0.79 zone of a pullback', 'Open Time Entry', 'Order To Exit'], why: 'Orbit waits for the pullback to reach it.' },
     { q: '<b>ES confirmation</b> means…', o: ['ES (S&P 500 futures) agrees with what NQ is doing at the level', 'An exit signal', 'Entering on ES instead'], why: 'It’s a confluence that adds confidence. It isn’t required.' },
+  ]), LEARN.words) },
+  { id: 'check', title: 'Check: the two engines', body: '', w: (el, d) => wQs(el, d, [
+    { q: 'Which engine trades a rejection block inside a fair value gap?', o: ['Echo', 'Orbit', 'Both, the same way'], why: 'Echo = sweep, CISD, RB in an FVG.' },
+    { q: 'Which engine uses a fib on a big swing?', o: ['Orbit', 'Echo', 'Neither'], why: 'Orbit = big swing, fib, OTE, inversion on the leg in.' },
+    { q: 'What do both engines need before any entry?', o: ['A draw on liquidity at least 2× the stop away', 'A news event', 'Three green candles'], why: 'No valid draw, no trade. That’s shared by both.' },
   ]) },
 ] });
 DIVES.push({ id: 'echo', title: 'Echo', sub: 'Sweep, CISD, rejection block inside the FVG. Higher timeframe gaps first.', secs: [
-  { id: 'watch', title: 'Watch it once', body: '', w: (el, d) => scene(el, d, echoScene) },
+  { id: 'learn', title: 'How Echo works, step by step', body: '<p>Click through each step. Press <b>Play it</b> to watch the candles form.</p>', w: (el, d) => wLearn(el, d, LEARN.echo) },
+  { id: 'watch', title: 'Watch the whole thing', body: '<p>The same Echo, start to finish, as one animation.</p>', w: (el, d) => scene(el, d, echoScene) },
   { id: 'cisd', title: 'Find the CISD', body: '<p>The <b>CISD</b> is the candle that <b>closes back above the open of the down-move</b> that made the sweep. Confluence Master won’t mark it: you read it by eye.</p>', w: (el, d) => wTap(el, d, { spec: ECHO_SPEC(12, [{ k: 'h', p: ECHO.cisd, i0: 6, i1: 11, col: 'ice', t: 'open of the down-move', at: HIDE }]), q: 'Tap the candle that confirms the <b>CISD</b>.', hit: hitCandle([9], 'That close is back above the open of the down-move: delivery changed.', (i) => (i === 7 ? 'That’s the sweep. The CISD comes after it.' : 'Find the first close back above where the down-move started.')) }) },
   { id: 'rb', title: 'Mark the rejection block', body: '<p>Price came back into the gap. Find the wick that got rejected <b>inside the FVG</b>.</p>', w: (el, d) => wTap(el, d, { spec: ECHO_SPEC(14, [{ k: 'band', lo: ECHO.fvgLo, hi: ECHO.fvgHi, i0: 7.5, i1: 10.5, col: 'ice', t: 'FVG' }, { k: 'band', lo: ECHO.rbLo, hi: ECHO.rbHi, i0: 11.5, i1: 12.5, col: 'signal', t: 'RB', tpos: 'below', at: HIDE }]), q: 'Tap the <b>rejection block</b>.', hit: hitCandle([12], 'Long lower wick inside the FVG. That’s the RB.', 'Look for the candle that wicked into the gap and closed back out of it.') }) },
   { id: 'rules', title: 'What makes an Echo valid', body: '<p>Higher-timeframe gaps are preferred: an RB inside a <b>1H or 4H</b> FVG beats one inside a 5m gap.</p>', w: (el, d) => wQs(el, d, [
@@ -3618,7 +3710,8 @@ DIVES.push({ id: 'echo', title: 'Echo', sub: 'Sweep, CISD, rejection block insid
   ]) },
 ] });
 DIVES.push({ id: 'orbit', title: 'Orbit', sub: 'Big swing, draw the fib, wait for the OTE zone, inversion on the leg in.', secs: [
-  { id: 'watch', title: 'Watch it once', body: '', w: (el, d) => scene(el, d, orbitScene) },
+  { id: 'learn', title: 'How Orbit works, step by step', body: '<p>Click through each step. Press <b>Play it</b> to watch the candles form.</p>', w: (el, d) => wLearn(el, d, LEARN.orbit) },
+  { id: 'watch', title: 'Watch the whole thing', body: '<p>The same Orbit, start to finish, as one animation.</p>', w: (el, d) => scene(el, d, orbitScene) },
   { id: 'fib', title: 'Draw the fib', body: '<p>Confluence Master doesn’t draw fibs: you do it yourself. Long: anchor the <b>swing low</b>, drag to the <b>swing high</b>.</p>', w: (el, d) => wFib(el, d, { spec: { c: ORBIT_C }, upto: 13, lowI: 0, highI: 7, ok: 'Deep in the pullback, between 0.62 and 0.79. That’s where Orbit waits.' }) },
   { id: 'inv', title: 'Inversion on the leg in', body: '<p>The pullback into OTE leaves its own gap on the way down. When price <b>closes back through</b> that gap, it’s inverted.</p>', w: (el, d) => wTap(el, d, { spec: { c: ORBIT_C.slice(0, 15), slots: ORBIT_C.length, ann: [{ k: 'band', lo: fibLvl(0.79), hi: fibLvl(0.62), col: 'signal', t: 'OTE', fill: 0.12, tx: 'r' }, { k: 'band', lo: ORBIT.ifvgLo, hi: ORBIT.ifvgHi, i0: 9.5, i1: 12.5, col: 'lag', t: 'gap', tpos: 'above' }] }, q: 'Tap the candle that <b>inverts</b> the gap.', hit: hitCandle([13], 'Closed back above the gap: inverted. The pullback is done.', (i) => (i === 12 ? 'That’s the low in OTE. The inversion is the close back through the gap.' : 'Find the first close back above the purple gap.')) }) },
   { id: 'rules', title: 'What makes an Orbit valid', body: '', w: (el, d) => wQs(el, d, [
@@ -3628,20 +3721,20 @@ DIVES.push({ id: 'orbit', title: 'Orbit', sub: 'Big swing, draw the fib, wait fo
   ]) },
 ] });
 DIVES.push({ id: 'exo-rules', title: 'The shared rules', sub: 'The draw, the 2× rule and ES confirmation. Both engines use them.', secs: [
-  { id: 'draw', title: 'No draw, no trade', body: '<p>Every ECHO X ORBIT trade needs a <b>draw on liquidity</b>: old highs/lows, session highs/lows, equal highs/lows. And it must be <b>at least 2× your stop</b> away.</p>', w: (el, d) => wNum(el, d, [
+  { id: 'draw', title: 'No draw, no trade', body: '<p>Every ECHO X ORBIT trade needs a <b>draw on liquidity</b>: old highs/lows, session highs/lows, equal highs/lows. And it must be <b>at least 2× your stop</b> away.</p>', w: (el, d) => wLearn(el, () => wNum(el, d, [
     { q: 'Stop is 15 points. Minimum distance to the draw?', a: 30, unit: 'pts', why: '2 × 15 = 30 points.' },
     { q: 'Stop 12 points, draw 30 points away. How many times the stop?', a: 2.5, tol: 0.05, unit: '×', why: '30 ÷ 12 = 2.5×. Valid.' },
     { q: 'Stop 15, entry 21,500 long. Lowest valid draw price?', a: 21530, why: '21,500 + 30 = 21,530.' },
-  ]) },
+  ]), LEARN.draw) },
   { id: 'valid', title: 'Valid or not?', body: '', w: (el, d) => wQs(el, d, [
     { q: 'Long, stop 15. Old high 22 points above. Valid?', o: ['No, 22 is under 2× (30)', 'Yes', 'Only on the 1H'], why: 'Needs 30+.' },
     { q: 'Short, stop 14. Asia low 40 points below. Valid?', o: ['Yes, about 2.9×', 'No', 'Only with ES'], why: '40 ÷ 14 ≈ 2.9×.' },
     { q: 'Great setup, but there’s no clear liquidity in the direction of the trade.', o: ['No trade', 'Pick a round number as target', 'Hold until it works'], why: 'The draw is required, not optional.' },
   ]) },
-  { id: 'es', title: 'ES confirmation', body: '<p>Pull up <b>ES</b> (S&P 500 futures) next to NQ. When ES is doing the same thing at its own level (sweeping, rejecting, shifting), the idea is stronger. It’s a <b>confluence</b>: helpful, not required.</p>', w: (el, d) => wQs(el, d, [
+  { id: 'es', title: 'ES confirmation', body: '<p>Pull up <b>ES</b> (S&P 500 futures) next to NQ. When ES is doing the same thing at its own level (sweeping, rejecting, shifting), the idea is stronger. It’s a <b>confluence</b>: helpful, not required.</p>', w: (el, d) => wLearn(el, () => wQs(el, d, [
     { q: 'NQ gives a perfect Echo. ES shows nothing special. Trade?', o: ['Yes, if everything else is valid. ES is a confluence', 'No, ES is required', 'Trade ES instead'], why: 'It adds confidence when it’s there. It doesn’t veto a valid setup.' },
     { q: 'What does ES confirmation look like?', o: ['ES also sweeps/rejects/shifts at the same time', 'ES is green', 'ES is closed'], why: 'Same story on both charts at the same time.' },
-  ]) },
+  ]), [LEARN.words[4]]) },
   { id: 'check', title: 'The ECHO X ORBIT checklist', body: '', w: (el, d) => wChecklist(el, d, ['Engine identified: <b>Echo</b> (RB inside FVG after CISD) or <b>Orbit</b> (OTE + inversion)', 'Draw on liquidity marked, <b>≥ 2× the stop</b>', 'Stop placed beyond the RB / the leg-in low', 'ES checked (confluence)', 'No red-folder news in the next 15 minutes'], 'That’s the checklist. Run it on every call before you click.') },
 ] });
 DIVES.push({ id: 'exo-replay', title: 'Replays', sub: 'Make the calls yourself: one to take, one to skip.', secs: [
@@ -3786,6 +3879,77 @@ const CHART_TASKS = {
     { q: 'Tap the candle that <b>inverts</b> the gap on the leg in.', spec: { c: ORBIT_C.slice(0, 15), slots: ORBIT_C.length, ann: [{ k: 'band', lo: fibLvl(0.79), hi: fibLvl(0.62), col: 'signal', t: 'OTE', fill: 0.12, tx: 'r' }, { k: 'band', lo: ORBIT.ifvgLo, hi: ORBIT.ifvgHi, i0: 9.5, i1: 12.5, col: 'lag', t: 'gap' }] }, hit: hitCandle([13], 'Inverted.', 'Not the inversion close.') },
   ],
 };
+
+// ════════ Teach first: a step-through lesson before every Beginner and Range Settlement exercise ════════
+function teachFirst(dv, sec, slides) { const s = DIVES.find((d) => d.id === dv).secs.find((x) => x.id === sec); const w0 = s.w; s.w = (el, d) => wLearn(el, () => w0(el, d), slides); }
+const TABLE = (rows) => `<div class="w-stats">${rows.map(([a, b, c]) => `<div><span class="hud">${a}</span><span class="v">${b}</span>${c ? `<span class="hud">${c}</span>` : ''}</div>`).join('')}</div>`;
+// How futures & NQ work
+teachFirst('futures', 'what', [
+  { t: 'A contract on a price', p: '<p>A futures contract is an agreement to buy or sell something at today’s price on a future date. Traders never hold it to that date. You open it, and close it minutes or hours later. <b>Your profit or loss is the difference between the two prices.</b></p>' },
+  { t: 'What NQ is', p: '<p><b>NQ</b> is the futures contract on the <b>Nasdaq-100</b>: the 100 biggest non-financial companies on the Nasdaq (Apple, Microsoft, Nvidia, Amazon…). When those stocks rally, NQ goes up. It moves fast, trades almost 24 hours, and it’s what FLOWMTD trades.</p>' },
+  { t: 'Margin: why size matters', p: '<p>One NQ contract controls hundreds of thousands of dollars of the index, but you only put up a small deposit called <b>margin</b>. That leverage is why a few points can mean hundreds of dollars, and why every trade needs a stop.</p>' },
+]);
+teachFirst('futures', 'nq', [
+  { t: 'Ticks and points', p: '<p>NQ moves in steps of <b>0.25</b>. Each step is a <b>tick</b>. Four ticks make one <b>point</b>. 21,500.00 → 21,500.25 is one tick; 21,500 → 21,501 is one point.</p>', term: 'TICK' },
+  { t: 'NQ vs MNQ', p: `<p>Same chart, same moves, different size. <b>MNQ</b> (micro) is one tenth of NQ. Start on MNQ while you learn.</p>${TABLE([['NQ · per point', '$20', '$5 per tick'], ['MNQ · per point', '$2', '$0.50 per tick']])}` },
+  { t: 'The only formula you need', p: '<p class="k">dollars = points × $ per point × contracts</p><p>A 15-point move on 2 MNQ: 15 × $2 × 2 = <b>$60</b>. On 1 NQ: 15 × $20 = <b>$300</b>. Now try some yourself.</p>' },
+]);
+teachFirst('futures', 'clock', [
+  { t: 'The futures day starts at 6 PM', p: '<p>NQ opens Sunday 6 PM ET and trades until Friday 5 PM, with a one-hour break every day from <b>5 to 6 PM</b>. Each new trading day starts at 6 PM, not midnight. Every time in FLOWMTD is New York time.</p>', term: 'SESSIONS' },
+  { t: 'The three sessions', p: `<p>Price behaves differently depending on which part of the world is trading.</p>${TABLE([['Asia', '8 PM – 12 AM'], ['London', '2 – 5 AM'], ['New York', '7 – 10 AM']])}<p>The US stock market opens at <b>9:30 AM</b>. That’s when the most volume arrives.</p>` },
+  { t: '8:30 AM: news time', p: '<p>Big US data (CPI, jobs) is released at <b>8:30 AM ET</b>. Price can jump 50+ points in seconds. Never hold a fresh trade into it unless your plan says so.</p>' },
+]);
+teachFirst('futures', 'side', [
+  { t: 'Long: buy first', p: '<p>Going <b>long</b> means you buy now and sell later. You make money if price goes <b>up</b>. Your stop goes <b>below</b> your entry.</p>', term: 'LONG' },
+  { t: 'Short: sell first', p: '<p>Going <b>short</b> means you sell now and buy back later. You make money if price goes <b>down</b>. In futures, shorting is as easy as buying. Your stop goes <b>above</b> your entry.</p>', term: 'SHORT' },
+]);
+// Reading charts
+teachFirst('charts', 'candle', [
+  { t: 'One candle = one slice of time', p: '<p>On a 5-minute chart, each candle shows 5 minutes. It records four prices: where it <b>opened</b>, the <b>high</b>, the <b>low</b>, and where it <b>closed</b>. Press Play to watch one form.</p>', term: 'CANDLE' },
+  { t: 'Wicks are rejected prices', p: '<p>The thin lines above and below the body are <b>wicks</b>. Price reached there but couldn’t stay. A long upper wick means buyers pushed up and sellers slammed it back down.</p>', term: 'WICK' },
+]);
+teachFirst('charts', 'bear', [
+  { t: 'Bodies show who was in control', p: '<p>A big body that closes near its extreme means one side dominated. A small body with long wicks means a fight nobody won. Look at the big down candle: sellers took control and closed it near the low.</p>', spec: { c: CH_BEAR, ann: [{ k: 'arrow', i: 5, p: 21486, dir: 'down', col: 'loss', t: 'sellers', at: 5 }] } },
+]);
+teachFirst('charts', 'tf', [
+  { t: 'Same price, different zoom', p: '<p>Twelve 5-minute candles make one 1-hour candle. A <b>lower timeframe</b> (LTF) shows the detail; a <b>higher timeframe</b> (HTF) shows the big picture. Press Play.</p>', term: 'LTF' },
+  { t: 'Higher timeframes carry more weight', p: '<p>More traders watch the 1H and 4H, so levels there hold more orders. The FLOWMTD way: find the idea on the higher timeframe, fine-tune the entry on a lower one to keep the stop small.</p>', term: 'HTF' },
+]);
+teachFirst('charts', 'trend', [
+  { t: 'Swing highs and swing lows', p: '<p>A <b>swing low</b> is a candle with a higher low on each side: a turning point. Same for a swing high, upside down.</p>', spec: { c: CH_TREND, ann: pivots(CH_TREND, 'low').map((i) => ({ k: 'dot', i, p: CH_TREND[i].l, col: 'ice', at: i + 1 })) } },
+  { t: 'Uptrend = higher highs and higher lows', p: '<p>When each swing low is above the last one, buyers are stepping in earlier each time. That’s an uptrend. When price breaks a previous high, that’s a <b>break of structure</b>.</p>', term: 'BOS' },
+]);
+teachFirst('charts', 'sr', [
+  { t: 'Levels: where price reacted before', p: '<p>When price turns at the same area more than once, traders remember it and leave orders there. Watch price bounce from ~21,500 twice.</p>', spec: { c: CH_SR, ann: [{ k: 'band', lo: 21498, hi: 21504, col: 'win', t: 'level', at: 7 }, { k: 'arrow', i: 2, p: 21501, dir: 'up', col: 'win', at: 2 }, { k: 'arrow', i: 7, p: 21500, dir: 'up', col: 'win', at: 7 }] } },
+]);
+// Orders & brackets
+teachFirst('orders', 'types', [
+  { t: 'Market order', p: '<p>Fill <b>right now</b> at the best available price. Fast, but you accept whatever price you get.</p>', term: 'MARKET' },
+  { t: 'Limit order', p: '<p>Fill only at <b>your price or better</b>. A buy limit waits below the current price; a sell limit waits above. If price never gets there, you never get in.</p>', term: 'LIMIT' },
+  { t: 'Stop order', p: '<p>Becomes a market order once price <b>reaches</b> it. That’s how a stop loss works: a sell stop under your long gets you out if price falls there.</p>', term: 'STOP' },
+]);
+teachFirst('orders', 'bracket', [
+  { t: 'The bracket protects every trade', p: '<p>A bracket attaches a <b>stop loss</b> and a <b>take profit</b> to your entry the moment it fills. FLOWMTD’s default is <b>15 / 40</b>: 15 points of risk, 40 points of target (60 / 160 ticks).</p>', term: 'BRACKET' },
+  { t: 'Which side is which', p: `<p>Long: stop <b>below</b>, target <b>above</b>. Short: stop <b>above</b>, target <b>below</b>.</p>${TABLE([['Long at 21,500', 'stop 21,485', 'target 21,540'], ['Short at 21,500', 'stop 21,515', 'target 21,460']])}` },
+]);
+// Risk basics
+teachFirst('risk', 'formula', [
+  { t: 'Risk first, size second', p: '<p>Beginners pick a size that feels right, then hope. Pros decide the <b>dollars they can lose</b> on this trade, then work out the size from the stop.</p><p class="k">contracts = $ risk ÷ (stop points × $ per point)</p>' },
+  { t: 'A worked example', p: '<p>You’ll risk <b>$150</b> with a <b>15-point</b> stop on MNQ. One MNQ loses 15 × $2 = $30. $150 ÷ $30 = <b>5 MNQ</b>. If the answer isn’t a whole number, always <b>round down</b>.</p>' },
+]);
+teachFirst('risk', 'r', [
+  { t: 'R: risk as a unit', p: '<p><b>1R</b> is whatever you risk on a trade. Winning 40 points with a 15-point stop is about <b>2.7R</b>. Measuring in R makes results comparable whether you trade 1 MNQ or 5 NQ.</p>', term: 'RR' },
+]);
+teachFirst('risk', 'daily', [
+  { t: 'A daily stop ends the day', p: '<p>Your <b>daily stop</b> is the loss that ends your trading day. FLOWMTD default: <b>2 losses = done</b>. It sits well inside your prop firm’s daily loss limit, so a bad morning never becomes a failed account.</p>', term: 'DLL' },
+]);
+// Range Settlement
+teachFirst('rs', 'why', [
+  { t: 'Why there’s a level at 9:30', p: '<p>NQ trades all night, but the Nasdaq-100 <b>index</b> itself only trades from 9:30 AM. Overnight, orders pile up that can’t be filled. At the open they get filled, and price tends to be drawn toward that level: the <b>Range Settlement</b>.</p>', term: 'RS' },
+]);
+teachFirst('rs', 'side', [
+  { t: 'Below RS → look up. Above RS → look down.', p: '<p>If price opens <b>below</b> RS at 9:30, the morning draw is <b>up</b> toward it: favour longs. If price opens <b>above</b>, the draw is down: favour shorts. It only applies after 9:30, never overnight.</p>', term: 'RS' },
+]);
 // ── Trading School: Levels → Modules → Lessons, with checkpoints, exams, practice requirements and unlocks ──
 const LV_ST = { open: null, from: null, all: false };
 const CHD = (() => { try { return new Set(JSON.parse(localStorage.getItem('fh-ch') || '[]')); } catch (e) { return new Set(); } })();
