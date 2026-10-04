@@ -15,11 +15,13 @@ import { gunzipSync } from "node:zlib";
 import { createCipheriv, createDecipheriv, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 
 import { buildDashboard, buildDirectoryRow, sortDirectory, type DirectorySort, type RawAccount } from "../src/lib/viewmodel";
-import { blendedWinRate, type StrategyKey } from "../src/lib/strategies";
-import { accountInput, accountPatch, feedbackInput, journalInput, journalPatch, projectionInput, roadmapSchema, templatePatch } from "../src/lib/validators";
+import { RETIRED_STRATEGIES, blendedWinRate, type StrategyKey } from "../src/lib/strategies";
+import { accountInput, accountPatch, feedbackInput, journalInput, journalPatch, projectionInput, roadmapSchema, templatePatch, tradingPlanInput } from "../src/lib/validators";
 import { todayET, type CatalogFirm, type DashboardData, type PersonDTO, type ProjectionDTO, type RulesDTO } from "../src/lib/types";
 import type { Instrument } from "../src/lib/planner";
 import { PRACTICE_MODELS, summarizePractice } from "../src/lib/practice";
+import { SCHOOL_LEVEL_IDS, summarizeSchool, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
+import type { TradingPlanDTO } from "../src/lib/tradingPlan";
 
 // ─────────────────────────────────────────────────────────────
 // Config
@@ -174,7 +176,7 @@ async function syncRolesIfStale(u: UserRow): Promise<UserRow> {
 async function loadDashboard(viewer: UserRow, traderId: string): Promise<DashboardData> {
   const [trader] = await sql`select * from "User" where id = ${traderId}`;
   if (!trader) throw new HttpError(404, "Not found");
-  const [[rm], accounts, journal, feedback, [pj], practiceRows] = await Promise.all([
+  const [[rm], accounts, journal, feedback, [pj], practiceRows, [sp], attempts, [tp]] = await Promise.all([
     sql`select * from "Roadmap" where "userId" = ${traderId}`,
     sql`select *, to_char("startDate", 'YYYY-MM-DD') as "startISO" from "MemberAccount" where "userId" = ${traderId} order by "createdAt"`,
     sql`select j.*, to_char(j."tradeDate", 'YYYY-MM-DD') as "dateISO",
@@ -184,8 +186,12 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
         from "CoachFeedback" f join "User" c on c.id = f."coachId" where f."traderId" = ${traderId} order by f."createdAt" desc limit 100`,
     sql`select name, config, "updatedAt" from "Projection" where "userId" = ${traderId}`,
     sql`select model, drill, ok, tags, "createdAt" from "PracticeRep" where "userId" = ${traderId} and "createdAt" > now() - interval '120 days' order by "createdAt"`,
+    sql`select state, unlocks from "SchoolProgress" where "userId" = ${traderId}`,
+    sql`select kind, ref, score, total, pass, "createdAt" from "SchoolAttempt" where "userId" = ${traderId} order by "createdAt" desc limit 12`,
+    sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${traderId}`,
   ]);
-  const strategies = (rm?.strategies ?? []) as StrategyKey[];
+  const jsonOf = <T,>(v: unknown): T => (typeof v === "string" ? JSON.parse(v) : v) as T;
+  const strategies = ((rm?.strategies ?? []) as StrategyKey[]).filter((k) => !RETIRED_STRATEGIES.includes(k)); // A3IA retired
   return buildDashboard({
     viewer: person(viewer),
     trader: person(trader as UserRow),
@@ -213,6 +219,8 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
       journalEntryId: f.journalEntryId, memberAccountId: f.memberAccountId,
       createdAt: new Date(f.createdAt).toISOString(), readAt: f.readAt ? new Date(f.readAt).toISOString() : null,
     })),
+    school: sp || attempts.length ? summarizeSchool(sp ? jsonOf<SchoolState>(sp.state) : null, sp?.unlocks ?? [], attempts as SchoolAttemptRow[]) : null,
+    tradingPlan: tp ? { ...jsonOf<TradingPlanDTO>(tp.plan), done: true, updatedAt: new Date(tp.updatedAt).toISOString() } : null,
     practice: summarizePractice(practiceRows as { model: string; drill: string; ok: boolean; tags: string[]; createdAt: Date }[]),
     projection: pj
       ? { ...((typeof pj.config === "string" ? JSON.parse(pj.config) : pj.config) as Omit<ProjectionDTO, "name" | "updatedAt">), name: pj.name, updatedAt: new Date(pj.updatedAt).toISOString() }
@@ -476,6 +484,62 @@ app.put("/api/practice/state", async (c) => {
   return c.json({ ok: true });
 });
 
+
+// Trading School: progress synced from the school page, checkpoint/exam attempts, coach unlocks.
+const SCHOOL_LEVELS_SET = new Set(SCHOOL_LEVEL_IDS);
+const ID_RE = /^[a-z0-9-]{1,20}$/;
+function cleanSchoolState(b: unknown): SchoolState {
+  const o = (b && typeof b === "object" ? b : {}) as Record<string, unknown>;
+  const ch = Array.isArray(o.ch) ? o.ch.filter((x): x is string => typeof x === "string" && ID_RE.test(x)).slice(0, 60) : [];
+  const dives: Record<string, Record<string, number>> = {};
+  for (const [k, v] of Object.entries((o.dives && typeof o.dives === "object" ? o.dives : {}) as Record<string, unknown>).slice(0, 60)) {
+    if (!ID_RE.test(k) || !v || typeof v !== "object") continue;
+    dives[k] = Object.fromEntries(Object.keys(v).filter((x) => ID_RE.test(x)).slice(0, 30).map((x) => [x, 1]));
+  }
+  const best = (m: unknown) => {
+    const out: Record<string, { best: number; pass: boolean; n: number; at: number }> = {};
+    for (const [k, v] of Object.entries((m && typeof m === "object" ? m : {}) as Record<string, Record<string, unknown>>).slice(0, 40)) {
+      if (!ID_RE.test(k) || !v || typeof v !== "object") continue;
+      out[k] = { best: Math.max(0, Math.min(1, Number(v.best) || 0)), pass: v.pass === true, n: Math.max(0, Math.min(10000, Math.round(Number(v.n) || 0))), at: Math.max(0, Number(v.at) || 0) };
+    }
+    return out;
+  };
+  return { ch, dives, ck: best(o.ck), ex: best(o.ex) };
+}
+app.get("/api/school", async (c) => {
+  const u = c.get("user");
+  const [row] = await sql`select state, unlocks from "SchoolProgress" where "userId" = ${u.id}`;
+  return c.json({ state: row ? (typeof row.state === "string" ? JSON.parse(row.state) : row.state) : null, unlocks: row?.unlocks ?? [], staff: isStaff(u) });
+});
+app.put("/api/school", async (c) => {
+  const json = JSON.stringify(cleanSchoolState(await c.req.json()));
+  if (json.length > 20000) throw new HttpError(400, "Too long");
+  await sql`insert into "SchoolProgress" ("userId", state) values (${c.get("user").id}, ${json}::jsonb)
+            on conflict ("userId") do update set state = excluded.state, "updatedAt" = now()`;
+  return c.json({ ok: true });
+});
+app.post("/api/school/attempt", async (c) => {
+  const b = (await c.req.json()) as { kind?: string; ref?: string; score?: number; total?: number; pass?: boolean };
+  const score = Math.round(Number(b.score)), total = Math.round(Number(b.total));
+  if ((b.kind !== "ck" && b.kind !== "ex") || !b.ref || !ID_RE.test(b.ref) || !(total > 0 && total <= 50) || !(score >= 0 && score <= total) || typeof b.pass !== "boolean")
+    throw new HttpError(400, "Bad attempt");
+  await sql`insert into "SchoolAttempt" (id, "userId", kind, ref, score, total, pass) values (${randomUUID()}, ${c.get("user").id}, ${b.kind}, ${b.ref}, ${score}, ${total}, ${b.pass})`;
+  return c.json({ ok: true });
+});
+
+// Trading plan (Trading Plan → Build your plan)
+app.get("/api/plan", async (c) => {
+  const [row] = await sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${c.get("user").id}`;
+  const plan = row ? { ...(typeof row.plan === "string" ? JSON.parse(row.plan) : row.plan), done: true, updatedAt: new Date(row.updatedAt).toISOString() } : null;
+  return c.json({ plan });
+});
+app.put("/api/plan", async (c) => {
+  const p = tradingPlanInput.parse(await c.req.json());
+  await sql`insert into "TradingPlan" ("userId", plan) values (${c.get("user").id}, ${JSON.stringify(p)}::jsonb)
+            on conflict ("userId") do update set plan = excluded.plan, "updatedAt" = now()`;
+  return c.json({ ok: true });
+});
+
 // Projection (multi-account income plan) — one per member, it becomes their trading plan
 app.put("/api/projection", async (c) => {
   const u = c.get("user");
@@ -515,6 +579,19 @@ app.get("/api/coach/members/:id", async (c) => {
   const d = await loadDashboard(c.get("user"), c.req.param("id"));
   await audit(c.get("user").id, "VIEW_MEMBER", c.req.param("id"));
   return c.json(d);
+});
+app.post("/api/coach/members/:id/unlock", async (c) => {
+  staffOnly(c);
+  const b = (await c.req.json()) as { level?: string; on?: boolean };
+  if (!b.level || !SCHOOL_LEVELS_SET.has(b.level) || b.level === "beginner" || typeof b.on !== "boolean") throw new HttpError(400, "Bad level");
+  const id = c.req.param("id");
+  if (!(await sql`select 1 from "User" where id = ${id}`).length) throw new HttpError(404, "Not found");
+  if (b.on)
+    await sql`insert into "SchoolProgress" ("userId", unlocks) values (${id}, ${pgArray([b.level])}::text[])
+              on conflict ("userId") do update set unlocks = array(select distinct unnest("SchoolProgress".unlocks || ${pgArray([b.level])}::text[])), "updatedAt" = now()`;
+  else await sql`update "SchoolProgress" set unlocks = array_remove(unlocks, ${b.level}), "updatedAt" = now() where "userId" = ${id}`;
+  await audit(c.get("user").id, b.on ? "SCHOOL_UNLOCK" : "SCHOOL_RELOCK", id, { level: b.level });
+  return c.json({ ok: true });
 });
 app.post("/api/coach/feedback", async (c) => {
   staffOnly(c);
@@ -594,7 +671,7 @@ const SHELL = `<!doctype html>
 // Trading School + Practice: their own pages, members only, with the FLOWHUB tabs filled in.
 const pageHtml = new Map<string, string>();
 const fhNav = (user: UserRow, current: "school" | "practice") =>
-  `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Projections</a>` +
+  `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a>` +
   `<a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>` +
   `${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
 for (const page of ["school", "practice"] as const) {

@@ -168,12 +168,12 @@ import { blendedWinRate, normalizeSelection, sessionsOf } from "./strategies";
 
 test("strategies: fixed win rates and selection rules", () => {
   const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
-  near(blendedWinRate({ mode: "DAILY_LEVELS", multiSession: true, strategies: ["NYFLOW_HL"] }), 0.92);
+  near(blendedWinRate({ mode: "DAILY_LEVELS", multiSession: true, strategies: ["NYFLOW_HL"] }), 0.94); // ECHO x ORBIT
   near(blendedWinRate({ mode: "INDICATORS", multiSession: false, strategies: ["NYFLOW_HL"] }), 0.84);
   near(blendedWinRate({ mode: "INDICATORS", multiSession: false, strategies: ["NYFLOW_PO3", "NYFLOW_HL"] }), (0.745 + 0.84) / 2);
-  near(blendedWinRate({ mode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_PO3", "ASIAFLOW_A3IA", "NYFLOW_PO3", "NYFLOW_HL"] }), (0.7 + 0.81 + 0.745 + 0.84) / 4);
+  near(blendedWinRate({ mode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_PO3", "ASIAFLOW_A3IA", "NYFLOW_PO3", "NYFLOW_HL"] }), (0.7 + 0.745 + 0.84) / 3); // A3IA retired
   // single session keeps only the first indicator's setups
-  assert.deepEqual(normalizeSelection({ mode: "INDICATORS", multiSession: false, strategies: ["ASIAFLOW_A3IA", "NYFLOW_HL"] }).strategies, ["ASIAFLOW_A3IA"]);
-  assert.deepEqual(sessionsOf({ mode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_A3IA", "NYFLOW_HL"] }), ["ASIA", "NY"]);
+  assert.deepEqual(normalizeSelection({ mode: "INDICATORS", multiSession: false, strategies: ["ASIAFLOW_PO3", "NYFLOW_HL"] }).strategies, ["ASIAFLOW_PO3"]);
+  assert.deepEqual(sessionsOf({ mode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_PO3", "NYFLOW_HL"] }), ["ASIA", "NY"]);
   assert.deepEqual(normalizeSelection({ mode: "DAILY_LEVELS", multiSession: true, strategies: [] }).strategies, ["DAILY_LEVELS"]);
 });

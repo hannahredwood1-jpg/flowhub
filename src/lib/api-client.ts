@@ -27,11 +27,14 @@ export const api = {
   deleteTrade: (id: string) => call(`/api/journal/${id}`, send("DELETE")),
   saveProjection: (data: unknown) => call("/api/projection", send("PUT", data)),
   deleteProjection: () => call("/api/projection", send("DELETE")),
+  plan: () => call<{ plan: import("./tradingPlan").TradingPlanDTO | null }>("/api/plan"),
+  savePlan: (data: unknown) => call("/api/plan", send("PUT", data)),
   logs: () => call<LogEntry[]>("/api/log"),
   saveLog: (e: LogEntry) => call("/api/log", send("PUT", e)),
   markFeedbackRead: (id: string) => call(`/api/feedback/${id}/read`, send("POST")),
   // Coach / Admin
   members: (q: string, sort: string) => call<CoachDirectoryRow[]>(`/api/coach/members?q=${encodeURIComponent(q)}&sort=${sort}`),
   member: (userId: string) => call<DashboardData>(`/api/coach/members/${userId}`),
+  schoolUnlock: (userId: string, level: string, on: boolean) => call(`/api/coach/members/${userId}/unlock`, send("POST", { level, on })),
   giveFeedback: (data: unknown) => call<{ id: string }>("/api/coach/feedback", send("POST", data)),
 };

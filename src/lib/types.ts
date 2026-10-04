@@ -1,4 +1,6 @@
 import type { PracticeSummary } from "./practice";
+import type { SchoolSummary } from "./school";
+import type { TradingPlanDTO } from "./tradingPlan";
 // Shared data shapes between server loaders, API routes and client components (no server imports here).
 import type { IncomePlan, PassPlan, RuleSet, SimResult, Instrument, DrawdownModel } from "./planner";
 import type { RiskLevel, StartPhase } from "./projection";
@@ -102,6 +104,8 @@ export type DashboardData = {
   strategyStats: { key: StrategyKey; label: string; expected: number; actual: number | null; trades: number }[];
   projection: ProjectionDTO | null; // saved income projection = the member's trading plan
   practice: PracticeSummary | null; // Practice tab results (coaches see this)
+  school: SchoolSummary | null;    // Trading School progress (coaches see this)
+  tradingPlan: TradingPlanDTO | null; // written plan from Trading Plan → Build your plan
   stats: { todayPnl: number; weekPnl: number; monthPnl: number; trades30: number; winRate30: number | null; planFollowed30: number | null; level: number; xp: number; xpToNext: number };
 };
 

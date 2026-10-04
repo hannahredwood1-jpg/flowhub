@@ -1,4 +1,6 @@
 import type { PracticeSummary } from "./practice";
+import type { SchoolSummary } from "./school";
+import type { TradingPlanDTO } from "./tradingPlan";
 // Pure assembly of dashboard data from plain rows. Used by the server loader AND the static preview.
 import { buildIncomePlan, buildPassPlan, simulatePass, type Strategy } from "./planner";
 import { computePace, memberRiskSummary } from "./pace";
@@ -23,6 +25,8 @@ export type RawInput = {
   feedback: FeedbackDTO[];
   projection?: ProjectionDTO | null;
   practice?: PracticeSummary | null;
+  school?: SchoolSummary | null;
+  tradingPlan?: TradingPlanDTO | null;
 };
 
 const DEFAULT_STRATEGY: Strategy = { winRate: 0.5, avgRR: 40 / 15, tradesPerDay: 3, instrument: "MNQ", avgStopPoints: 15, tradingDaysPerWeek: 5 };
@@ -125,6 +129,8 @@ export function buildDashboard(raw: RawInput): DashboardData {
     strategyStats,
     projection: raw.projection ?? null,
     practice: raw.practice ?? null,
+    school: raw.school ?? null,
+    tradingPlan: raw.tradingPlan ?? null,
     stats: {
       todayPnl: sum(raw.today),
       weekPnl: sum(weekStart(raw.today)),

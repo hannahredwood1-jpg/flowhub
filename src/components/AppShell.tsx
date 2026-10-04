@@ -44,7 +44,7 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
           <Logo />
           <nav className="flex items-center gap-1">
             {tab(links.dashboard, "dashboard", "My Dashboard")}
-            {tab(links.plan, "plan", "Projections")}
+            {tab(links.plan, "plan", "Trading Plan")}
             {links.school && tab(links.school, "school", "Trading School")}
             {links.practice && tab(links.practice, "practice", "Practice")}
             {staff && tab(links.coach, "coach", "Coach Portal")}

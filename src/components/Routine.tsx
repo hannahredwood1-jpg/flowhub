@@ -6,6 +6,7 @@ import { api, type LogEntry } from "@/lib/api-client";
 import type { AccountDTO, DashboardData } from "@/lib/types";
 import { pct, usd } from "@/lib/format";
 import { Panel, Stat, cx } from "./ui";
+import { planChecklist } from "@/lib/tradingPlan";
 
 export const STD_STOP = 15, STD_TARGET = 40;
 export const TILT_LIMIT = 2;
@@ -61,14 +62,15 @@ function useLogs(): Logs | null {
   };
   return { list, set, failed };
 }
-const complete = (e?: LogEntry) => !!e && Array.isArray(e.data.done) && (e.data.done as number[]).length >= CHECKLIST.length;
+const complete = (e: LogEntry | undefined, n: number) => !!e && Array.isArray(e.data.done) && (e.data.done as number[]).length >= n;
 
-function Checklist({ logs, today }: { logs: Logs; today: string }) {
+function Checklist({ logs, today, items = CHECKLIST, fromPlan }: { logs: Logs; today: string; items?: string[]; fromPlan?: boolean }) {
+  const CHECKLIST = items;
   const entry = logs.list.find((e) => e.kind === "checklist" && e.day === today);
   const done = new Set<number>((entry?.data.done as number[]) ?? []);
   const byDay = new Map(logs.list.filter((e) => e.kind === "checklist").map((e) => [e.day, e]));
   let streak = 0;
-  for (let d = complete(byDay.get(today)) ? today : prevWeekday(today); complete(byDay.get(d)); d = prevWeekday(d)) streak++;
+  for (let d = complete(byDay.get(today), CHECKLIST.length) ? today : prevWeekday(today); complete(byDay.get(d), CHECKLIST.length); d = prevWeekday(d)) streak++;
   const weekend = weekday(today) === 0 || weekday(today) === 6;
   const toggle = (i: number) => {
     const next = new Set(done); next.has(i) ? next.delete(i) : next.add(i);
@@ -78,7 +80,7 @@ function Checklist({ logs, today }: { logs: Logs; today: string }) {
   return (
     <Panel title="Before you trade" right={<span className="chip text-ice">{streak} day streak</span>}>
       <div className="grid gap-2 p-4">
-        <p className="text-sm text-ink-3">{weekend ? "Weekend. Use it to prep Monday's levels." : "Tick every line before your first trade. Only you see this."}</p>
+        <p className="text-sm text-ink-3">{weekend ? "Weekend. Use it to prep Monday's levels." : fromPlan ? "From your trading plan. Tick every line before your first trade." : "Tick every line before your first trade. Only you see this."}</p>
         <ul className="grid gap-1.5">
           {CHECKLIST.map((t, i) => (
             <li key={i}>
@@ -154,7 +156,7 @@ export function RoutineRow({ data }: { data: DashboardData }) {
   if (!logs) return <div className="hud px-4 py-3 text-sm text-ink-3">Loading your routine…</div>;
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-2">
-      <Checklist logs={logs} today={data.today} />
+      <Checklist logs={logs} today={data.today} items={data.tradingPlan ? planChecklist(data.tradingPlan) : undefined} fromPlan={!!data.tradingPlan} />
       <WeeklyReview logs={logs} data={data} />
     </div>
   );

@@ -352,17 +352,20 @@ function memberRiskSummary(paces) {
 
 // src/lib/strategies.ts
 var STRATEGIES = {
-  DAILY_LEVELS: { key: "DAILY_LEVELS", indicator: "Daily Levels", name: "Daily levels", winRate: 0.92, session: null },
+  DAILY_LEVELS: { key: "DAILY_LEVELS", indicator: "ECHO x ORBIT", name: "ECHO x ORBIT", winRate: 0.94, session: null },
   ASIAFLOW_PO3: { key: "ASIAFLOW_PO3", indicator: "AsiaFlow", name: "PO3", winRate: 0.7, session: "ASIA" },
+  // A3IA is retired: kept only so old roadmaps and journal rows still resolve. Not selectable.
   ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "AsiaFlow", name: "A3IA", winRate: 0.81, session: "ASIA" },
   NYFLOW_PO3: { key: "NYFLOW_PO3", indicator: "NYFlow", name: "PO3", winRate: 0.745, session: "NY" },
   NYFLOW_HL: { key: "NYFLOW_HL", indicator: "NYFlow", name: "H/L", winRate: 0.84, session: "NY" }
 };
 var STRATEGY_KEYS = Object.keys(STRATEGIES);
-var strategyLabel = (k) => k === "DAILY_LEVELS" ? "Daily levels" : `${STRATEGIES[k].indicator} \xB7 ${STRATEGIES[k].name}`;
+var RETIRED_STRATEGIES = ["ASIAFLOW_A3IA"];
+var SELECTABLE_STRATEGY_KEYS = STRATEGY_KEYS.filter((k) => !RETIRED_STRATEGIES.includes(k));
+var strategyLabel = (k) => k === "DAILY_LEVELS" ? "ECHO x ORBIT" : `${STRATEGIES[k].indicator} \xB7 ${STRATEGIES[k].name}`;
 function normalizeSelection(sel) {
   if (sel.mode === "DAILY_LEVELS") return { mode: "DAILY_LEVELS", multiSession: false, strategies: ["DAILY_LEVELS"] };
-  let picks = [...new Set(sel.strategies)].filter((k) => k !== "DAILY_LEVELS" && STRATEGIES[k]);
+  let picks = [...new Set(sel.strategies)].filter((k) => k !== "DAILY_LEVELS" && STRATEGIES[k] && !RETIRED_STRATEGIES.includes(k));
   if (!sel.multiSession && picks.length) {
     const session = STRATEGIES[picks[0]].session;
     picks = picks.filter((k) => STRATEGIES[k].session === session);
@@ -374,7 +377,7 @@ function blendedWinRate(sel) {
   if (!s.length) return STRATEGIES.DAILY_LEVELS.winRate;
   return s.reduce((sum, k) => sum + STRATEGIES[k].winRate, 0) / s.length;
 }
-var JOURNAL_SETUPS = STRATEGY_KEYS.map(strategyLabel);
+var JOURNAL_SETUPS = SELECTABLE_STRATEGY_KEYS.map(strategyLabel);
 
 // src/lib/viewmodel.ts
 var DEFAULT_STRATEGY = { winRate: 0.5, avgRR: 40 / 15, tradesPerDay: 3, instrument: "MNQ", avgStopPoints: 15, tradingDaysPerWeek: 5 };
@@ -472,6 +475,8 @@ function buildDashboard(raw) {
     strategyStats,
     projection: raw.projection ?? null,
     practice: raw.practice ?? null,
+    school: raw.school ?? null,
+    tradingPlan: raw.tradingPlan ?? null,
     stats: {
       todayPnl: sum(raw.today),
       weekPnl: sum(weekStart(raw.today)),
@@ -520,6 +525,9 @@ var Stages = ["EVALUATION", "PASSED", "FUNDED", "LIVE", "FAILED", "ARCHIVED"];
 function todayET(d = /* @__PURE__ */ new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
 }
+
+// src/lib/tradingPlan.ts
+var PLAN_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
 // src/lib/validators.ts
 var isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD");
@@ -604,10 +612,40 @@ var templatePatch = z.object({
   sourceUrl: z.string().url().optional(),
   isActive: z.boolean().optional()
 });
+var planTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM");
+var tradingPlanInput = z.object({
+  schedule: z.object({
+    days: z.array(z.enum(PLAN_DAYS)).min(1, "Pick at least one day").max(5),
+    sessions: z.array(z.enum(["ASIA", "LONDON", "NY"])).min(1, "Pick at least one session").max(3),
+    start: planTime,
+    end: planTime
+  }),
+  models: z.array(z.enum(["ECHO_X_ORBIT", "NYFLOW_HL", "NYFLOW_PO3", "ASIAFLOW_PO3"])).min(1, "Pick at least one model").max(4),
+  entries: z.object({
+    entry: z.enum(["limit", "confirmation", "both"]),
+    stopPts: z.coerce.number().min(1).max(200),
+    targetPts: z.coerce.number().min(1).max(500),
+    beAt1R: z.boolean(),
+    partials: z.boolean()
+  }),
+  risk: z.object({
+    instrument: z.enum(["MNQ", "NQ"]),
+    contracts: z.coerce.number().int().min(1).max(50),
+    maxLossesPerDay: z.coerce.number().int().min(1).max(10),
+    maxTradesPerDay: z.coerce.number().int().min(1).max(20),
+    dailyProfitStop: z.coerce.number().min(0).max(1e5).nullable(),
+    noNews: z.boolean()
+  }),
+  numbers: z.object({
+    monthlyGoal: z.coerce.number().min(0).max(1e6),
+    tradingDays: z.coerce.number().int().min(1).max(23)
+  }),
+  rules: z.array(z.string().trim().min(1).max(140)).max(5)
+});
 
 // src/lib/practice.ts
-var PRACTICE_MODELS = ["hl", "po3", "dl", "asia"];
-var PRACTICE_MODEL_LABEL = { dl: "Daily Levels", hl: "NYFlow \xB7 H/L", po3: "NYFlow \xB7 PO3", asia: "AsiaFlow \xB7 PO3" };
+var PRACTICE_MODELS = ["hl", "po3", "dl", "asia", "exo"];
+var PRACTICE_MODEL_LABEL = { dl: "Extended Learning", exo: "ECHO x ORBIT", hl: "NYFlow \xB7 H/L", po3: "NYFlow \xB7 PO3", asia: "AsiaFlow \xB7 PO3" };
 var PRACTICE_TAGS = {
   "early-entry": "Enters before the flip closes",
   "traded-range": "Trades while the range is still building",
@@ -658,6 +696,103 @@ function summarizePractice(rows, now = Date.now()) {
     lastRepAt: new Date(t(rows[rows.length - 1])).toISOString(),
     models,
     mistakes
+  };
+}
+
+// src/lib/school.ts
+var SCHOOL_LEVELS = [
+  { id: "beginner", name: "Beginner", modules: [
+    { id: "b1", lessons: ["d:futures"] },
+    { id: "b2", lessons: ["d:charts"] },
+    { id: "b3", lessons: ["d:setup", "c:chart", "c:connect+order", "d:orders"] },
+    { id: "b4", lessons: ["d:risk", "c:manage", "c:limits"] },
+    { id: "b5", lessons: ["c:end"], noCheck: true }
+  ], exam: true },
+  { id: "intermediate", name: "Intermediate", modules: [
+    { id: "i1", lessons: ["d:prop"] },
+    { id: "i2", lessons: ["d:math"] },
+    { id: "i3", lessons: ["d:manage", "d:mistakes"] },
+    { id: "i4", lessons: ["d:psych"] },
+    { id: "i5", lessons: ["d:day", "d:planlesson"] }
+  ], exam: true },
+  { id: "advanced", name: "Advanced", modules: [
+    { id: "a1", lessons: ["d:rs", "c:dl"] },
+    { id: "a2", lessons: ["c:hl", "c:po3", "c:asia"] }
+  ], exam: true },
+  { id: "exo", name: "ECHO x ORBIT", modules: [
+    { id: "x1", lessons: ["d:exo-intro", "d:echo", "d:orbit", "d:exo-rules", "d:exo-replay"] }
+  ], exam: false }
+];
+var SCHOOL_LEVEL_IDS = SCHOOL_LEVELS.map((l) => l.id);
+var DIVE_PARTS = {
+  futures: 5,
+  charts: 5,
+  orders: 3,
+  risk: 3,
+  rs: 3,
+  planlesson: 2,
+  setup: 5,
+  prop: 4,
+  math: 4,
+  manage: 3,
+  mistakes: 4,
+  psych: 1,
+  day: 4,
+  "exo-intro": 3,
+  echo: 4,
+  orbit: 4,
+  "exo-rules": 4,
+  "exo-replay": 2
+};
+var MODULE_LABEL = {
+  b1: "How futures & NQ work",
+  b2: "Reading charts",
+  b3: "Platform & orders",
+  b4: "Risk basics",
+  i1: "Prop Firm 101",
+  i2: "Why the math works",
+  i3: "Trade management",
+  i4: "Trading psychology",
+  i5: "Day in the life & plan",
+  a1: "Extended Learning",
+  a2: "Indicator models",
+  x1: "ECHO x ORBIT"
+};
+function summarizeSchool(state, unlocks, attempts) {
+  const s = state ?? {}, ch = new Set(s.ch ?? []), dives = s.dives ?? {};
+  const done = (key) => {
+    const [k, id] = key.split(":");
+    if (k === "c") return id.split("+").every((c) => ch.has(c));
+    return Object.keys(dives[id] ?? {}).length >= (DIVE_PARTS[id] ?? 1);
+  };
+  const levels = SCHOOL_LEVELS.map((l) => {
+    const mods = l.modules;
+    const lessons = mods.flatMap((m) => m.lessons);
+    const cks = mods.filter((m) => !m.noCheck);
+    const ex = s.ex?.[l.id];
+    return {
+      id: l.id,
+      name: l.name,
+      lessons: lessons.length,
+      lessonsDone: lessons.filter(done).length,
+      checkpoints: cks.length,
+      checkpointsPassed: cks.filter((m) => s.ck?.[m.id]?.pass).length,
+      exam: l.exam ? { best: ex?.best ?? 0, pass: !!ex?.pass, tries: ex?.n ?? 0 } : null,
+      manualUnlock: unlocks.includes(l.id)
+    };
+  });
+  const current = (levels.find((l) => l.lessonsDone < l.lessons || l.checkpointsPassed < l.checkpoints || l.exam && !l.exam.pass) ?? levels[levels.length - 1]).name;
+  return {
+    levels,
+    current,
+    attempts: attempts.slice(0, 12).map((a) => ({
+      kind: a.kind === "ex" ? "ex" : "ck",
+      ref: a.ref,
+      label: a.kind === "ex" ? `${SCHOOL_LEVELS.find((l) => l.id === a.ref)?.name ?? a.ref} exam` : `Checkpoint \xB7 ${MODULE_LABEL[a.ref] ?? a.ref}`,
+      pct: a.total ? a.score / a.total : 0,
+      pass: a.pass,
+      at: new Date(a.createdAt).toISOString()
+    }))
   };
 }
 
@@ -794,7 +929,7 @@ async function syncRolesIfStale(u) {
 async function loadDashboard(viewer, traderId) {
   const [trader] = await sql`select * from "User" where id = ${traderId}`;
   if (!trader) throw new HttpError(404, "Not found");
-  const [[rm], accounts, journal, feedback, [pj], practiceRows] = await Promise.all([
+  const [[rm], accounts, journal, feedback, [pj], practiceRows, [sp], attempts, [tp]] = await Promise.all([
     sql`select * from "Roadmap" where "userId" = ${traderId}`,
     sql`select *, to_char("startDate", 'YYYY-MM-DD') as "startISO" from "MemberAccount" where "userId" = ${traderId} order by "createdAt"`,
     sql`select j.*, to_char(j."tradeDate", 'YYYY-MM-DD') as "dateISO",
@@ -803,8 +938,12 @@ async function loadDashboard(viewer, traderId) {
     sql`select f.*, c."globalName" as "cName", c.username as "cUser", c."discordId" as "cDid", c."avatarHash" as "cAv"
         from "CoachFeedback" f join "User" c on c.id = f."coachId" where f."traderId" = ${traderId} order by f."createdAt" desc limit 100`,
     sql`select name, config, "updatedAt" from "Projection" where "userId" = ${traderId}`,
-    sql`select model, drill, ok, tags, "createdAt" from "PracticeRep" where "userId" = ${traderId} and "createdAt" > now() - interval '120 days' order by "createdAt"`
+    sql`select model, drill, ok, tags, "createdAt" from "PracticeRep" where "userId" = ${traderId} and "createdAt" > now() - interval '120 days' order by "createdAt"`,
+    sql`select state, unlocks from "SchoolProgress" where "userId" = ${traderId}`,
+    sql`select kind, ref, score, total, pass, "createdAt" from "SchoolAttempt" where "userId" = ${traderId} order by "createdAt" desc limit 12`,
+    sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${traderId}`
   ]);
+  const jsonOf = (v) => typeof v === "string" ? JSON.parse(v) : v;
   const strategies = rm?.strategies ?? [];
   return buildDashboard({
     viewer: person(viewer),
@@ -864,6 +1003,8 @@ async function loadDashboard(viewer, traderId) {
       createdAt: new Date(f.createdAt).toISOString(),
       readAt: f.readAt ? new Date(f.readAt).toISOString() : null
     })),
+    school: sp || attempts.length ? summarizeSchool(sp ? jsonOf(sp.state) : null, sp?.unlocks ?? [], attempts) : null,
+    tradingPlan: tp ? { ...jsonOf(tp.plan), done: true, updatedAt: new Date(tp.updatedAt).toISOString() } : null,
     practice: summarizePractice(practiceRows),
     projection: pj ? { ...typeof pj.config === "string" ? JSON.parse(pj.config) : pj.config, name: pj.name, updatedAt: new Date(pj.updatedAt).toISOString() } : null
   });
@@ -1124,6 +1265,57 @@ app.put("/api/practice/state", async (c) => {
             on conflict ("userId") do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
 });
+var SCHOOL_LEVELS_SET = new Set(SCHOOL_LEVEL_IDS);
+var ID_RE = /^[a-z0-9-]{1,20}$/;
+function cleanSchoolState(b) {
+  const o = b && typeof b === "object" ? b : {};
+  const ch = Array.isArray(o.ch) ? o.ch.filter((x) => typeof x === "string" && ID_RE.test(x)).slice(0, 60) : [];
+  const dives = {};
+  for (const [k, v] of Object.entries(o.dives && typeof o.dives === "object" ? o.dives : {}).slice(0, 60)) {
+    if (!ID_RE.test(k) || !v || typeof v !== "object") continue;
+    dives[k] = Object.fromEntries(Object.keys(v).filter((x) => ID_RE.test(x)).slice(0, 30).map((x) => [x, 1]));
+  }
+  const best = (m) => {
+    const out = {};
+    for (const [k, v] of Object.entries(m && typeof m === "object" ? m : {}).slice(0, 40)) {
+      if (!ID_RE.test(k) || !v || typeof v !== "object") continue;
+      out[k] = { best: Math.max(0, Math.min(1, Number(v.best) || 0)), pass: v.pass === true, n: Math.max(0, Math.min(1e4, Math.round(Number(v.n) || 0))), at: Math.max(0, Number(v.at) || 0) };
+    }
+    return out;
+  };
+  return { ch, dives, ck: best(o.ck), ex: best(o.ex) };
+}
+app.get("/api/school", async (c) => {
+  const u = c.get("user");
+  const [row] = await sql`select state, unlocks from "SchoolProgress" where "userId" = ${u.id}`;
+  return c.json({ state: row ? typeof row.state === "string" ? JSON.parse(row.state) : row.state : null, unlocks: row?.unlocks ?? [], staff: isStaff(u) });
+});
+app.put("/api/school", async (c) => {
+  const json = JSON.stringify(cleanSchoolState(await c.req.json()));
+  if (json.length > 2e4) throw new HttpError(400, "Too long");
+  await sql`insert into "SchoolProgress" ("userId", state) values (${c.get("user").id}, ${json}::jsonb)
+            on conflict ("userId") do update set state = excluded.state, "updatedAt" = now()`;
+  return c.json({ ok: true });
+});
+app.post("/api/school/attempt", async (c) => {
+  const b = await c.req.json();
+  const score = Math.round(Number(b.score)), total = Math.round(Number(b.total));
+  if (b.kind !== "ck" && b.kind !== "ex" || !b.ref || !ID_RE.test(b.ref) || !(total > 0 && total <= 50) || !(score >= 0 && score <= total) || typeof b.pass !== "boolean")
+    throw new HttpError(400, "Bad attempt");
+  await sql`insert into "SchoolAttempt" (id, "userId", kind, ref, score, total, pass) values (${randomUUID()}, ${c.get("user").id}, ${b.kind}, ${b.ref}, ${score}, ${total}, ${b.pass})`;
+  return c.json({ ok: true });
+});
+app.get("/api/plan", async (c) => {
+  const [row] = await sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${c.get("user").id}`;
+  const plan = row ? { ...typeof row.plan === "string" ? JSON.parse(row.plan) : row.plan, done: true, updatedAt: new Date(row.updatedAt).toISOString() } : null;
+  return c.json({ plan });
+});
+app.put("/api/plan", async (c) => {
+  const p = tradingPlanInput.parse(await c.req.json());
+  await sql`insert into "TradingPlan" ("userId", plan) values (${c.get("user").id}, ${JSON.stringify(p)}::jsonb)
+            on conflict ("userId") do update set plan = excluded.plan, "updatedAt" = now()`;
+  return c.json({ ok: true });
+});
 app.put("/api/projection", async (c) => {
   const u = c.get("user");
   const { name, ...config } = projectionInput.parse(await c.req.json());
@@ -1159,6 +1351,19 @@ app.get("/api/coach/members/:id", async (c) => {
   const d = await loadDashboard(c.get("user"), c.req.param("id"));
   await audit(c.get("user").id, "VIEW_MEMBER", c.req.param("id"));
   return c.json(d);
+});
+app.post("/api/coach/members/:id/unlock", async (c) => {
+  staffOnly(c);
+  const b = await c.req.json();
+  if (!b.level || !SCHOOL_LEVELS_SET.has(b.level) || b.level === "beginner" || typeof b.on !== "boolean") throw new HttpError(400, "Bad level");
+  const id = c.req.param("id");
+  if (!(await sql`select 1 from "User" where id = ${id}`).length) throw new HttpError(404, "Not found");
+  if (b.on)
+    await sql`insert into "SchoolProgress" ("userId", unlocks) values (${id}, ${pgArray([b.level])}::text[])
+              on conflict ("userId") do update set unlocks = array(select distinct unnest("SchoolProgress".unlocks || ${pgArray([b.level])}::text[])), "updatedAt" = now()`;
+  else await sql`update "SchoolProgress" set unlocks = array_remove(unlocks, ${b.level}), "updatedAt" = now() where "userId" = ${id}`;
+  await audit(c.get("user").id, b.on ? "SCHOOL_UNLOCK" : "SCHOOL_RELOCK", id, { level: b.level });
+  return c.json({ ok: true });
 });
 app.post("/api/coach/feedback", async (c) => {
   staffOnly(c);
@@ -1239,7 +1444,7 @@ var SHELL = `<!doctype html>
 <script type="module" src="/assets/app.js?v=__V__"></script>
 </body></html>`;
 var pageHtml = /* @__PURE__ */ new Map();
-var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Projections</a><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
 for (const page of ["school", "practice"]) {
   app.get(`/${page}`, async (c) => {
     const user = await currentUser(c);

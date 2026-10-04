@@ -225,7 +225,7 @@ const PV = { NQ: 20, MNQ: 2 };
 function toast(t) { const el = $("#toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (el.hidden = true), 1800); }
 function timeLabel(min) { min = ((min % 1440) + 1440) % 1440; let h = Math.floor(min / 60), m = min % 60; const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return `${h}:${String(m).padStart(2, "0")} ${ap}`; }
 
-const MODELS = { dl: "Daily Levels", hl: "NYFlow · H/L", po3: "NYFlow · PO3", asia: "AsiaFlow · PO3" };
+const MODELS = { dl: "Extended Learning", hl: "NYFlow · H/L", po3: "NYFlow · PO3", asia: "AsiaFlow · PO3", exo: "ECHO x ORBIT" };
 const DRILLS = {
   mark: { name: "Mark the trade", desc: "Place entry, stop and target on a live NQ setup. Graded line by line." },
   replay: { name: "Replay & decide", desc: "The session plays candle by candle. At each pause: take it, wait, or skip." },
@@ -234,7 +234,10 @@ const DRILLS = {
   size: { name: "Size it", desc: "Account, risk and stop. How many NQ or MNQ? Until it's automatic." },
   clock: { name: "Session clock", desc: "Is this a valid time to trade your model? Quick-fire timing reps." },
   speed: { name: "Speed round", desc: "45 seconds. Spot real gaps and real flips as fast as you can." },
-  limit: { name: "Set the limit", desc: "Today's Daily Level from the Discord. Limit or wait for confirmation? Then place it, manage it, see it play out." },
+  limit: { name: "Set the limit", desc: "Extended Learning: price is coming to a level. Limit or wait for confirmation? Then place it, manage it, see it play out." },
+  echo: { name: "Mark the Echo", desc: "Find the CISD and the rejection block inside the FVG, then decide if the draw makes it a trade." },
+  orbit: { name: "Draw the Orbit", desc: "Anchor the fib on the big swing, find the OTE zone, then spot the inversion on the leg in." },
+  draw: { name: "Valid draw?", desc: "Stop vs. distance to liquidity. Is it at least 2× the stop? Quick-fire." },
 };
 const TAGS = {
   "early-entry": "Enters before the flip closes",
@@ -260,12 +263,31 @@ const TAGS = {
   "entry-zone": "Limit outside the posted level",
   "stop-50": "Stop not at 50 ticks",
   "be-missed": "Doesn't move the stop to breakeven at 1:1",
+  "cisd-read": "Misreads the CISD",
+  "rb-read": "Marks the rejection block outside the FVG",
+  "fib-anchor": "Anchors the fib on the wrong swing",
+  "ote-read": "Enters outside the OTE zone",
+  "inv-read": "Misses the inversion on the leg in",
+  "draw-invalid": "Takes trades without a 2× draw",
 };
 
 // ───────────────────────── state ─────────────────────────
 const KEY = "fh-practice-preview-v1";
 const LIVE = /^https?:$/.test(location.protocol);
 let S = blank();
+// Drills unlock with the Trading School: basics always, model drills after the Intermediate exam, ECHO x ORBIT drills with its section.
+const GATE = { adv: !LIVE, exo: !LIVE };
+const BASIC = ["ticket", "size", "clock", "speedq"], ADV = ["mark", "replay", "levels", "speed", "limit"], EXO = ["echo", "orbit", "draw"];
+const drillOpen = (d) => BASIC.includes(d) || (ADV.includes(d) && GATE.adv) || (EXO.includes(d) && GATE.exo);
+async function loadGate() {
+  if (!LIVE) return;
+  try {
+    const r = await fetch("/api/school"); if (!r.ok) return; const j = await r.json(); const st = j.state || {}, ex = st.ex || {}, un = j.unlocks || [];
+    const tierN = (reps) => { const n = reps.length, last = reps.slice(-40), acc = last.length ? last.filter((x) => x.ok).length / last.length : 0; return n >= 20 && acc >= 0.7 ? 2 : n >= 5 ? 1 : 0; };
+    GATE.adv = !!j.staff || un.includes("advanced") || !!(ex.intermediate && ex.intermediate.pass);
+    GATE.exo = !!j.staff || un.includes("exo") || (!!(ex.advanced && ex.advanced.pass) && tierN(S.reps.filter((x) => x.d === "limit")) >= 2 && tierN(S.reps.filter((x) => x.m === "hl")) >= 1 && tierN(S.reps.filter((x) => x.m === "po3")) >= 1);
+  } catch (e) { /* keep defaults */ }
+}
 function blank() { return { xp: 0, reps: [], review: [], best: { speed: 0, streak: 0 }, streak: 0, lastDaily: null, daily: null }; }
 function stateOnly() { const { reps, ...rest } = S; rest.review = (rest.review || []).slice(-40); return rest; }
 let saveT = null, saveFails = 0;
@@ -442,9 +464,9 @@ function genHL(o = {}) {
   if (o.late) chop(bars, L + 4, H - 4, 13); else chop(bars, L + 3, H - 3, RI(0, 1));
   const t = trap(bars, L); Object.assign(k, t, { target: H });
   const zones = [];
-  if (o.levelAt === "sweep") zones.push({ a: qt(t.sweepLow - R(1, 3)), b: qt(L - R(0, 1.5)), side: "long", label: "DAILY LEVEL · LONG" });
-  if (o.levelAt === "block") { const mid = qt(t.entry + (H - t.entry) * R(0.4, 0.55)); zones.push({ a: mid - 2, b: mid + 3, side: "short", label: "DAILY LEVEL · SHORT" }); }
-  if (o.levelAt === "far") zones.push({ a: qt(H + R(14, 22)), b: qt(H + R(25, 30)), side: "short", label: "DAILY LEVEL · SHORT" });
+  if (o.levelAt === "sweep") zones.push({ a: qt(t.sweepLow - R(1, 3)), b: qt(L - R(0, 1.5)), side: "long", label: "ECHO x ORBIT · LONG" });
+  if (o.levelAt === "block") { const mid = qt(t.entry + (H - t.entry) * R(0.4, 0.55)); zones.push({ a: mid - 2, b: mid + 3, side: "short", label: "ECHO x ORBIT · SHORT" }); }
+  if (o.levelAt === "far") zones.push({ a: qt(H + R(14, 22)), b: qt(H + R(25, 30)), side: "short", label: "ECHO x ORBIT · SHORT" });
   const res = outcome(bars, k, o.outcome || (Math.random() < 0.72 ? "win" : "loss"), { zone: zones[0] });
   const sc = { model: "hl", dir: "long", B, bars, k: { ...k, result: res }, zones, t0: 420 };
   return dir === "short" ? mirror(sc) : sc;
@@ -465,7 +487,7 @@ function genPO3(o = {}) {
   const t = trap(bars, lo, { approach: false });
   const k = { E, boxLo: lo, boxHi: hi, boxStart, boxEnd, ...t, target: E, trend: o.counter ? "down" : "up" };
   const res = outcome(bars, k, o.outcome || (o.counter ? (Math.random() < 0.8 ? "loss" : "win") : (Math.random() < 0.7 ? "win" : "loss")));
-  const zones = o.levelAt === "far" ? [{ a: qt(E + R(10, 16)), b: qt(E + R(18, 24)), side: "short", label: "DAILY LEVEL · SHORT" }] : [];
+  const zones = o.levelAt === "far" ? [{ a: qt(E + R(10, 16)), b: qt(E + R(18, 24)), side: "short", label: "ECHO x ORBIT · SHORT" }] : [];
   const sc = { model: "po3", dir: "long", B: Bx, bars, k: { ...k, result: res }, zones, t0: 420 };
   if (dir === "short") { mirror(sc); sc.k.trend = o.counter ? "up" : "down"; }
   return sc;
@@ -497,7 +519,7 @@ function renderHud() {
 function home() {
   stopTimers();
   const daily = S.daily && S.daily.date === todayKey() ? S.daily : null; const done = daily ? daily.res.length : 0;
-  const ms = ["hl", "po3", "dl", "asia"].map((m) => [m, modelStats(m)]);
+  const ms = ["hl", "po3", "dl", "asia", "exo"].map((m) => [m, modelStats(m)]);
   const silver = (m) => ["silver", "gold", "elite"].includes(modelStats(m).tier);
   const simOpen = silver("hl") && silver("po3");
   const mist = topMistakes();
@@ -517,8 +539,10 @@ function home() {
     <section class="sec">
       <div class="sec-h"><h2>Drills</h2><span class="hud">Unlimited reps · every chart is new</span></div>
       <div class="grid">
-        <button class="card lab" data-d="limit"><div class="row"><span class="chip sig">Daily Levels · from the Discord</span></div><h3>Set the limit</h3><p>${DRILLS.limit.desc}</p></button>
-        ${["mark", "replay", "levels", "ticket", "size", "clock", "speed"].map((d) => `<button class="card" data-d="${d}"><div class="row">${drillChips(d)}</div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc}</p></button>`).join("")}
+        ${["echo", "orbit", "draw"].map((d) => GATE.exo ? `<button class="card lab" data-d="${d}"><div class="row"><span class="chip sig">ECHO x ORBIT</span></div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc}</p></button>` : `<div class="card locked"><div class="row"><span class="chip dim">Locked · ECHO x ORBIT</span></div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc} Unlocks with the ECHO x ORBIT section of the Trading School.</p></div>`).join("")}
+        ${GATE.adv ? `<button class="card lab" data-d="limit"><div class="row"><span class="chip sig">Extended Learning</span></div><h3>Set the limit</h3><p>${DRILLS.limit.desc}</p></button>` : ""}
+        ${["mark", "replay", "levels", "ticket", "size", "clock", "speed"].map((d) => drillOpen(d) ? `<button class="card" data-d="${d}"><div class="row">${drillChips(d)}</div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc}</p></button>` : `<div class="card locked"><div class="row"><span class="chip dim">Locked</span></div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc} Unlocks after the Intermediate exam in the Trading School.</p></div>`).join("")}
+        ${GATE.adv ? "" : `<div class="card locked"><div class="row"><span class="chip dim">Locked</span></div><h3>Set the limit</h3><p>Extended Learning practice. Unlocks after the Intermediate exam in the Trading School.</p></div>`}
         <div class="card locked"><div class="row"><span class="chip dim">Locked</span></div><h3>Sim day</h3><p>Trade a full NQ session start to finish and get an end-of-day report card. ${simOpen ? "Unlocked." : "Unlocks at <b>Silver</b> in NYFlow · H/L and PO3."}</p></div>
       </div>
     </section>
@@ -533,7 +557,7 @@ function home() {
       <div class="sumgrid">
         <div class="sum"><span class="hud">Speed round</span><span class="v">${S.best.speed}</span><span class="hud">correct in 45s</span></div>
         <div class="sum"><span class="hud">Longest streak</span><span class="v">${Math.max(S.streak, S.best.streak || 0)}</span><span class="hud">days</span></div>
-        <div class="sum"><span class="hud">Daily Levels</span><span class="v">${S.reps.filter((r) => r.d === "limit" && r.ok).length}</span><span class="hud">levels handled perfectly</span></div>
+        <div class="sum"><span class="hud">Set the limit</span><span class="v">${S.reps.filter((r) => r.d === "limit" && r.ok).length}</span><span class="hud">levels handled perfectly</span></div>
       </div>
     </section>
 
@@ -565,8 +589,9 @@ function stopTimers() { timers.forEach(clearInterval); timers.forEach(clearTimeo
 function startDaily() {
   if (!S.daily || S.daily.date !== todayKey() || S.daily.res.length >= 10) S.daily = { date: todayKey(), res: [], active: true };
   S.daily.active = true; save();
-  const base = ["limit", "mark", "replay", "levels", "ticket", "size", "clock", "limit", "size", "speedq"];
-  const fromReview = S.review.splice(0, 3).map((r) => r.d);
+  const want = ["limit", "mark", "replay", "levels", "ticket", "size", "clock", "limit", "size", "speedq", "echo", "orbit", "draw"].filter(drillOpen);
+  const base = shuffle(want).concat(shuffle(BASIC), shuffle(BASIC)).slice(0, 10);
+  const fromReview = S.review.splice(0, 3).map((r) => r.d).filter(drillOpen);
   const q = shuffle([...fromReview, ...base]).slice(0, 10 - S.daily.res.length);
   RUN = { queue: q, i: 0, daily: true }; save(); next();
 }
@@ -577,7 +602,7 @@ function next() {
   if (RUN.daily && S.daily.res.length >= 10) { finishDaily(); return; }
   const d = RUN.loop ? RUN.queue[0] : RUN.queue[RUN.i++];
   if (!d) { RUN = null; return home(); }
-  ({ mark: drillMark, replay: drillReplay, levels: drillLevels, ticket: drillTicket, size: drillSize, clock: drillClock, speed: drillSpeed, speedq: drillSpeedQuick, limit: drillLimit })[d]();
+  ({ mark: drillMark, replay: drillReplay, levels: drillLevels, ticket: drillTicket, size: drillSize, clock: drillClock, speed: drillSpeed, speedq: drillSpeedQuick, limit: drillLimit, echo: drillEcho, orbit: drillOrbit, draw: drillDraw })[drillOpen(d) ? d : "size"]();
 }
 function finishDaily() {
   S.daily.active = false; const ok = S.daily.res.filter(Boolean).length;
@@ -811,9 +836,9 @@ const CLOCK = [
   { m: "asia", t: 90, q: "AsiaFlow · PO3. A clean setup just formed. Inside the Asia session?", a: false, why: "1:30 AM is after the session closes at 12:00 AM ET." },
   { m: "asia", t: 1170, q: "AsiaFlow · PO3. NY expanded hard today. Trade Asia tonight?", a: false, why: "Filter 1: when NY expanded hard, skip Asia. It's the clean session only after NY chops." },
   { m: "asia", t: 1200, q: "AsiaFlow · PO3. Watching the 8 PM candle dip into your key level for a long. Is this the candle the model watches?", a: true, why: "Yes. For longs the 8 PM candle should go Open → Low → High → Close: dip into the level first." },
-  { m: "dl", t: 180, q: "Daily Levels. Does Range Settlement pull price right now?", a: false, why: "3:00 AM is overnight. RS forms at 9:30 and only applies after the open." },
-  { m: "dl", t: 510, q: "Daily Levels. Price is near your level right at the 8:30 news. Set a limit order?", a: false, why: "Limits only when everything lines up and not near the open, news or high volatility. Wait for confirmation." },
-  { m: "dl", t: 585, q: "Daily Levels. Price opened below Range Settlement. Does that favor longs?", a: true, why: "Below RS → longs, unfilled orders sit above. Above RS → shorts." },
+  { m: "dl", t: 180, q: "Extended Learning. Does Range Settlement pull price right now?", a: false, why: "3:00 AM is overnight. RS forms at 9:30 and only applies after the open." },
+  { m: "dl", t: 510, q: "Extended Learning. Price is near your level right at the 8:30 news. Set a limit order?", a: false, why: "Limits only when everything lines up and not near the open, news or high volatility. Wait for confirmation." },
+  { m: "dl", t: 585, q: "Extended Learning. Price opened below Range Settlement. Does that favor longs?", a: true, why: "Below RS → longs, unfilled orders sit above. Above RS → shorts." },
   { m: "po3", t: 600, q: "NYFlow · PO3. Is 10:00 AM a key time the model marks?", a: true, why: "Yes. The 10:00 ET open is the key candle: for longs it should dip first, then close higher." },
   { m: "po3", t: 590, q: "NYFlow · PO3. Price is still chopping sideways. Trade it?", a: false, why: "Accumulation is a no-trade zone. Wait for the manipulation and the flip." },
 ];
@@ -873,7 +898,116 @@ function drillSpeedQuick() {
   }));
 }
 
-// ───────────────────────── 8. Daily Levels: set the limit ─────────────────────────
+// ───────────────────────── 9. ECHO x ORBIT drills (concepts only) ─────────────────────────
+const ECHO_REL = [[20,24,12,14],[14,17,5,7],[7,13,3,11],[11,12,-2,0],[0,6,-4,4],[4,8,-1,2],[2,3,-10,-8],[-8,-6,-19,-16],[-16,-13,-20,-14],[-14,6,-15,4],[4,15,0,13],[13,14,3,5],[5,6,-9,2]];
+const ORBIT_REL = [[0,6,-4,4],[4,18,2,16],[16,22,10,20],[20,36,18,34],[34,40,28,31],[31,52,30,50],[50,68,48,66],[66,82,63,78],[78,80,66,68],[68,70,52,55],[55,57,40,42],[42,43,26,28],[28,32,18,24],[24,47,22,45],[45,56,42,54],[54,66,52,64],[64,76,61,74],[74,88,71,86],[86,96,82,94],[94,102,90,99]];
+const flipBars = (bars, M) => bars.map((b) => ({ o: qt(2 * M - b.o), c: qt(2 * M - b.c), h: qt(2 * M - b.l), l: qt(2 * M - b.h) }));
+const relBar = (r, base, s) => bar(base + r[0] * s, base + r[3] * s, base + r[1] * s, base + r[2] * s);
+function stepTo(bars, from, to, n, s) { let p = from; for (let k = 1; k <= n; k++) { const t = from + (to - from) * (k / n) + (k < n ? R(-2, 2) * s : 0); bars.push(bar(p, t, Math.max(p, t) + R(0.5, 2.5) * s, Math.min(p, t) - R(0.5, 2.5) * s)); p = t; } return p; }
+function genEcho() {
+  const s = R(0.8, 1.5), base = qt(R(20600, 21800)), long = Math.random() < 0.5, valid = Math.random() < 0.6;
+  const stopD = 11 * s, drawD = (valid ? R(2.3, 3.4) : R(1.1, 1.7)) * stopD;
+  const bars = []; const draw = base + drawD;
+  // context: tag the old high (the draw), then sell off into the Echo setup, staying above the old low area
+  let p = stepTo(bars, base + drawD - 6 * s, draw - R(0, 1) * s, 2, s); bars[bars.length - 1].h = qt(draw);
+  p = stepTo(bars, p, base + 20 * s, 6, s); bars.forEach((b) => { b.l = qt(Math.max(b.l, base + 13 * s)); b.o = qt(Math.max(b.o, b.l)); b.c = qt(Math.max(b.c, b.l)); b.h = qt(Math.max(b.h, b.o, b.c)); });
+  const off = bars.length; ECHO_REL.forEach((r) => bars.push(relBar(r, base, s)));
+  const entry = qt(base), stop = qt(base - 11 * s);
+  if (valid) stepTo(bars, base + 2 * s, draw + R(1, 4) * s, 6, s);
+  else { const q = stepTo(bars, base + 2 * s, draw - R(0.5, 2) * s, 3, s); stepTo(bars, q, stop - R(2, 6) * s, 3, s); }
+  const k = { cisdI: off + 9, rbI: off + 12, sweepI: off + 7, oldLow: qt(base - 4 * s), cisd: qt(base + 2 * s), fvgLo: qt(base - 13 * s), fvgHi: qt(base), rbLo: qt(base - 9 * s), entry, stop, draw: qt(draw), valid, stopD: qt(stopD), drawD: qt(drawD) };
+  if (long) return { bars, k, long };
+  const fb = flipBars(bars, base), F = (x) => qt(2 * base - x);
+  return { bars: fb, long, k: { ...k, oldLow: F(k.oldLow), cisd: F(k.cisd), fvgLo: F(k.fvgHi), fvgHi: F(k.fvgLo), rbLo: F(k.rbLo), entry: F(k.entry), stop: F(k.stop), draw: F(k.draw) } };
+}
+function drillEcho() {
+  const sc = genEcho(), k = sc.k, L = sc.long, side = L ? "LONG" : "SHORT";
+  frame(DRILLS.echo.name, `<span class="chip sig">ECHO x ORBIT</span><span class="chip">Echo · ${side}</span>`, chartLayout(`<span class="chip">${L ? "Sell-side swept?" : "Buy-side swept?"}</span>`));
+  const ch = new Chart($("#cv")); ch.set(sc.bars, { shown: k.rbI + 1, slots: sc.bars.length + 2, t0: 540, step: 5, keep: [k.draw, k.stop] });
+  const base = () => { ch.lines = [{ p: k.oldLow, color: css("--ink3"), dash: [4, 4], label: L ? "OLD LOW" : "OLD HIGH", i0: k.sweepI - 3, i1: k.rbI }, { p: k.draw, color: css("--win"), dash: [6, 4], label: L ? "OLD HIGH · DRAW" : "OLD LOW · DRAW", i0: 0 }]; ch.zones = []; ch.marks = []; };
+  base(); ch.draw();
+  const tags = []; const res = { cisd: null, rb: null, dec: null }; let step = 0;
+  const T = [
+    `Price swept the ${L ? "old low" : "old high"}. <b>Tap the candle that confirms the CISD</b>: the first close back ${L ? "above" : "below"} the open of the ${L ? "down" : "up"}-move.`,
+    `The displacement left a fair value gap. <b>Tap the rejection block</b>: the wick that got rejected inside the gap.`,
+  ];
+  const paint = (msg = "") => { $("#side").innerHTML = `<div class="task">${T[step]}</div><div class="hint">Confluence Master won’t mark the CISD. Read it by eye.</div>${msg}`; };
+  paint();
+  ch.onTap = ({ i }) => {
+    if (step === 0) {
+      res.cisd = i === k.cisdI; if (!res.cisd) tags.push("cisd-read");
+      ch.lines.push({ p: k.cisd, color: css("--ice"), dash: [3, 3], label: "OPEN OF THE MOVE · CISD", i0: k.cisdI - 3, i1: k.cisdI + 1 }); ch.marks.push({ i: k.cisdI, p: k.cisd, shape: "ring", color: css("--ice") });
+      ch.zones.push({ a: k.fvgLo, b: k.fvgHi, i0: k.cisdI - 1, i1: k.cisdI + 1, fill: "rgba(156,203,255,.12)", stroke: css("--ice"), label: "FVG", ink: css("--ice") });
+      step = 1; ch.draw(); paint(fbBox(res.cisd, res.cisd ? "CISD found" : "That wasn’t it", [], `<div>${res.cisd ? "That close is back through the open of the move: delivery changed." : "The ringed candle is the CISD: the first close back through the open of the move that made the sweep."}</div>`)); return;
+    }
+    if (step === 1) {
+      ch.onTap = null; res.rb = i === k.rbI; if (!res.rb) tags.push("rb-read");
+      ch.zones.push({ a: k.rbLo, b: k.entry, i0: k.rbI, i1: k.rbI, fill: "rgba(255,106,0,.18)", stroke: css("--signal"), label: "RB", ink: css("--signal") });
+      ch.lines.push({ p: k.entry, color: css("--ice"), label: "ENTRY", i0: k.rbI, w: 1.6 }, { p: k.stop, color: css("--loss"), label: "STOP", i0: k.rbI, w: 1.6 }); ch.draw();
+      const sp = Math.abs(k.entry - k.stop), dp = Math.abs(k.draw - k.entry);
+      $("#side").innerHTML = fbBox(res.rb, res.rb ? "Rejection block marked" : "Not the RB", [], `<div>${res.rb ? "Wick into the gap, rejected, closed back out." : "The RB is the wick that pushed into the FVG and got rejected (highlighted)."}</div>`) +
+        `<div class="task" style="margin-top:10px">Stop is <b class="num">${sp.toFixed(2)} pts</b>. The draw is <b class="num">${dp.toFixed(2)} pts</b> away. <b>Take it or skip it?</b></div><div class="ansrow"><button class="btn primary" data-x="take">Take it</button><button class="btn" data-x="skip">Skip</button></div>`;
+      document.querySelectorAll("[data-x]").forEach((b) => (b.onclick = () => decide(b.dataset.x === "take", sp, dp)));
+    }
+  };
+  function decide(take, sp, dp) {
+    res.dec = take === k.valid; if (!res.dec) tags.push(k.valid ? "missed-setup" : "draw-invalid");
+    const ok = res.cisd && res.rb && res.dec; const gain = record("exo", "echo", ok, [...new Set(tags)], ok ? 20 : 4); if (!ok) missed("echo", "exo", tags);
+    const items = [[res.cisd, "CISD"], [res.rb, "Rejection block in the FVG"], [res.dec, `${k.valid ? "Take it" : "Skip it"}: the draw is ${(dp / sp).toFixed(1)}× the stop${k.valid ? " (2× or more)" : ", under 2×"}.`]];
+    $("#side").innerHTML = fbBox(ok, ok ? `Clean read · +${gain} XP` : `Not quite · +${gain} XP`, items) + `<button class="btn" id="play">▶ Play it out</button>` + nextBtn();
+    $("#play").onclick = () => { $("#play").disabled = true; let n = ch.shown; const h = setInterval(() => { n++; ch.shown = Math.min(n, sc.bars.length); ch.draw(); if (n >= sc.bars.length) { clearInterval(h); $("#play").outerHTML = `<div class="hud" style="color:${k.valid ? "var(--win)" : "var(--loss)"}">${k.valid ? "Delivered to the draw." : "Tagged the nearby liquidity and reversed through the stop."}</div>`; } }, 140); timers.push(h); };
+    wireNext();
+  }
+}
+function genOrbit() {
+  const s = R(0.7, 1.4), base = qt(R(20600, 21800)), long = Math.random() < 0.5, bars = [];
+  stepTo(bars, base + 40 * s, base + 4 * s, 6, s); bars.forEach((b) => { b.l = qt(Math.max(b.l, base + 1 * s)); b.o = qt(Math.max(b.o, b.l)); b.c = qt(Math.max(b.c, b.l)); b.h = qt(Math.max(b.h, b.o, b.c)); });
+  const off = bars.length; ORBIT_REL.forEach((r) => bars.push(relBar(r, base, s)));
+  const lowP = qt(base - 4 * s), highP = qt(base + 82 * s), lv = (r) => highP - r * (highP - lowP);
+  const k = { lowI: off, highI: off + 7, pullI: off + 12, invI: off + 13, lowP, highP, ote: [lv(0.79), lv(0.62)], gap: [qt(base + 32 * s), qt(base + 40 * s)], lv };
+  if (long) return { bars, k, long };
+  const F = (x) => 2 * base - x;
+  return { bars: flipBars(bars, base), long, k: { ...k, lowP: qt(F(lowP)), highP: qt(F(highP)), ote: [F(k.ote[1]), F(k.ote[0])], gap: [qt(F(k.gap[1])), qt(F(k.gap[0]))], lv: (r) => F(lv(r)) } };
+}
+function drillOrbit() {
+  const sc = genOrbit(), k = sc.k, L = sc.long;
+  frame(DRILLS.orbit.name, `<span class="chip sig">ECHO x ORBIT</span><span class="chip">Orbit · ${L ? "LONG" : "SHORT"}</span>`, chartLayout(`<span class="chip">Draw the fib yourself</span>`));
+  const ch = new Chart($("#cv")); ch.set(sc.bars, { shown: k.pullI + 1, slots: sc.bars.length + 2, t0: 540, step: 5, keep: [k.lowP, k.highP] }); ch.draw();
+  const anchor1 = L ? "swing low" : "swing high", anchor2 = L ? "swing high" : "swing low";
+  const tags = [], res = {}; let step = 0;
+  const T = [`<b>Tap the ${anchor1}</b>: where the big swing started.`, `<b>Tap the ${anchor2}</b>: where the swing ended.`, `The fib is drawn. <b>Tap inside the zone</b> where Orbit waits for price.`, `Price is in the zone. <b>Tap the candle that inverts the gap</b> left by the leg in.`];
+  const paint = (msg = "") => { $("#side").innerHTML = `<div class="task">${T[step]}</div><div class="hint">Confluence Master doesn’t draw fibs. Anchor it on the big, obvious swing.</div>${msg}`; };
+  const fib = () => { ch.zones = [{ a: k.ote[0], b: k.ote[1], fill: "rgba(255,106,0,.12)", stroke: css("--signal"), label: "OTE 0.62–0.79", ink: css("--signal"), i0: k.lowI }]; ch.lines = [[0, "--ice"], [0.5, "--ink3"], [0.62, "--signal"], [0.79, "--signal"], [1, "--ice"]].map(([r, c]) => ({ p: qt(k.lv(r)), color: css(c), dash: [3, 3], label: String(r), i0: k.lowI, left: true })); };
+  paint();
+  ch.onTap = ({ i, price }) => {
+    if (step === 0) { res.a = i === k.lowI; if (!res.a) tags.push("fib-anchor"); ch.marks.push({ i: k.lowI, p: k.lowP, shape: "ring", color: css("--ice") }); step = 1; ch.draw(); paint(fbBox(res.a, res.a ? "Anchor 1" : "Not that one", [], `<div>${res.a ? "Start of the swing." : `The ringed candle is the ${anchor1}.`}</div>`)); return; }
+    if (step === 1) { res.b = i === k.highI; if (!res.b) tags.push("fib-anchor"); ch.marks.push({ i: k.highI, p: k.highP, shape: "ring", color: css("--ice") }); fib(); step = 2; ch.draw(); paint(fbBox(res.b, res.b ? "Anchor 2" : "Not that one", [], `<div>${res.b ? "End of the swing. Fib drawn." : `The ringed candle is the ${anchor2}.`}</div>`)); return; }
+    if (step === 2) { const lo = Math.min(...k.ote), hi = Math.max(...k.ote); res.z = price >= lo && price <= hi; if (!res.z) tags.push("ote-read"); step = 3; ch.shown = k.invI + 1; ch.zones.push({ a: k.gap[0], b: k.gap[1], i0: k.pullI - 2, i1: k.pullI, fill: "rgba(182,156,255,.16)", stroke: css("--lag"), label: "GAP · LEG IN", ink: css("--lag") }); ch.draw(); paint(fbBox(res.z, res.z ? "In the OTE zone" : "Outside the zone", [], `<div>${res.z ? "The deep pullback: 0.62–0.79." : "Orbit waits between the 0.62 and 0.79 lines."}</div>`)); return; }
+    if (step === 3) {
+      ch.onTap = null; res.inv = i === k.invI; if (!res.inv) tags.push("inv-read"); ch.marks.push({ i: k.invI, p: L ? k.gap[1] : k.gap[0], shape: "ring", color: css("--lag") }); ch.draw();
+      const ok = res.a && res.b && res.z && res.inv; const gain = record("exo", "orbit", ok, [...new Set(tags)], ok ? 20 : 4); if (!ok) missed("orbit", "exo", tags);
+      $("#side").innerHTML = fbBox(ok, ok ? `Clean Orbit · +${gain} XP` : `Not quite · +${gain} XP`, [[res.a && res.b, "Fib anchored on the big swing"], [res.z, "OTE zone"], [res.inv, "Inversion on the leg in"]]) + `<button class="btn" id="play">▶ Play it out</button>` + nextBtn();
+      $("#play").onclick = () => { $("#play").disabled = true; let n = ch.shown; const h = setInterval(() => { n++; ch.shown = Math.min(n, sc.bars.length); ch.draw(); if (n >= sc.bars.length) { clearInterval(h); $("#play").outerHTML = `<div class="hud" style="color:var(--win)">Delivered past the ${anchor2}: the draw.</div>`; } }, 140); timers.push(h); };
+      wireNext();
+    }
+  };
+}
+function drillDraw() {
+  const stop = pick([10, 12, 12.5, 15, 15, 18, 20]), kind = Math.random(), L = Math.random() < 0.5, eng = pick(["Echo", "Orbit"]);
+  const none = kind < 0.15, valid = !none && kind < 0.58, dist = none ? 0 : qt(stop * (valid ? R(2, 3.6) : R(0.9, 1.9)));
+  const liq = pick(L ? ["the Asia high", "the London high", "equal highs", "the previous day high", "the old high"] : ["the Asia low", "the London low", "equal lows", "the previous day low", "the old low"]);
+  const es = Math.random() < 0.4;
+  const q = none ? `${eng} ${L ? "long" : "short"}. Stop <span class="num">${stop} pts</span>. No clear liquidity ${L ? "above" : "below"}: price is in the middle of the range.${es ? " ES confirms the move." : ""}` : `${eng} ${L ? "long" : "short"}. Stop <span class="num">${stop} pts</span>. The nearest draw is ${liq}, <span class="num">${dist} pts</span> away.${es ? " ES confirms the move." : ""}`;
+  frame(DRILLS.draw.name, `<span class="chip sig">ECHO x ORBIT</span>`, `<div class="qbox pop"><span class="hud">Valid draw?</span><div class="q">${q}</div><div class="ansrow"><button class="btn big" data-a="1">Take it</button><button class="btn big" data-a="0">Skip</button></div><div id="fbk"></div></div>`);
+  document.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => {
+    const ok = (b.dataset.a === "1") === valid; document.querySelectorAll("[data-a]").forEach((x) => (x.disabled = true)); if (ok) b.classList.add("on");
+    const gain = record("exo", "draw", ok, ok ? [] : [valid ? "missed-setup" : "draw-invalid"], ok ? 10 : 3); if (!ok) missed("draw", "exo", [valid ? "missed-setup" : "draw-invalid"]);
+    const why = none ? "No draw, no trade. ES agreeing doesn’t change that." : `${dist} ÷ ${stop} = ${(dist / stop).toFixed(2)}×. ${valid ? "At least 2× the stop: valid." : "Under 2× the stop: skip it."}${es ? " ES is a confluence, it doesn’t fix a short draw." : ""}`;
+    $("#fbk").innerHTML = fbBox(ok, ok ? `Correct · +${gain} XP` : `${valid ? "Take it" : "Skip"} · +${gain} XP`, [], `<div>${why}</div>`) + nextBtn(); wireNext();
+  }));
+}
+
+// ───────────────────────── 8. Extended Learning: set the limit ─────────────────────────
 // Long form, 15m candles from 6 PM. Mirrored for short levels.
 function genDL(o = {}) {
   const dir = o.dir || pick(["long", "short"]);
@@ -919,11 +1053,11 @@ function genDL(o = {}) {
 function drillLimit() {
   const sc = genDL(); const k = sc.k; const long = sc.dir === "long"; const sg = long ? 1 : -1;
   const lvlTxt = `${fmt(Math.min(k.zLo, k.zHi))} – ${fmt(Math.max(k.zLo, k.zHi))}`;
-  frame(DRILLS.limit.name, `<span class="chip sig">Daily Levels · from the Discord</span>`, `<div class="labhead"><span class="chip sig">Daily Levels</span><b>DAILY LEVEL · ${sideWord(sc.dir)} ${lvlTxt}</b><span class="hud">As posted in the FLOWMTD Discord · NQ</span></div>` + chartLayout(`<span class="chip">From 6 PM</span><span class="chip ${long ? "win" : "loss"}">Level ${long ? "below" : "above"} the opens → ${long ? "longs" : "shorts"}</span>`, "15m"));
+  frame(DRILLS.limit.name, `<span class="chip sig">Extended Learning</span>`, `<div class="labhead"><span class="chip sig">Extended Learning</span><b>LEVEL · ${sideWord(sc.dir)} ${lvlTxt}</b><span class="hud">NQ · practice level</span></div>` + chartLayout(`<span class="chip">From 6 PM</span><span class="chip ${long ? "win" : "loss"}">Level ${long ? "below" : "above"} the opens → ${long ? "longs" : "shorts"}</span>`, "15m"));
   const ch = new Chart($("#cv")); ch.set(sc.bars, { shown: k.decI + 1, slots: sc.bars.length + 1, t0: sc.t0, step: 15, keep: [k.tgt, long ? k.zLo - 13 : k.zHi + 13] });
   const base = () => {
     ch.windows = [{ i0: 8, i1: 23, label: "ASIA 8 PM – 12 AM" }, { i0: 57, i1: 58, color: "rgba(255,106,0,.08)", label: "8:30 NEWS", ink: css("--signal") }];
-    ch.zones = [{ a: k.zLo, b: k.zHi, fill: long ? "rgba(62,224,161,.12)" : "rgba(255,79,109,.12)", stroke: long ? css("--win") : css("--loss"), label: `DAILY LEVEL · ${sideWord(sc.dir)} (DISCORD)`, ink: long ? css("--win") : css("--loss") }];
+    ch.zones = [{ a: k.zLo, b: k.zHi, fill: long ? "rgba(62,224,161,.12)" : "rgba(255,79,109,.12)", stroke: long ? css("--win") : css("--loss"), label: `LEVEL · ${sideWord(sc.dir)}`, ink: long ? css("--win") : css("--loss") }];
     ch.lines = [{ p: k.O6, color: css("--lag"), dash: [4, 4], label: "6 PM OPEN", i0: 0 }, { p: k.O0, color: css("--lag"), dash: [4, 4], label: "MIDNIGHT OPEN", i0: 24 }, { p: k.tgt, color: css("--ice"), dash: [6, 4], label: long ? "ASIA HIGH" : "ASIA LOW", i0: 8 }];
   };
   base(); ch.draw();
@@ -1002,6 +1136,6 @@ function drillLimit() {
 }
 
 // ───────────────────────── boot ─────────────────────────
-loadState().then(() => { renderHud(); home(); });
+loadState().then(loadGate).then(() => { renderHud(); home(); });
 </script>
 </body></html>

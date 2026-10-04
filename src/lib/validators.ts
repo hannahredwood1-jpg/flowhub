@@ -100,3 +100,35 @@ export const templatePatch = z.object({
   sourceUrl: z.string().url().optional(),
   isActive: z.boolean().optional(),
 });
+
+// Trading plan (Trading Plan → Build your plan)
+import { PLAN_DAYS } from "./tradingPlan";
+const planTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM");
+export const tradingPlanInput = z.object({
+  schedule: z.object({
+    days: z.array(z.enum(PLAN_DAYS)).min(1, "Pick at least one day").max(5),
+    sessions: z.array(z.enum(["ASIA", "LONDON", "NY"])).min(1, "Pick at least one session").max(3),
+    start: planTime, end: planTime,
+  }),
+  models: z.array(z.enum(["ECHO_X_ORBIT", "NYFLOW_HL", "NYFLOW_PO3", "ASIAFLOW_PO3"])).min(1, "Pick at least one model").max(4),
+  entries: z.object({
+    entry: z.enum(["limit", "confirmation", "both"]),
+    stopPts: z.coerce.number().min(1).max(200),
+    targetPts: z.coerce.number().min(1).max(500),
+    beAt1R: z.boolean(),
+    partials: z.boolean(),
+  }),
+  risk: z.object({
+    instrument: z.enum(["MNQ", "NQ"]),
+    contracts: z.coerce.number().int().min(1).max(50),
+    maxLossesPerDay: z.coerce.number().int().min(1).max(10),
+    maxTradesPerDay: z.coerce.number().int().min(1).max(20),
+    dailyProfitStop: z.coerce.number().min(0).max(100000).nullable(),
+    noNews: z.boolean(),
+  }),
+  numbers: z.object({
+    monthlyGoal: z.coerce.number().min(0).max(1_000_000),
+    tradingDays: z.coerce.number().int().min(1).max(23),
+  }),
+  rules: z.array(z.string().trim().min(1).max(140)).max(5),
+});

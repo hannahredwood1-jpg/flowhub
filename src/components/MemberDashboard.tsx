@@ -12,6 +12,7 @@ import { FeedbackItem } from "./Feedback";
 import { Panel, Stat, XPBar } from "./ui";
 import { IconChat } from "./icons";
 import { TradingPlanCard } from "./Projections";
+import { PlanCard } from "./TradingPlan";
 import { RoutineRow, TiltGuard } from "./Routine";
 import { PracticeCard } from "./PracticeCard";
 
@@ -34,7 +35,8 @@ export function MemberDashboard({ initial, catalog, planHref = "/plan" }: { init
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <StatsStrip data={data} />
       <TiltGuard data={data} />
-      <TradingPlanCard data={data} catalog={catalog} planHref={planHref} />
+      <PlanCard data={data} href={planHref} />
+      <TradingPlanCard data={data} catalog={catalog} planHref={planHref === "#plan" ? "#plan-projections" : planHref} />
 
       {unread.length > 0 && (
         <Panel title={<span className="flex items-center gap-2"><span className="live-dot" /> New from your coach</span>}>

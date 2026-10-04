@@ -6,6 +6,9 @@ import type { DirectorySort } from "@/lib/viewmodel";
 import { relDays, usd } from "@/lib/format";
 import { PlanPanel } from "./PlanPanel";
 import { TradingPlanCard } from "./Projections";
+import { PlanCard } from "./TradingPlan";
+import { SchoolCard } from "./SchoolCard";
+import { PracticeCard } from "./PracticeCard";
 import { JournalTable } from "./JournalTable";
 import { StatsStrip } from "./MemberDashboard";
 import { FeedbackComposer, FeedbackItem } from "./Feedback";
@@ -139,7 +142,10 @@ function TraderDetail({ traderId }: { traderId: string }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4 border-t border-line bg-abyss/40 p-4">
       <StatsStrip data={data} />
+      <PlanCard data={data} />
       {data.projection && <TradingPlanCard data={data} />}
+      <SchoolCard data={data} onChanged={load} />
+      <PracticeCard data={data} />
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 xl:grid-cols-[minmax(360px,5fr)_minmax(0,7fr)]">
         <div className="grid gap-4">
           <PlanPanel data={data} readOnly />

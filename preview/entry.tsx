@@ -12,7 +12,9 @@ import { LoginScreen } from "../src/components/LoginScreen";
 import { blendedWinRate, strategyLabel, type StrategyKey } from "../src/lib/strategies";
 import { MemberDashboard } from "../src/components/MemberDashboard";
 import { CoachPortal } from "../src/components/CoachPortal";
-import { ProjectionsPage } from "../src/components/Projections";
+import { TradingPlanPage } from "../src/components/TradingPlan";
+import { summarizeSchool } from "../src/lib/school";
+import { summarizePractice } from "../src/lib/practice";
 
 // ── Catalog ────────────────────────────────────────────────
 const catalogRows = rows as CatalogRow[];
@@ -57,7 +59,7 @@ const NOTES = [
 type RM = Omit<RoadmapDTO, "winRate">;
 type Profile = { id: string; name: string; role: PersonDTO["role"]; roadmap: RM; accounts: { tpl: string; stage: Stage; qty?: number; nick?: string; daysAgo: number; bias: number; days: number }[] };
 const profiles: Profile[] = [
-  { id: "u-coach", name: "Coach Nova", role: "COACH", roadmap: { monthlyIncomeGoal: 8000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_A3IA", "NYFLOW_HL", "NYFLOW_PO3"], avgRR: 1.4, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 18 },
+  { id: "u-coach", name: "Coach Nova", role: "COACH", roadmap: { monthlyIncomeGoal: 8000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_PO3", "NYFLOW_HL", "NYFLOW_PO3"], avgRR: 1.4, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 18 },
     accounts: [
       { tpl: "my-funded-futures--rapid-intraday--50k", stage: "EVALUATION", daysAgo: 7, bias: 0.05, days: 6 },
       { tpl: "lucid-trading--lucidflex--50k", stage: "FUNDED", qty: 3, daysAgo: 30, bias: 0.0, days: 16 },
@@ -67,9 +69,9 @@ const profiles: Profile[] = [
     accounts: [{ tpl: "apex-trader-funding--intraday-trailing--50k", stage: "EVALUATION", daysAgo: 9, bias: -0.35, days: 7 }] },
   { id: "u-2", name: "lunaticks", role: "MEMBER", roadmap: { monthlyIncomeGoal: 3000, tradingDaysPerWeek: 4, strategyMode: "DAILY_LEVELS", multiSession: false, strategies: ["DAILY_LEVELS"], avgRR: 1, tradesPerDay: 2, primaryInstrument: "MNQ", avgStopPoints: 15 },
     accounts: [{ tpl: "lucid-trading--lucidflex--25k", stage: "EVALUATION", daysAgo: 6, bias: 0.02, days: 4 }, { tpl: "tradeify--select--50k", stage: "EVALUATION", daysAgo: 12, bias: -0.05, days: 8 }] },
-  { id: "u-3", name: "Deon K", role: "MEMBER", roadmap: { monthlyIncomeGoal: 10000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_PO3", "ASIAFLOW_A3IA", "NYFLOW_HL"], avgRR: 1.3, tradesPerDay: 3, primaryInstrument: "NQ", avgStopPoints: 12 },
+  { id: "u-3", name: "Deon K", role: "MEMBER", roadmap: { monthlyIncomeGoal: 10000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_PO3", "NYFLOW_HL"], avgRR: 1.3, tradesPerDay: 3, primaryInstrument: "NQ", avgStopPoints: 12 },
     accounts: [{ tpl: "my-funded-futures--rapid-intraday--150k", stage: "FUNDED", qty: 2, daysAgo: 25, bias: 0.04, days: 14 }, { tpl: "alpha-futures--standard--100k", stage: "EVALUATION", daysAgo: 10, bias: -0.2, days: 6 }] },
-  { id: "u-4", name: "priya.trades", role: "MEMBER", roadmap: { monthlyIncomeGoal: 2500, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: false, strategies: ["ASIAFLOW_A3IA"], avgRR: 1.2, tradesPerDay: 1, primaryInstrument: "MES", avgStopPoints: 6 },
+  { id: "u-4", name: "priya.trades", role: "MEMBER", roadmap: { monthlyIncomeGoal: 2500, tradingDaysPerWeek: 5, strategyMode: "DAILY_LEVELS", multiSession: false, strategies: ["DAILY_LEVELS"], avgRR: 1.2, tradesPerDay: 1, primaryInstrument: "MES", avgStopPoints: 6 },
     accounts: [{ tpl: "take-profit-trader--test-pro-pro--50k", stage: "EVALUATION", daysAgo: 14, bias: -0.08, days: 9 }] },
   { id: "u-5", name: "ghostfills", role: "MEMBER", roadmap: { monthlyIncomeGoal: 6000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: false, strategies: ["NYFLOW_HL", "NYFLOW_PO3"], avgRR: 1.5, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 25 },
     accounts: [{ tpl: "bulenox--qualification-option-2-eod--50k", stage: "EVALUATION", daysAgo: 20, bias: -0.355, days: 5 }] },
@@ -114,6 +116,12 @@ db.get("u-3")!.projection = { name: "Scale to 5 accounts", months: 6, riskLevel:
   { templateId: "my-funded-futures--rapid-intraday--150k", quantity: 2, start: "FUNDED", costPerAttempt: 0, monthlyFee: 0, payoutCap: 9000 },
   { templateId: "alpha-futures--standard--100k", quantity: 3, start: "EVAL", costPerAttempt: 150, monthlyFee: 0, payoutCap: 6000 },
 ] };
+// Trading School + plan + practice samples for the coach view
+db.get("u-1")!.school = summarizeSchool({ ch: ["chart", "connect", "order", "manage", "limits", "end"], dives: { futures: { what: 1, nq: 1, clock: 1, side: 1, roll: 1 }, charts: { candle: 1, bear: 1, tf: 1, trend: 1, sr: 1 }, setup: { chart: 1, clock: 1, broker: 1, bracket: 1, check: 1 }, orders: { types: 1, bracket: 1, oco: 1 }, risk: { formula: 1, r: 1, daily: 1 }, prop: { flow: 1, dd: 1 } },
+  ck: { b1: { best: 0.86, pass: true }, b2: { best: 0.83, pass: true }, b3: { best: 1, pass: true }, b4: { best: 0.88, pass: true } }, ex: { beginner: { best: 0.86, pass: true, n: 2 } } }, [],
+  [{ kind: "ex", ref: "beginner", score: 12, total: 14, pass: true, createdAt: new Date(Date.now() - 864e5).toISOString() }, { kind: "ex", ref: "beginner", score: 9, total: 14, pass: false, createdAt: new Date(Date.now() - 2 * 864e5).toISOString() }, { kind: "ck", ref: "b4", score: 7, total: 8, pass: true, createdAt: new Date(Date.now() - 3 * 864e5).toISOString() }]);
+db.get("u-1")!.practice = summarizePractice(Array.from({ length: 60 }, (_, i) => ({ model: ["hl", "po3", "dl", "exo"][i % 4], drill: ["mark", "replay", "limit", "echo"][i % 4], ok: (i * 7) % 10 > 3, tags: (i * 7) % 10 > 3 ? [] : [["early-entry", "cisd-read", "limit-no-lrl"][i % 3]], createdAt: new Date(Date.now() - (60 - i) * 36e5).toISOString() })));
+db.get("u-1")!.tradingPlan = { schedule: { days: ["Mon", "Tue", "Wed", "Thu"], sessions: ["NY"], start: "09:30", end: "11:00" }, models: ["ECHO_X_ORBIT", "NYFLOW_HL"], entries: { entry: "both", stopPts: 15, targetPts: 40, beAt1R: true, partials: false }, risk: { instrument: "MNQ", contracts: 3, maxLossesPerDay: 2, maxTradesPerDay: 3, dailyProfitStop: 400, noNews: true }, numbers: { monthlyGoal: 2500, tradingDays: 16 }, rules: ["No trades after a 2R win"], done: true, updatedAt: new Date().toISOString() };
 const coach = db.get("u-coach")!.trader;
 const addFeedback = (traderId: string, f: Omit<FeedbackDTO, "id" | "coach" | "createdAt" | "readAt">, read = false) =>
   db.get(traderId)!.feedback.unshift({ ...f, id: `f${uid++}`, coach: { name: coach.name, avatarUrl: coach.avatarUrl }, createdAt: new Date().toISOString(), readAt: read ? new Date().toISOString() : null });
@@ -149,6 +157,15 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   }
   if (path === "/api/projection") {
     me.projection = method === "DELETE" ? null : { ...body, updatedAt: new Date().toISOString() };
+    return ok({ ok: true });
+  }
+  if (path === "/api/plan") {
+    if (method === "PUT") { me.tradingPlan = { ...body, done: true, updatedAt: new Date().toISOString() }; return ok({ ok: true }); }
+    return ok({ plan: me.tradingPlan ?? null });
+  }
+  if ((m = path.match(/^\/api\/coach\/members\/(.+)\/unlock$/))) {
+    const t = db.get(m[1])!; const sch = t.school ?? summarizeSchool(null, [], []);
+    t.school = { ...sch, levels: sch.levels.map((l) => (l.id === body.level ? { ...l, manualUnlock: !!body.on } : l)) };
     return ok({ ok: true });
   }
   if (path === "/api/roadmap" && method === "PUT") {
@@ -196,12 +213,12 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
 function PlanView() {
   const [d, setD] = useState(() => dash(ME, ME));
-  return <ProjectionsPage data={d} catalog={catalog} onSaved={async () => setD(dash(ME, ME))} />;
+  return <TradingPlanPage data={d} catalog={catalog} onSaved={async () => setD(dash(ME, ME))} />;
 }
 
 // ── App ────────────────────────────────────────────────────
 function App() {
-  const pick = () => (location.hash === "#coach" ? "coach" : location.hash === "#dashboard" ? "dashboard" : location.hash === "#plan" ? "plan" : "login") as "login" | "dashboard" | "plan" | "coach";
+  const pick = () => (location.hash === "#coach" ? "coach" : location.hash === "#dashboard" ? "dashboard" : location.hash.startsWith("#plan") ? "plan" : "login") as "login" | "dashboard" | "plan" | "coach";
   const [view, setView] = useState(pick);
   useEffect(() => {
     const on = () => { setView(pick()); window.scrollTo(0, 0); };

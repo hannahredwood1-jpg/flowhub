@@ -8,7 +8,7 @@ import { AppShell } from "../src/components/AppShell";
 import { LoginScreen } from "../src/components/LoginScreen";
 import { MemberDashboard } from "../src/components/MemberDashboard";
 import { CoachPortal } from "../src/components/CoachPortal";
-import { ProjectionsPage } from "../src/components/Projections";
+import { TradingPlanPage } from "../src/components/TradingPlan";
 
 const NOTICES: Record<string, string> = {
   "denied-guild": "You're not in the FLOWMTD Discord server. Join it with the invite link from your coach, then connect again.",
@@ -27,7 +27,7 @@ type State =
 
 function App() {
   const [state, setState] = useState<State>({ kind: "loading" });
-  const pickView = () => (location.hash === "#coach" ? "coach" : location.hash === "#plan" ? "plan" : "dashboard") as "dashboard" | "plan" | "coach";
+  const pickView = () => (location.hash === "#coach" ? "coach" : location.hash.startsWith("#plan") ? "plan" : "dashboard") as "dashboard" | "plan" | "coach";
   const [view, setView] = useState(pickView);
   const [directory, setDirectory] = useState<CoachDirectoryRow[] | null>(null);
 
@@ -71,7 +71,7 @@ function App() {
           ? <CoachPortal key="c" initial={directory} today={todayET()} />
           : <div id="boot">LOADING ROSTER…</div>
         : active === "plan"
-          ? <ProjectionsPage key="p" data={state.data} catalog={state.catalog} onSaved={reload} />
+          ? <TradingPlanPage key="p" data={state.data} catalog={state.catalog} onSaved={reload} />
           : <MemberDashboard key={`d${state.data.projection?.updatedAt ?? ""}`} initial={state.data} catalog={state.catalog} planHref="#plan" />}
     </AppShell>
   );

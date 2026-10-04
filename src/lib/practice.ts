@@ -1,8 +1,8 @@
 // Practice tab scoring, shared by the server (coach summary) and the dashboard card.
 // Tiers match the Practice page: accuracy over a model's last 40 reps, plus a minimum rep count.
-export const PRACTICE_MODELS = ["hl", "po3", "dl", "asia"] as const;
+export const PRACTICE_MODELS = ["hl", "po3", "dl", "asia", "exo"] as const;
 export type PracticeModel = (typeof PRACTICE_MODELS)[number];
-export const PRACTICE_MODEL_LABEL: Record<PracticeModel, string> = { dl: "Daily Levels", hl: "NYFlow · H/L", po3: "NYFlow · PO3", asia: "AsiaFlow · PO3" };
+export const PRACTICE_MODEL_LABEL: Record<PracticeModel, string> = { dl: "Extended Learning", exo: "ECHO x ORBIT", hl: "NYFlow · H/L", po3: "NYFlow · PO3", asia: "AsiaFlow · PO3" };
 export type PracticeTier = "none" | "bronze" | "silver" | "gold" | "elite";
 export const PRACTICE_TAGS: Record<string, string> = {
   "early-entry": "Enters before the flip closes",
@@ -28,6 +28,12 @@ export const PRACTICE_TAGS: Record<string, string> = {
   "entry-zone": "Limit outside the posted level",
   "stop-50": "Stop not at 50 ticks",
   "be-missed": "Doesn't move the stop to breakeven at 1:1",
+  "cisd-read": "Misreads the CISD",
+  "rb-read": "Marks the rejection block outside the FVG",
+  "fib-anchor": "Anchors the fib on the wrong swing",
+  "ote-read": "Enters outside the OTE zone",
+  "inv-read": "Misses the inversion on the leg in",
+  "draw-invalid": "Takes trades without a 2× draw",
 };
 export type PracticeRepRow = { model: string; drill: string; ok: boolean; tags: string[]; createdAt: Date | string };
 export type PracticeSummary = {
