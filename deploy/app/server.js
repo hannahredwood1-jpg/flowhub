@@ -669,7 +669,13 @@ var PRACTICE_TAGS = {
   "limit-news": "Sets limits into the open or news",
   "entry-zone": "Limit outside the posted level",
   "stop-50": "Stop not at 50 ticks",
-  "be-missed": "Doesn't move the stop to breakeven at 1:1"
+  "be-missed": "Doesn't move the stop to breakeven at 1:1",
+  "cisd-read": "Misreads the CISD",
+  "rb-read": "Marks the rejection block outside the FVG",
+  "fib-anchor": "Anchors the fib on the wrong swing",
+  "ote-read": "Enters outside the OTE zone",
+  "inv-read": "Misses the inversion on the leg in",
+  "draw-invalid": "Takes trades without a 2\xD7 draw"
 };
 function practiceTier(reps, acc) {
   if (reps >= 100 && acc >= 0.88) return "elite";
@@ -944,7 +950,7 @@ async function loadDashboard(viewer, traderId) {
     sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${traderId}`
   ]);
   const jsonOf = (v) => typeof v === "string" ? JSON.parse(v) : v;
-  const strategies = rm?.strategies ?? [];
+  const strategies = (rm?.strategies ?? []).filter((k) => !RETIRED_STRATEGIES.includes(k));
   return buildDashboard({
     viewer: person(viewer),
     trader: person(trader),

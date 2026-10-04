@@ -1,5 +1,5 @@
 -- Trading School gating (progress, coach unlocks, checkpoint/exam attempts), the written trading plan,
--- ECHO x ORBIT as a practice model, and the "Daily levels" → "ECHO x ORBIT" journal rename.
+-- and ECHO x ORBIT as a practice model. (Applied.)
 create table if not exists "SchoolProgress" (
   "userId" text primary key references "User"(id) on delete cascade,
   state jsonb not null default '{}'::jsonb,
@@ -29,4 +29,3 @@ alter table "TradingPlan" enable row level security;
 alter table "PracticeRep" drop constraint if exists "PracticeRep_model_check";
 alter table "PracticeRep" add constraint "PracticeRep_model_check" check (model in ('dl','hl','po3','asia','exo'));
 
-update "JournalEntry" set "setupType" = 'ECHO x ORBIT' where lower("setupType") = 'daily levels';

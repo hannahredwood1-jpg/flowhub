@@ -3413,7 +3413,7 @@ const fibLvl = (r) => ORBIT.high - r * (ORBIT.high - ORBIT.low);
 // ── Small widget: “open a link, then confirm” (used by the plan lesson) ──
 function wPlanCheck(el, done) {
   const box = h('div', 'w'); el.append(box);
-  const draw = (msg) => { box.innerHTML = `<div class="w-row"><a class="btn primary" href="/#plan" ${LIVE ? '' : 'target="_blank" rel="noopener"'}>Open Trading Plan →</a><button type="button" class="btn" data-ck>I built it: check</button></div>${msg || ''}`; };
+  const draw = (msg) => { box.innerHTML = `<div class="w-row"><a class="btn primary" href="${LIVE ? '/#plan' : 'https://claude.ai/artifact/JD8hREjBKaVdQYdEtDJZQa#plan'}" ${LIVE ? '' : 'target="_blank" rel="noopener"'}>Open Trading Plan →</a><button type="button" class="btn" data-ck>I built it: check</button></div>${msg || ''}`; };
   box.addEventListener('click', async (e) => {
     if (!e.target.closest('[data-ck]')) return;
     if (!LIVE) { draw(fbHtml(true, 'Preview', 'In FLOWHUB this checks your saved plan. Marked done for the preview.')); done(); return; }
@@ -3980,7 +3980,7 @@ function quizResult() {
 function reqPanel(l) {
   const rs = reqs(l); if (!rs.length) return '';
   return `<ul class="lv-req">${rs.map((r) => `<li class="${r.done ? 'ok' : ''}"><span class="lv-ck">${r.done ? '✓' : ''}</span><span>${esc(r.label)}</span><span class="hud">${esc(r.detail)}</span></li>`).join('')}</ul>
-    ${rs.some((r) => r.practice && !r.done) ? `<a class="btn" href="/practice" ${LIVE ? '' : 'target="_blank" rel="noopener"'} data-nolevel>Open Practice →</a>` : ''}${!LIVE ? '<p class="hud lv-pnote">Preview: practice reps show in FLOWHUB</p>' : ''}`;
+    ${rs.some((r) => r.practice && !r.done) ? `<a class="btn" href="${LIVE ? '/practice' : 'https://claude.ai/artifact/9sx6av7g7VLRg4bYzWRaPN'}" ${LIVE ? '' : 'target="_blank" rel="noopener"'} data-nolevel>Open Practice →</a>` : ''}${!LIVE ? '<p class="hud lv-pnote">Preview: practice reps show in FLOWHUB</p>' : ''}`;
 }
 function previewToggle() { return LIVE && !SYNC.staff ? '' : SYNC.staff ? '<p class="hud lv-staff">Staff view: everything unlocked</p>' : `<label class="lv-prev hud"><input type="checkbox" data-allopen ${LV_ST.all ? 'checked' : ''}> Preview: unlock everything</label>`; }
 function renderLevels(open) {

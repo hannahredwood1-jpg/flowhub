@@ -229,7 +229,7 @@ function App() {
   if (view === "login")
     return <LoginScreen action={async () => { await new Promise((r) => setTimeout(r, 2200)); location.hash = "dashboard"; }} />;
   return (
-    <AppShell viewer={coach} active={view} links={{ dashboard: "#dashboard", plan: "#plan", school: "https://claude.ai/artifact/TeTW45zgMgzPLasmC1PQUr", coach: "#coach" }}>
+    <AppShell viewer={coach} active={view} links={{ dashboard: "#dashboard", plan: "#plan", school: "https://claude.ai/artifact/TeTW45zgMgzPLasmC1PQUr", practice: "https://claude.ai/artifact/9sx6av7g7VLRg4bYzWRaPN", coach: "#coach" }}>
       <div className="mb-4 flex flex-wrap items-center gap-2 border border-dashed border-line-2 px-3 py-2 text-xs text-ink-3">
         <span className="chip text-ice">Preview</span>
         Sample traders and trades. Changes you make here stay in this tab. You&apos;re viewing as a Trading Coach, so both views are unlocked. <a href="#login" className="text-ice underline-offset-2 hover:underline">See the login screen</a>
