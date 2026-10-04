@@ -284,6 +284,13 @@ app.onError((e, c) => {
   return c.json({ error: "Server error" }, 500);
 });
 
+// Old Railway address → the custom domain (health checks stay on any host)
+app.use("*", async (c, next) => {
+  const host = (c.req.header("host") ?? "").toLowerCase();
+  if (CFG.publicUrl && host.endsWith(".up.railway.app") && !c.req.path.startsWith("/healthz") && !CFG.publicUrl.includes(host))
+    return c.redirect(CFG.publicUrl + c.req.path + (new URL(c.req.url).search || ""), 301);
+  await next();
+});
 app.get("/healthz", async (c) => c.json({ ok: true, db: (await sql`select 1 as ok`)[0].ok === 1, discord: discordReady() }));
 
 // ── Auth ────────────────────────────────────────────────────
