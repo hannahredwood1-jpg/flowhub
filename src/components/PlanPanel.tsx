@@ -293,7 +293,7 @@ function MiniStat({ label, value, tone }: { label: string; value: string; tone?:
 
 function StrategyCheck({ data }: { data: DashboardData }) {
   const rm = data.roadmap!;
-  const sessions = rm.strategyMode === "DAILY_LEVELS" ? "ECHO x ORBIT only" : rm.multiSession ? "Asia + New York" : rm.strategies.some((k) => k.startsWith("ASIA")) ? "Asia session" : "New York session";
+  const sessions = rm.strategyMode === "DAILY_LEVELS" ? "ECHO X ORBIT only" : rm.multiSession ? "Asia + New York" : rm.strategies.some((k) => k.startsWith("ASIA")) ? "Asia session" : "New York session";
   return (
     <div className="grid gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">

@@ -56,8 +56,8 @@ export function RoadmapModal({ open, onClose, roadmap, onSaved }: { open: boolea
         <fieldset className="grid gap-3">
           <legend className="label mb-3 !text-ice">What are you trading?</legend>
           <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Strategy mode">
-            <ModeCard on={mode === "DAILY_LEVELS"} onClick={() => setMode("DAILY_LEVELS")} title="ECHO x ORBIT only" sub={`${pctTxt(STRATEGIES.DAILY_LEVELS.winRate)} win rate`} />
-            <ModeCard on={mode === "INDICATORS"} onClick={() => setMode("INDICATORS")} title="FLOW indicators" sub="AsiaFlow and/or NYFlow setups" />
+            <ModeCard on={mode === "DAILY_LEVELS"} onClick={() => setMode("DAILY_LEVELS")} title="ECHO X ORBIT" sub={`${pctTxt(STRATEGIES.DAILY_LEVELS.winRate)} win rate · the Discord calls`} />
+            <ModeCard on={mode === "INDICATORS"} onClick={() => setMode("INDICATORS")} title="ASIAFLOW · NYFLOW" sub="AsiaFlow and/or NYFlow setups" />
           </div>
 
           {mode === "INDICATORS" && (

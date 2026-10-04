@@ -459,7 +459,7 @@ function DayPlanPanel({ plan, roadmap }: { plan: DayPlan; roadmap: RoadmapDTO })
           <Stat label="Daily target · all accounts" value={usd(plan.totalTarget)} tone="ice" sub={`${usd(plan.weeklyTarget)} a week`} />
           <Stat label="Your daily stop · all accounts" value={usd(plan.totalStop)} tone="loss" sub={stopSub(plan)} />
           <Stat label="Risk per trade · all" value={usd(plan.totalRisk)} />
-          <Stat label="Trades a day" value={`≤ ${plan.maxTrades}`} sub={sessions.length ? sessions.map((s) => SESSION_TIME[s]).join(" · ") : "on ECHO x ORBIT calls"} />
+          <Stat label="Trades a day" value={`≤ ${plan.maxTrades}`} sub={sessions.length ? sessions.map((s) => SESSION_TIME[s]).join(" · ") : "on ECHO X ORBIT calls"} />
         </div>
 
         <div className="overflow-x-auto">

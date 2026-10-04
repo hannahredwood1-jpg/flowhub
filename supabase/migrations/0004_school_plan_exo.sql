@@ -1,5 +1,5 @@
 -- Trading School gating (progress, coach unlocks, checkpoint/exam attempts), the written trading plan,
--- and ECHO x ORBIT as a practice model. (Applied.)
+-- and ECHO X ORBIT as a practice model. (Applied.)
 create table if not exists "SchoolProgress" (
   "userId" text primary key references "User"(id) on delete cascade,
   state jsonb not null default '{}'::jsonb,

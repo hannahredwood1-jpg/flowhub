@@ -12,7 +12,7 @@ export const SCHOOL_LEVELS = [
   { id: "advanced", name: "Advanced", modules: [
     { id: "a1", lessons: ["d:rs", "c:dl"] }, { id: "a2", lessons: ["c:hl", "c:po3", "c:asia"] },
   ], exam: true },
-  { id: "exo", name: "ECHO x ORBIT", modules: [
+  { id: "exo", name: "ECHO X ORBIT", modules: [
     { id: "x1", lessons: ["d:exo-intro", "d:echo", "d:orbit", "d:exo-rules", "d:exo-replay"] },
   ], exam: false },
 ] as const;
@@ -32,7 +32,7 @@ export type SchoolSummary = {
 };
 const MODULE_LABEL: Record<string, string> = {
   b1: "How futures & NQ work", b2: "Reading charts", b3: "Platform & orders", b4: "Risk basics", i1: "Prop Firm 101", i2: "Why the math works",
-  i3: "Trade management", i4: "Trading psychology", i5: "Day in the life & plan", a1: "Extended Learning", a2: "Indicator models", x1: "ECHO x ORBIT",
+  i3: "Trade management", i4: "Trading psychology", i5: "Day in the life & plan", a1: "Extended Learning", a2: "Indicator models", x1: "ECHO X ORBIT",
 };
 export function summarizeSchool(state: SchoolState | null, unlocks: string[], attempts: SchoolAttemptRow[]): SchoolSummary {
   const s = state ?? {}, ch = new Set(s.ch ?? []), dives = s.dives ?? {};

@@ -2519,7 +2519,7 @@ const TERMS = [
       { k: 'h', p: 27, col: 'lag', t: 'RS · the AM draw', tpos: 'l', at: 0 },
       { k: 'dot', i: 7, p: 27, col: 'lag', t: 'RS filled', pos: 'below', dx: -8, at: 7, say: 'Pulled up to fill it.' }] };
   }, cap: 'Opened below RS → the AM draw is up. It only applies after 9:30, never overnight.', rel: ['OPENS', 'PDH / PDL'], ch: 'dl' },
-  // ECHO x ORBIT words (concepts only)
+  // ECHO X ORBIT words (concepts only)
   { ab: 'CISD', full: 'Change in State of Delivery', cat: 6, def: 'Price closes back through the opening price of the move that just ran. After a sweep, it’s the first proof that delivery has flipped direction. Confluence Master doesn’t mark it: read it by eye.', vis() {
     const c = cs([25, 23.6, 24.2, 22.4, 20.8, 19.6, 20.2, 23.2, 24.4, 23.8, 25.4]);
     return { c, ann: [
@@ -3155,7 +3155,7 @@ $('#c-body').addEventListener('click', (e) => {
   if (e.target.closest('[data-back]')) goBack();
 });
 
-// ════════ New widgets: tap the chart, number reps, question series, session clock, fib/OTE, ECHO x ORBIT animations ════════
+// ════════ New widgets: tap the chart, number reps, question series, session clock, fib/OTE, ECHO X ORBIT animations ════════
 const shuf = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const RM = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
 function svgPt(svg, e) { const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; return { x: (e.clientX - r.left) / r.width * vb.width, y: (e.clientY - r.top) / r.height * vb.height }; }
@@ -3314,7 +3314,7 @@ function wFib(el, done, o) {
   draw();
 }
 
-// ════════ ECHO x ORBIT animations (canvas) ════════
+// ════════ ECHO X ORBIT animations (canvas) ════════
 function cvs(el, ratio = 0.42, cap = 440) {
   const wrap = h('div', 'exo-cv'); const cv = h('canvas', ''); wrap.append(cv); el.append(wrap);
   const ctx = cv.getContext('2d');
@@ -3345,7 +3345,7 @@ function exoHero(el) {
     if (!RM()) raf = requestAnimationFrame(frame);
   };
   raf = requestAnimationFrame(frame);
-  const mark = h('div', 'exo-mark', '<span>ECHO</span><b>x</b><span>ORBIT</span>'); wrap.append(mark);
+  const mark = h('div', 'exo-mark', '<span>ECHO</span><b>X</b><span>ORBIT</span>'); wrap.append(mark);
   return wrap;
 }
 // Candle scene player: candles reveal over time, phases add overlays + captions, Next/Replay controls.
@@ -3386,7 +3386,7 @@ const rings = (api, x, y, t, col, n = 3) => { const { ctx } = api; for (let k = 
 const hline = (api, p, i0, col, label, dash = [5, 4]) => { const { ctx, m } = api; const y = m.y(p); ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash(dash); ctx.beginPath(); ctx.moveTo(m.x(i0), y); ctx.lineTo(m.R, y); ctx.stroke(); ctx.setLineDash([]); if (label) { ctx.font = '10px JetBrains Mono, monospace'; ctx.fillStyle = col; ctx.fillText(label, m.R + 4, y + 3); } };
 const zone = (api, i0, i1, a, b, col, label, up) => { const { ctx, m } = api; const y0 = m.y(Math.max(a, b)), y1 = m.y(Math.min(a, b)), x0 = m.x(i0) - m.bw / 2, x1 = m.x(i1) + m.bw / 2; ctx.fillStyle = alpha(col, 0.12); ctx.fillRect(x0, y0, x1 - x0, y1 - y0); ctx.strokeStyle = alpha(COL.ink2, 0.7); ctx.lineWidth = 1; ctx.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0 - 1, y1 - y0 - 1); if (label) api.tab(x0, up ? y0 : y1, label, col, up); };
 
-// ════════ New lessons: Beginner modules, Extended Learning, plan lesson, ECHO x ORBIT ════════
+// ════════ New lessons: Beginner modules, Extended Learning, plan lesson, ECHO X ORBIT ════════
 // Running inside FLOWHUB (server injects the top nav) vs. a standalone preview.
 const LIVE = !!document.querySelector('.fh-nav');
 const mirror = (c, mid) => c.map((k) => (k ? { o: 2 * mid - k.o, c: 2 * mid - k.c, h: 2 * mid - k.l, l: 2 * mid - k.h } : k));
@@ -3519,7 +3519,7 @@ DIVES.push({ id: 'planlesson', title: 'Build your trading plan', sub: 'Turn ever
   { id: 'build', title: 'Build it in the Trading Plan tab', body: '<p>Open <b>Trading Plan → Build your plan</b>, go through the 6 steps and save. Your plan card then shows on your dashboard and feeds your pre-trade checklist. Coaches can see it too.</p>', w: (el, d) => wPlanCheck(el, d) },
 ] });
 
-// ════════ ECHO x ORBIT ════════
+// ════════ ECHO X ORBIT ════════
 // Concepts only. The full strategy guide and the private indicator stay private.
 const echoScene = {
   title: 'Echo, start to finish', intro: 'Press Play. Each step adds one piece of the idea.', c: ECHO_C, extra: [ECHO.draw + 2],
@@ -3566,14 +3566,14 @@ const SC_EXO_SKIP = (() => {
     ], end: 'Price tagged that nearby high and rolled over through the stop area. Skipping it was the trade.', endAt: 17 };
 })();
 
-DIVES.push({ id: 'exo-intro', title: 'ECHO x ORBIT', sub: 'The FLOWMTD model behind the daily calls in the Discord. Two engines, one set of rules.', secs: [
-  { id: 'hero', title: 'Two engines', body: '<p><b>ECHO x ORBIT</b> is the model behind the levels called out in the Discord. It has two engines that look for the same thing from different angles: a place where price is likely to turn <b>toward liquidity</b>.</p><ul><li><b>Echo</b>: a sweep, a change in delivery (CISD), and a <b>rejection block inside a fair value gap</b>.</li><li><b>Orbit</b>: a <b>big swing</b>, a fib, a deep pullback into the <b>OTE zone</b>, and an inversion on the leg in.</li></ul><p>Together they’ve run at a <b>94% win rate</b>. Everything here is the concepts, so you can read the calls and recognise them yourself.</p>', w: (el, d) => { exoHero(el); wQs(el, d, [
+DIVES.push({ id: 'exo-intro', title: 'ECHO X ORBIT', sub: 'The FLOWMTD model behind the daily calls in the Discord. Two engines, one set of rules.', secs: [
+  { id: 'hero', title: 'Two engines', body: '<p><b>ECHO X ORBIT</b> is the model behind the levels called out in the Discord. It has two engines that look for the same thing from different angles: a place where price is likely to turn <b>toward liquidity</b>.</p><ul><li><b>Echo</b>: a sweep, a change in delivery (CISD), and a <b>rejection block inside a fair value gap</b>.</li><li><b>Orbit</b>: a <b>big swing</b>, a fib, a deep pullback into the <b>OTE zone</b>, and an inversion on the leg in.</li></ul><p>Together they’ve run at a <b>94% win rate</b>. Everything here is the concepts, so you can read the calls and recognise them yourself.</p>', w: (el, d) => { exoHero(el); wQs(el, d, [
     { q: 'Which engine trades a rejection block inside a fair value gap?', o: ['Echo', 'Orbit', 'Both, the same way'], why: 'Echo = sweep, CISD, RB in an FVG.' },
     { q: 'Which engine uses a fib on a big swing?', o: ['Orbit', 'Echo', 'Neither'], why: 'Orbit = big swing, fib, OTE, inversion on the leg in.' },
     { q: 'What do both engines need before any entry?', o: ['A draw on liquidity at least 2× the stop away', 'A news event', 'Three green candles'], why: 'No valid draw, no trade. That’s shared by both.' },
   ]); } },
   { id: 'cm', title: 'Set up Confluence Master', body: '<p>Members find these trades with the <b>Confluence Master</b> indicator. Turn these on once:</p>', w: (el, d) => wChecklist(el, d, ['Zone type: <b>RB / iRB</b> (rejection blocks)', '<b>FVGs and iFVGs</b> on', 'Session highs/lows: <b>Asia, London, New York</b>', '<b>True Day Open</b> (midnight ET) and <b>HOD / LOD</b>', '<b>EQH / EQL</b> on the 4H and daily', '<b>Failure swings</b> on the 1H and 4H', 'I know CM doesn’t mark CISDs or fibs: I read the CISD by eye and draw the fib myself'], 'Your chart now shows the liquidity, the gaps and the rejection blocks both engines use.') },
-  { id: 'words', title: 'The four words', body: '<p>Four terms you’ll see in every ECHO x ORBIT call. Each has a card in Terminology.</p>', w: (el, d) => wQs(el, d, [
+  { id: 'words', title: 'The four words', body: '<p>Four terms you’ll see in every ECHO X ORBIT call. Each has a card in Terminology.</p>', w: (el, d) => wQs(el, d, [
     { q: '<b>CISD</b> means…', o: ['Change in State of Delivery: price closes back through the open of the move that just ran', 'A type of order', 'A session'], why: 'It’s the first proof that delivery flipped direction.' },
     { q: '<b>RB</b> means…', o: ['Rejection Block: the wick area where price was rejected', 'Range Break', 'Risk Budget'], why: 'In Echo, the RB has to sit inside an FVG.' },
     { q: '<b>OTE</b> means…', o: ['Optimal Trade Entry: the 0.62–0.79 zone of a pullback', 'Open Time Entry', 'Order To Exit'], why: 'Orbit waits for the pullback to reach it.' },
@@ -3601,7 +3601,7 @@ DIVES.push({ id: 'orbit', title: 'Orbit', sub: 'Big swing, draw the fib, wait fo
   ]) },
 ] });
 DIVES.push({ id: 'exo-rules', title: 'The shared rules', sub: 'The draw, the 2× rule and ES confirmation. Both engines use them.', secs: [
-  { id: 'draw', title: 'No draw, no trade', body: '<p>Every ECHO x ORBIT trade needs a <b>draw on liquidity</b>: old highs/lows, session highs/lows, equal highs/lows. And it must be <b>at least 2× your stop</b> away.</p>', w: (el, d) => wNum(el, d, [
+  { id: 'draw', title: 'No draw, no trade', body: '<p>Every ECHO X ORBIT trade needs a <b>draw on liquidity</b>: old highs/lows, session highs/lows, equal highs/lows. And it must be <b>at least 2× your stop</b> away.</p>', w: (el, d) => wNum(el, d, [
     { q: 'Stop is 15 points. Minimum distance to the draw?', a: 30, unit: 'pts', why: '2 × 15 = 30 points.' },
     { q: 'Stop 12 points, draw 30 points away. How many times the stop?', a: 2.5, tol: 0.05, unit: '×', why: '30 ÷ 12 = 2.5×. Valid.' },
     { q: 'Stop 15, entry 21,500 long. Lowest valid draw price?', a: 21530, why: '21,500 + 30 = 21,530.' },
@@ -3615,7 +3615,7 @@ DIVES.push({ id: 'exo-rules', title: 'The shared rules', sub: 'The draw, the 2×
     { q: 'NQ gives a perfect Echo. ES shows nothing special. Trade?', o: ['Yes, if everything else is valid. ES is a confluence', 'No, ES is required', 'Trade ES instead'], why: 'It adds confidence when it’s there. It doesn’t veto a valid setup.' },
     { q: 'What does ES confirmation look like?', o: ['ES also sweeps/rejects/shifts at the same time', 'ES is green', 'ES is closed'], why: 'Same story on both charts at the same time.' },
   ]) },
-  { id: 'check', title: 'The ECHO x ORBIT checklist', body: '', w: (el, d) => wChecklist(el, d, ['Engine identified: <b>Echo</b> (RB inside FVG after CISD) or <b>Orbit</b> (OTE + inversion)', 'Draw on liquidity marked, <b>≥ 2× the stop</b>', 'Stop placed beyond the RB / the leg-in low', 'ES checked (confluence)', 'No red-folder news in the next 15 minutes'], 'That’s the checklist. Run it on every call before you click.') },
+  { id: 'check', title: 'The ECHO X ORBIT checklist', body: '', w: (el, d) => wChecklist(el, d, ['Engine identified: <b>Echo</b> (RB inside FVG after CISD) or <b>Orbit</b> (OTE + inversion)', 'Draw on liquidity marked, <b>≥ 2× the stop</b>', 'Stop placed beyond the RB / the leg-in low', 'ES checked (confluence)', 'No red-folder news in the next 15 minutes'], 'That’s the checklist. Run it on every call before you click.') },
 ] });
 DIVES.push({ id: 'exo-replay', title: 'Replays', sub: 'Make the calls yourself: one to take, one to skip.', secs: [
   { id: 'short', title: 'Replay 1 · the short', body: '', w: (el, d) => wScenario(el, d, SC_EXO_SHORT) },
@@ -3738,7 +3738,7 @@ const POOLS = {
     Q('ES confirmation is…', ['A confluence', 'Required', 'An exit'], 'Helpful, not required.'),
     Q('Which FVG timeframe is preferred for Echo?', ['Higher (1H/4H)', 'Lower (1m)', 'Doesn’t matter'], 'Higher timeframe gaps hold more orders.'),
     Q('Perfect setup, no clear liquidity target.', ['Skip it', 'Take it', 'Use a round number'], 'No draw, no trade.'),
-    Q('Confluence Master zone type for ECHO x ORBIT?', ['RB / iRB', 'OB only', 'None'], 'Rejection blocks.'),
+    Q('Confluence Master zone type for ECHO X ORBIT?', ['RB / iRB', 'OB only', 'None'], 'Rejection blocks.'),
     Q('Where do you read the CISD?', ['By eye, CM doesn’t mark it', 'CM marks it', 'From the Discord only'], 'Same for the fib: draw it yourself.'),
   ],
 };
@@ -3786,8 +3786,8 @@ const LEVELS = [
     { id: 'a1', title: 'Extended Learning', lessons: [L('dive', 'rs', 'Range Settlement', 'The 9:30 draw for the AM session'), L('ch', 'dl', 'Levels: bias, PLC, refine, limit vs confirm', 'Opening prices, PLC/PHC, refining, LRL & turtle soup')] },
     { id: 'a2', title: 'Indicator models', lessons: [L('ch', 'hl', 'NYFlow · H/L', 'Range, sweep, gap, flip'), L('ch', 'po3', 'NYFlow · PO3', 'Accumulation, manipulation, distribution'), L('ch', 'asia', 'AsiaFlow · PO3', 'Filters, key level, the 8 PM candle')] },
   ] },
-  { id: 'exo', name: 'ECHO x ORBIT', tone: 'signal', tag: 'The FLOWMTD model', who: 'The model behind the Discord calls', desc: 'Echo and Orbit: the two engines behind every daily call, the shared rules, and replays where you make the call.', pass: 0.8, modules: [
-    { id: 'x1', title: 'ECHO x ORBIT', lessons: [L('dive', 'exo-intro', 'Two engines', 'What ECHO x ORBIT is, Confluence Master setup, the four words'), L('dive', 'echo', 'Echo', 'Sweep, CISD, rejection block inside the FVG'), L('dive', 'orbit', 'Orbit', 'Big swing, fib, OTE, inversion on the leg in'), L('dive', 'exo-rules', 'The shared rules', 'The draw, 2× the stop, ES confirmation'), L('dive', 'exo-replay', 'Replays', 'One to take, one to skip')] },
+  { id: 'exo', name: 'ECHO X ORBIT', tone: 'signal', tag: 'The FLOWMTD model', who: 'The 94% win rate model behind the Discord calls', desc: 'Echo and Orbit: the two engines behind every daily call, the shared rules, and replays where you make the call.', pass: 0.8, modules: [
+    { id: 'x1', title: 'ECHO X ORBIT', lessons: [L('dive', 'exo-intro', 'Two engines', 'What ECHO X ORBIT is, Confluence Master setup, the four words'), L('dive', 'echo', 'Echo', 'Sweep, CISD, rejection block inside the FVG'), L('dive', 'orbit', 'Orbit', 'Big swing, fib, OTE, inversion on the leg in'), L('dive', 'exo-rules', 'The shared rules', 'The draw, 2× the stop, ES confirmation'), L('dive', 'exo-replay', 'Replays', 'One to take, one to skip')] },
   ] },
 ];
 const KIND_LABEL = { ch: 'Lesson', dive: 'Lesson' };

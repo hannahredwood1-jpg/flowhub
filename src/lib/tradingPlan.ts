@@ -3,7 +3,7 @@
 
 export const PLAN_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"] as const;
 export const PLAN_SESSIONS = { ASIA: "Asia · 8 PM–12 AM", LONDON: "London · 2–5 AM", NY: "New York · 7–10 AM" } as const;
-export const PLAN_MODELS = { ECHO_X_ORBIT: "ECHO x ORBIT (Discord calls)", NYFLOW_HL: "NYFlow · H/L", NYFLOW_PO3: "NYFlow · PO3", ASIAFLOW_PO3: "AsiaFlow · PO3" } as const;
+export const PLAN_MODELS = { ECHO_X_ORBIT: "ECHO X ORBIT (Discord calls)", NYFLOW_HL: "NYFlow · H/L", NYFLOW_PO3: "NYFlow · PO3", ASIAFLOW_PO3: "AsiaFlow · PO3" } as const;
 export const PLAN_ENTRY = { limit: "Limit at the level when it qualifies", confirmation: "Wait for confirmation", both: "Limit when it qualifies, otherwise confirmation" } as const;
 export type PlanSession = keyof typeof PLAN_SESSIONS;
 export type PlanModel = keyof typeof PLAN_MODELS;

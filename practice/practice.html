@@ -225,7 +225,7 @@ const PV = { NQ: 20, MNQ: 2 };
 function toast(t) { const el = $("#toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (el.hidden = true), 1800); }
 function timeLabel(min) { min = ((min % 1440) + 1440) % 1440; let h = Math.floor(min / 60), m = min % 60; const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return `${h}:${String(m).padStart(2, "0")} ${ap}`; }
 
-const MODELS = { dl: "Extended Learning", hl: "NYFlow · H/L", po3: "NYFlow · PO3", asia: "AsiaFlow · PO3", exo: "ECHO x ORBIT" };
+const MODELS = { dl: "Extended Learning", hl: "NYFlow · H/L", po3: "NYFlow · PO3", asia: "AsiaFlow · PO3", exo: "ECHO X ORBIT" };
 const DRILLS = {
   mark: { name: "Mark the trade", desc: "Place entry, stop and target on a live NQ setup. Graded line by line." },
   replay: { name: "Replay & decide", desc: "The session plays candle by candle. At each pause: take it, wait, or skip." },
@@ -275,7 +275,7 @@ const TAGS = {
 const KEY = "fh-practice-preview-v1";
 const LIVE = /^https?:$/.test(location.protocol);
 let S = blank();
-// Drills unlock with the Trading School: basics always, model drills after the Intermediate exam, ECHO x ORBIT drills with its section.
+// Drills unlock with the Trading School: basics always, model drills after the Intermediate exam, ECHO X ORBIT drills with its section.
 const GATE = { adv: !LIVE, exo: !LIVE };
 const BASIC = ["ticket", "size", "clock", "speedq"], ADV = ["mark", "replay", "levels", "speed", "limit"], EXO = ["echo", "orbit", "draw"];
 const drillOpen = (d) => BASIC.includes(d) || (ADV.includes(d) && GATE.adv) || (EXO.includes(d) && GATE.exo);
@@ -464,9 +464,9 @@ function genHL(o = {}) {
   if (o.late) chop(bars, L + 4, H - 4, 13); else chop(bars, L + 3, H - 3, RI(0, 1));
   const t = trap(bars, L); Object.assign(k, t, { target: H });
   const zones = [];
-  if (o.levelAt === "sweep") zones.push({ a: qt(t.sweepLow - R(1, 3)), b: qt(L - R(0, 1.5)), side: "long", label: "ECHO x ORBIT · LONG" });
-  if (o.levelAt === "block") { const mid = qt(t.entry + (H - t.entry) * R(0.4, 0.55)); zones.push({ a: mid - 2, b: mid + 3, side: "short", label: "ECHO x ORBIT · SHORT" }); }
-  if (o.levelAt === "far") zones.push({ a: qt(H + R(14, 22)), b: qt(H + R(25, 30)), side: "short", label: "ECHO x ORBIT · SHORT" });
+  if (o.levelAt === "sweep") zones.push({ a: qt(t.sweepLow - R(1, 3)), b: qt(L - R(0, 1.5)), side: "long", label: "ECHO X ORBIT · LONG" });
+  if (o.levelAt === "block") { const mid = qt(t.entry + (H - t.entry) * R(0.4, 0.55)); zones.push({ a: mid - 2, b: mid + 3, side: "short", label: "ECHO X ORBIT · SHORT" }); }
+  if (o.levelAt === "far") zones.push({ a: qt(H + R(14, 22)), b: qt(H + R(25, 30)), side: "short", label: "ECHO X ORBIT · SHORT" });
   const res = outcome(bars, k, o.outcome || (Math.random() < 0.72 ? "win" : "loss"), { zone: zones[0] });
   const sc = { model: "hl", dir: "long", B, bars, k: { ...k, result: res }, zones, t0: 420 };
   return dir === "short" ? mirror(sc) : sc;
@@ -487,7 +487,7 @@ function genPO3(o = {}) {
   const t = trap(bars, lo, { approach: false });
   const k = { E, boxLo: lo, boxHi: hi, boxStart, boxEnd, ...t, target: E, trend: o.counter ? "down" : "up" };
   const res = outcome(bars, k, o.outcome || (o.counter ? (Math.random() < 0.8 ? "loss" : "win") : (Math.random() < 0.7 ? "win" : "loss")));
-  const zones = o.levelAt === "far" ? [{ a: qt(E + R(10, 16)), b: qt(E + R(18, 24)), side: "short", label: "ECHO x ORBIT · SHORT" }] : [];
+  const zones = o.levelAt === "far" ? [{ a: qt(E + R(10, 16)), b: qt(E + R(18, 24)), side: "short", label: "ECHO X ORBIT · SHORT" }] : [];
   const sc = { model: "po3", dir: "long", B: Bx, bars, k: { ...k, result: res }, zones, t0: 420 };
   if (dir === "short") { mirror(sc); sc.k.trend = o.counter ? "up" : "down"; }
   return sc;
@@ -539,7 +539,7 @@ function home() {
     <section class="sec">
       <div class="sec-h"><h2>Drills</h2><span class="hud">Unlimited reps · every chart is new</span></div>
       <div class="grid">
-        ${["echo", "orbit", "draw"].map((d) => GATE.exo ? `<button class="card lab" data-d="${d}"><div class="row"><span class="chip sig">ECHO x ORBIT</span></div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc}</p></button>` : `<div class="card locked"><div class="row"><span class="chip dim">Locked · ECHO x ORBIT</span></div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc} Unlocks with the ECHO x ORBIT section of the Trading School.</p></div>`).join("")}
+        ${["echo", "orbit", "draw"].map((d) => GATE.exo ? `<button class="card lab" data-d="${d}"><div class="row"><span class="chip sig">ECHO X ORBIT</span></div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc}</p></button>` : `<div class="card locked"><div class="row"><span class="chip dim">Locked · ECHO X ORBIT</span></div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc} Unlocks with the ECHO X ORBIT section of the Trading School.</p></div>`).join("")}
         ${GATE.adv ? `<button class="card lab" data-d="limit"><div class="row"><span class="chip sig">Extended Learning</span></div><h3>Set the limit</h3><p>${DRILLS.limit.desc}</p></button>` : ""}
         ${["mark", "replay", "levels", "ticket", "size", "clock", "speed"].map((d) => drillOpen(d) ? `<button class="card" data-d="${d}"><div class="row">${drillChips(d)}</div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc}</p></button>` : `<div class="card locked"><div class="row"><span class="chip dim">Locked</span></div><h3>${DRILLS[d].name}</h3><p>${DRILLS[d].desc} Unlocks after the Intermediate exam in the Trading School.</p></div>`).join("")}
         ${GATE.adv ? "" : `<div class="card locked"><div class="row"><span class="chip dim">Locked</span></div><h3>Set the limit</h3><p>Extended Learning practice. Unlocks after the Intermediate exam in the Trading School.</p></div>`}
@@ -898,7 +898,7 @@ function drillSpeedQuick() {
   }));
 }
 
-// ───────────────────────── 9. ECHO x ORBIT drills (concepts only) ─────────────────────────
+// ───────────────────────── 9. ECHO X ORBIT drills (concepts only) ─────────────────────────
 const ECHO_REL = [[20,24,12,14],[14,17,5,7],[7,13,3,11],[11,12,-2,0],[0,6,-4,4],[4,8,-1,2],[2,3,-10,-8],[-8,-6,-19,-16],[-16,-13,-20,-14],[-14,6,-15,4],[4,15,0,13],[13,14,3,5],[5,6,-9,2]];
 const ORBIT_REL = [[0,6,-4,4],[4,18,2,16],[16,22,10,20],[20,36,18,34],[34,40,28,31],[31,52,30,50],[50,68,48,66],[66,82,63,78],[78,80,66,68],[68,70,52,55],[55,57,40,42],[42,43,26,28],[28,32,18,24],[24,47,22,45],[45,56,42,54],[54,66,52,64],[64,76,61,74],[74,88,71,86],[86,96,82,94],[94,102,90,99]];
 const flipBars = (bars, M) => bars.map((b) => ({ o: qt(2 * M - b.o), c: qt(2 * M - b.c), h: qt(2 * M - b.l), l: qt(2 * M - b.h) }));
@@ -922,7 +922,7 @@ function genEcho() {
 }
 function drillEcho() {
   const sc = genEcho(), k = sc.k, L = sc.long, side = L ? "LONG" : "SHORT";
-  frame(DRILLS.echo.name, `<span class="chip sig">ECHO x ORBIT</span><span class="chip">Echo · ${side}</span>`, chartLayout(`<span class="chip">${L ? "Sell-side swept?" : "Buy-side swept?"}</span>`));
+  frame(DRILLS.echo.name, `<span class="chip sig">ECHO X ORBIT</span><span class="chip">Echo · ${side}</span>`, chartLayout(`<span class="chip">${L ? "Sell-side swept?" : "Buy-side swept?"}</span>`));
   const ch = new Chart($("#cv")); ch.set(sc.bars, { shown: k.rbI + 1, slots: sc.bars.length + 2, t0: 540, step: 5, keep: [k.draw, k.stop] });
   const base = () => { ch.lines = [{ p: k.oldLow, color: css("--ink3"), dash: [4, 4], label: L ? "OLD LOW" : "OLD HIGH", i0: k.sweepI - 3, i1: k.rbI }, { p: k.draw, color: css("--win"), dash: [6, 4], label: L ? "OLD HIGH · DRAW" : "OLD LOW · DRAW", i0: 0 }]; ch.zones = []; ch.marks = []; };
   base(); ch.draw();
@@ -971,7 +971,7 @@ function genOrbit() {
 }
 function drillOrbit() {
   const sc = genOrbit(), k = sc.k, L = sc.long;
-  frame(DRILLS.orbit.name, `<span class="chip sig">ECHO x ORBIT</span><span class="chip">Orbit · ${L ? "LONG" : "SHORT"}</span>`, chartLayout(`<span class="chip">Draw the fib yourself</span>`));
+  frame(DRILLS.orbit.name, `<span class="chip sig">ECHO X ORBIT</span><span class="chip">Orbit · ${L ? "LONG" : "SHORT"}</span>`, chartLayout(`<span class="chip">Draw the fib yourself</span>`));
   const ch = new Chart($("#cv")); ch.set(sc.bars, { shown: k.pullI + 1, slots: sc.bars.length + 2, t0: 540, step: 5, keep: [k.lowP, k.highP] }); ch.draw();
   const anchor1 = L ? "swing low" : "swing high", anchor2 = L ? "swing high" : "swing low";
   const tags = [], res = {}; let step = 0;
@@ -998,7 +998,7 @@ function drillDraw() {
   const liq = pick(L ? ["the Asia high", "the London high", "equal highs", "the previous day high", "the old high"] : ["the Asia low", "the London low", "equal lows", "the previous day low", "the old low"]);
   const es = Math.random() < 0.4;
   const q = none ? `${eng} ${L ? "long" : "short"}. Stop <span class="num">${stop} pts</span>. No clear liquidity ${L ? "above" : "below"}: price is in the middle of the range.${es ? " ES confirms the move." : ""}` : `${eng} ${L ? "long" : "short"}. Stop <span class="num">${stop} pts</span>. The nearest draw is ${liq}, <span class="num">${dist} pts</span> away.${es ? " ES confirms the move." : ""}`;
-  frame(DRILLS.draw.name, `<span class="chip sig">ECHO x ORBIT</span>`, `<div class="qbox pop"><span class="hud">Valid draw?</span><div class="q">${q}</div><div class="ansrow"><button class="btn big" data-a="1">Take it</button><button class="btn big" data-a="0">Skip</button></div><div id="fbk"></div></div>`);
+  frame(DRILLS.draw.name, `<span class="chip sig">ECHO X ORBIT</span>`, `<div class="qbox pop"><span class="hud">Valid draw?</span><div class="q">${q}</div><div class="ansrow"><button class="btn big" data-a="1">Take it</button><button class="btn big" data-a="0">Skip</button></div><div id="fbk"></div></div>`);
   document.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => {
     const ok = (b.dataset.a === "1") === valid; document.querySelectorAll("[data-a]").forEach((x) => (x.disabled = true)); if (ok) b.classList.add("on");
     const gain = record("exo", "draw", ok, ok ? [] : [valid ? "missed-setup" : "draw-invalid"], ok ? 10 : 3); if (!ok) missed("draw", "exo", [valid ? "missed-setup" : "draw-invalid"]);

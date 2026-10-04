@@ -21,7 +21,7 @@ export function PracticeCard({ data }: { data: DashboardData }) {
     return (
       <div className="hud flex flex-wrap items-center gap-3 px-4 py-3">
         <span className="chip text-signal">New · Practice</span>
-        <p className="min-w-0 flex-1 text-sm text-ink-2">Hands-on NQ drills for every model: mark trades, set Extended Learning limits, read ECHO x ORBIT setups, replay sessions. 10 reps a day builds the streak.</p>
+        <p className="min-w-0 flex-1 text-sm text-ink-2">Hands-on NQ drills for every model: mark trades, set Extended Learning limits, read ECHO X ORBIT setups, replay sessions. 10 reps a day builds the streak.</p>
         <a href="/practice" className="btn btn-primary">Start practicing</a>
       </div>
     );

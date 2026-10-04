@@ -16,7 +16,7 @@ export function SchoolCard({ data, onChanged }: { data: DashboardData; onChanged
     try { await api.schoolUnlock(data.trader.id, level, on); onChanged?.(); } catch (e) { setError((e as Error).message); } finally { setBusy(null); }
   };
   const levels = s?.levels ?? [
-    { id: "beginner", name: "Beginner" }, { id: "intermediate", name: "Intermediate" }, { id: "advanced", name: "Advanced" }, { id: "exo", name: "ECHO x ORBIT" },
+    { id: "beginner", name: "Beginner" }, { id: "intermediate", name: "Intermediate" }, { id: "advanced", name: "Advanced" }, { id: "exo", name: "ECHO X ORBIT" },
   ].map((l) => ({ ...l, lessons: 0, lessonsDone: 0, checkpoints: 0, checkpointsPassed: 0, exam: null, manualUnlock: false }));
   return (
     <Panel title={`Trading School · ${who}`} right={<span className="label">{s ? `Now in ${s.current}` : "Not started"}</span>}>

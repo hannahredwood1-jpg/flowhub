@@ -352,7 +352,7 @@ function memberRiskSummary(paces) {
 
 // src/lib/strategies.ts
 var STRATEGIES = {
-  DAILY_LEVELS: { key: "DAILY_LEVELS", indicator: "ECHO x ORBIT", name: "ECHO x ORBIT", winRate: 0.94, session: null },
+  DAILY_LEVELS: { key: "DAILY_LEVELS", indicator: "ECHO X ORBIT", name: "ECHO X ORBIT", winRate: 0.94, session: null },
   ASIAFLOW_PO3: { key: "ASIAFLOW_PO3", indicator: "AsiaFlow", name: "PO3", winRate: 0.7, session: "ASIA" },
   // A3IA is retired: kept only so old roadmaps and journal rows still resolve. Not selectable.
   ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "AsiaFlow", name: "A3IA", winRate: 0.81, session: "ASIA" },
@@ -362,7 +362,7 @@ var STRATEGIES = {
 var STRATEGY_KEYS = Object.keys(STRATEGIES);
 var RETIRED_STRATEGIES = ["ASIAFLOW_A3IA"];
 var SELECTABLE_STRATEGY_KEYS = STRATEGY_KEYS.filter((k) => !RETIRED_STRATEGIES.includes(k));
-var strategyLabel = (k) => k === "DAILY_LEVELS" ? "ECHO x ORBIT" : `${STRATEGIES[k].indicator} \xB7 ${STRATEGIES[k].name}`;
+var strategyLabel = (k) => k === "DAILY_LEVELS" ? "ECHO X ORBIT" : `${STRATEGIES[k].indicator} \xB7 ${STRATEGIES[k].name}`;
 function normalizeSelection(sel) {
   if (sel.mode === "DAILY_LEVELS") return { mode: "DAILY_LEVELS", multiSession: false, strategies: ["DAILY_LEVELS"] };
   let picks = [...new Set(sel.strategies)].filter((k) => k !== "DAILY_LEVELS" && STRATEGIES[k] && !RETIRED_STRATEGIES.includes(k));
@@ -645,7 +645,7 @@ var tradingPlanInput = z.object({
 
 // src/lib/practice.ts
 var PRACTICE_MODELS = ["hl", "po3", "dl", "asia", "exo"];
-var PRACTICE_MODEL_LABEL = { dl: "Extended Learning", exo: "ECHO x ORBIT", hl: "NYFlow \xB7 H/L", po3: "NYFlow \xB7 PO3", asia: "AsiaFlow \xB7 PO3" };
+var PRACTICE_MODEL_LABEL = { dl: "Extended Learning", exo: "ECHO X ORBIT", hl: "NYFlow \xB7 H/L", po3: "NYFlow \xB7 PO3", asia: "AsiaFlow \xB7 PO3" };
 var PRACTICE_TAGS = {
   "early-entry": "Enters before the flip closes",
   "traded-range": "Trades while the range is still building",
@@ -725,7 +725,7 @@ var SCHOOL_LEVELS = [
     { id: "a1", lessons: ["d:rs", "c:dl"] },
     { id: "a2", lessons: ["c:hl", "c:po3", "c:asia"] }
   ], exam: true },
-  { id: "exo", name: "ECHO x ORBIT", modules: [
+  { id: "exo", name: "ECHO X ORBIT", modules: [
     { id: "x1", lessons: ["d:exo-intro", "d:echo", "d:orbit", "d:exo-rules", "d:exo-replay"] }
   ], exam: false }
 ];
@@ -762,7 +762,7 @@ var MODULE_LABEL = {
   i5: "Day in the life & plan",
   a1: "Extended Learning",
   a2: "Indicator models",
-  x1: "ECHO x ORBIT"
+  x1: "ECHO X ORBIT"
 };
 function summarizeSchool(state, unlocks, attempts) {
   const s = state ?? {}, ch = new Set(s.ch ?? []), dives = s.dives ?? {};

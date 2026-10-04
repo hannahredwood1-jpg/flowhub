@@ -8,7 +8,7 @@ export type StrategyMode = "DAILY_LEVELS" | "INDICATORS";
 export type Strategy = { key: StrategyKey; indicator: string; name: string; winRate: number; session: Session | null };
 
 export const STRATEGIES: Record<StrategyKey, Strategy> = {
-  DAILY_LEVELS:  { key: "DAILY_LEVELS",  indicator: "ECHO x ORBIT", name: "ECHO x ORBIT", winRate: 0.94,  session: null },
+  DAILY_LEVELS:  { key: "DAILY_LEVELS",  indicator: "ECHO X ORBIT", name: "ECHO X ORBIT", winRate: 0.94,  session: null },
   ASIAFLOW_PO3:  { key: "ASIAFLOW_PO3",  indicator: "AsiaFlow",     name: "PO3",          winRate: 0.70,  session: "ASIA" },
   // A3IA is retired: kept only so old roadmaps and journal rows still resolve. Not selectable.
   ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "AsiaFlow",     name: "A3IA",         winRate: 0.81,  session: "ASIA" },
@@ -24,7 +24,7 @@ export const INDICATORS: { name: string; session: Session; strategies: StrategyK
 export const STRATEGY_KEYS = Object.keys(STRATEGIES) as StrategyKey[];
 export const RETIRED_STRATEGIES: StrategyKey[] = ["ASIAFLOW_A3IA"];
 export const SELECTABLE_STRATEGY_KEYS = STRATEGY_KEYS.filter((k) => !RETIRED_STRATEGIES.includes(k));
-export const strategyLabel = (k: StrategyKey) => (k === "DAILY_LEVELS" ? "ECHO x ORBIT" : `${STRATEGIES[k].indicator} · ${STRATEGIES[k].name}`);
+export const strategyLabel = (k: StrategyKey) => (k === "DAILY_LEVELS" ? "ECHO X ORBIT" : `${STRATEGIES[k].indicator} · ${STRATEGIES[k].name}`);
 
 export type StrategySelection = { mode: StrategyMode; multiSession: boolean; strategies: StrategyKey[] };
 
