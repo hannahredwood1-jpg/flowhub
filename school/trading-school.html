@@ -4058,6 +4058,301 @@ teachFirst('rs', 'why', [
 teachFirst('rs', 'side', [
   { t: 'Below RS → look up. Above RS → look down.', p: '<p>If price opens <b>below</b> RS at 9:30, the morning draw is <b>up</b> toward it: favour longs. If price opens <b>above</b>, the draw is down: favour shorts. It only applies after 9:30, never overnight.</p>', term: 'RS' },
 ]);
+
+// ════════ More depth: Mindset, Liquidity & structure, Bias & timing, H/L and PO3 breakdowns, deeper Echo/Orbit ════════
+// Echo and Orbit stay at the concept level: no exact entry levels, stop/target numbers, grading or indicator details.
+const addSecs = (dv, secs, at) => { const d = DIVES.find((x) => x.id === dv); if (at == null) d.secs.push(...secs); else d.secs.splice(at, 0, ...secs); };
+
+// ── Beginner · What trading actually is (first lesson of Module 1) ──
+DIVES.push({ id: 'mindset', title: 'What trading actually is', sub: 'Before you touch a chart: what you’re actually here to learn, and the one mindset that blows up accounts.', secs: [
+  { id: 'skill', title: 'Trading is a skill', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'What is day trading?', o: ['Predicting where price is likely to go today, with high probability', 'Getting rich fast', 'Buying stocks for years'], why: 'A prediction skill. Money is the side effect of getting good at it.' },
+    { q: 'You sit down thinking “I need to make $500 today.” What usually follows?', o: ['FOMO entries, oversized risk, revenge trades', 'Better patience', 'Nothing changes'], why: 'Chasing a number makes you take trades that aren’t there.' },
+    { q: 'You lose a trade that followed your plan. What is it?', o: ['A lesson: review why it worked or didn’t', 'A failure', 'A sign to double size'], why: 'Judge the process, not one outcome.' },
+  ]), [
+    { t: 'A skill, like a sport', p: '<p>Trading isn’t about making money today. It’s a <b>skill</b>, like basketball. You get paid as a side effect of getting good at it, not because you showed up wanting money.</p>' },
+    { t: 'The working definition', p: '<p class="k">Day trading = the ability to predict where price is likely to go, with high probability, on a daily basis.</p><p>You’ll hear this a lot. Everything in the school builds that one ability.</p>' },
+    { t: '“I want to make money today”', p: '<p>That thought causes the exact habits that blow accounts: <b>FOMO entries</b>, <b>oversized risk</b> and <b>revenge trading</b>. The trader who sits down to <b>get better</b> today takes fewer, cleaner trades.</p>' },
+    { t: 'Losses are lessons', p: '<p>After every trade the question is <b>why</b> it worked or didn’t, not how much it made or lost. That’s why you practise on paper first: it separates the money from the process.</p>' },
+    { t: 'What kind of trader you’re becoming', p: '<p><b>Fundamental</b> traders trade off news and the economy. <b>Technical</b> traders trade off the chart: price action. FLOWMTD is 100% technical. News matters only as a time to stay careful.</p>' },
+  ]) },
+  { id: 'reflect', title: 'Your turn', body: '<p>Write these down somewhere you’ll see them. Be honest.</p>', w: (el, d) => wChecklist(el, d, ['I wrote the definition of day trading in my own words', 'I listed 3 habits that come from “I’m here to make money today”', 'I listed 3 habits that come from “I’m here to get better today”', 'I’ll practise on paper before risking real money'], 'Good. Come back to this list on your worst day.') },
+] });
+
+// ── Beginner · Liquidity & structure (new module, after Reading charts) ──
+const LIQ_C = [K(21480, 21492, 21478, 21490), K(21490, 21502, 21488, 21499), K(21499, 21501, 21486, 21489), K(21489, 21497, 21484, 21495), K(21495, 21502, 21493, 21497), K(21497, 21499, 21482, 21485), K(21485, 21490, 21474, 21478), K(21478, 21507, 21477, 21505), K(21505, 21509, 21486, 21488), K(21488, 21490, 21470, 21473)];
+const PD_C = cs([21400, 21420, 21438, 21452, 21468, 21480, 21471, 21460, 21447, 21438, 21452, 21470, 21490]).map((k) => ({ o: k.o, c: k.c, h: k.h + 2, l: k.l - 2 }));
+const PD_LO = Math.min(...PD_C.slice(0, 6).map((k) => k.l)), PD_HI = Math.max(...PD_C.slice(0, 6).map((k) => k.h)), PD_EQ = (PD_LO + PD_HI) / 2;
+DIVES.push({ id: 'liq', title: 'Liquidity & structure', sub: 'Why price moves where it does: resting orders, sweeps, breaks of structure, fair value gaps, premium and discount.', secs: [
+  { id: 'what', title: 'Liquidity = resting orders', body: '', w: (el, d) => wLearn(el, () => wTap(el, d, { spec: { c: LIQ_C, ann: [{ k: 'h', p: 21502, i0: 1, i1: 4.5, col: 'ink2', t: 'equal highs', tpos: 'l' }] }, q: 'Price makes two equal highs at ~21,502. Tap the candle that <b>sweeps</b> them.', hit: hitCandle([7], 'Wicked above the highs, filled the orders, then the next candle dumped.', 'Find the candle whose wick pokes above the two highs.') }), [
+    { t: 'The whole definition', p: '<p class="k">Liquidity = resting orders.</p><p>The market needs orders to move at all, so price is <b>drawn toward</b> places where lots of orders are waiting.</p>', term: 'LIQUIDITY' },
+    { t: 'Where the orders sit', p: '<p><b>Above highs</b>: buy orders (breakout buyers getting in + short sellers’ stop losses). <b>Below lows</b>: sell orders (breakdown sellers + long buyers’ stops). Two stacked sets of orders at every obvious high and low.</p>' },
+    { t: 'Why the sweep happens', p: '<p>Most retail traders buy above highs and sell below lows, predictably. Big players need a lot of opposite orders to fill their size, so price gets pushed <b>just past</b> the high or low to trigger those orders, then reverses. That’s the <b>sweep</b> (or stop hunt).</p>', term: 'SWEEP' },
+    { t: 'A sweep is a chance, not a signal', p: '<p>A sweep only gives price the <b>opportunity</b> to reverse. It doesn’t guarantee it. That’s why the next lessons (break of structure, fair value gaps) exist: they confirm it.</p>' },
+  ]) },
+  { id: 'best', title: 'The best liquidity', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'Which is the stronger magnet for price?', o: ['Three highs stacked close together', 'One random high', 'The middle of a range'], why: 'More highs stacked = more orders in one place.' },
+    { q: 'Yesterday’s high and low are called…', o: ['PDH / PDL', 'FVG', 'BOS'], why: 'Previous day high / low: strong higher-timeframe draws.' },
+    { q: 'Asia made a high overnight. Why does London or New York care?', o: ['New money targets the previous session’s highs and lows', 'It doesn’t', 'Asia levels are never traded'], why: 'Each session tends to run the last session’s levels.' },
+  ]), [
+    { t: 'Session highs and lows', p: '<p>Every session (Asia, London, New York) leaves a high and a low. When the next session’s money arrives, it often goes after them. Confluence Master marks them for you.</p>', term: 'SESSIONS' },
+    { t: 'Previous day high and low', p: '<p>The high and low of the whole previous day. A strong higher-timeframe draw, often the target for the day.</p>', term: 'PDH / PDL' },
+    { t: 'Low-resistance liquidity', p: '<p>Several highs (or lows) stacked close together with little in between. More orders packed into one small area = a stronger magnet.</p>', term: 'LRL' },
+    { t: 'Equal highs and lows', p: '<p>Two or more highs at almost the same price. Same idea: orders doubled up in one precise spot, so it’s a high-probability target.</p>', term: 'EQL' },
+  ]) },
+  { id: 'bos', title: 'Break of structure', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'Uptrend. A candle wicks below the last low but closes back above it. Break of structure?', o: ['No, it needs a close beyond the level', 'Yes', 'Only on the 1H'], why: 'Wicks don’t count. Closes do.' },
+    { q: 'Which low do you watch for a break?', o: ['The most recent swing low in the trend', 'Any old low', 'The daily low'], why: 'Only the most recent swing matters.' },
+    { q: 'Liquidity sweep, then break of structure. What did the BOS add?', o: ['Confirmation that the orders were filled and the trend changed', 'A target', 'Nothing'], why: 'Sweep = opportunity. BOS = confirmation.' },
+  ]), [
+    { t: 'Break of structure (BOS)', p: '<p>In an uptrend, structure breaks to the downside when a candle <b>closes below the most recent low</b>. In a downtrend, when a candle <b>closes above the most recent high</b>.</p>', term: 'BOS' },
+    { t: 'Close, not wick', p: '<p>A wick poking through doesn’t count. Only a full candle <b>close</b> beyond the level. And only the <b>most recent</b> swing: older lows don’t matter.</p>' },
+    { t: 'Where it fits', p: '<p class="k">Liquidity sweep (opportunity) → break of structure (confirmation) → continuation (next lesson)</p>' },
+  ]) },
+  { id: 'fvg', title: 'Fair value gaps', body: '', w: (el, d) => wLearn(el, () => wTap(el, d, { spec: { c: ECHO_C.slice(0, 12), slots: ECHO_C.length, ann: [{ k: 'band', lo: ECHO.fvgLo, hi: ECHO.fvgHi, i0: 7.5, i1: 10.5, col: 'ice', t: 'FVG', at: HIDE }] }, q: 'Tap the <b>middle candle</b> of the fair value gap: the fast candle that left the gap.', hit: hitCandle([9], 'That expansion candle moved so fast the wicks either side don’t overlap.', 'Find the big fast candle, then check the wicks either side of it don’t touch.') }), [
+    { t: 'A three-candle gap', p: '<p>When a middle candle moves so fast that the <b>1st candle’s wick and the 3rd candle’s wick don’t overlap</b>, the empty space is a fair value gap. The colors of candles 1 and 3 don’t matter.</p>', term: 'FVG' },
+    { t: 'Bullish and bearish', p: '<p><b>Bullish FVG</b>: from a strong up candle. A lack of sell orders in that zone. <b>Bearish FVG</b>: from a strong down candle. A lack of buy orders. When price comes back, it can move through quickly in the gap’s direction.</p>' },
+    { t: 'Not a gap / a dead gap', p: '<p>If the wicks overlap, there’s no imbalance: no FVG. If a candle later <b>closes through</b> the gap, it’s been <b>disrespected</b>. That often means the trend is changing: the next lesson.</p>' },
+  ]) },
+  { id: 'ifvg', title: 'Inverse fair value gaps', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'What is an inverse FVG?', o: ['A gap that price closed through, flipping its meaning', 'A gap upside down on the chart', 'A small gap'], why: 'Closed through = inverted.' },
+    { q: 'Why can it beat waiting for a break of structure?', o: ['It often confirms earlier, so the stop is smaller and the R:R better', 'It never fails', 'It needs no context'], why: 'Earlier confirmation, tighter stop. Still needs context.' },
+  ]), [
+    { t: 'When a gap fails', p: '<p>An FVG is supposed to support the trend. When a candle <b>closes through it</b>, it’s an <b>inverse FVG</b>: a sign the trend is likely reversing. The inverted gap often acts as the new level in the other direction.</p>', term: 'IFVG' },
+    { t: 'Earlier, tighter', p: '<p>An inversion often happens <b>before</b> a full break of structure. Entering off it can mean a much smaller stop and a better risk-to-reward on the same move. It still needs context: liquidity swept, trend, a draw.</p>' },
+  ]) },
+  { id: 'pd', title: 'Premium & discount', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'Uptrend. Where do you look for buys?', o: ['Discount: below the 50% of the swing', 'Premium: above the 50%', 'Anywhere'], why: 'Buy cheap, sell expensive.' },
+    { q: 'Which swing do you measure?', o: ['The most recent connected swing low to swing high', 'Any swing from last month', 'The daily range always'], why: 'Most recent swing in the current trend.' },
+  ]), [
+    { t: 'Equilibrium', p: '<p>Draw from the most recent swing low to the most recent swing high. The <b>50%</b> line is equilibrium. Above it is <b>premium</b> (expensive). Below it is <b>discount</b> (cheap).</p>', spec: { c: PD_C, ann: [{ k: 'band', lo: PD_EQ, hi: PD_HI, i0: 0, i1: 6, col: 'loss', t: 'premium', fill: 0.08 }, { k: 'band', lo: PD_LO, hi: PD_EQ, i0: 0, i1: 6, col: 'win', t: 'discount', fill: 0.08 }, { k: 'h', p: PD_EQ, i0: 0, col: 'ink2', t: '50% · equilibrium', tpos: 'l' }, { k: 'arrow', i: 9, p: PD_C[9].l, dir: 'up', col: 'win', t: 'buy in discount', at: 9 }] } },
+    { t: 'Buy cheap, sell expensive', p: '<p>In an uptrend, look for buys when price pulls back <b>into discount</b>, not while it’s up in premium. Fair value gaps and premium/discount are the two “continuation” tools: either one shows the trend is likely to keep going.</p>' },
+  ]) },
+] });
+
+// ── Intermediate · Bias, timing, SMT & gaps ──
+DIVES.push({ id: 'bias', title: 'Daily bias & timing', sub: 'Decide the direction before the open, know when the moves happen, and read NQ against ES.', secs: [
+  { id: 'build', title: 'Build your bias before the open', body: '', w: (el, d) => wLearn(el, () => wDoIt(el, d, ['Marked the higher-timeframe trend (1H / 4H)', 'Marked the draws: PDH/PDL, session highs/lows, equal highs/lows', 'Checked: has price just swept a level or broken structure?', 'Wrote my bias for today with one line of reasoning', 'After the close: compared my bias to what actually happened'], 'Do this every morning for 5 days. Bias can be wrong: the skill is letting the market prove it and adapting.'), [
+    { t: 'Why bias comes first', p: '<p>You can’t look for an entry if you don’t know which way you expect price to go. Bias answers one question before the open: <b>where does price want to go today?</b></p>' },
+    { t: 'The four steps', p: '<ol style="margin:6px 0;padding-left:20px;display:grid;gap:6px"><li><b>Trend</b> on the higher timeframe: up, down or sideways.</li><li><b>Draws</b> in that direction: stacked highs/lows, session levels, PDH/PDL.</li><li><b>What just happened</b>: a sweep? A break of structure or an inversion?</li><li><b>Continuation</b>: is price holding a gap or sitting in discount/premium, or due to pull back first?</li></ol>' },
+    { t: 'Bias can be wrong', p: '<p>That’s fine. A good trader lets the market prove the bias wrong and adapts, instead of forcing trades to match an opinion.</p>' },
+  ]) },
+  { id: 'time', title: 'When the moves happen', body: '', w: (el, d) => wLearn(el, () => wClock(el, d, [
+    { q: 'Drag into the New York <b>manipulation window</b>.', ok: (m) => m >= 9 * 60 + 30 && m < 9 * 60 + 50, why: '9:30–9:50: new money arrives and fakes a direction.', hint: 'Right after the 9:30 open.' },
+    { q: 'Drag into the typical <b>entry window</b> after it.', ok: (m) => m >= 9 * 60 + 50 && m <= 10 * 60 + 10, why: '9:50–10:10 is where the cleanest entries usually come.', hint: 'Just before and after 10:00.' },
+    { q: 'Drag to roughly when you <b>stop looking</b> if nothing has set up.', ok: (m) => m >= 10 * 60 + 25 && m <= 10 * 60 + 40, why: 'Around 10:30 the edge fades. No setup = no trade.', hint: 'Half an hour after 10:00.' },
+  ]), [
+    { t: 'Each session runs the last one', p: '<p>Asia, London and New York each bring new money, and that money tends to go after the previous session’s highs and lows. That’s why you mark them every morning.</p>', term: 'SESSIONS' },
+    { t: 'The New York open', p: `<p>Typical windows (not hard rules):</p>${TABLE([['9:30 – 9:50', 'Manipulation', 'the fake move'], ['9:50 – 10:10', 'Entries', 'cleanest setups'], ['~10:30', 'Stop looking', 'if nothing set up']])}` },
+  ]) },
+  { id: 'smt', title: 'SMT: NQ vs ES', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'At a key high, ES makes a higher high but NQ makes a lower high. What is it?', o: ['Bearish SMT divergence', 'Bullish SMT', 'Nothing'], why: 'They disagree at a high: bearish for both.' },
+    { q: 'Which one do you trade?', o: ['The leading one, already showing the reversal', 'The lagging one', 'Both, double size'], why: 'Trade the one that already turned.' },
+    { q: 'SMT in the middle of nowhere, far from any level?', o: ['Means little. It matters at a significant draw', 'Always trade it', 'Always fade it'], why: 'Divergences happen constantly. Context is what counts.' },
+  ]), [
+    { t: 'Two indexes that should agree', p: '<p>NQ (Nasdaq) and ES (S&P 500) usually move together. When they <b>disagree</b> at the same moment at a key level, that’s <b>SMT divergence</b>.</p>', term: 'ES CONF' },
+    { t: 'Bullish and bearish', p: '<p><b>Bearish</b>: one sweeps a high and makes a lower high while the other makes a higher high. <b>Bullish</b>: one makes a higher low while the other makes a lower low. Expect the lagging one to follow the leader.</p>' },
+    { t: 'Only at a level', p: '<p>SMT is powerful <b>at a significant draw on liquidity</b>. Away from one, it happens all the time and means little.</p>' },
+  ]) },
+  { id: 'gaps', title: 'Opening gaps', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'The gap between Friday’s close and Sunday’s open is the…', o: ['New week opening gap', 'Fair value gap', 'Daily range'], why: 'NWOG. Usually bigger and more tradable than daily gaps.' },
+    { q: 'What does price often do with an opening gap?', o: ['Come back to fill it, before or after continuing', 'Ignore it forever', 'Reverse at its exact middle every time'], why: 'Gaps are often filled. Use them as targets or entry areas.' },
+  ]), [
+    { t: 'New day opening gap', p: '<p>The jump between one day’s close and the next day’s open, across the daily break. Price often comes back to fill it.</p>' },
+    { t: 'New week opening gap', p: '<p>Between <b>Friday’s close and Sunday’s open</b>. More time (and weekend news) passes, so it’s usually bigger and more useful. The most important of the opening gaps.</p>', term: 'NWOG' },
+  ]) },
+] });
+
+// ── Advanced · H/L full breakdown (before the replay) ──
+DIVES.push({ id: 'hl-learn', title: 'H/L: the full breakdown', sub: 'Mark a range, wait for a sweep, take the reversal back to the other side. Runs on NYFLOW and ASIAFLOW.', secs: [
+  { id: 'model', title: 'The model in one sentence', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'What are the H/L steps, in order?', o: ['Mark the range → wait for a sweep of one side → reversal toward the other side', 'Buy the breakout of the range', 'Trade inside the range'], why: 'Range, sweep, reversal.' },
+    { q: 'The cutoff time passes with no sweep of either side. What now?', o: ['No trade. Stop looking for it', 'Take the best-looking move', 'Trade the range middle'], why: 'A no-trade day is the model working.' },
+  ]), [
+    { t: 'One sentence', p: '<p class="k">Mark the range high and low. Wait for a sweep of one side. Look for the reversal back toward the other side.</p><p>Simple, tested for years, and you get several chances to look for it every day.</p>' },
+    { t: '1 · Mark the range', p: '<p>The <b>range high</b> and <b>range low</b> are the highest high and lowest low of a set time window. For the New York morning that’s the pre-market (about <b>7:00–9:25</b>). Mark both before the window ends.</p>', spec: { c: CH_SR, ann: [{ k: 'h', p: 21536, i0: 0, col: 'ice', t: 'range high', tpos: 'l' }, { k: 'h', p: 21500, i0: 0, col: 'ice', t: 'range low', tpos: 'l', below: true }] } },
+    { t: '2 · The execution window and cutoff', p: '<p>After the range forms, there’s a window when you’re allowed to look for the setup. If the cutoff arrives and <b>neither side was swept</b>, the session is a <b>no-trade</b>. That one rule alone keeps you out of bad days.</p>' },
+  ]) },
+  { id: 'entry', title: 'Sweep, trigger, stop, target', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'The range LOW was swept. Which way do you look?', o: ['Long, back toward the range high', 'Short, continuing lower', 'Either'], why: 'Low swept → reversal up.' },
+    { q: 'Which are the two valid entry triggers?', o: ['An inverse FVG, or a structure shift with a fresh FVG', 'Any green candle', 'An RSI cross'], why: 'IFVG, or MSS + FVG. Wait for the close.' },
+    { q: 'Where does the default target go?', o: ['The opposite side of the range', 'Double the stop, always', 'A round number'], why: 'Low swept → target the range high.' },
+    { q: 'A setup completes in the first 30 minutes of the window. Grade?', o: ['The highest-quality version (A+)', 'Lower quality', 'Not valid'], why: 'Early in the window is the best version.' },
+  ]), [
+    { t: '3 · The sweep sets the bias', p: '<p>Inside the window, your only job is to watch for price to trade through the range high or low. <b>Low swept → look long toward the high. High swept → look short toward the low.</b></p>' },
+    { t: '4 · Two valid triggers', p: '<p><b>A: inverse FVG.</b> After the sweep, a gap gets closed through in the reversal direction. Enter on that close.</p><p><b>B: structure shift + FVG.</b> Price breaks a recent swing point and leaves a fresh gap. Use that gap as the entry zone.</p>', term: 'IFVG' },
+    { t: 'Stop, target, grade', p: '<p><b>Stop</b>: at the swept extreme, or at the inversion gap. <b>Target</b>: the opposite side of the range. <b>A+</b>: the setup completes in the first 30 minutes of the window.</p>' },
+    { t: 'Take something off', p: '<p>Not every trade reaches the full target. Taking partials along the way is normal and healthy. Don’t give back a good trade insisting on the last point.</p>' },
+  ]) },
+  { id: 'windows', title: 'When it runs', body: '', w: (el, d) => wLearn(el, () => wClock(el, d, [
+    { q: 'Drag into the New York <b>range-building</b> time.', ok: (m) => m >= 7 * 60 && m < 9 * 60 + 25, why: 'About 7:00–9:25: mark the high and low.', hint: 'The pre-market, before 9:30.' },
+    { q: 'Drag into the A+ window right after the open.', ok: (m) => m >= 9 * 60 + 30 && m <= 10 * 60, why: '9:30–10:00: the first 30 minutes.', hint: 'The first half hour after 9:30.' },
+    { q: 'Drag into the <b>Asia</b> session, where the same H/L logic runs.', ok: (m) => inSess(SESS[0], m), why: 'Asia, 8 PM–12 AM, on ASIAFLOW.', hint: 'The evening session.' },
+  ]), [
+    { t: 'Several chances a day', p: `<p>The same range → sweep → reversal logic repeats in different windows:</p>${TABLE([['New York AM', 'range ~7:00–9:25', 'A+ 9:30–10:00'], ['Lunch / PM', 'range ~11:30–1:30', 'window to ~3:00'], ['Asia', '8 PM – 12 AM', 'on ASIAFLOW']])}<p>Start with the New York morning. Back-test the later windows before trading them.</p>` },
+  ]) },
+  { id: 'rules', title: 'Discipline rules', body: '', w: (el, d) => wLearn(el, () => wDoIt(el, d, ['For two weeks: marked the range high/low every day and logged whether a sweep happened, and which side', 'Logged which trigger appeared (IFVG or structure shift + FVG)', 'Counted no-trade days vs valid setups', 'Compared A+ (first 30 min) trades to later ones'], 'That log tells you how often the model really shows up. Now replay a real morning in the next lesson.'), [
+    { t: 'Three rules', p: '<ul><li><b>Skip big news days</b> (e.g. the day before NFP), however good it looks.</li><li><b>No sweep by the cutoff = no trade.</b> Walking away is following the rules.</li><li><b>Take partials.</b> Don’t demand the full target every time.</li></ul>' },
+    { t: 'The cheat sheet', p: '<ol style="margin:6px 0;padding-left:20px;display:grid;gap:4px"><li>Mark range high/low for the window.</li><li>Know the execution window and cutoff.</li><li>Wait for a sweep of one side: that’s your bias.</li><li>Enter on an IFVG or structure shift + FVG.</li><li>Stop at the swept extreme or the inversion gap.</li><li>Target the other side of the range.</li><li>First 30 minutes = A+.</li><li>No sweep by the cutoff = no trade.</li></ol>' },
+  ]) },
+] });
+
+// ── Advanced · PO3 full breakdown (before the replays) ──
+DIVES.push({ id: 'po3-learn', title: 'PO3: the full breakdown', sub: 'Accumulation, manipulation, distribution: the pattern behind almost every move. Runs on NYFLOW and ASIAFLOW.', secs: [
+  { id: 'fractal', title: 'A lens, not a single setup', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'On which timeframes does PO3 show up?', o: ['All of them: it’s fractal', 'Only the 5m', 'Only the daily'], why: 'Same three phases at every zoom level.' },
+    { q: 'What is PO3, really?', o: ['A way of reading every move: range, trap, real move', 'A single indicator signal', 'A news strategy'], why: 'It’s the structure behind other setups.' },
+  ]), [
+    { t: 'Three phases, every move', p: '<p>Every move cycles through <b>Accumulation</b> (sideways range), <b>Manipulation</b> (the fake move that sweeps liquidity) and <b>Distribution</b> (the real move). Also called Power of Three.</p>', term: 'PO3' },
+    { t: 'It’s fractal', p: '<p>The same pattern plays out on the 1-minute, the 5-minute, the hourly and the daily. Only the size changes. Learn to see it as a lens you look through, not a box you tick once.</p>' },
+  ]) },
+  { id: 'phases', title: 'The three phases', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'Price is chopping sideways in a tight range. Trade it?', o: ['No: accumulation is a no-trade zone', 'Yes, buy the bottom of the range', 'Yes, short the top'], why: 'You get chopped up with no edge.' },
+    { q: 'Price breaks hard out of the range, against the higher-timeframe trend. Most likely?', o: ['Manipulation: the trap before the real move', 'The real move', 'A sign to stop trading'], why: 'Breaking the range against the trend is usually the trap.' },
+    { q: 'Which phase pays?', o: ['Distribution', 'Accumulation', 'Manipulation'], why: 'The real move after the trap.' },
+  ]), [
+    { t: 'Accumulation: don’t touch it', p: '<p>Price chops sideways. It looks like it’s “about to break out”, which is exactly why people jump in too early. <b>No directional edge yet. No trade.</b></p>' },
+    { t: 'Manipulation: the trap', p: '<p>A sharp move through one edge of the range, sweeping the stops and breakout orders there. It <b>looks</b> directional, but its job is to fuel the opposite move.</p>' },
+    { t: 'Distribution: the real move', p: '<p>Once the liquidity is cleared, price moves in its true direction. Ideally that lines up with the higher-timeframe trend. This is the phase you’re trying to catch.</p>' },
+  ]) },
+  { id: 'trend', title: 'Rule #1: trade with the trend', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'Higher timeframe is trending up. Which PO3 do you want?', o: ['Manipulation lower, distribution higher', 'Manipulation higher, distribution lower', 'Either, same quality'], why: 'Manipulate against the trend, distribute with it.' },
+    { q: 'Price just broke below the accumulation range. What do you ask?', o: ['“Is this distribution, or the manipulation trap?” Check the trend', '“How fast can I short?”', 'Nothing'], why: 'The trend answers it fastest.' },
+  ]), [
+    { t: 'The biggest edge in PO3', p: '<p>If the higher timeframe is going up, look for manipulation to the <b>downside</b> and distribution <b>up</b>, with the trend. Fighting the trend is the lower-quality trade, every time.</p>' },
+    { t: 'The mistake everyone makes', p: '<p>Price breaks out of the range down, and instinct says “we broke the range, it must keep falling”. During manipulation that’s exactly backwards. Treat the breakout as a possible trap and check it against the trend first.</p>' },
+  ]) },
+  { id: 'stack', title: 'Stack the confluence', body: '', w: (el, d) => wLearn(el, () => wDoIt(el, d, ['Marked accumulation, manipulation and distribution on 10 charts', 'For each: did distribution go with or against the higher-timeframe trend?', 'Found FVGs with a swing low (or high) inside them', 'Logged how often PO3 lined up with 9:30 or 10:00'], 'That’s the pattern-recognition muscle. Now replay it at both its New York and Asia times.'), [
+    { t: 'What makes a PO3 high quality', p: `${TABLE([['FVG + swing point', 'a gap with a swing low inside it'], ['Gap not closed through', 'the market wants that direction'], ['Key time', '9:30 / 10:00 NY, 8 PM Asia'], ['Equal highs / lows', 'the obvious draw for distribution'], ['Order block respected', 'adds confidence']])}<p>Recognise the structure first. A lower-timeframe inverse FVG can refine the entry once it’s clear.</p>`, term: 'OB' },
+  ]) },
+] });
+
+// ── Echo: more depth (concepts only) ──
+addSecs('echo', [
+  { id: 'narrative', title: 'Build the narrative first', body: '<p>No draw on liquidity, no trade. Before any Echo, decide which way you’re allowed to trade and where it pays.</p>', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'The draw you were trading toward has already been hit. What now?', o: ['The trade is done: no new entries toward a target that’s gone', 'Take another entry toward it', 'Double size'], why: 'Confirm the draw is still open before every entry.' },
+    { q: 'Price is at all-time highs. Short the rejection?', o: ['No: there’s no draw above, price retraces into its range and continues', 'Yes, it’s the top', 'Yes, with a wide stop'], why: 'Never short all-time highs.' },
+    { q: 'Your draw is higher. Which trades are allowed?', o: ['Longs only', 'Shorts only', 'Both'], why: 'Never trade against your draw.' },
+  ]), [
+    { t: 'Mark the map', p: '<ol style="margin:6px 0;padding-left:20px;display:grid;gap:4px"><li><b>1H and 4H fair value gaps</b>: unfilled ones are where price is likely headed.</li><li><b>Key opens</b>: midnight, 6 PM, 8 PM, 10 AM, and the new week opening gap.</li><li><b>Liquidity pools</b>: prominent 1H highs/lows, equal highs/lows, Asia and London highs/lows, previous day high/low.</li></ol>' },
+    { t: 'Pick the draw', p: '<p>The nearest prominent unfilled higher-timeframe gap, key open or untaken high/low in your direction. That’s your <b>target and your bias</b>. Then locate yourself: below the 50% of the 1H range is discount (favour longs), above is premium (favour shorts).</p>' },
+    { t: 'Direction rules', p: '<ul><li>Never trade against your draw.</li><li>Draw already hit = the trade is done.</li><li>Never short all-time highs.</li></ul>' },
+  ]) },
+], 0);
+addSecs('echo', [
+  { id: 'valid', title: 'Is it a real rejection?', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'A wick sweeps the high but the candle closes ONE point back below it. Valid rejection?', o: ['Yes: even a one-point failure to close counts', 'No, it needs 10 points', 'Only on the 4H'], why: 'Sweep + no close beyond = rejection.' },
+    { q: 'Which is stronger?', o: ['A sweep of the high that started the range (external)', 'A sweep of a minor high inside it (internal)', 'Same'], why: 'External beats internal.' },
+    { q: 'A clean-looking wick at 4 PM with no gap or level behind it?', o: ['Ignore it: random wicks get blown through', 'Take it', 'Take it with double size'], why: 'Only wicks rejecting out of a PD array with confluence.' },
+    { q: 'Price closed through your level earlier today. Use it again?', o: ['No: a closed-through level is dead', 'Yes, as support now', 'Only on Fridays'], why: 'Closed through = dead. No second life.' },
+  ]), [
+    { t: 'Two things make a rejection block', p: '<p>1. A wick <b>sweeps</b> a level that holds liquidity. 2. The candle <b>fails to close</b> beyond it. Even a one-point failure to close counts. The wick is the block.</p>', term: 'RB' },
+    { t: 'External beats internal', p: '<p>A sweep of the high (or low) that <b>started</b> the range is stronger than a sweep of a minor high inside it. Find the rejection on a higher timeframe, then look at a lower one for the single most rejected wick.</p>' },
+    { t: 'Every trade needs a gap behind it', p: `<p>The 1H and 4H gaps are the <b>narrative</b>: what you deliver out of and trade toward. 15m and 5m gaps are <b>confirmation only</b>. A wick with no higher-timeframe gap behind it “looks” like a rejection and gets blown through.</p>${TABLE([['4H · 1H', 'narrative & draw'], ['15m · 5m', 'confirmation only'], ['1m alone', 'chop']])}` },
+    { t: 'CISD needs a retest', p: '<p>A CISD with no retest is just a candle close. You want price to come back, wick into the CISD level, and <b>fail to close through it</b>. If it never comes back for a while, the CISD stops being an entry and becomes liquidity price may sweep.</p>', term: 'CISD' },
+    { t: 'Dead levels', p: '<p>Once price <b>closes through</b> a level on its timeframe, it’s dead: no using it as support afterwards. And a level that already reacted and played out isn’t taken again.</p>' },
+  ]) },
+  { id: 'losses', title: 'Why Echo trades lose', body: '<p>Almost every loss traces back to one of these. Name the cause after every losing trade.</p>', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'Stopped by a few points, then price reverses exactly as planned. An untapped higher-timeframe gap sat just past your level. Cause?', o: ['Price needed to tap that gap first', 'Bad luck', 'The model is broken'], why: 'Wait for the gap to be tapped, then look for the rejection out of it.' },
+    { q: 'NQ runs the high and takes your stop while ES doesn’t, then it dumps. What was that?', o: ['An SMT sweep', 'A breakout', 'News'], why: 'Leave room for SMT sweeps at key highs/lows.' },
+    { q: 'Third trade of the day after a loss. What is it?', o: ['Overtrading / revenge', 'Persistence', 'A new strategy'], why: 'Respect the daily cap.' },
+  ]), [
+    { t: 'The usual suspects', p: `${TABLE([['No HTF gap behind it', 'the wick gets blown through'], ['Untapped gap just past the level', 'stopped, then it works'], ['SMT sweep', 'NQ/ES run one high, then dump'], ['Used level', 'reacted earlier, fails now'], ['Draw already taken', 'valid entry, nowhere to go'], ['Against the draw / shorting ATH', 'fighting the bigger move'], ['Forcing it in chop', 'no gaps = no trade']])}` },
+    { t: 'The one-line version', p: '<p>Most stop-outs come from a level that wasn’t the <b>true point of rejection</b>. Stack the confluence and it usually is.</p>' },
+  ]) },
+  { id: 'daily', title: 'Daily rules', body: '', w: (el, d) => wLearn(el, () => wDoIt(el, d, ['Wrote my daily limits where I can see them', 'Checked the news calendar before the session', 'Before every order: draw still open, gap behind it, under my daily limit'], 'These rules are what make the model work. Discipline, not the setup, is the edge.'), [
+    { t: 'Maximum two trades', p: `${TABLE([['One win', 'done for the day'], ['Two losses', 'done'], ['Loss, then a win', 'done']])}<p>Already up on the day? Don’t take a second trade. Ask after any loss: <b>“Would I rather be down one trade, or at my daily loss limit?”</b></p>` },
+    { t: 'Discipline', p: '<ul><li>Write your rules down. If the list says size down and you don’t, that’s on you.</li><li>Accept the risk before you enter. If the loss bothers you, the size is wrong.</li><li>Don’t stare at charts all day without a model: that’s how you invent setups. Let alerts bring you to your levels.</li><li>Skipping a session when you feel off is a valid decision.</li></ul>' },
+  ]) },
+]);
+
+// ── Orbit: more depth (concepts only) ──
+addSecs('orbit', [
+  { id: 'when', title: 'When Orbit works', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'NQ has run straight up for weeks with barely any pullbacks. Orbit?', o: ['Rarely: no retracements means no OTE entries', 'Perfect conditions', 'Only shorts'], why: 'Orbit needs pullbacks. In expansion, use Echo and keep OTE as confluence.' },
+    { q: 'How many areas of interest at once?', o: ['One', 'As many as you can draw', 'At least three'], why: 'Juggling several = looking for reasons to trade.' },
+    { q: 'An OTE level is hit and price blows straight through with no inversion. What does that tell you?', o: ['Your bias or your range was wrong: zoom out and redraw', 'Add to the trade', 'Nothing'], why: 'No inversion, no trade. Re-read the chart.' },
+  ]), [
+    { t: 'Orbit needs retracements', p: `<p>Orbit trades the pullback after a big move, so it shines in <b>two-sided, consolidating</b> markets. In a one-way expansion, price never pulls back deep enough and there are no entries.</p>${TABLE([['Consolidation', 'Orbit'], ['One-way expansion', 'Echo, OTE as confluence'], ['Big news move', 'wait for the deep pullback']])}` },
+    { t: 'The area of interest', p: '<p>The best area of interest is the deep pullback zone of a <b>large move that broke out of a long consolidation</b>, and hasn’t been retraced into yet. The bigger the time range behind it, the more it’s worth. <b>One area at a time.</b></p>' },
+    { t: 'It has to go somewhere first', p: '<p>Check the 1H and 4H for untapped gaps: they’re the draw. To go down, price usually has to retrace up into a level first. And trade with the original play: don’t long small bounces while the big move still has to reach its low.</p>' },
+  ]) },
+], 0);
+addSecs('orbit', [
+  { id: 'confirm', title: 'Confirmation, not anticipation', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'Price is near the zone but hasn’t reached it. A gap inverts. Enter?', o: ['No: nothing counts until the zone is actually reached', 'Yes, close enough', 'Yes, with a bigger stop'], why: 'Jumping the gun is the #1 Orbit loss.' },
+    { q: 'Which gap’s inversion counts?', o: ['A fresh gap formed out of the zone', 'Any old gap on the chart', 'A gap that already inverted earlier'], why: 'Fresh gaps only. Old or already-inverted gaps don’t count.' },
+    { q: 'A gap inverts between 4 and 6 PM. Use it?', o: ['No: ignore gaps in the 4–6 PM close', 'Yes', 'Only for Asia'], why: 'Nothing in the close counts.' },
+  ]), [
+    { t: 'In the zone, or nothing', p: '<p>Nothing happens until price actually reaches the zone: not near it, <b>into</b> it. Then you need the confirmation: a fresh fair value gap on the leg in gets <b>closed through</b>.</p>', term: 'IFVG' },
+    { t: 'Which gaps count', p: '<ul><li>A gap formed <b>out of</b> the area of interest, not an old one.</li><li>Not a gap that was already inverted earlier: use the next fresh one.</li><li>Ignore gaps in the <b>4–6 PM</b> close.</li></ul>' },
+    { t: 'If you have to adjust the drawing…', p: '<p>…it isn’t the setup. “If I move the high here, it lines up” is your brain looking for a way into a trade.</p>' },
+  ]) },
+  { id: 'losses', title: 'Why Orbit trades lose', body: '', w: (el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'You long a bounce while the big move hasn’t reached its low yet. What went wrong?', o: ['Trading against the original play', 'Nothing', 'Bad luck'], why: 'Trade internals only in the direction of the bigger move.' },
+    { q: 'ES takes your target high before NQ does, then reverses. What do you do next time?', o: ['Close or take partials when that SMT appears', 'Hold for the full target', 'Add size'], why: 'SMT at the target costs trades.' },
+  ]), [
+    { t: 'The usual suspects', p: `${TABLE([['Jumping the gun', 'entered before the zone was reached'], ['Wrong anchors', 'swing drawn off the wrong candles'], ['Already-balanced swing', 'anchor only to untapped swings'], ['Stale or 4–6 PM gap', 'use fresh gaps, in session'], ['Against the original play', 'longing bounces in a big down move'], ['Draw already hit', 'nowhere left to go'], ['Pattern-trading every swing', 'only large-range areas, confirmed']])}` },
+    { t: 'Trade slow', p: '<p>One trade a day if it sets up. A loss and a stop counts as a good day. Use one account at a time while learning. Discretion is earned: beginners trade the mechanical version every time.</p>' },
+  ]) },
+]);
+
+// ── Extra context on existing Beginner / Intermediate sections ──
+teachFirst('charts', 'trend', [
+  { t: 'The market only moves three ways', p: '<p><b>Up</b>, <b>down</b> or <b>sideways</b> (consolidation). A high is a move up followed by a move down: take the higher wick. A low is a move down followed by a move up: take the lower wick.</p>' },
+]);
+teachFirst('risk', 'formula', [
+  { t: 'Consistent risk keeps the edge', p: '<p>A strategy with a good win rate and good risk-to-reward only pays if risk is <b>consistent</b>. Most traders risk about <b>1–3%</b> of the account per trade. Simpler: pick a fixed contract size that keeps your normal stop (and the occasional bigger one) inside that range.</p>' },
+  { t: 'When to cut size', p: '<p>Cut size (e.g. in half) when the stop is unusually large, or ahead of high-impact news. And size to <b>your prop firm’s drawdown rules</b> (trailing vs static, end-of-day vs intraday): one number doesn’t fit every account.</p>' },
+]);
+teachFirst('prop', 'flow', [
+  { t: 'What a prop firm really is', p: '<p>You pay a fee to trade a simulated account (say $50K). Hit the <b>profit target</b> without breaching the <b>max drawdown</b>, and you get a funded account where you split real profits with the firm.</p>' },
+  { t: 'The honest part', p: '<p>Most people fail these challenges. A funded account is a tool to <b>scale</b> a skill you already have, not a shortcut around learning to trade. Failing costs real money, so attempt it once your strategy, risk and discipline are solid.</p>' },
+  { t: 'Words you’ll see', p: `${TABLE([['Profit target', 'e.g. 6–8% of the account'], ['Max drawdown', 'the balance floor that fails it'], ['Trailing vs static', 'does the floor move up?'], ['Consistency rule', 'no single day too big'], ['Profit split', 'your share of payouts']])}` },
+]);
+
+Object.assign(POOLS, {
+  b6: [
+    Q('Liquidity is…', ['Resting orders', 'Trading volume', 'Your account balance'], 'Resting orders. Price is drawn to them.'),
+    Q('What sits above an obvious high?', ['Buy orders: breakout buyers and short sellers’ stops', 'Nothing', 'Only sell orders'], 'Two stacked sets of buy orders.'),
+    Q('Price sweeps a low. Is a reversal guaranteed?', ['No, it’s only an opportunity', 'Yes', 'Only on Mondays'], 'You need confirmation next.'),
+    Q('A break of structure needs…', ['A candle close beyond the most recent swing', 'A wick through any old low', 'Two wicks'], 'Close, not wick. Most recent swing.'),
+    Q('A fair value gap is…', ['A gap between candle 1 and candle 3’s wicks around a fast middle candle', 'Any red candle', 'The weekend gap only'], 'Three candles, wicks don’t overlap.'),
+    Q('A candle closes through an FVG. Now it’s…', ['An inverse FVG: the trend may be turning', 'A stronger FVG', 'Irrelevant'], 'Disrespected → inverted.'),
+    Q('In an uptrend you buy in…', ['Discount: below the 50% of the swing', 'Premium', 'Only at new highs'], 'Buy cheap.'),
+    Q('Three highs stacked close together are…', ['Low-resistance liquidity: a strong magnet', 'A reason to avoid the chart', 'Support'], 'More orders in one spot.'),
+  ],
+  i6: [
+    Q('Bias answers…', ['Which way price likely wants to go today', 'How big to size', 'Which broker to use'], 'Direction before entries.'),
+    Q('First step of building bias?', ['Higher-timeframe trend', 'Place an order', 'Check social media'], 'Trend, then draws, then what just happened.'),
+    Q('The NY manipulation window is about…', ['9:30–9:50', '7:00–8:00', '3:00–4:00 PM'], 'New money fakes a direction after the open.'),
+    Q('No setup by about 10:30 AM. Then?', ['Stop looking for the day', 'Force one', 'Switch to the 1-second chart'], 'The edge fades.'),
+    Q('SMT divergence matters most…', ['At a significant draw on liquidity', 'Anywhere', 'Only overnight'], 'Context is what makes it powerful.'),
+    Q('Which index do you trade on an SMT?', ['The leading one', 'The lagging one', 'Neither'], 'The one already showing the reversal.'),
+    Q('The new week opening gap is between…', ['Friday’s close and Sunday’s open', 'Monday open and close', 'Two 5m candles'], 'NWOG.'),
+    Q('Your bias turns out wrong mid-morning. Best response?', ['Let the market prove it and adapt', 'Force trades to match it', 'Double down'], 'Bias can be wrong. Adapt.'),
+  ],
+});
+POOLS.b0.push(
+  Q('Trading is best treated as…', ['A skill you build, like a sport', 'A way to get rich fast', 'Gambling'], 'Money follows the skill.'),
+  Q('Sitting down with “I need to make money today” leads to…', ['FOMO, oversizing and revenge trades', 'Patience', 'Better entries'], 'The habits that blow accounts.'),
+);
+POOLS.a2.push(
+  Q('H/L: the cutoff passes with no sweep. Then?', ['No trade', 'Trade the middle', 'Buy the open'], 'A no-trade day is the model working.'),
+  Q('H/L: which are the two entry triggers?', ['Inverse FVG, or structure shift + FVG', 'Any doji', 'Moving average cross'], 'Wait for the close.'),
+  Q('PO3: price chops sideways. Trade it?', ['No: accumulation is a no-trade zone', 'Yes', 'Only with size'], 'No edge yet.'),
+  Q('PO3: which direction should distribution go?', ['With the higher-timeframe trend', 'Against it', 'Doesn’t matter'], 'Manipulate against the trend, distribute with it.'),
+);
+POOLS.x1.push(
+  Q('No draw on liquidity in your direction. Echo or Orbit?', ['Neither: no draw, no trade', 'Echo', 'Orbit'], 'The draw comes first.'),
+  Q('Echo: a level was closed through earlier. Use it now?', ['No: closed through = dead', 'Yes', 'Only on the 1m'], 'No second life.'),
+  Q('Orbit: market has gone one way for weeks. Best approach?', ['Expect few Orbit entries; keep OTE as confluence', 'Take every pullback', 'Short it'], 'Orbit needs retracements.'),
+  Q('After one winning trade, the rule is…', ['Done for the day', 'Take two more', 'Double size'], 'Discipline is the edge.'),
+);
+CHART_TASKS.b6 = [
+  { q: 'Tap the candle that <b>sweeps</b> the equal highs.', spec: { c: LIQ_C, ann: [{ k: 'h', p: 21502, i0: 1, i1: 4.5, col: 'ink2', t: 'equal highs', tpos: 'l' }] }, hit: hitCandle([7], 'The sweep.', 'Not the sweep candle.') },
+  { q: 'Tap the <b>middle candle</b> of the fair value gap.', spec: { c: ECHO_C.slice(0, 12), slots: ECHO_C.length }, hit: hitCandle([9], 'The expansion candle.', 'Not the gap’s middle candle.') },
+];
 // ── Trading School: Levels → Modules → Lessons, with checkpoints, exams, practice requirements and unlocks ──
 const LV_ST = { open: null, from: null, all: false };
 const CHD = (() => { try { return new Set(JSON.parse(localStorage.getItem('fh-ch') || '[]')); } catch (e) { return new Set(); } })();
@@ -4068,9 +4363,10 @@ const progSave = () => { try { localStorage.setItem('fh-school', JSON.stringify(
 const L = (kind, id, title, sub, also) => ({ kind, id, title, sub, ...(also ? { also } : {}) });
 const LEVELS = [
   { id: 'beginner', name: 'Beginner', tone: 'win', tag: 'Start here', who: 'Never traded before', desc: 'Set up TradingView and your chart, then what NQ is, how to read a chart, how to place an order with a bracket, and exactly what one trade can cost you.', pass: 0.8, exam: { n: 12, charts: 2 }, modules: [
-    { id: 'b0', title: 'TradingView & your chart', lessons: [L('dive', 'tv', 'TradingView & your chart', 'Get TradingView, learn the screen, set up MNQ1!, colors, drawing tools, Confluence Master'), L('dive', 'setup', 'Platform Setup', 'New York time, paper trading, your 15/40 bracket')] },
+    { id: 'b0', title: 'Start here: mindset & TradingView', lessons: [L('dive', 'mindset', 'What trading actually is', 'A skill, not a lottery ticket. The mindset that blows accounts'), L('dive', 'tv', 'TradingView & your chart', 'Get TradingView, learn the screen, set up MNQ1!, colors, drawing tools, Confluence Master'), L('dive', 'setup', 'Platform Setup', 'New York time, paper trading, your 15/40 bracket')] },
     { id: 'b1', title: 'How futures & NQ work', lessons: [L('dive', 'futures', 'How futures & NQ work', 'Contracts, NQ vs MNQ, points and ticks, trading hours')] },
     { id: 'b2', title: 'Reading charts', lessons: [L('dive', 'charts', 'Reading charts', 'Candles, wicks, timeframes, trend, levels')] },
+    { id: 'b6', title: 'Liquidity & structure', lessons: [L('dive', 'liq', 'Liquidity & structure', 'Resting orders, sweeps, BOS, fair value gaps, inverse FVGs, premium & discount')] },
     { id: 'b3', title: 'Orders & your first trade', lessons: [L('ch', 'chart', 'Your chart, ticks & candles', 'Read a candle, know what a point is worth'), L('ch', 'connect', 'Connect & build your first order', 'Market vs limit, stop loss, take profit', ['order']), L('dive', 'orders', 'Orders & brackets', 'Market, limit, stop, OCO')] },
     { id: 'b4', title: 'Risk basics', lessons: [L('dive', 'risk', 'Risk basics', 'Size from your stop, R, your daily stop'), L('ch', 'manage', 'Manage the trade', 'Working orders, breakeven, closing'), L('ch', 'limits', 'Your limits & risk math', 'How much one trade can cost you')] },
     { id: 'b5', title: 'Wrap-up', noCheck: true, lessons: [L('ch', 'end', 'The bare minimum', 'The rules to remember if you forget everything else')] },
@@ -4080,11 +4376,12 @@ const LEVELS = [
     { id: 'i2', title: 'Why the math works', lessons: [L('dive', 'math', 'Why the Math Works', 'Expectancy, 100-trade simulator, losing streaks')] },
     { id: 'i3', title: 'Trade management', lessons: [L('dive', 'manage', 'Trade Management', 'Breakeven, partials, trailing, sitting still'), L('dive', 'mistakes', 'Spot the Mistake', 'Moved stops, chasing, revenge, news')] },
     { id: 'i4', title: 'Trading psychology', lessons: [L('dive', 'psych', 'Trading Psychology', 'Tilt, FOMO, boredom, overconfidence')] },
+    { id: 'i6', title: 'Daily bias & timing', lessons: [L('dive', 'bias', 'Daily bias & timing', 'Build a bias, NY timing windows, SMT, opening gaps')] },
     { id: 'i5', title: 'A day in the life & your plan', lessons: [L('dive', 'day', 'A Day in the Life', 'One full session, checklist to journal'), L('dive', 'planlesson', 'Build your trading plan', 'Your plan card in the Trading Plan tab')] },
   ] },
   { id: 'advanced', name: 'Advanced', tone: 'lag', tag: 'Read the market', who: 'Trading the FLOWMTD concepts', desc: 'Extended Learning (Range Settlement, opening prices, PLC/PHC, refining, limit vs confirmation), then H/L and PO3 one candle at a time.', pass: 0.85, exam: { n: 14, charts: 3, extraCharts: ['b3', 'b4'] }, modules: [
     { id: 'a1', title: 'Extended Learning', lessons: [L('dive', 'rs', 'Range Settlement', 'The 9:30 draw for the AM session'), L('ch', 'dl', 'Levels: bias, PLC, refine, limit vs confirm', 'Opening prices, PLC/PHC, refining, LRL & turtle soup')] },
-    { id: 'a2', title: 'Models: H/L & PO3', lessons: [L('ch', 'hl', 'H/L', 'Range, sweep, gap, flip · runs in New York (range 7:00–9:25, A+ 9:30–10:00) and Asia (8 PM–12 AM)'), L('ch', 'po3', 'PO3', 'Accumulation, manipulation, distribution · New York (the 10:00 candle) and Asia (the 8 PM candle)', ['asia'])] },
+    { id: 'a2', title: 'Models: H/L & PO3', lessons: [L('dive', 'hl-learn', 'H/L: the full breakdown', 'Range, execution window, sweep, two triggers, stop, target, A+ timing'), L('ch', 'hl', 'H/L replay', 'Range, sweep, gap, flip · runs in New York (range 7:00–9:25, A+ 9:30–10:00) and Asia (8 PM–12 AM)'), L('dive', 'po3-learn', 'PO3: the full breakdown', 'Accumulation, manipulation, distribution; trade with the trend; confluence'), L('ch', 'po3', 'PO3 replay', 'Accumulation, manipulation, distribution · New York (the 10:00 candle) and Asia (the 8 PM candle)', ['asia'])] },
   ] },
   { id: 'exo', name: 'ECHO X ORBIT', tone: 'signal', tag: 'The FLOWMTD model', who: 'The 94% win rate model behind the Discord calls', desc: 'Echo and Orbit: the two engines behind every daily call, the shared rules, and replays where you make the call.', pass: 0.8, modules: [
     { id: 'x1', title: 'ECHO X ORBIT', lessons: [L('dive', 'exo-intro', 'Two engines', 'What ECHO X ORBIT is, Confluence Master setup, the four words'), L('dive', 'echo', 'Echo', 'Sweep, CISD, rejection block inside the FVG'), L('dive', 'orbit', 'Orbit', 'Big swing, fib, OTE, inversion on the leg in'), L('dive', 'exo-rules', 'The shared rules', 'The draw, 2× the stop, ES confirmation'), L('dive', 'exo-replay', 'Replays', 'One to take, one to skip')] },

@@ -719,9 +719,10 @@ function summarizePractice(rows, now = Date.now()) {
 // src/lib/school.ts
 var SCHOOL_LEVELS = [
   { id: "beginner", name: "Beginner", modules: [
-    { id: "b0", lessons: ["d:tv", "d:setup"] },
+    { id: "b0", lessons: ["d:mindset", "d:tv", "d:setup"] },
     { id: "b1", lessons: ["d:futures"] },
     { id: "b2", lessons: ["d:charts"] },
+    { id: "b6", lessons: ["d:liq"] },
     { id: "b3", lessons: ["c:chart", "c:connect+order", "d:orders"] },
     { id: "b4", lessons: ["d:risk", "c:manage", "c:limits"] },
     { id: "b5", lessons: ["c:end"], noCheck: true }
@@ -731,11 +732,12 @@ var SCHOOL_LEVELS = [
     { id: "i2", lessons: ["d:math"] },
     { id: "i3", lessons: ["d:manage", "d:mistakes"] },
     { id: "i4", lessons: ["d:psych"] },
+    { id: "i6", lessons: ["d:bias"] },
     { id: "i5", lessons: ["d:day", "d:planlesson"] }
   ], exam: true },
   { id: "advanced", name: "Advanced", modules: [
     { id: "a1", lessons: ["d:rs", "c:dl"] },
-    { id: "a2", lessons: ["c:hl", "c:po3+asia"] }
+    { id: "a2", lessons: ["d:hl-learn", "c:hl", "d:po3-learn", "c:po3+asia"] }
   ], exam: true },
   { id: "exo", name: "ECHO X ORBIT", modules: [
     { id: "x1", lessons: ["d:exo-intro", "d:echo", "d:orbit", "d:exo-rules", "d:exo-replay"] }
@@ -743,6 +745,13 @@ var SCHOOL_LEVELS = [
 ];
 var SCHOOL_LEVEL_IDS = SCHOOL_LEVELS.map((l) => l.id);
 var DIVE_PARTS = {
+  prop: 4,
+  math: 4,
+  manage: 3,
+  mistakes: 4,
+  psych: 1,
+  setup: 5,
+  day: 4,
   tv: 7,
   futures: 5,
   charts: 5,
@@ -750,21 +759,21 @@ var DIVE_PARTS = {
   risk: 3,
   rs: 3,
   planlesson: 2,
-  setup: 5,
-  prop: 4,
-  math: 4,
-  manage: 3,
-  mistakes: 4,
-  psych: 1,
-  day: 4,
   "exo-intro": 5,
-  echo: 5,
-  orbit: 5,
+  echo: 9,
+  orbit: 8,
   "exo-rules": 4,
-  "exo-replay": 2
+  "exo-replay": 2,
+  mindset: 2,
+  liq: 6,
+  bias: 4,
+  "hl-learn": 4,
+  "po3-learn": 4
 };
 var MODULE_LABEL = {
-  b0: "TradingView & your chart",
+  b0: "Mindset & TradingView",
+  b6: "Liquidity & structure",
+  i6: "Daily bias & timing",
   b1: "How futures & NQ work",
   b2: "Reading charts",
   b3: "Orders & your first trade",
