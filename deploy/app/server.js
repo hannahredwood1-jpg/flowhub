@@ -719,9 +719,10 @@ function summarizePractice(rows, now = Date.now()) {
 // src/lib/school.ts
 var SCHOOL_LEVELS = [
   { id: "beginner", name: "Beginner", modules: [
+    { id: "b0", lessons: ["d:tv", "d:setup"] },
     { id: "b1", lessons: ["d:futures"] },
     { id: "b2", lessons: ["d:charts"] },
-    { id: "b3", lessons: ["d:setup", "c:chart", "c:connect+order", "d:orders"] },
+    { id: "b3", lessons: ["c:chart", "c:connect+order", "d:orders"] },
     { id: "b4", lessons: ["d:risk", "c:manage", "c:limits"] },
     { id: "b5", lessons: ["c:end"], noCheck: true }
   ], exam: true },
@@ -742,8 +743,9 @@ var SCHOOL_LEVELS = [
 ];
 var SCHOOL_LEVEL_IDS = SCHOOL_LEVELS.map((l) => l.id);
 var DIVE_PARTS = {
+  tv: 7,
   futures: 5,
-  charts: 6,
+  charts: 5,
   orders: 3,
   risk: 3,
   rs: 3,
@@ -762,9 +764,10 @@ var DIVE_PARTS = {
   "exo-replay": 2
 };
 var MODULE_LABEL = {
+  b0: "TradingView & your chart",
   b1: "How futures & NQ work",
   b2: "Reading charts",
-  b3: "Platform & orders",
+  b3: "Orders & your first trade",
   b4: "Risk basics",
   i1: "Prop Firm 101",
   i2: "Why the math works",

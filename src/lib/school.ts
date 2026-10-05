@@ -1,8 +1,8 @@
 // Trading School progress summary for coaches. Mirrors the level/module/lesson map in school/trading-school.html.
 export const SCHOOL_LEVELS = [
   { id: "beginner", name: "Beginner", modules: [
-    { id: "b1", lessons: ["d:futures"] }, { id: "b2", lessons: ["d:charts"] },
-    { id: "b3", lessons: ["d:setup", "c:chart", "c:connect+order", "d:orders"] },
+    { id: "b0", lessons: ["d:tv", "d:setup"] }, { id: "b1", lessons: ["d:futures"] }, { id: "b2", lessons: ["d:charts"] },
+    { id: "b3", lessons: ["c:chart", "c:connect+order", "d:orders"] },
     { id: "b4", lessons: ["d:risk", "c:manage", "c:limits"] }, { id: "b5", lessons: ["c:end"], noCheck: true },
   ], exam: true },
   { id: "intermediate", name: "Intermediate", modules: [
@@ -19,7 +19,7 @@ export const SCHOOL_LEVELS = [
 export const SCHOOL_LEVEL_IDS = SCHOOL_LEVELS.map((l) => l.id) as string[];
 // Section counts per dive, so "done" means every part is finished.
 export const DIVE_PARTS: Record<string, number> = {
-  futures: 5, charts: 6, orders: 3, risk: 3, rs: 3, planlesson: 2, setup: 5, prop: 4, math: 4, manage: 3, mistakes: 4, psych: 1, day: 4,
+  tv: 7, futures: 5, charts: 5, orders: 3, risk: 3, rs: 3, planlesson: 2, setup: 5, prop: 4, math: 4, manage: 3, mistakes: 4, psych: 1, day: 4,
   "exo-intro": 5, echo: 5, orbit: 5, "exo-rules": 4, "exo-replay": 2,
 };
 type Best = { best?: number; pass?: boolean; n?: number; at?: number };
@@ -31,7 +31,7 @@ export type SchoolSummary = {
   current: string;
 };
 const MODULE_LABEL: Record<string, string> = {
-  b1: "How futures & NQ work", b2: "Reading charts", b3: "Platform & orders", b4: "Risk basics", i1: "Prop Firm 101", i2: "Why the math works",
+  b0: "TradingView & your chart", b1: "How futures & NQ work", b2: "Reading charts", b3: "Orders & your first trade", b4: "Risk basics", i1: "Prop Firm 101", i2: "Why the math works",
   i3: "Trade management", i4: "Trading psychology", i5: "Day in the life & plan", a1: "Extended Learning", a2: "H/L & PO3", x1: "ECHO X ORBIT",
 };
 export function summarizeSchool(state: SchoolState | null, unlocks: string[], attempts: SchoolAttemptRow[]): SchoolSummary {

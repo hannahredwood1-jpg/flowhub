@@ -408,6 +408,20 @@ input.in:focus{outline:2px solid var(--ice);outline-offset:1px}
 .lv-cert{border-color:var(--signal);background:linear-gradient(120deg,rgb(255 106 0 / .08),transparent 60%),var(--panel)}
 .w > figure.t-vis{max-width:620px}
 .learn{border-left:3px solid var(--ice)}
+.doit{border-left:3px solid var(--signal)}
+.tvm{display:grid;border:1px solid var(--line2);background:#0b0e14;font-family:var(--f-mono);font-size:12px;color:var(--ink2);max-width:760px;user-select:none}
+.tvm-top,.tvm-bottom{display:flex;gap:4px;align-items:center;padding:4px;border-bottom:1px solid var(--line)}
+.tvm-bottom{border-bottom:0;border-top:1px solid var(--line)}
+.tvm-mid{display:grid;grid-template-columns:38px 1fr 70px 110px;min-height:170px}
+.tvm-chart{padding:4px;overflow:hidden}.tvm-chart svg{width:100%;height:100%}
+.tvm-s{border:1px solid transparent;background:transparent;color:inherit;padding:5px 8px;font:inherit;line-height:1.35;text-align:left;cursor:pointer}
+.tvm.still .tvm-s{pointer-events:none}
+.tvm-s:hover{border-color:var(--icedim);color:var(--ink)}
+.tvm-s.lit{border-color:var(--signal);color:var(--ink);background:rgb(255 106 0 / .1);box-shadow:0 0 0 2px rgb(255 106 0 / .25)}
+.tvm-left{border-right:1px solid var(--line);text-align:center;letter-spacing:0;line-height:2}
+.tvm-scale{border-left:1px solid var(--line);font-size:11px;line-height:2.4}
+.tvm-right{border-left:1px solid var(--line);font-size:11.5px}
+@media (max-width:620px){.tvm-mid{grid-template-columns:34px 1fr 56px}.tvm-right{display:none}.tvm{font-size:11px}}
 .learn-h{margin:4px 0 2px;font-family:var(--f-display);font-weight:900;font-size:20px;text-transform:uppercase;letter-spacing:.01em}
 .learn-p{color:var(--ink2);font-size:15.5px;max-width:680px}
 .learn-p p{margin:6px 0}.learn-p ul{margin:6px 0;padding-left:18px;display:grid;gap:4px}
@@ -3485,7 +3499,84 @@ function wPlanCheck(el, done) {
   draw();
 }
 
-// ════════ Beginner · Module 1: How futures & NQ work ════════
+// ════════ Beginner · Module 1: TradingView & your chart (do it on your own chart as you go) ════════
+const TV_URL = 'https://www.tradingview.com/chart/';
+// A mock TradingView screen: tap the part each task asks for.
+const TV_SPOTS = {
+  symbol: 'Symbol search', tf: 'Timeframe', type: 'Chart type', ind: 'Indicators', alert: 'Alerts', replay: 'Bar Replay', save: 'Save layout',
+  draw: 'Drawing toolbar', scale: 'Price scale', watch: 'Watchlist', panel: 'Trading Panel', tz: 'Clock & timezone',
+};
+function tvMock(lit, still) {
+  const b = (id, html, cls = '') => `<button type="button" class="tvm-s ${cls}${lit && lit.includes(id) ? ' lit' : ''}" data-spot="${id}" aria-label="${TV_SPOTS[id]}">${html}</button>`;
+  const candles = tSvg({ c: CH_TREND, mono: true, h: 150 });
+  return `<div class="tvm${still ? ' still' : ''}" role="group" aria-label="TradingView layout">
+    <div class="tvm-top">${b('symbol', '⌕ MNQ1!')}${b('tf', '5m')}${b('type', '▮▯')}${b('ind', 'ƒx Indicators')}${b('alert', '⏰ Alert')}${b('replay', '⏪ Replay')}<span class="grow"></span>${b('save', '☁ Save')}</div>
+    <div class="tvm-mid">${b('draw', '╱<br>─<br>▭<br>≋<br>✎<br>📏', 'tvm-left')}<div class="tvm-chart">${candles}</div>${b('scale', '21,460<br>21,440<br>21,420<br>21,400', 'tvm-scale')}${b('watch', 'Watchlist<br><small>MNQ1! · ES1!</small>', 'tvm-right')}</div>
+    <div class="tvm-bottom">${b('panel', 'Trading Panel · Paper Trading')}<span class="grow"></span>${b('tz', '09:41:12 (UTC-4)')}</div></div>`;
+}
+function wTvTour(el, done, tasks) {
+  const box = h('div', 'w'); el.append(box); let i = 0;
+  const draw = (msg) => {
+    const tk = tasks[i];
+    box.innerHTML = `${tk ? `<div class="dv-top"><span class="hud">Find it ${i + 1} / ${tasks.length}</span></div><p class="w-q">${tk.q}</p>` : ''}${tvMock(tk ? [] : tasks.map((t) => t.spot))}${tk ? '' : fbHtml(true, 'You know your way around', 'Every part of the screen you’ll use. Now set yours up for real.')}${msg || ''}`;
+  };
+  box.addEventListener('click', (e) => {
+    const sp = e.target.closest('[data-spot]'); if (!sp || i >= tasks.length) return; const tk = tasks[i];
+    if (sp.dataset.spot === tk.spot) { i++; draw(fbHtml(true, TV_SPOTS[tk.spot], tk.why)); if (i >= tasks.length) done(); }
+    else draw(fbHtml(false, `That’s the ${TV_SPOTS[sp.dataset.spot]}`, tk.hint || 'Try another part of the screen.'));
+  });
+  draw();
+}
+// "Do it now": open TradingView in a new tab, tick off each step on your own chart.
+function wDoIt(el, done, items, okText) {
+  const box = h('div', 'w doit'); box.innerHTML = `<div class="dv-top"><span class="hud" style="color:var(--signal)">Do it now on your chart</span><span class="grow"></span><a class="btn primary" href="${TV_URL}" target="_blank" rel="noopener">Open TradingView ↗</a></div>`;
+  el.append(box); wChecklist(box, done, items, okText);
+}
+const doItAfter = (wFn, items, okText) => (el, d) => wFn(el, () => wDoIt(el, d, items, okText));
+DIVES.push({ id: 'tv', title: 'TradingView & your chart', sub: 'Get TradingView, learn the screen, and set up your own NQ chart step by step. Keep TradingView open in another tab as you go.', secs: [
+  { id: 'account', title: 'Get TradingView', body: '<p>Everything in FLOWMTD happens on <b>TradingView</b>: the charts, the levels, the indicators and (in paper trading) your orders.</p>', w: doItAfter((el, d) => wLearn(el, d, [
+    { t: 'Free is fine to start', p: '<p>Go to <b>tradingview.com</b> and create an account. The free plan is enough to learn. Paid plans add more indicators per chart, more saved layouts and no ads. Upgrade later if you need it.</p>' },
+    { t: 'Check your data is live', p: '<p>Futures data can be <b>delayed</b> on TradingView. If you see a <b>D</b> badge next to the symbol name, your quotes are late. Add real-time CME data in your TradingView account settings, or use the data from your broker once it’s connected.</p>' },
+  ]), ['Created a TradingView account and logged in', 'Opened a chart (the Chart button, top left)', 'Checked for a <b>D</b> (delayed) badge next to the symbol'], 'TradingView is ready. Keep that tab open.') },
+  { id: 'layout', title: 'Learn the screen', body: '<p>A quick tour, then find each part yourself. The mock below works like the real thing.</p>', w: (el, d) => wLearn(el, () => wTvTour(el, d, [
+    { q: 'Where do you change the <b>symbol</b> to MNQ1!?', spot: 'symbol', why: 'Click it (or just start typing on the chart) to search any symbol.' },
+    { q: 'Where do you switch to the <b>5-minute</b> chart?', spot: 'tf', why: 'The timeframe menu. Tip: type “5” and press Enter on the chart.' },
+    { q: 'Where do you add <b>Confluence Master</b>?', spot: 'ind', why: 'Indicators → Invite-only scripts once you have access.' },
+    { q: 'Where are the <b>drawing tools</b> (lines, rectangles, fib)?', spot: 'draw', why: 'The left toolbar. You’ll use it every day.' },
+    { q: 'Where do you place <b>paper trades</b>?', spot: 'panel', why: 'The Trading Panel at the bottom. Connect Paper Trading first.' },
+    { q: 'Where do you set <b>New York time</b>?', spot: 'tz', why: 'Click the clock bottom-right and pick (UTC-4) New York.' },
+    { q: 'Where do you set an <b>alert</b> at a level?', spot: 'alert', why: 'Alerts. Shortcut: Alt + A.' },
+  ]), [
+    { t: 'The top bar', p: '<p>Left to right: <b>symbol search</b>, <b>timeframe</b>, <b>chart type</b>, <b>Indicators</b>, <b>Alerts</b> and <b>Bar Replay</b> (practice on past days). Far right: <b>save</b> your layout.</p>', html: tvMock(['symbol', 'tf', 'type', 'ind', 'alert', 'replay', 'save'], true) },
+    { t: 'Left toolbar and right side', p: '<p>Left: the <b>drawing tools</b>. Right: the <b>price scale</b> and your <b>watchlist</b> (add MNQ1! and ES1!).</p>', html: tvMock(['draw', 'scale', 'watch'], true) },
+    { t: 'The bottom', p: '<p>The <b>Trading Panel</b> is where you connect Paper Trading (or your prop firm’s broker) and place orders. Bottom-right is the <b>clock</b>: that’s where you set the timezone.</p>', html: tvMock(['panel', 'tz'], true) },
+  ]) },
+  { id: 'symbol', title: 'Symbol and timeframes', body: '', w: doItAfter((el, d) => wLearn(el, () => wQs(el, d, [
+    { q: 'Which symbol do you chart?', o: ['MNQ1! (or NQ1!): the continuous contract', 'NQ with this month’s code only', 'QQQ'], why: 'The 1! keeps your levels continuous through contract rolls.' },
+    { q: 'Fastest way to switch to the 15-minute chart?', o: ['Type 15 on the chart and press Enter', 'Make a new layout', 'Reload the page'], why: 'Typing a number and Enter switches timeframes instantly.' },
+  ]), [
+    { t: 'MNQ1!: the continuous contract', p: '<p>Click the symbol search and type <b>MNQ1!</b> (or <b>NQ1!</b>). The “1!” always shows the active front-month contract, so your levels don’t jump when contracts roll each quarter.</p>' },
+    { t: 'Star your timeframes', p: '<p>Open the timeframe menu and click the ☆ next to <b>1m, 5m, 15m, 1H, 4H and 1D</b>. They appear in the top bar so you can flip between them in one click. Shortcut: type the number on the chart and press Enter.</p>', term: 'HTF' },
+  ]), ['Chart symbol set to <b>MNQ1!</b>', 'Starred 1m, 5m, 15m, 1H, 4H and 1D', 'Added <b>MNQ1!</b> and <b>ES1!</b> to the watchlist'], 'Symbol and timeframes set.') },
+  { id: 'colors', title: 'Change your candle colors', body: '<p>Green and red are wired into your brain as <b>winning</b> and <b>losing</b>. A wall of red candles feels like danger even when it’s exactly the move you’re waiting for, and green feels like “buy now”. That pushes you into emotional clicks.</p><p>Switch your candles to <b>neutral colors</b> so you read structure, not feelings. For example: up candles <b>white</b>, down candles <b>gray</b> (or a light blue and a dark blue).</p>', w: (el, d) => { const box = h('div', 'w'); box.innerHTML = `<div class="w-stats"><div><span class="hud">Default · emotional</span><figure class="t-vis sm" style="margin:0">${tSvg({ c: CH_BEAR })}</figure></div><div><span class="hud">Neutral · structure</span><figure class="t-vis sm" style="margin:0">${tSvg({ c: CH_BEAR, mono: true })}</figure></div></div>`; el.append(box); wDoIt(el, d, ['TradingView: right-click the chart → <b>Settings</b> → <b>Symbol</b>', '<b>Body</b>: up candles white (or light blue), down candles gray (or dark blue)', '<b>Borders</b> and <b>Wick</b>: same colors as the bodies', 'Bottom-left <b>Template</b> → <b>Save as default</b> so every chart opens this way'], 'Done. Same chart, less emotion. You’ll still see who won each candle from where it closed.'); } },
+  { id: 'tools', title: 'Drawing tools', body: '<p>You’ll mark levels, zones and fibs every day. Learn the four tools and their shortcuts.</p>', w: doItAfter((el, d) => wLearn(el, () => wTap(el, d, { spec: { c: CH_SR }, q: 'Practice: tap where you’d draw a <b>horizontal line</b> for the level price bounced from twice.', hit: hitBand(21498, 21504, 'Right on the ~21,500 level. That’s exactly where the line goes.', (p) => (p > 21504 ? 'Higher than the bounces. The line goes where the lows turned.' : 'Below where price turned.')) }), [
+    { t: 'Horizontal line · Alt + H', p: '<p>Marks a price level across the whole chart: old highs and lows, opening prices, your entry. Use a <b>horizontal ray</b> instead to start the line at a candle and extend right.</p>' },
+    { t: 'Rectangle · zones', p: '<p>Draw a box over an area instead of a single price: a fair value gap, an order block, a level. FLOWMTD levels are usually zones, not exact prices.</p>', term: 'FVG' },
+    { t: 'Fib retracement · Alt + F', p: '<p>Click the swing low, then the swing high. TradingView draws the levels for you. You’ll use it for Orbit’s OTE zone (0.62–0.79): add those two levels in the fib settings.</p>', term: 'OTE' },
+    { t: 'Measure · Shift + click', p: '<p>Hold <b>Shift</b> and click-drag on the chart to measure points, ticks and time between two prices. Use it to check your stop and target distances before every trade.</p>' },
+  ]), ['Drew a horizontal line on a recent high', 'Drew a rectangle around a zone', 'Drew a fib on a swing and added the 0.62 and 0.79 levels', 'Measured a move with Shift + click'], 'Tools ready. Delete the practice drawings when you’re done.') },
+  { id: 'indicators', title: 'Add Confluence Master', body: '<p>Members find ECHO X ORBIT trades with the <b>Confluence Master</b> indicator.</p>', w: doItAfter((el, d) => wLearn(el, d, [
+    { t: 'Where to find it', p: '<p>Once your access is granted, open <b>Indicators</b> (top bar) → <b>Invite-only scripts</b> → <b>Confluence Master</b>. Click it once to add it to the chart. Click the ☆ so it’s in your favourites.</p>', html: tvMock(['ind'], true) },
+    { t: 'Settings live in the gear', p: '<p>Hover the indicator name at the top-left of the chart and click the <b>gear</b> to open its settings. You’ll set it up for ECHO X ORBIT later in the school. For now, just get it on the chart.</p>' },
+  ]), ['Opened Indicators → Invite-only scripts', 'Added <b>Confluence Master</b> to the chart', 'Starred it in favourites'], 'Confluence Master is on your chart.') },
+  { id: 'save', title: 'Save it, alert it, replay it', body: '', w: doItAfter((el, d) => wLearn(el, d, [
+    { t: 'Save your layout', p: '<p>Click <b>Save</b> (top right). Your symbol, timeframes, drawings and indicators come back exactly like this next time. Name it “FLOWMTD NQ”.</p>', html: tvMock(['save'], true) },
+    { t: 'Alerts: stop staring at the chart', p: '<p>Right-click a level → <b>Add alert</b>, or press <b>Alt + A</b>. TradingView pings you when price gets there. Let the alert call you to the chart instead of watching every candle.</p>', html: tvMock(['alert'], true) },
+    { t: 'Bar Replay: practise on past days', p: '<p><b>Replay</b> rewinds the chart to any day and plays it back candle by candle. It’s the best way to practise the models without risking money.</p>', html: tvMock(['replay'], true) },
+  ]), ['Saved my layout as “FLOWMTD NQ”', 'Set one alert at a level (Alt + A)', 'Opened Bar Replay once and played a few candles'], 'Your TradingView is set up. Next: Platform Setup (New York time, paper trading, your 15/40 bracket).') },
+] });
+
+// ════════ Beginner · How futures & NQ work ════════
 DIVES.push({ id: 'futures', title: 'How futures & NQ work', sub: 'What you’re actually trading, what one point is worth, and when the market is open.', secs: [
   { id: 'what', title: 'What a futures contract is', body: '<p>A <b>futures contract</b> is an agreement to buy or sell something at a set price on a future date. You never take delivery: traders open and close the contract the same day and keep the difference.</p><p>We trade <b>NQ</b>: futures on the <b>Nasdaq-100</b> index, the 100 biggest non-financial companies on the Nasdaq. When those stocks rise, NQ rises.</p>', w: (el, d) => wQs(el, d, [
     { q: 'You buy 1 NQ contract. What are you betting on?', o: ['The Nasdaq-100 goes up before you close', 'You’ll receive Nasdaq shares at expiry', 'One stock goes up'], why: 'You profit from the price moving your way. Day traders close before expiry, nothing is delivered.' },
@@ -3515,8 +3606,7 @@ DIVES.push({ id: 'futures', title: 'How futures & NQ work', sub: 'What you’re 
 ] });
 
 // ════════ Beginner · Module 2: Reading charts ════════
-DIVES.push({ id: 'charts', title: 'Reading charts', sub: 'Candle colors, candles, wicks, timeframes, highs and lows. Tap the chart until you can read it at a glance.', secs: [
-  { id: 'colors', title: 'First: change your candle colors', body: '<p>Green and red are wired into your brain as <b>winning</b> and <b>losing</b>. A wall of red candles feels like danger even when it’s exactly the move you’re waiting for, and green feels like “buy now”. That pushes you into emotional clicks.</p><p>Switch your candles to <b>neutral colors</b> so you read structure, not feelings. For example: up candles <b>white</b>, down candles <b>gray</b> (or a light blue and a dark blue).</p>', w: (el, d) => { const box = h('div', 'w'); box.innerHTML = `<div class="w-stats"><div><span class="hud">Default · emotional</span><figure class="t-vis sm" style="margin:0">${tSvg({ c: CH_BEAR })}</figure></div><div><span class="hud">Neutral · structure</span><figure class="t-vis sm" style="margin:0">${tSvg({ c: CH_BEAR, mono: true })}</figure></div></div>`; el.append(box); wChecklist(el, d, ['TradingView: right-click the chart → <b>Settings</b> → <b>Symbol</b>', '<b>Body</b>: up candles white (or light blue), down candles gray (or dark blue)', '<b>Borders</b> and <b>Wick</b>: same colors as the bodies', 'Bottom-left <b>Template</b> → <b>Save as default</b> so every chart opens this way'], 'Done. Same chart, less emotion. You’ll still see who won each candle from where it closed.'); } },
+DIVES.push({ id: 'charts', title: 'Reading charts', sub: 'Candles, wicks, timeframes, highs and lows. Tap the chart until you can read it at a glance.', secs: [
   { id: 'candle', title: 'One candle, four prices', body: '<p>Each candle shows one slice of time: where price <b>opened</b>, the <b>high</b>, the <b>low</b>, and where it <b>closed</b>. The body is open → close. The thin lines are <b>wicks</b>: prices that were reached but rejected.</p><p><b>Green</b> = closed higher than it opened. <b>Red</b> = closed lower.</p>', w: (el, d) => wTap(el, d, { spec: { c: CH_WICK }, q: 'Tap the candle with the <b>longest upper wick</b>: buyers pushed up, sellers slammed it back.', hit: hitCandle([6], 'That wick shows rejection: price went up there and couldn’t stay.', 'Look for the tallest thin line above a body.') }) },
   { id: 'bear', title: 'Who won the candle?', body: '<p>A big body means one side was in control. A small body with long wicks means a fight nobody won.</p>', w: (el, d) => wTap(el, d, { spec: { c: CH_BEAR }, q: 'Tap the candle where <b>sellers took control</b>.', hit: hitCandle([5], 'Big red body, closed near its low. Sellers won that candle clearly.', 'Find the biggest red body.') }) },
   { id: 'tf', title: 'Timeframes', body: '<p>The same price action can be shown as 1-minute, 5-minute, 1-hour or 4-hour candles. <b>Higher timeframes (HTF)</b> show the big picture and stronger levels. <b>Lower timeframes (LTF)</b> show the detail for entries.</p>', w: (el, d) => wQs(el, d, [
@@ -3745,6 +3835,17 @@ DIVES.push({ id: 'exo-replay', title: 'Replays', sub: 'Make the calls yourself: 
 // ════════ Checkpoint & exam question pools (first option is correct; shuffled on display) ════════
 const Q = (q, o, why) => ({ q, o, why });
 const POOLS = {
+  b0: [
+    Q('Which symbol do FLOWMTD traders chart?', ['MNQ1! or NQ1!', 'QQQ', 'SPY'], 'The continuous NQ / MNQ contract.'),
+    Q('What does a “D” badge next to the symbol mean?', ['Your data is delayed', 'Daily chart', 'Drawing mode'], 'Delayed quotes. Get real-time data before trading.'),
+    Q('Fastest way to switch to the 5-minute chart?', ['Type 5 on the chart and press Enter', 'Open a new tab', 'Change the symbol'], 'Type the number, press Enter.'),
+    Q('Where do you add Confluence Master?', ['Indicators → Invite-only scripts', 'The Trading Panel', 'Chart settings → Symbol'], 'Invite-only scripts, once you have access.'),
+    Q('Shortcut for a horizontal line?', ['Alt + H', 'Alt + A', 'Shift + click'], 'Alt + H. Alt + A is an alert, Shift + click measures.'),
+    Q('How do you measure points between two prices?', ['Hold Shift and click-drag', 'Draw a fib', 'Use the watchlist'], 'Shift + click-drag measures points, ticks and time.'),
+    Q('Why switch candles to neutral colors?', ['Green and red push emotional decisions', 'It’s faster', 'TradingView requires it'], 'You read structure, not feelings.'),
+    Q('What does Bar Replay do?', ['Replays a past day candle by candle for practice', 'Places trades for you', 'Shows tomorrow’s chart'], 'Practice on past days without risk.'),
+    Q('Where do you set New York time?', ['The clock at the bottom-right of the chart', 'The symbol search', 'Indicators'], 'Click the clock → (UTC-4) New York.'),
+  ],
   b1: [
     Q('What is 1 point on MNQ worth?', ['$2', '$20', '$0.50'], 'MNQ = $2/pt. NQ = $20/pt.'),
     Q('What is 1 point on NQ worth?', ['$20', '$2', '$5'], 'NQ = $20/pt, $5 per tick.'),
@@ -3864,6 +3965,7 @@ const POOLS = {
 };
 // Chart tasks for checkpoints/exams: one attempt each.
 const CHART_TASKS = {
+  b0: [{ q: 'Tap where you’d draw a <b>horizontal line</b> for the level price bounced from twice.', spec: { c: CH_SR }, hit: hitBand(21498, 21504, 'The ~21,500 level.', 'That’s not where price bounced.') }],
   b2: [
     { q: 'Tap the candle with the <b>longest upper wick</b>.', spec: { c: CH_WICK }, hit: hitCandle([6], 'Long rejection wick.', 'That wasn’t the longest upper wick.') },
     { q: 'Tap the candle where <b>sellers took control</b>.', spec: { c: CH_BEAR }, hit: hitCandle([5], 'Big red body.', 'Look for the biggest red body.') },
@@ -3959,10 +4061,11 @@ const progSave = () => { try { localStorage.setItem('fh-school', JSON.stringify(
 
 const L = (kind, id, title, sub, also) => ({ kind, id, title, sub, ...(also ? { also } : {}) });
 const LEVELS = [
-  { id: 'beginner', name: 'Beginner', tone: 'win', tag: 'Start here', who: 'Never traded before', desc: 'What NQ is, how to read a chart, how to place an order with a bracket, and exactly what one trade can cost you.', pass: 0.8, exam: { n: 12, charts: 2 }, modules: [
+  { id: 'beginner', name: 'Beginner', tone: 'win', tag: 'Start here', who: 'Never traded before', desc: 'Set up TradingView and your chart, then what NQ is, how to read a chart, how to place an order with a bracket, and exactly what one trade can cost you.', pass: 0.8, exam: { n: 12, charts: 2 }, modules: [
+    { id: 'b0', title: 'TradingView & your chart', lessons: [L('dive', 'tv', 'TradingView & your chart', 'Get TradingView, learn the screen, set up MNQ1!, colors, drawing tools, Confluence Master'), L('dive', 'setup', 'Platform Setup', 'New York time, paper trading, your 15/40 bracket')] },
     { id: 'b1', title: 'How futures & NQ work', lessons: [L('dive', 'futures', 'How futures & NQ work', 'Contracts, NQ vs MNQ, points and ticks, trading hours')] },
     { id: 'b2', title: 'Reading charts', lessons: [L('dive', 'charts', 'Reading charts', 'Candles, wicks, timeframes, trend, levels')] },
-    { id: 'b3', title: 'Your platform & orders', lessons: [L('dive', 'setup', 'Platform Setup', 'Symbol, New York time, paper trading, your 15/40 bracket'), L('ch', 'chart', 'Your chart, ticks & candles', 'Read a candle, know what a point is worth'), L('ch', 'connect', 'Connect & build your first order', 'Market vs limit, stop loss, take profit', ['order']), L('dive', 'orders', 'Orders & brackets', 'Market, limit, stop, OCO')] },
+    { id: 'b3', title: 'Orders & your first trade', lessons: [L('ch', 'chart', 'Your chart, ticks & candles', 'Read a candle, know what a point is worth'), L('ch', 'connect', 'Connect & build your first order', 'Market vs limit, stop loss, take profit', ['order']), L('dive', 'orders', 'Orders & brackets', 'Market, limit, stop, OCO')] },
     { id: 'b4', title: 'Risk basics', lessons: [L('dive', 'risk', 'Risk basics', 'Size from your stop, R, your daily stop'), L('ch', 'manage', 'Manage the trade', 'Working orders, breakeven, closing'), L('ch', 'limits', 'Your limits & risk math', 'How much one trade can cost you')] },
     { id: 'b5', title: 'Wrap-up', noCheck: true, lessons: [L('ch', 'end', 'The bare minimum', 'The rules to remember if you forget everything else')] },
   ] },
