@@ -9,7 +9,7 @@ test("school summary counts lessons, checkpoints and exams", () => {
   const b = s.levels[0];
   assert.equal(b.lessonsDone, 3); // futures dive + chart + connect/order
   assert.equal(b.checkpointsPassed, 1);
-  assert.equal(b.checkpoints, 4);
+  assert.equal(b.checkpoints, 5); // b0–b4 (wrap-up has none)
   assert.equal(s.levels[1].manualUnlock, true);
   assert.equal(s.current, "Beginner");
   assert.equal(s.attempts[0].label, "Checkpoint · How futures & NQ work");
