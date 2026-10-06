@@ -52,3 +52,6 @@ export function sessionsOf(sel: StrategySelection): Session[] {
 
 /** Journal "setup" choices: one per strategy, so actual results can be compared to the fixed win rates. */
 export const JOURNAL_SETUPS = SELECTABLE_STRATEGY_KEYS.map(strategyLabel);
+
+/** ECHO X ORBIT research stays private: never show its win rate (or anything derived from it) to members. */
+export const hideRate = (mode: string) => mode === "DAILY_LEVELS";
