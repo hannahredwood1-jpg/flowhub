@@ -56,7 +56,7 @@ export function RoadmapModal({ open, onClose, roadmap, onSaved }: { open: boolea
         <fieldset className="grid gap-3">
           <legend className="label mb-3 !text-ice">What are you trading?</legend>
           <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Strategy mode">
-            <ModeCard on={mode === "DAILY_LEVELS"} onClick={() => setMode("DAILY_LEVELS")} title="ECHO X ORBIT" sub="Backtested across 5 years · the Discord calls" />
+            <ModeCard on={mode === "DAILY_LEVELS"} onClick={() => setMode("DAILY_LEVELS")} title="ECHO X ORBIT" sub={`${pctTxt(STRATEGIES.DAILY_LEVELS.winRate)} win rate · the Discord calls`} />
             <ModeCard on={mode === "INDICATORS"} onClick={() => setMode("INDICATORS")} title="ASIAFLOW · NYFLOW" sub="ASIAFLOW and/or NYFLOW setups" />
           </div>
 
@@ -102,14 +102,14 @@ export function RoadmapModal({ open, onClose, roadmap, onSaved }: { open: boolea
             <select id="rm-inst" className="field" value={f.primaryInstrument} onChange={set("primaryInstrument")}>{Instruments.map((i) => <option key={i}>{i}</option>)}</select>
           </Field>
           <Field label="Typical stop (points)" htmlFor="rm-stop"><input id="rm-stop" type="number" min={0.25} step={0.25} className="field num" value={f.avgStopPoints} onChange={set("avgStopPoints")} /></Field>
-          {mode !== "DAILY_LEVELS" && <><div className="grid content-end">
+          <div className="grid content-end">
             <div className="label">Plan win rate</div>
             <div className="num mt-1 text-xl text-ice">{pctTxt(winRate)}</div>
           </div>
           <div className="grid content-end">
             <div className="label">Edge per trade</div>
             <div className={`num mt-1 text-xl ${edge > 0 ? "text-win" : "text-loss"}`}>{edge.toFixed(2)}R</div>
-          </div></>}
+          </div>
         </div>
         {mode === "INDICATORS" && sel.strategies.length > 1 && <p className="-mt-2 text-xs text-ink-3">Plan win rate is the average of the setups you picked.</p>}
 

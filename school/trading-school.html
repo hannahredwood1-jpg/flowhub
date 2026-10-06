@@ -3778,7 +3778,7 @@ const LEARN = {
 };
 
 DIVES.push({ id: 'exo-intro', title: 'ECHO X ORBIT', sub: 'The FLOWMTD model behind the daily calls in the Discord. Two engines, one set of rules.', secs: [
-  { id: 'hero', title: 'Two engines', body: '<p><b>ECHO X ORBIT</b> is the model behind the levels called out in the Discord. It has two engines that look for the same thing from different angles: a place where price is likely to turn <b>toward liquidity</b>.</p><ul><li><b>Echo</b>: a sweep, a change in delivery (CISD), and a <b>rejection block inside a fair value gap</b>.</li><li><b>Orbit</b>: a <b>big swing</b>, a fib, a deep pullback into the <b>OTE zone</b>, and an inversion on the leg in.</li></ul><p>It’s the most profitable model FLOWMTD has created, backtested across five years. Everything here is the concepts, so you can read the calls and recognise them yourself.</p>', w: (el, d) => { exoHero(el); wLearn(el, d, LEARN.flow); } },
+  { id: 'hero', title: 'Two engines', body: '<p><b>ECHO X ORBIT</b> is the model behind the levels called out in the Discord. It has two engines that look for the same thing from different angles: a place where price is likely to turn <b>toward liquidity</b>.</p><ul><li><b>Echo</b>: a sweep, a change in delivery (CISD), and a <b>rejection block inside a fair value gap</b>.</li><li><b>Orbit</b>: a <b>big swing</b>, a fib, a deep pullback into the <b>OTE zone</b>, and an inversion on the leg in.</li></ul><p>Together they’ve run at a <b>94% win rate</b>. It’s the most profitable model FLOWMTD has created, backtested across five years. Everything here is the concepts, so you can read the calls and recognise them yourself.</p>', w: (el, d) => { exoHero(el); wLearn(el, d, LEARN.flow); } },
   { id: 'liquidity', title: 'Liquidity and the draw', body: '<p>Before any engine: where are the orders, and where is price going?</p>', w: (el, d) => wLearn(el, () => wQs(el, d, [
     { q: 'Where do stop losses usually sit?', o: ['Just past obvious highs and lows', 'In the middle of a range', 'At round numbers only'], why: 'Past the obvious highs and lows: that’s the liquidity.' },
     { q: 'Price runs under an old low and snaps back. What was that?', o: ['A sweep of liquidity', 'A guaranteed reversal', 'A breakout'], why: 'A sweep. It’s step one for Echo, not an entry by itself.' },
@@ -4430,11 +4430,9 @@ const LEVELS = [
     { id: 'a1', title: 'Extended Learning', lessons: [L('dive', 'rs', 'Range Settlement', 'The 9:30 draw for the AM session'), L('ch', 'dl', 'Levels: bias, PLC, refine, limit vs confirm', 'Opening prices, PLC/PHC, refining, LRL & turtle soup')] },
     { id: 'a2', title: 'Models: H/L & PO3', lessons: [L('dive', 'hl-learn', 'H/L: the full breakdown', 'Range, execution window, sweep, two triggers, stop, target, A+ timing'), L('ch', 'hl', 'H/L replay', 'Range, sweep, gap, flip · runs in New York (range 7:00–9:25, A+ 9:30–10:00) and Asia (8 PM–12 AM)'), L('dive', 'po3-learn', 'PO3: the full breakdown', 'Accumulation, manipulation, distribution; trade with the trend; confluence'), L('ch', 'po3', 'PO3 replay', 'Accumulation, manipulation, distribution · New York (the 10:00 candle) and Asia (the 8 PM candle)', ['asia'])] },
   ] },
-  { id: 'exo', name: 'ECHO X ORBIT', tone: 'signal', tag: 'The FLOWMTD model', who: 'The most profitable model we’ve built · backtested across 5 years', desc: 'Echo and Orbit: the two engines behind every daily call, the shared rules, and replays where you make the call. Finish it to earn your certificate and unlock the bot.', pass: 0.8, modules: [
+  { id: 'exo', name: 'ECHO X ORBIT', tone: 'signal', tag: 'The FLOWMTD model', who: 'The 94% win rate model behind the Discord calls · backtested across 5 years', desc: 'Echo and Orbit: the two engines behind every daily call, the shared rules, and replays where you make the call. Finish it to earn your certificate and unlock the bot.', pass: 0.8, modules: [
     { id: 'x1', title: 'ECHO X ORBIT', lessons: [L('dive', 'exo-intro', 'Two engines', 'What ECHO X ORBIT is, Confluence Master setup, the four words'), L('dive', 'echo', 'Echo', 'Sweep, CISD, rejection block inside the FVG'), L('dive', 'orbit', 'Orbit', 'Big swing, fib, OTE, inversion on the leg in'), L('dive', 'exo-rules', 'The shared rules', 'The draw, 2× the stop, the 4H trend'), L('dive', 'exo-replay', 'Replays', 'One to take, one to skip')] },
-  ] },
-  { id: 'reward', reward: true, name: 'ECHO X ORBIT Bot', tone: 'signal', tag: 'Graduate reward', who: 'Your reward for finishing the school', desc: 'The private ECHO X ORBIT indicator and the FLOWMTD bot. Unlocked by your certificate, set up with Hannah on a 1-on-1 Zoom call.', modules: [
-    { id: 'r1', title: 'Bot & private indicator', noCheck: true, lessons: [L('dive', 'bot-reward', 'Set up your bot & indicator', 'What you’ve unlocked, what to have ready, and booking your Zoom onboarding with Hannah')] },
+    { id: 'x2', reward: true, title: 'Graduate reward: ECHO X ORBIT bot & private indicator', noCheck: true, lessons: [L('dive', 'bot-reward', 'Set up your bot & indicator', 'What you’ve unlocked, what to have ready, and booking your Zoom onboarding with Hannah')] },
   ] },
 ];
 const KIND_LABEL = { ch: 'Lesson', dive: 'Lesson' };
@@ -4484,7 +4482,6 @@ function reqs(l) {
   const tier = (label, filter, need) => { const t = practiceTierOf(PR.reps.filter(filter)); return { label, done: t >= need, detail: `Now: ${TIER_NAMES[t]}`, practice: true }; };
   if (l.id === 'intermediate') return [exam('beginner', 0.8), count('Size it: 10 correct reps', okReps('size'), 10), count('Order ticket: 10 correct reps', okReps('ticket'), 10)];
   if (l.id === 'advanced') { const n = PR.reps.length, acc = n ? PR.reps.slice(-40).filter((r) => r.ok).length / Math.min(40, n) : 0; return [exam('intermediate', 0.8), { label: '20 practice reps at 70%+ accuracy', done: n >= 20 && acc >= 0.7, detail: `${n} reps · ${Math.round(acc * 100)}%`, practice: true }, count('3-day daily reps streak', PR.streak, 3)]; }
-  if (l.id === 'reward') return [{ label: 'Earn your certificate: finish every section', done: schoolDone(), detail: schoolDone() ? 'Done' : 'Not yet' }];
   if (l.id === 'exo') return [exam('advanced', 0.85), tier('Silver in Set the limit', (r) => r.d === 'limit', 2), tier('Bronze in H/L', (r) => r.m === 'hl', 1), tier('Bronze in PO3 · New York', (r) => r.m === 'po3', 1)];
   return [];
 }
@@ -4492,12 +4489,13 @@ const bypass = () => SYNC.staff || LV_ST.all;
 const levelUnlocked = (l) => LEVELS.indexOf(l) === 0 || bypass() || SYNC.unlocks.includes(l.id) || reqs(l).every((r) => r.done);
 const ckPassed = (m) => !!(PROG.ck[m.id] && PROG.ck[m.id].pass);
 const moduleComplete = (m) => m.lessons.every(stepDone) && (m.noCheck || ckPassed(m));
-function moduleUnlocked(l, m) { if (!levelUnlocked(l)) return false; if (bypass()) return true; const i = l.modules.indexOf(m); return i === 0 || moduleComplete(l.modules[i - 1]); }
+const coreMods = (l) => l.modules.filter((m) => !m.reward);
+function moduleUnlocked(l, m) { if (!levelUnlocked(l)) return false; if (bypass()) return true; if (m.reward) return schoolDone(); const i = l.modules.indexOf(m); return i === 0 || moduleComplete(l.modules[i - 1]); }
 function lessonUnlocked(st) { const f = findLesson(st); if (!f) return true; if (bypass()) return true; if (!moduleUnlocked(f.l, f.m)) return false; const i = f.m.lessons.indexOf(f.x); return i === 0 || stepDone(f.m.lessons[i - 1]); }
 const checkUnlocked = (l, m) => moduleUnlocked(l, m) && (bypass() || m.lessons.every(stepDone));
-const examUnlocked = (l) => levelUnlocked(l) && (bypass() || l.modules.every(moduleComplete));
-const levelComplete = (l) => l.modules.every(moduleComplete) && (!l.exam || examPassed(l.id));
-function levelProg(l) { let d = 0, t = 0; for (const m of l.modules) { t += m.lessons.length + (m.noCheck ? 0 : 1); d += m.lessons.filter(stepDone).length + (m.noCheck || !ckPassed(m) ? 0 : 1); } if (l.exam) { t++; if (examPassed(l.id)) d++; } return [d, t]; }
+const examUnlocked = (l) => levelUnlocked(l) && (bypass() || coreMods(l).every(moduleComplete));
+const levelComplete = (l) => coreMods(l).every(moduleComplete) && (!l.exam || examPassed(l.id));
+function levelProg(l) { let d = 0, t = 0; for (const m of coreMods(l)) { t += m.lessons.length + (m.noCheck ? 0 : 1); d += m.lessons.filter(stepDone).length + (m.noCheck || !ckPassed(m) ? 0 : 1); } if (l.exam) { t++; if (examPassed(l.id)) d++; } return [d, t]; }
 
 // Remember finished lesson chapters across visits
 const _renderCard = renderCard;
@@ -4628,7 +4626,7 @@ function quizResult() {
 
 
 // ── Certificate of completion (every module, every exam, ECHO X ORBIT) ──
-const schoolDone = () => LEVELS.filter((l) => !l.reward).every((l) => l.modules.every(moduleComplete) && (!l.exam || examPassed(l.id)));
+const schoolDone = () => LEVELS.every((l) => coreMods(l).every(moduleComplete) && (!l.exam || examPassed(l.id)));
 function certCard() {
   if (!schoolDone()) return '';
   return `<div class="card lv-cert"><div class="card-in"><div class="eyebrow"><span class="hud" style="color:var(--signal)">Certificate of completion</span></div>
@@ -4703,7 +4701,7 @@ function graduateCard(first) {
     <h2 class="grad-h">You passed every module, every exam and ECHO X ORBIT.</h2>
     <p style="margin:0 0 12px;color:var(--ink2)">Your certificate of completion is ready.</p>
     <div class="w-row">${LIVE && SYNC.name ? '' : `<input class="in" id="cert-name" placeholder="Your name for the certificate" maxlength="40" value="${esc(SYNC.name || '')}" style="max-width:300px">`}<button type="button" class="btn primary big-cert" data-cert>✦ Get my certificate</button></div>
-    <p style="margin:14px 0 8px;color:var(--ink2)">Your reward is unlocked too: the private ECHO X ORBIT indicator and the bot.</p><button type="button" class="btn" data-level="reward">Claim your reward: set up the bot →</button></div></div>`;
+    <p style="margin:14px 0 8px;color:var(--ink2)">Your reward is unlocked too: the private ECHO X ORBIT indicator and the bot.</p><button type="button" class="btn" data-level="exo">Claim your reward: set up the bot →</button></div></div>`;
 }
 // Animated reveal: the certificate builds in, orbits keep moving, download from there.
 function revealCertificate() {
@@ -4731,7 +4729,7 @@ function previewToggle() { return LIVE && !SYNC.staff ? '' : SYNC.staff ? '<p cl
 function renderLevels(open) {
   const body = $('#lv-body');
   if (!open) {
-    body.innerHTML = `<div class="t-hero"><div><h1 class="t-title">Trading School</h1><p class="t-sub">Four sections, in order, then your reward. Each lesson unlocks the next, each module ends with a checkpoint, and each level ends with an exam. Everything is hands-on practice. Nothing uses real money.</p></div>${previewToggle()}</div>
+    body.innerHTML = `<div class="t-hero"><div><h1 class="t-title">Trading School</h1><p class="t-sub">Four sections, in order. Each lesson unlocks the next, each module ends with a checkpoint, and each level ends with an exam. Everything is hands-on practice. Nothing uses real money.</p></div>${previewToggle()}</div>
       <div class="lv-grid">${LEVELS.map((l, i) => { const [d, t] = levelProg(l), open = levelUnlocked(l); return `<button type="button" class="lv-card ${l.tone}${open ? '' : ' locked'}${l.id === 'exo' ? ' exo' : ''}" data-level="${l.id}">
         ${l.id === 'exo' ? '<span class="lv-exo" data-exo></span>' : ''}<span class="lv-n">0${i + 1}</span><span class="hud lv-tag">${open ? esc(l.tag) : '🔒 Locked'}</span><h2>${esc(l.name)}</h2><p class="lv-who">“${esc(l.who)}”</p><p>${esc(l.desc)}</p>
         ${open ? `<span class="dv-meta"><span class="pbar"><i style="width:${(d / t) * 100}%"></i></span><span class="hud num">${levelComplete(l) ? 'Complete ✓' : d ? `${d}/${t} done` : `${l.modules.length} module${l.modules.length > 1 ? 's' : ''} · Start →`}</span></span>` : `<span class="hud" style="color:var(--ink3)">To unlock</span>${reqPanel(l).replace(/<a [^>]*>.*?<\/a>/, '').replace(/<p class="hud lv-pnote">.*?<\/p>/, '')}`}</button>`; }).join('')}</div>
@@ -4752,10 +4750,12 @@ function renderLevels(open) {
       <div class="dv-meta" style="min-width:220px;margin:0"><span class="pbar"><i style="width:${(d / t) * 100}%"></i></span><span class="hud num">${d}/${t}</span></div></div>
     ${l.id === 'exo' ? '<div data-exo-hero></div>' : ''}
     ${unl ? '' : `<div class="card lv-lock"><div class="card-in"><div class="eyebrow"><span class="hud">🔒 Locked · to unlock ${esc(l.name)}</span></div>${reqPanel(l)}</div></div>`}
-    ${l.modules.map((m, mi) => { const mu = moduleUnlocked(l, m); return `<section class="lv-mod${mu ? '' : ' locked'}"><div class="lv-mh"><span class="hud">Module ${mi + 1}</span><h2>${esc(m.title)}</h2>${moduleComplete(m) ? '<span class="chipx win">Complete ✓</span>' : mu ? '' : '<span class="hud">🔒 Pass the module before</span>'}</div>
+    ${coreMods(l).map((m, mi) => { const mu = moduleUnlocked(l, m); return `<section class="lv-mod${mu ? '' : ' locked'}"><div class="lv-mh"><span class="hud">Module ${mi + 1}</span><h2>${esc(m.title)}</h2>${moduleComplete(m) ? '<span class="chipx win">Complete ✓</span>' : mu ? '' : '<span class="hud">🔒 Pass the module before</span>'}</div>
       <ol class="lv-path">${m.lessons.map((s, k) => lessonRow(s, k, m)).join('')}${ckRow(m)}</ol></section>`; }).join('')}
     ${exRow()}
     ${l.id === 'exo' ? certCard() : ''}
+    ${l.modules.filter((m) => m.reward).map((m) => { const mi = l.modules.indexOf(m); const mu = moduleUnlocked(l, m); return `<section class="lv-mod${mu ? '' : ' locked'}"><div class="lv-mh"><span class="hud">Module ${mi + 1}</span><h2>${esc(m.title)}</h2>${moduleComplete(m) ? '<span class="chipx win">Complete ✓</span>' : mu ? '' : '<span class="hud">🔒 Earn your certificate to unlock</span>'}</div>
+      <ol class="lv-path">${m.lessons.map((s, k) => lessonRow(s, k, m)).join('')}${ckRow(m)}</ol></section>`; }).join('')}
     ${nl ? `<button type="button" class="lv-terms" data-level="${nl.id}"><span class="hud">Next section</span><b>${esc(nl.name)}</b><span>${levelUnlocked(nl) ? `“${esc(nl.who)}”` : '🔒 See what unlocks it'}</span><span class="grow"></span><span aria-hidden="true">→</span></button>` : `<button type="button" class="lv-terms" data-terms><span class="hud">Keep sharp</span><b>Terminology quiz</b><span>Test yourself on every term.</span><span class="grow"></span><span aria-hidden="true">→</span></button>`}`;
   const eh = body.querySelector('[data-exo-hero]'); if (eh) exoHero(eh);
 }
