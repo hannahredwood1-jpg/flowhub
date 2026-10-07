@@ -18,7 +18,7 @@ export function Logo({ size = "sm" }: { size?: "sm" | "lg" }) {
 }
 
 export function AppShell({ viewer, active, children, links = { dashboard: "/dashboard", plan: "/plan", school: "/school.html", coach: "/coach" }, signOutHref = "/api/auth/signout" }: {
-  viewer: PersonDTO; active: "dashboard" | "plan" | "school" | "practice" | "coach"; children: React.ReactNode; links?: { dashboard: string; plan: string; school?: string; practice?: string; coach: string }; signOutHref?: string;
+  viewer: PersonDTO; active: "home" | "dashboard" | "plan" | "school" | "practice" | "coach"; children: React.ReactNode; links?: { home?: string; dashboard: string; plan: string; school?: string; practice?: string; coach: string }; signOutHref?: string;
 }) {
   const staff = viewer.role === "COACH" || viewer.role === "ADMIN";
   const tab = (href: string, key: typeof active, text: string) => (
@@ -40,6 +40,7 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
           <Logo />
           <nav className="flex items-center gap-1">
+            {links.home && tab(links.home, "home", "Home")}
             {tab(links.dashboard, "dashboard", "My Dashboard")}
             {tab(links.plan, "plan", "Trading Plan")}
             {links.school && tab(links.school, "school", "Trading School")}
