@@ -395,4 +395,49 @@ document.addEventListener('click',e=>{
 $('#v-exam').addEventListener('click',()=>{});
 $('#notesBtn')&&($('#notesBtn').onclick=()=>$('#notes').showModal());
 window.addEventListener('keydown',e=>{if(e.key==='Escape')$$('dialog[open]').forEach(d=>d.close())});
-route();pull();
+
+/* ============================================================
+   PRACTICE: the same generated charts and tasks as the modules, endless, with instant feedback and no exam
+============================================================ */
+const PM={hl:['m17'],po3:['m18'],dl:['m22'],asia:['m26'],exo:['m27','m28','m29','m30']};
+const PR={topic:'mixed',item:null,m:null,st:{},fb:null,checked:false,revealed:false,n:0,ok:0};
+const pracModel=id=>Object.keys(PM).find(k=>PM[k].includes(id));
+async function pracRep(ok){const m=pracModel(PR.m.id);if(!m)return;try{await fetch('/api/practice/rep',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({m,d:'school',ok,tags:[]})})}catch(e){}}
+function pracNext(){
+  const pool=PR.topic==='mixed'?MODS:PM[PR.topic]?MODS.filter(m=>PM[PR.topic].includes(m.id)):MODS.filter(m=>m.id===PR.topic),cand=pool.filter(m=>m.drills&&m.drills.length);
+  const m=pick(Math.random,cand),f=pick(Math.random,m.drills),r=mulberry(Math.floor(Math.random()*1e9));
+  PR.m=m;PR.item=fin(f(r),r);PR.st={};PR.fb=null;PR.checked=false;PR.revealed=false;pracPaint();pracPanel();
+}
+function pracPaint(){
+  ensureCharts();const it=PR.item,cs=chartsOf(it),has=cs.length>0;$('#v-lab').classList.toggle('nochart',!has);
+  if(!has)return;const two=cs.length>1;$('#chartHost2').hidden=!two;$('.chartcol').classList.toggle('dual',two);$$('[data-tf]').forEach(b=>b.hidden=true);
+  CH.size();if(two)CH2.size();loadChart(CH,it,0);if(two)loadChart(CH2,it,1);
+  const kind=K[it.kind];CH.marks=[];CH.taps=new Set();
+  if(kind.attach)kind.attach(CH,it,PR.st,()=>{const b=$('[data-check]');if(b)b.disabled=!itemHasAnswer(it,PR.st)});
+  TB.set(kind.tool||'cursor');$('#chartHint').textContent=kind.chart?'Use the tool selected on the left to answer. Scroll to zoom, drag with the cursor tool to pan.':'Read the chart, then answer in the panel.';
+  CH.fit();if(two)CH2.fit();$('#chartTf').textContent=(CH.stepMin*CH.k>=60?(CH.stepMin*CH.k/60)+'-hour candles':`${CH.stepMin*CH.k}m candles`);
+  if(PR.revealed&&kind.reveal)kind.reveal(CH,it);CH.draw();CH2.draw();
+}
+function pracPanel(){
+  const it=PR.item,kd=K[it.kind],g=PR.fb,box=$('#lesson');
+  const opts=[['mixed','Mixed: any topic'],['hl','H/L (NY ATM)'],['po3','PO3 · New York'],['dl','Extended Learning'],['asia','PO3 · Asia'],['exo','ECHO X ORBIT'],...MODS.map(m=>[m.id,`${m.n}. ${m.t}`])];
+  box.innerHTML=`<div class="les-h"><div class="hud">Practice · no exam, no pass mark</div><div class="h">Practice</div>
+   <div style="margin:10px 0 4px"><select id="pTopic" class="in">${opts.map(([v,t])=>`<option value="${v}" ${v===PR.topic?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
+   <div class="kv"><span class="chip ok">${PR.ok} right</span><span class="chip">${PR.n} done</span><span class="chip">${esc(it.topic||'Task')}</span></div></div>
+   <div class="les-b"><p style="color:var(--ink)"><b>${it.q}</b></p>${it.table&&it.kind!=='num'?`<table class="dw">${it.table}</table>`:''}${kd.html(it,PR.st,{res:PR.checked})}
+   ${g?`<div class="fb ${g.ok?'ok':'no'}"><b>${g.ok?'Right.':'Not quite.'}</b>${kd.fb?kd.fb(it,PR.st,g):''}<p>${it.why}</p></div>`:''}</div>
+   <div class="les-f">${g?`${!g.ok&&kd.reveal&&!PR.revealed?'<button class="btn" data-reveal>Show me</button>':''}<button class="btn primary" data-next>Next task →</button>`:`<button class="btn primary" data-check ${itemHasAnswer(it,PR.st)?'':'disabled'}>Check my answer</button><button class="btn ghost" data-next>Skip</button>`}</div>`;
+  $('#pTopic').onchange=e=>{PR.topic=e.target.value;pracNext()};
+  const b=$('[data-check]');
+  if(!PR.checked&&kd.bind)kd.bind($('.les-b',box),it,PR.st,()=>{const c=$('[data-check]');if(c)c.disabled=!itemHasAnswer(it,PR.st)},CH,()=>pracPanel());
+  const cb=$('[data-check]');if(cb)cb.onclick=()=>{PR.checked=true;PR.fb=gradeItem(it,PR.st);PR.n++;if(PR.fb.ok)PR.ok++;pracRep(PR.fb.ok);if(PR.fb.ok&&kd.reveal)kd.reveal(CH,it);pracPanel()};
+  const nx=$('[data-next]');if(nx)nx.onclick=pracNext;
+  const rv=$('[data-reveal]');if(rv)rv.onclick=()=>{PR.revealed=true;kd.reveal(CH,it);pracPanel()};
+}
+function initPractice(){
+  document.title='Practice · FLOWHUB';$$('main.view').forEach(m=>m.hidden=m.id!=='v-lab');
+  $('#crumb').innerHTML='<b>Practice</b><span class="dim">Pick a topic. Every task is a fresh chart and new numbers.</span><a href="/school" class="btn ghost sm" style="margin-left:auto">Trading School →</a>';
+  setTimeout(pracNext,40);
+}
+
+if(window.PRACTICE)initPractice();else{route();pull()}

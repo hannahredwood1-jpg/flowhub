@@ -107,17 +107,8 @@ writeFileSync(path.join(appDir, "assets/app.js.gz"), gzipSync(Buffer.from(js), {
 writeFileSync(path.join(appDir, "assets/app.css.gz"), gzipSync(Buffer.from(css), { level: 9 }));
 writeFileSync(path.join(appDir, "assets/school.html.gz"), gzipSync(Buffer.from(school), { level: 9 }));
 writeFileSync(path.join(appDir, "assets/classic.html.gz"), gzipSync(Buffer.from(classic), { level: 9 }));
-// Practice page (self-contained document; <!--FH_NAV--> is filled in by the server)
-let practice = readFileSync(path.join(root, "practice/practice.html"), "utf8");
-{
-  const s0 = practice.indexOf("<script>") + 8, s1 = practice.lastIndexOf("</script>");
-  const pjs = (await esbuild.transform(practice.slice(s0, s1), { minify: true, target: "es2020", legalComments: "none" })).code;
-  practice = practice.slice(0, s0) + pjs + practice.slice(s1);
-  const c0 = practice.indexOf("<style>") + 7, c1 = practice.indexOf("</style>");
-  const pcss = (await esbuild.transform(practice.slice(c0, c1), { loader: "css", minify: true })).code;
-  practice = practice.slice(0, c0) + pcss + practice.slice(c1);
-  practice = practice.replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/css2\?[^"]*">/, fontLink).replace("</head>", `<style>${skin}</style></head>`);
-}
+// Practice page: the school page in practice mode (same engine, endless generated tasks); <!--FH_NAV--> is filled in by the server
+const practice = school.replace("<title>Trading School · FLOWHUB</title>", "<title>Practice · FLOWHUB</title>").replace("<script>", "<script>window.PRACTICE=1;</script><script>");
 writeFileSync(path.join(appDir, "assets/practice.html.gz"), gzipSync(Buffer.from(practice), { level: 9 }));
 console.log(`practice ${(practice.length / 1024).toFixed(0)}KB`);
 writeFileSync(path.join(appDir, "package.json"), JSON.stringify({
