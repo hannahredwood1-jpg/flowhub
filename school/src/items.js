@@ -140,9 +140,22 @@ K.ticket={chart:false,
   fb(it,st,g){return g.ok?'':`<ul>${(g.errs||[]).map(x=>`<li>${x}</li>`).join('')}</ul>`},
   reveal(ch,it){const s=it.spec,i0=Math.max(0,ch.C.length-1);ch.ov=[...(it.ov||[]),{t:'hl',p:s.type==='market'?it.mkt:s.entry,i0,col:'#3ee0a1',text:'entry'},{t:'hl',p:s.stop,i0,col:'#3ee0a1',text:'stop'},{t:'hl',p:s.target,i0,col:'#3ee0a1',text:'target',scale:true}];ch.draw()}};
 
+/* ---- replay: the chart plays forward one decision at a time. Every decision has to be right. o[0] is the right answer. ---- */
+const rpUnlocked=(it,st)=>{const a=st.a||[];let n=0;while(n<it.stops.length&&a[n]!=null)n++;return Math.min(it.stops.length,n+1)};
+K.replay={chart:false,
+  html(it,st,o={}){const a=st.a||(st.a=[]);st.ord=st.ord||it.stops.map(s=>shuf(s.o.map((_,i)=>i)));const un=rpUnlocked(it,st);
+    return `<div class="rps">${it.stops.slice(0,un).map((s,k)=>{const g=o.res&&a[k]!=null;return `<div class="rp ${g?(a[k]===0?'ok':'no'):''}"><div class="hud">Decision ${k+1} of ${it.stops.length} · ${hhmm(it.t0+s.at*5)}</div><p style="color:var(--ink);margin:4px 0 8px">${s.q}</p><div class="opts">${st.ord[k].map(i=>`<button type="button" class="opt ${o.res?(i===0?'right':(a[k]===i?'wrong':'')):(a[k]===i?'sel':'')}" data-rk="${k}" data-ri="${i}" ${o.res?'disabled':''}>${s.o[i]}</button>`).join('')}</div></div>`}).join('')}</div>`},
+  bind(root,it,st,chg,ch,redraw){const a=st.a||(st.a=[]);
+    const upd=()=>{if(!ch)return;const un=rpUnlocked(it,st),end=it.stops[un-1].at;ch.setData(it.full.slice(0,end+1),{t0:it.t0,stepMin:5,k:1,fit:true});ch.ov=[...(it.ov||[]),...it.stops.slice(0,un).flatMap(s=>s.ov||[])];ch.draw()};
+    root.addEventListener('click',e=>{const b=e.target.closest('button[data-rk]');if(!b||b.disabled)return;a[+b.dataset.rk]=+b.dataset.ri;const rp=$(".rps",root);if(rp)rp.outerHTML=K.replay.html(it,st);upd();chg()});upd()},
+  has:(it,st)=>{const a=st.a||[];return it.stops.every((_,k)=>a[k]!=null)},
+  grade:(it,st)=>{const a=st.a||[],wrong=it.stops.map((_,k)=>a[k]===0?-1:k).filter(k=>k>=0);return{ok:wrong.length===0,wrong}},
+  correct:it=>it.stops.map((s,k)=>`${k+1}. ${s.o[0]}`).join(' · '),
+  fb(it,st,g){return g.ok?'':`<ul>${g.wrong.map(k=>`<li>Decision ${k+1}: ${it.stops[k].o[0]}. ${it.stops[k].why||''}</li>`).join('')}</ul>`}};
+
 const gradeItem=(it,st)=>{try{return K[it.kind].grade(it,st)}catch(e){return{ok:false}}};
 const itemHasAnswer=(it,st)=>K[it.kind].has(it,st);
-const TYPE_LABEL={mcq:'Concept',tap:'Chart task',rect:'Chart task',level:'Chart task',num:'Calculation',sort:'Classify',order:'Put in order',time:'Time window',spot:'Find it on screen',ticket:'Place the order'};
+const TYPE_LABEL={mcq:'Concept',tap:'Chart task',rect:'Chart task',level:'Chart task',num:'Calculation',sort:'Classify',order:'Put in order',time:'Time window',spot:'Find it on screen',ticket:'Place the order',replay:'Replay: make the calls'};
 
 /* ---- shared question builders reused by several modules ---- */
 const dataTable=cs=>`<tr><th>Candle</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr>${cs.map((c,i)=>`<tr><td>${i+1}</td><td>${fm(c.o)}</td><td>${fm(c.h)}</td><td>${fm(c.l)}</td><td>${fm(c.c)}</td></tr>`).join('')}`;
