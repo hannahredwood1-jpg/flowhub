@@ -8,6 +8,7 @@ import { PlanPanel } from "./PlanPanel";
 import { TradingPlanCard } from "./Projections";
 import { PlanCard } from "./TradingPlan";
 import { SchoolCard } from "./SchoolCard";
+import { LocalAccounts } from "./LocalAccounts";
 import { PracticeCard } from "./PracticeCard";
 import { JournalTable } from "./JournalTable";
 import { StatsStrip } from "./MemberDashboard";
@@ -42,6 +43,7 @@ export function CoachPortal({ initial, today }: { initial: CoachDirectoryRow[]; 
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      <LocalAccounts />
       <section className="hud animate-rise grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-end">
         <div>
           <div className="label flex items-center gap-2 !text-ice"><IconUsers size={13} /> Coach portal</div>

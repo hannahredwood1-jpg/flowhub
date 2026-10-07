@@ -183,7 +183,26 @@ function Linking({ onChange }: { onChange: (v: boolean) => void }) {
   return null;
 }
 
-export function LoginScreen({ action, notice }: { action: (fd: FormData) => void | Promise<void>; notice?: string }) {
+function LocalLogin({ onLocal }: { onLocal: (u: string, p: string) => Promise<string | undefined> }) {
+  const [open, setOpen] = useState(false);
+  const [u, setU] = useState("");
+  const [p, setP] = useState("");
+  const [err, setErr] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="max-w-md text-left text-sm text-ink-3 underline underline-offset-4 hover:text-ink-2">Sign in without Discord</button>;
+  return (
+    <form className="grid max-w-md gap-3 border-l border-line-2 pl-4" onSubmit={async (e) => { e.preventDefault(); setBusy(true); setErr(await onLocal(u, p)); setBusy(false); }}>
+      <div className="label">Sign in without Discord</div>
+      <input className="border border-line-2 bg-panel px-3 py-2.5 text-[15px] text-ink outline-none focus:border-ice-dim" placeholder="Username" autoComplete="username" value={u} onChange={(e) => setU(e.target.value)} />
+      <input className="border border-line-2 bg-panel px-3 py-2.5 text-[15px] text-ink outline-none focus:border-ice-dim" placeholder="Password" type="password" autoComplete="current-password" value={p} onChange={(e) => setP(e.target.value)} />
+      {err && <p role="alert" className="border-l-2 border-loss bg-loss/10 px-3 py-2 text-sm text-loss">{err}</p>}
+      <button type="submit" disabled={busy || !u || !p} className="btn-primary px-4 py-2.5 disabled:opacity-50">{busy ? "Signing in…" : "Sign in"}</button>
+      <p className="text-xs text-ink-3">Your coach creates this login for you. Ask them if you do not have one.</p>
+    </form>
+  );
+}
+
+export function LoginScreen({ action, notice, onLocal }: { action: (fd: FormData) => void | Promise<void>; notice?: string; onLocal?: (u: string, p: string) => Promise<string | undefined> }) {
   const [linking, setLinking] = useState(false);
   return (
     <main className="login-scope relative min-h-dvh overflow-hidden">
@@ -240,6 +259,7 @@ export function LoginScreen({ action, notice }: { action: (fd: FormData) => void
               We only read your Discord name, avatar and your roles in the FLOWMTD server. No email, no messages.
             </p>
           </form>
+          {onLocal && <LocalLogin onLocal={onLocal} />}
         </section>
 
         {/* Right: uplink scanner + market sessions */}

@@ -836,6 +836,7 @@ var accessFor = (roleIds) => {
   return "ok";
 };
 function avatarUrl(discordId, hash) {
+  if (!/^\d+$/.test(discordId)) return "https://cdn.discordapp.com/embed/avatars/0.png";
   if (!hash) return `https://cdn.discordapp.com/embed/avatars/${Number(BigInt(discordId) >> 22n) % 6}.png`;
   return `https://cdn.discordapp.com/avatars/${discordId}/${hash}.${hash.startsWith("a_") ? "gif" : "png"}?size=128`;
 }
@@ -1025,6 +1026,10 @@ async function currentUser(c) {
     const p = await verify(token, CFG.sessionSecret, "HS256");
     const [u] = await sql`select * from "User" where id = ${p.uid}`;
     if (!u) return null;
+    if (String(u.discordId).startsWith("local:")) {
+      const [a] = await sql`select disabled, "expiresAt" from "LocalAccount" where "userId" = ${u.id}`;
+      return a && !a.disabled && !(a.expiresAt && new Date(a.expiresAt) < /* @__PURE__ */ new Date()) ? u : null;
+    }
     const synced = await syncRolesIfStale(u);
     const gr = synced.guildRoleIds;
     const roleIds = Array.isArray(gr) ? gr.map(String) : typeof gr === "string" ? gr.replace(/[{}"]/g, "").split(",").filter(Boolean) : [];
@@ -1101,6 +1106,27 @@ app.get("/auth/callback", async (c) => {
 app.get("/auth/logout", (c) => {
   deleteCookie(c, "fh_session", { path: "/" });
   return c.redirect("/");
+});
+var loginFails = /* @__PURE__ */ new Map();
+app.post("/auth/local", async (c) => {
+  const origin = c.req.header("origin");
+  if (origin && new URL(origin).host !== (c.req.header("host") ?? "")) throw new HttpError(403, "Bad origin");
+  const b = await c.req.json().catch(() => ({}));
+  const username = String(b.username ?? "").trim().toLowerCase().slice(0, 40), pw = String(b.password ?? "").slice(0, 200);
+  const key = `${(c.req.header("x-forwarded-for") ?? "").split(",")[0].trim()}|${username}`, f = loginFails.get(key);
+  if (f && f.n >= 5 && f.until > Date.now()) throw new HttpError(429, "Too many attempts. Try again in 15 minutes.");
+  const [a] = await sql`select "userId", "passwordHash", disabled, "expiresAt" from "LocalAccount" where username = ${username}`;
+  const ok = a ? await Bun.password.verify(pw, a.passwordHash) : (await Bun.password.verify(pw, "$argon2id$v=19$m=65536,t=2,p=1$c29tZXNhbHRzb21lc2FsdA$RdescudvJCsgt3ub+b+dWRWJTmaaJObG1d6wZq7Xz2E").catch(() => false), false);
+  if (!ok) {
+    loginFails.set(key, { n: (f && f.until > Date.now() ? f.n : 0) + 1, until: Date.now() + 15 * 6e4 });
+    throw new HttpError(401, "Invalid username or password");
+  }
+  if (a.disabled || a.expiresAt && new Date(a.expiresAt) < /* @__PURE__ */ new Date()) throw new HttpError(403, "Your access has ended. Ask your coach.");
+  loginFails.delete(key);
+  await sql`update "User" set "lastLoginAt" = now() where id = ${a.userId}`;
+  const jwt = await sign({ uid: a.userId, exp: Math.floor(Date.now() / 1e3) + SESSION_DAYS * 86400 }, CFG.sessionSecret, "HS256");
+  setCookie(c, "fh_session", jwt, { ...cookieOpts, maxAge: SESSION_DAYS * 86400 });
+  return c.json({ ok: true });
 });
 app.use("/api/*", async (c, next) => {
   if (c.req.method !== "GET" && c.req.method !== "HEAD") {
@@ -1398,6 +1424,47 @@ app.patch("/api/admin/catalog/:id", async (c) => {
   await patchRow("AccountTemplate", before.id, { ...d, updatedById: c.get("user").id });
   await sql`update "AccountTemplate" set "lastVerifiedAt" = now() where id = ${before.id}`;
   await audit(c.get("user").id, "CATALOG_UPDATE", before.id, { changes: d });
+  return c.json({ ok: true });
+});
+var expiryFrom = (days) => {
+  if (days === null || days === void 0 || days === "") return null;
+  const n2 = Math.round(Number(days));
+  if (!(n2 >= 1 && n2 <= 3650)) throw new HttpError(400, "Days must be 1\u20133650, or blank for no limit");
+  return new Date(Date.now() + n2 * 864e5);
+};
+app.get("/api/local-accounts", async (c) => {
+  staffOnly(c);
+  const rows = await sql`select u.id, a.username, u."globalName" as name, a.disabled, a."expiresAt", u."lastLoginAt", a."createdAt" from "LocalAccount" a join "User" u on u.id = a."userId" order by a."createdAt" desc`;
+  return c.json(rows.map((r) => ({ ...r, expiresAt: r.expiresAt ? new Date(r.expiresAt).toISOString() : null, lastLoginAt: r.lastLoginAt ? new Date(r.lastLoginAt).toISOString() : null, createdAt: new Date(r.createdAt).toISOString() })));
+});
+app.post("/api/local-accounts", async (c) => {
+  staffOnly(c);
+  const b = await c.req.json();
+  const username = String(b.username ?? "").trim().toLowerCase(), name = String(b.name ?? "").trim(), pw = String(b.password ?? "");
+  if (!/^[a-z0-9._-]{3,30}$/.test(username)) throw new HttpError(400, "Username: 3\u201330 letters, numbers, . _ -");
+  if (name.length < 1 || name.length > 60) throw new HttpError(400, "Enter a name");
+  if (pw.length < 8 || pw.length > 100) throw new HttpError(400, "Password must be 8\u2013100 characters");
+  const exp = expiryFrom(b.days);
+  const [dupe] = await sql`select 1 as x from "LocalAccount" where username = ${username}`;
+  if (dupe) throw new HttpError(409, "That username is taken");
+  const id = randomUUID();
+  await sql`insert into "User" (id, "discordId", username, "globalName", role, "guildRoleIds", "isGuildMember", "rolesSyncedAt", "lastLoginAt")
+            values (${id}, ${"local:" + username}, ${username}, ${name}, 'MEMBER'::"Role", ${pgArray([])}::text[], true, now(), now())`;
+  await sql`insert into "LocalAccount" ("userId", username, "passwordHash", "expiresAt", "createdById") values (${id}, ${username}, ${await Bun.password.hash(pw)}, ${exp}, ${c.get("user").id})`;
+  return c.json({ id });
+});
+app.patch("/api/local-accounts/:id", async (c) => {
+  staffOnly(c);
+  const id = c.req.param("id"), b = await c.req.json();
+  const [a] = await sql`select "userId" from "LocalAccount" where "userId" = ${id}`;
+  if (!a) throw new HttpError(404, "Not found");
+  if (typeof b.disabled === "boolean") await sql`update "LocalAccount" set disabled = ${b.disabled} where "userId" = ${id}`;
+  if ("days" in b) await sql`update "LocalAccount" set "expiresAt" = ${expiryFrom(b.days)} where "userId" = ${id}`;
+  if (b.password !== void 0) {
+    if (b.password.length < 8 || b.password.length > 100) throw new HttpError(400, "Password must be 8\u2013100 characters");
+    await sql`update "LocalAccount" set "passwordHash" = ${await Bun.password.hash(b.password)} where "userId" = ${id}`;
+  }
+  if (b.name !== void 0 && b.name.trim()) await sql`update "User" set "globalName" = ${b.name.trim().slice(0, 60)} where id = ${id}`;
   return c.json({ ok: true });
 });
 app.all("/api/*", () => {
