@@ -187,6 +187,30 @@ function renderLesson(){
   if(L.step===2)updateMarkPanel();
   initSims($('#lesson'));
 }
+/* ---------- hints: a nudge before the answer (practice only, never in exams) ---------- */
+const HINTS=[
+ [/echo · the sweep|the sweep|sweep/i,'A sweep trades THROUGH the level, taking the stops resting there. Look for the first candle whose wick passes the marked line.'],
+ [/cisd/i,'Find the dashed line: the open of the move that made the sweep. The CISD is the first candle that CLOSES back through it, not just wicks through.'],
+ [/rejection block|echo · the rejection/i,'The rejection block is a candle that wicks INTO the gap and closes back out of it. Look for the long wick inside the shaded zone.'],
+ [/fair value gap|fvg|the leg-in gap/i,'A fair value gap is three candles: the space between candle 1\'s wick and candle 3\'s wick that candle 2 never traded in. Find the big middle candle first.'],
+ [/inversion|inverse|ifg/i,'Inversion needs a CLOSE back through the gap, not a wick. Find the first candle whose body finishes on the other side of it.'],
+ [/ote|fib/i,'Anchor 0 at the end of the swing and 1 at the start. The OTE band is the 0.62 to 0.79 retracement: roughly two thirds to four fifths of the way back.'],
+ [/stop|draw|target/i,'The stop goes where the idea is proven wrong (just past the wick or swept extreme). The target is the next liquidity: the old high or low, at least 2× the stop away for ECHO X ORBIT.'],
+ [/range|a\+|window/i,'The range uses the highest WICK and lowest WICK inside the shaded window, not the closes. Mark both before the window ends.'],
+ [/break of structure|bos|structure/i,'A break of structure needs a CLOSE beyond the level. A wick through it is only a sweep.'],
+ [/premium|discount|equilibrium/i,'Draw the swing, find the 50% line. Above it is premium (look for shorts), below it is discount (look for longs).'],
+ [/smt/i,'Compare the two indexes at the same moment: one takes the high or low, the other fails to. That disagreement is the signal.'],
+ [/plc|phc/i,'A PLC is a swing low inside a bullish gap that held, and no candle closed through the gap. For a long, your level sits below it.'],
+ [/range settlement|rs/i,'RS forms at the 9:30 open. Open below it means the draw is up, above means down. The fill is the first candle to trade to the line.'],
+ [/asia|key level|manipulation/i,'First find the key-level gap that lines up with the draw. The manipulation dips (or pushes) into it, then you wait for the IFG close.'],
+ [/ticks|points|point value|bracket|order|risk|size/i,'Work it in order: points × dollars per point × contracts. One point is 4 ticks; MNQ is $2 a point, NQ $20. Stops go below a long and above a short.'],
+ [/1:1|breakeven|trail|mistake|managing/i,'At 1:1 the stop moves to the entry, and a stop only ever moves toward profit. Trail behind the last higher low (or lower high), not every candle.'],
+ [/expectancy|break-even|streak|maths|math/i,'Break-even win rate = risk ÷ (risk + reward). Expectancy = win rate × win − loss rate × loss. Count carefully, one trade at a time.'],
+ [/replay|make the call/i,'Run the checklist in order: with the 4H trend? Which engine? Is the draw at least 2× the stop? One missing box means skip.'],
+ [/screen|tradingview|shortcut|setup/i,'Think about where you would actually click in TradingView: the top bar for symbol and timeframe, the left bar for drawing, the bottom for orders and the clock.'],
+];
+const KIND_HINT={tap:'Use the select tool (target icon) and click the candle, then check it against the marked lines.',rect:'Use the rectangle tool. Cover the candles the zone spans and put the top and bottom edges on the wicks.',level:'Use the horizontal line tool and click at the exact price. Check the price scale on the right.',mcq:'Rule out the options that contradict the definition first. Which one is a requirement, not just a nice-to-have?',num:'Write the formula first, then plug in the numbers one at a time.',sort:'Decide the rule that separates the groups, then apply it to each item.',order:'Start with what must happen first, and work forward from there.',time:'Drag across the bar from the start time to the end time. Check the labels along the bar.',spot:'Think about where that tool lives: top bar, left toolbar, right side or bottom.',ticket:'Side first (long or short), then the order type, then the prices: entry, stop (past the entry on the losing side), target.',replay:'Answer each decision before the next candles appear. What does the model say you do at this exact point?'};
+const hintFor=it=>{const h=HINTS.find(([re])=>re.test((it.topic||'')+' '+(it.q||'').slice(0,80)));return h?h[1]:(KIND_HINT[it.kind]||'Re-read the question slowly and match it to the lesson.')};
 function newDrill(){
   const m=LAB.m,f=m.drills[LAB.dn++%m.drills.length],r=mulberry(Math.floor(Math.random()*1e9));
   LAB.drill={item:fin(f(r),r),st:{},fb:null,checked:false,revealed:false};
@@ -197,9 +221,10 @@ function updateMarkPanel(){
   const d=L.drill,it=d.item,kd=K[it.kind],g=d.fb;
   box.innerHTML=`<div class="kv" style="margin-top:0">${[0,1,2].map(i=>`<span class="chip ${i<L.dd?'ok':i===L.dd?'live':''}">${i<L.dd?'✓':i+1}</span>`).join('')}<span class="chip">${esc(it.topic||'Task')}</span></div>
     <p style="color:var(--ink);margin-top:10px"><b>${it.q}</b></p>${it.table&&it.kind!=='num'?`<table class="dw">${it.table}</table>`:''}${kd.html(it,d.st,{res:d.checked})}
+    ${d.hint&&!g?`<div class="fb"><b>Hint.</b> <span>${hintFor(it)}</span></div>`:''}
     ${g?`<div class="fb ${g.ok?'ok':'no'}"><b>${g.ok?'Right.':'Not quite.'}</b>${kd.fb?kd.fb(it,d.st,g):''}<p>${it.why}</p></div>`:''}
     <div class="row">${g?(g.ok?`<button class="btn primary" data-nextdrill>${L.dd>=3?'Finish':'Next task'} →</button>`:`${kd.reveal&&!d.revealed?'<button class="btn" data-reveal>Show me</button>':''}<button class="btn primary" data-skip>Try a new task</button>`)
-        :`<button class="btn primary" data-check ${itemHasAnswer(it,d.st)?'':'disabled'}>Check my answer</button><button class="btn ghost" data-skip>Skip</button>`}</div>
+        :`<button class="btn primary" data-check ${itemHasAnswer(it,d.st)?'':'disabled'}>Check my answer</button><button class="btn" data-hint ${d.hint?'disabled':''}>Hint</button><button class="btn ghost" data-skip>Skip</button>`}</div>
     ${g&&!g.ok?'<p class="dim" style="font-size:13px">A task counts when it is right on the first check, so read the feedback, then try a new one.</p>':''}`;
   if(!d.checked&&kd.bind)kd.bind(box,it,d.st,()=>{const b=$('[data-check]',box);if(b)b.disabled=!itemHasAnswer(it,d.st)},CH,()=>updateMarkPanel());
 }
@@ -219,6 +244,7 @@ $('#lesson').addEventListener('click',e=>{
     return updateMarkPanel()}
   if(t.closest('[data-reveal]')){const d=L.drill;d.revealed=true;K[d.item.kind].reveal(CH,d.item);return updateMarkPanel()}
   if(t.closest('[data-nextdrill]')){if(L.dd>=3){L.drill=null;return updateMarkPanel()}newDrill();paintChart(true);return updateMarkPanel()}
+  if(t.closest('[data-hint]')){L.drill.hint=true;return updateMarkPanel()}
   if(t.closest('[data-skip]')){newDrill();paintChart(true);return updateMarkPanel()}
   if(t.closest('[data-more]')){newDrill();paintChart(true);return updateMarkPanel()}
   if(t.closest('[data-sub]')){L.sub=true;storeTxt();return renderLesson()}
@@ -425,7 +451,7 @@ async function pracRep(ok){const m=pracModel(PR.m.id);if(!m)return;try{await fet
 function pracNext(){
   const pool=PR.topic==='mixed'?MODS:PM[PR.topic]?MODS.filter(m=>PM[PR.topic].includes(m.id)):MODS.filter(m=>m.id===PR.topic),cand=pool.filter(m=>m.drills&&m.drills.length);
   const m=pick(Math.random,cand),f=pick(Math.random,m.drills),r=mulberry(Math.floor(Math.random()*1e9));
-  PR.m=m;PR.item=fin(f(r),r);PR.st={};PR.fb=null;PR.checked=false;PR.revealed=false;pracPaint();pracPanel();
+  PR.m=m;PR.item=fin(f(r),r);PR.st={};PR.fb=null;PR.checked=false;PR.revealed=false;PR.hint=false;pracPaint();pracPanel();
 }
 function pracPaint(){
   ensureCharts();const it=PR.item,cs=chartsOf(it),has=cs.length>0;$('#v-lab').classList.toggle('nochart',!has);
@@ -444,12 +470,13 @@ function pracPanel(){
    <div style="margin:10px 0 4px"><select id="pTopic" class="in">${opts.map(([v,t])=>`<option value="${v}" ${v===PR.topic?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
    <div class="kv"><span class="chip ok">${PR.ok} right</span><span class="chip">${PR.n} done</span><span class="chip">${esc(it.topic||'Task')}</span></div></div>
    <div class="les-b"><p style="color:var(--ink)"><b>${it.q}</b></p>${it.table&&it.kind!=='num'?`<table class="dw">${it.table}</table>`:''}${kd.html(it,PR.st,{res:PR.checked})}
-   ${g?`<div class="fb ${g.ok?'ok':'no'}"><b>${g.ok?'Right.':'Not quite.'}</b>${kd.fb?kd.fb(it,PR.st,g):''}<p>${it.why}</p></div>`:''}</div>
-   <div class="les-f">${g?`${!g.ok&&kd.reveal&&!PR.revealed?'<button class="btn" data-reveal>Show me</button>':''}<button class="btn primary" data-next>Next task →</button>`:`<button class="btn primary" data-check ${itemHasAnswer(it,PR.st)?'':'disabled'}>Check my answer</button><button class="btn ghost" data-next>Skip</button>`}</div>`;
+   ${PR.hint&&!g?`<div class="fb"><b>Hint.</b> <span>${hintFor(it)}</span></div>`:''}${g?`<div class="fb ${g.ok?'ok':'no'}"><b>${g.ok?'Right.':'Not quite.'}</b>${kd.fb?kd.fb(it,PR.st,g):''}<p>${it.why}</p></div>`:''}</div>
+   <div class="les-f">${g?`${!g.ok&&kd.reveal&&!PR.revealed?'<button class="btn" data-reveal>Show me</button>':''}<button class="btn primary" data-next>Next task →</button>`:`<button class="btn primary" data-check ${itemHasAnswer(it,PR.st)?'':'disabled'}>Check my answer</button><button class="btn" data-hint ${PR.hint?'disabled':''}>Hint</button><button class="btn ghost" data-next>Skip</button>`}</div>`;
   $('#pTopic').onchange=e=>{PR.topic=e.target.value;pracNext()};
   const b=$('[data-check]');
   if(!PR.checked&&kd.bind)kd.bind($('.les-b',box),it,PR.st,()=>{const c=$('[data-check]');if(c)c.disabled=!itemHasAnswer(it,PR.st)},CH,()=>pracPanel());
   const cb=$('[data-check]');if(cb)cb.onclick=()=>{PR.checked=true;PR.fb=gradeItem(it,PR.st);PR.n++;if(PR.fb.ok)PR.ok++;pracRep(PR.fb.ok);if(PR.fb.ok&&kd.reveal)kd.reveal(CH,it);pracPanel()};
+  const hb=$('[data-hint]');if(hb)hb.onclick=()=>{PR.hint=true;pracPanel()};
   const nx=$('[data-next]');if(nx)nx.onclick=pracNext;
   const rv=$('[data-reveal]');if(rv)rv.onclick=()=>{PR.revealed=true;kd.reveal(CH,it);pracPanel()};
 }
