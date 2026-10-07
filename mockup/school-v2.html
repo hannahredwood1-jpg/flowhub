@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="en" data-theme="modern">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FLOWHUB Trading School · Mockup v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{color-scheme:dark}
+:root{--signal:#ff6a00;--win:#3ee0a1;--loss:#ff5d73;--ice:#8cc4ff;--lag:#b69cff;--gold:#ffc861;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace}
+/* ---------- two skins, one structure ---------- */
+[data-theme=modern]{--bg:#0a0d12;--panel:#10141b;--panel2:#151a23;--chart:#0d1117;--line:#212935;--line2:#2c3646;
+  --ink:#e9edf3;--ink2:#9ba7b8;--ink3:#69768a;--r:10px;--f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-head:"Inter",system-ui,sans-serif;--f-hud:"Inter",system-ui,sans-serif;--hw:650;--ht:none;--hl:-.02em;--hudt:none;--hudl:0;--glow:none;--fs:15px}
+[data-theme=play]{--bg:#030405;--panel:#0a0d12;--panel2:#0e1219;--chart:#05070a;--line:#1a2029;--line2:#28313e;
+  --ink:#e6ebf2;--ink2:#929fb2;--ink3:#5f6a78;--r:2px;--f-body:"Rajdhani","Barlow Semi Condensed",system-ui,sans-serif;
+  --f-head:"Archivo","Arial Black",system-ui,sans-serif;--f-hud:"Orbitron","Eurostile",system-ui,sans-serif;--hw:900;--ht:uppercase;--hl:.02em;--hudt:uppercase;--hudl:.16em;--glow:0 0 22px rgba(255,106,0,.28);--fs:17px}
+body{background:var(--bg);color:var(--ink);font:400 var(--fs)/1.55 var(--f-body);min-height:100vh;-webkit-font-smoothing:antialiased}
+[data-theme=play] body{background:radial-gradient(1200px 500px at 50% -10%,#0b1320 0,transparent 70%),var(--bg)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+b,strong{font-weight:650}
+.only-play{display:none!important}
+[data-theme=play] .only-play{display:var(--pd,block)!important}
+.xp{--pd:flex}
+[data-theme=play] .only-modern{display:none!important}
+.hud{font-family:var(--f-hud);text-transform:var(--hudt);letter-spacing:var(--hudl);font-size:11px;font-weight:600;color:var(--ink2)}
+[data-theme=modern] .hud{font-size:12px;font-weight:600;letter-spacing:0}
+.num,.mono{font-family:var(--f-mono)}
+.h{font-family:var(--f-head);font-weight:var(--hw);text-transform:var(--ht);letter-spacing:var(--hl);line-height:1.08}
+.muted{color:var(--ink2)}.dim{color:var(--ink3)}
+.f{color:var(--signal)}
+
+/* header */
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;padding:10px 24px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);min-height:58px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;line-height:1}
+.logo{font-family:"Archivo",system-ui,sans-serif;font-weight:900;font-size:22px;letter-spacing:.01em}
+.logo b{color:var(--signal);font-weight:900}
+.brand small{font-family:var(--f-mono);font-size:8.5px;letter-spacing:.2em;color:var(--ink3);margin-top:3px}
+.tabs{display:flex;gap:2px;margin-left:8px}
+.tabs button{padding:8px 14px;border-radius:var(--r);color:var(--ink2);font-weight:550;font-size:14px;border-bottom:2px solid transparent}
+[data-theme=play] .tabs button{font-family:var(--f-hud);text-transform:uppercase;letter-spacing:.14em;font-size:11px;border-radius:0}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:var(--ink);background:var(--panel2);border-bottom-color:var(--signal)}
+.top-r{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.seg{display:flex;border:1px solid var(--line2);border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--panel)}
+.seg button{padding:6px 13px;font-size:13px;font-weight:600;color:var(--ink2)}
+[data-theme=play] .seg button{font-family:var(--f-hud);text-transform:uppercase;letter-spacing:.12em;font-size:10px}
+.seg button.on{background:var(--signal);color:#160a00}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:5px 11px;border:1px solid var(--line2);border-radius:99px;font-size:12.5px;color:var(--ink2);background:var(--panel)}
+[data-theme=play] .pill{border-radius:0;font-family:var(--f-hud);text-transform:uppercase;letter-spacing:.1em;font-size:10px}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ice)}
+.xp{display:flex;align-items:center;gap:10px}
+.xp .bar{width:96px;height:5px;background:var(--line2);border-radius:9px;overflow:hidden}.xp .bar i{display:block;height:100%;width:62%;background:linear-gradient(90deg,var(--signal),var(--gold))}
+
+/* primitives */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:1px solid var(--line2);border-radius:var(--r);background:var(--panel2);font-weight:600;font-size:14px;transition:.15s;white-space:nowrap}
+[data-theme=play] .btn{font-family:var(--f-hud);text-transform:uppercase;letter-spacing:.12em;font-size:11px;padding:10px 16px}
+.btn:hover:not(:disabled){border-color:var(--ink3);transform:translateY(-1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--signal);border-color:var(--signal);color:#160a00}
+[data-theme=play] .btn.primary{box-shadow:var(--glow)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:6px 11px;font-size:12.5px}
+.btn.danger{border-color:color-mix(in srgb,var(--loss) 55%,var(--line2));color:var(--loss)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:99px;border:1px solid var(--line2);font-size:12px;color:var(--ink2);font-weight:550}
+[data-theme=play] .chip{border-radius:0;font-family:var(--f-hud);text-transform:uppercase;letter-spacing:.1em;font-size:9.5px}
+.chip.ok{color:var(--win);border-color:color-mix(in srgb,var(--win) 45%,var(--line2))}
+.chip.live{color:var(--signal);border-color:color-mix(in srgb,var(--signal) 55%,var(--line2))}
+.chip.bad{color:var(--loss);border-color:color-mix(in srgb,var(--loss) 45%,var(--line2))}
+.pbar{height:4px;border-radius:9px;background:var(--line2);overflow:hidden}.pbar i{display:block;height:100%;background:var(--ice);border-radius:9px;transition:width .5s}
+.view{max-width:1360px;margin:0 auto;padding:26px 24px 70px}
+.view.lab,.view.exam{max-width:none;padding:0}
+[hidden]{display:none!important}
+
+/* ---------- course map ---------- */
+.hero{padding:6px 0 22px;display:grid;grid-template-columns:1.25fr 1fr;gap:28px;align-items:end}
+.hero h1{font-size:clamp(30px,4.2vw,50px)}
+.hero p{max-width:60ch;margin-top:12px;color:var(--ink2)}
+.stats{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.stat{min-width:118px;padding:12px 15px}
+.stat b{display:block;font-family:var(--f-mono);font-size:24px;font-weight:500;letter-spacing:-.02em}
+.stat span{font-size:12px;color:var(--ink3)}
+.loop{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:12px}
+.loop>div{padding:15px 18px;border-right:1px solid var(--line);position:relative}
+.loop>div:last-child{border:0}
+.loop i{font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--signal)}
+.loop b{display:block;font-size:15px;margin:3px 0 3px}
+.loop p{font-size:13px;color:var(--ink2);line-height:1.45}
+.rule{display:flex;gap:12px;align-items:flex-start;padding:13px 18px;margin-bottom:24px;border:1px solid color-mix(in srgb,var(--signal) 38%,var(--line));background:color-mix(in srgb,var(--signal) 6%,var(--panel));border-radius:var(--r);font-size:14px}
+.rule svg{flex:none;margin-top:2px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:26px;align-items:start}
+.phase{margin-bottom:26px}
+.phase-h{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.phase-h .pn{font-family:var(--f-mono);font-size:12px;color:var(--ink3)}
+.phase-h h2{font-size:17px}
+[data-theme=play] .phase-h h2{font-size:19px}
+.phase-h p{margin-left:auto;font-size:13px;color:var(--ink3);text-align:right;max-width:46ch}
+.mods{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--panel)}
+.mod{border-bottom:1px solid var(--line);position:relative}
+.mod:last-child{border-bottom:0}
+.mod-h{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;width:100%;text-align:left;padding:14px 16px}
+.mod-h:hover{background:var(--panel2)}
+.mod .num{font-family:var(--f-mono);font-size:13px;color:var(--ink3)}
+.mod-t b{display:block;font-size:15.5px;letter-spacing:-.01em}
+.mod-t small{display:block;color:var(--ink2);font-size:13px;margin-top:1px}
+.mod-m{display:flex;align-items:center;gap:10px}
+.wk{font-family:var(--f-mono);font-size:11px;color:var(--ink3)}
+.mod.locked .mod-t b,.mod.locked .num{color:var(--ink2)}
+.mod.locked{opacity:.78}
+.mod.active{box-shadow:inset 3px 0 0 var(--signal)}
+.mod-b{padding:4px 16px 18px 74px;display:grid;grid-template-columns:1fr 1fr;gap:22px;background:linear-gradient(var(--panel2),var(--panel))}
+.mod-b h4{margin-bottom:6px}
+.mod-b ul{list-style:none;font-size:13.5px;color:var(--ink2)}
+.mod-b li{padding:3px 0 3px 18px;position:relative}
+.mod-b li::before{content:"";position:absolute;left:3px;top:.85em;width:6px;height:1px;background:var(--ink3)}
+.mod-b p{font-size:13.5px;color:var(--ink2)}
+.mod-b .act{grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pcheck{margin:2px 0 0;padding:10px 14px;border:1px dashed var(--line2);border-radius:var(--r);font-size:13px;color:var(--ink3);display:flex;gap:10px;align-items:center}
+.aside{position:sticky;top:78px;display:flex;flex-direction:column;gap:14px}
+.aside .card{padding:16px 18px}
+.aside h3{font-size:14px;margin-bottom:8px}
+.aside ol,.aside ul{padding-left:18px;font-size:13.5px;color:var(--ink2)}
+.aside li{margin:5px 0}
+.next-card{border-color:color-mix(in srgb,var(--signal) 45%,var(--line));background:linear-gradient(160deg,color-mix(in srgb,var(--signal) 9%,var(--panel)),var(--panel))}
+.next-card .h{font-size:22px;margin:4px 0 8px}
+.weeks{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;color:var(--ink2)}
+.weeks b{font-family:var(--f-mono);font-weight:500;color:var(--ink3);font-size:12px}
+.pcx{margin:6px 0 0;padding:10px 16px;font-size:13px;color:var(--ink3);display:flex;gap:10px;align-items:center;border:1px dashed var(--line2);border-radius:var(--r);margin-top:8px}
+/* playful map */
+[data-theme=play] .mods{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;border:0;background:none;overflow:visible}
+[data-theme=play] .mod{border:1px solid var(--line);border-top:2px solid var(--tone,var(--ice));background:linear-gradient(180deg,var(--panel2),var(--panel));overflow:hidden}
+[data-theme=play] .mod:last-child{border-bottom:1px solid var(--line)}
+[data-theme=play] .mod .num{position:absolute;right:10px;top:-2px;font-family:var(--f-head);font-weight:900;font-size:66px;line-height:1;color:color-mix(in srgb,var(--tone,var(--ice)) 17%,transparent);pointer-events:none}
+[data-theme=play] .mod-h{grid-template-columns:1fr;gap:8px;padding:18px 18px 12px}
+[data-theme=play] .mod-t b{font-family:var(--f-head);font-weight:900;text-transform:uppercase;letter-spacing:.02em;font-size:20px;max-width:80%}
+[data-theme=play] .mod-m{justify-content:space-between}
+[data-theme=play] .mod-b{padding:6px 18px 18px;grid-template-columns:1fr}
+[data-theme=play] .mod.active{box-shadow:var(--glow)}
+[data-theme=play] .loop{border:1px solid var(--line)}
+[data-theme=play] .loop b{font-family:var(--f-head);text-transform:uppercase;font-weight:900}
+
+/* ---------- lesson workspace (TradingView-style) ---------- */
+.lab{display:flex;flex-direction:column;height:calc(100vh - 59px);min-height:640px}
+.tvbar{display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.tvbar .sym{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;font-weight:650;font-size:14px}
+.tvbar .sym small{color:var(--ink3);font-weight:400;font-size:12px}
+.tvbar .sep{width:1px;height:20px;background:var(--line2);margin:0 4px}
+.tvb{padding:5px 9px;border-radius:6px;font-size:13px;color:var(--ink2);font-weight:550}
+.tvb:hover:not(:disabled){background:var(--panel2);color:var(--ink)}
+.tvb.on{color:var(--ice);background:color-mix(in srgb,var(--ice) 12%,transparent)}
+.tvb:disabled{opacity:.35;cursor:not-allowed}
+.tvbar .sp{flex:1}
+.tvbar .tz{font-family:var(--f-mono);font-size:11.5px;color:var(--ink3)}
+.lab-grid{flex:1;display:grid;grid-template-columns:46px minmax(0,1fr) 410px;min-height:0}
+.tools{display:flex;flex-direction:column;gap:4px;padding:8px 5px;border-right:1px solid var(--line);background:var(--panel)}
+.tools button{width:34px;height:34px;display:grid;place-items:center;border-radius:6px;color:var(--ink2)}
+.tools button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.tools button:hover{background:var(--panel2);color:var(--ink)}
+.tools button.on{background:color-mix(in srgb,var(--ice) 15%,transparent);color:var(--ice)}
+.tools.h{flex-direction:row;border:0;background:none;padding:0;gap:4px;font-family:inherit;text-transform:none;letter-spacing:0}
+.chartcol{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0}
+.tvc{position:relative;flex:1;min-height:300px;background:var(--chart);overflow:hidden}
+.tvc canvas{position:absolute;inset:0;display:block;touch-action:none}
+.tv-leg{position:absolute;left:10px;top:8px;font-size:12px;display:flex;gap:10px;flex-wrap:wrap;pointer-events:none;font-family:var(--f-mono);z-index:2;text-shadow:0 0 6px var(--chart),0 0 2px var(--chart)}
+.tv-leg b{color:var(--ink);font-family:var(--f-body);font-weight:650}
+.tv-leg i{font-style:normal;color:var(--ink2)}
+.tv-leg span.up{color:var(--ice)}
+.tvfoot{display:flex;gap:14px;align-items:center;padding:6px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--ink3);font-family:var(--f-mono)}
+.tvfoot .sp{flex:1}
+.lesson{border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+.les-h{padding:16px 20px 12px;border-bottom:1px solid var(--line)}
+.les-h .h{font-size:25px;margin:3px 0 12px}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.steps button{text-align:left;padding:0;display:flex;flex-direction:column;gap:5px;color:var(--ink3);font-size:11.5px;font-weight:600}
+.steps button i{display:block;height:3px;border-radius:9px;background:var(--line2)}
+.steps button.done i{background:var(--win)}
+.steps button.on{color:var(--ink)}
+.steps button.on i{background:var(--signal)}
+[data-theme=play] .steps button{font-family:var(--f-hud);text-transform:uppercase;letter-spacing:.1em;font-size:9px}
+.les-b{flex:1;overflow:auto;padding:16px 20px 20px;font-size:14.5px}
+[data-theme=play] .les-b{font-size:16.5px}
+.les-b h3{font-size:15px;margin:20px 0 6px;font-weight:650;color:var(--ink)}
+[data-theme=play] .les-b h3{font-family:var(--f-head);text-transform:uppercase;letter-spacing:.04em;font-weight:800;font-size:14px}
+.les-b h3:first-child{margin-top:0}
+.les-b p{margin:7px 0;color:var(--ink2)}
+.les-b p b,.les-b li b{color:var(--ink)}
+.les-b ul,.les-b ol{padding-left:19px;margin:6px 0;color:var(--ink2)}
+.les-b li{margin:4px 0}
+.les-f{display:flex;gap:10px;justify-content:space-between;align-items:center;padding:12px 20px;border-top:1px solid var(--line)}
+.callout{margin:12px 0;padding:11px 14px;border-radius:var(--r);border:1px solid var(--line2);background:var(--panel2);font-size:14px}
+.callout.def{border-left:3px solid var(--ice)}
+.callout.warn{border-left:3px solid var(--loss)}
+.callout.key{border-left:3px solid var(--signal)}
+.callout .hud{display:block;margin-bottom:3px}
+.callout p{margin:3px 0}
+.model{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.model span{padding:6px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:12.5px;color:var(--ink3)}
+.model span.me{border-color:var(--signal);color:var(--ink);background:color-mix(in srgb,var(--signal) 9%,transparent)}
+.diag{display:block;width:100%;max-width:360px;margin:10px auto;background:var(--chart);border:1px solid var(--line);border-radius:var(--r)}
+.opts{display:flex;flex-direction:column;gap:7px;margin:10px 0}
+.opt{display:block;width:100%;text-align:left;padding:11px 14px;border:1px solid var(--line2);border-radius:var(--r);background:var(--panel2);font-size:14.5px;transition:.12s;color:var(--ink)}
+[data-theme=play] .opt{font-size:16.5px}
+.opt:hover:not(:disabled){border-color:var(--ink3)}
+.opt.sel{border-color:var(--signal);background:color-mix(in srgb,var(--signal) 10%,var(--panel2))}
+.opt.right{border-color:var(--win);background:color-mix(in srgb,var(--win) 10%,var(--panel2))}
+.opt.wrong{border-color:var(--loss);background:color-mix(in srgb,var(--loss) 10%,var(--panel2))}
+.fb{margin:10px 0;padding:10px 13px;border-radius:var(--r);border:1px solid var(--line2);font-size:14px}
+.fb.ok{border-color:color-mix(in srgb,var(--win) 50%,var(--line2));background:color-mix(in srgb,var(--win) 7%,var(--panel2))}
+.fb.no{border-color:color-mix(in srgb,var(--loss) 50%,var(--line2));background:color-mix(in srgb,var(--loss) 7%,var(--panel2))}
+.fb p{margin:3px 0;color:var(--ink2)}
+.fb li{color:var(--ink2)}
+textarea,input.in{width:100%;padding:11px 13px;border:1px solid var(--line2);border-radius:var(--r);background:var(--chart);color:var(--ink);font:inherit;font-size:14.5px;resize:vertical}
+textarea:focus,input.in:focus{outline:none;border-color:var(--ice)}
+.wc{font-family:var(--f-mono);font-size:11.5px;color:var(--ink3);margin:4px 0 12px;text-align:right}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:7px 0;color:var(--ink2);font-size:14px;cursor:pointer}
+.chk input{margin-top:5px;accent-color:var(--signal)}
+.req{list-style:none;padding:0!important}
+.req li{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.req .tick{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line2);display:grid;place-items:center;font-size:11px;flex:none}
+.req li.ok .tick{background:var(--win);border-color:var(--win);color:#032;}
+.cap{padding:10px 13px;border-left:3px solid var(--signal);background:var(--panel2);border-radius:0 var(--r) var(--r) 0;margin:10px 0;font-size:14px}
+.cap b{color:var(--ink)}
+.kv{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+
+/* ---------- exam ---------- */
+.exam{min-height:calc(100vh - 59px)}
+.ex-wrap{max-width:1180px;margin:0 auto;padding:26px 24px 70px}
+.ex-intro{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start}
+.ex-intro h1{font-size:clamp(28px,3.4vw,42px)}
+.ex-intro .card{padding:20px 22px}
+.rules{list-style:none;counter-reset:r}
+.rules li{counter-increment:r;display:grid;grid-template-columns:30px 1fr;gap:6px;padding:9px 0;border-bottom:1px solid var(--line);color:var(--ink2);font-size:14.5px}
+.rules li:last-child{border:0}
+.rules li::before{content:counter(r,decimal-leading-zero);font-family:var(--f-mono);font-size:12px;color:var(--signal);padding-top:2px}
+.rules li b{color:var(--ink)}
+.ex-grid{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:22px;align-items:start}
+.ex-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.ex-head .h{font-size:20px}
+.clock{margin-left:auto;font-family:var(--f-mono);font-size:19px;letter-spacing:.02em}
+.clock.low{color:var(--loss)}
+.exq{padding:22px 24px}
+.exq-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.exq-t{font-size:17px;line-height:1.5;margin-bottom:12px}
+[data-theme=play] .exq-t{font-size:20px}
+.flag{margin-left:auto;font-size:12.5px;padding:4px 10px;border:1px solid var(--line2);border-radius:99px;color:var(--ink2)}
+.flag.on{color:var(--gold);border-color:var(--gold)}
+.exq .tvc{height:250px;flex:none;border:1px solid var(--line);border-radius:var(--r)}
+.exq .tvc.tall{height:380px}
+.dw{width:100%;border-collapse:collapse;font-family:var(--f-mono);font-size:12.5px;margin:10px 0 4px}
+.dw th,.dw td{padding:5px 10px;text-align:right;border-bottom:1px solid var(--line)}
+.dw th{color:var(--ink3);font-weight:500}.dw td:first-child,.dw th:first-child{text-align:left;color:var(--ink2)}
+.nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0}
+.nav button{aspect-ratio:1;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--f-mono);font-size:13px;color:var(--ink3);position:relative}
+.nav button.ans{color:var(--ink);background:var(--panel2);border-color:var(--ink3)}
+.nav button.cur{border-color:var(--signal);color:var(--signal)}
+.nav button.fl::after{content:"";position:absolute;right:4px;top:4px;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.ex-nav{display:flex;gap:10px;margin-top:18px;align-items:center}
+.res-top{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;padding:24px 26px;margin-bottom:18px}
+.score{font-family:var(--f-mono);font-size:56px;font-weight:500;letter-spacing:-.04em;line-height:1}
+.score small{font-size:20px;color:var(--ink3)}
+.topic{display:grid;grid-template-columns:150px 1fr 48px;gap:12px;align-items:center;padding:6px 0;font-size:14px;color:var(--ink2)}
+.topic .pbar{height:7px}
+.topic .pbar i.bad{background:var(--loss)}.topic .pbar i.good{background:var(--win)}
+.rev{padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);margin:10px 0;background:var(--panel2);font-size:14px}
+.rev p{margin:4px 0;color:var(--ink2)}.rev b{color:var(--ink)}
+.reset{padding:20px 24px;border:1px solid color-mix(in srgb,var(--loss) 45%,var(--line));background:color-mix(in srgb,var(--loss) 5%,var(--panel));border-radius:var(--r);margin:18px 0}
+
+/* misc */
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--panel2);border:1px solid var(--line2);padding:10px 18px;border-radius:var(--r);z-index:80;transition:.25s;font-size:14px;box-shadow:0 8px 30px #0008}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+dialog{margin:auto;max-width:640px;width:calc(100% - 32px);background:var(--panel);color:var(--ink);border:1px solid var(--line2);border-radius:var(--r);padding:0}
+dialog::backdrop{background:#000a}
+dialog .in{padding:22px 26px;max-height:80vh;overflow:auto;font-size:14.5px}
+dialog h2{font-size:22px;margin-bottom:8px}dialog h4{margin:16px 0 4px;font-size:14px}
+dialog p,dialog li{color:var(--ink2);margin:4px 0}dialog ul{padding-left:19px}
+.mockwrap{position:relative}
+.mock{position:absolute;right:0;top:calc(100% + 8px);z-index:60;width:230px;display:flex;flex-direction:column;gap:4px;background:var(--panel);border:1px solid var(--line2);padding:10px;border-radius:var(--r);box-shadow:0 12px 40px #000a}
+.mock .hud{margin-bottom:4px}
+.mock button{padding:7px 10px;text-align:left;border:1px solid var(--line2);border-radius:6px;color:var(--ink2);font-size:13px;font-family:var(--f-body);text-transform:none;letter-spacing:0}
+.mock button:hover{color:var(--ink);border-color:var(--ink3)}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.view>*,.les-b>*,.ex-wrap>*{animation:pop .3s ease both}
+@media(max-width:1060px){
+  .cols,.hero,.ex-intro,.ex-grid{grid-template-columns:1fr}.aside{position:static}.stats{justify-content:flex-start}
+  .lab{height:auto}.lab-grid{grid-template-columns:46px 1fr}.chartcol{min-height:440px}.lesson{grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}
+  [data-theme=play] .mods{grid-template-columns:1fr}.loop{grid-template-columns:1fr 1fr}.mod-b{grid-template-columns:1fr;padding-left:16px}
+}
+@media(max-width:620px){.top{padding:8px 14px}.view{padding:18px 14px 60px}.loop{grid-template-columns:1fr}.mod-h{grid-template-columns:30px 1fr}.mod-m{grid-column:2}.res-top{grid-template-columns:1fr}.topic{grid-template-columns:110px 1fr 40px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><div class="logo"><b>F</b>LOWHUB</div><small>BY FLOWMTD TRADING</small></div>
+  <nav class="tabs" id="tabs">
+    <button data-view="map" class="on">Course map</button>
+    <button data-view="lab">Lesson</button>
+    <button data-view="exam">Exam</button>
+  </nav>
+  <div class="top-r">
+    <span class="pill"><span class="dot"></span>Practice · no real money</span>
+    <span class="xp only-play"><span class="hud">Analyst II</span><span class="bar"><i></i></span><span class="hud num">2,140 XP</span></span>
+    <div class="seg" id="themeSeg" role="group" aria-label="Look"><button data-t="modern" class="on">Modern</button><button data-t="play">Playful</button></div>
+    <button class="btn ghost sm" id="notesBtn">About</button>
+    <div class="mockwrap"><button class="btn ghost sm" id="mockBtn" aria-expanded="false">Mockup tools ▾</button>
+      <div class="mock" id="mock" hidden><span class="hud">Jump around the demo</span>
+        <button data-m="ready">Mark all lesson steps done</button><button data-m="pass">Simulate exam: pass</button><button data-m="fail">Simulate exam: fail (restart)</button><button data-m="reset">Reset demo</button></div></div>
+  </div>
+</header>
+
+<!-- ===================== COURSE MAP ===================== -->
+<main id="v-map" class="view">
+  <section class="hero">
+    <div>
+      <div class="hud" style="margin-bottom:8px">Trading School · Beginner to funded-ready</div>
+      <h1 class="h">Learn to trade, <span class="f">A to Z.</span></h1>
+      <p>Sixteen modules, in order. Each one teaches a single idea, makes you apply it on a real chart, makes you explain it in your own words, and then tests you. You don't move on by clicking through. You move on by proving it.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+  <section class="card loop">
+    <div><i>01</i><b>Learn it</b><p>One concept, built from the one before it. Worked example on a live chart.</p></div>
+    <div><i>02</i><b>Mark it</b><p>Do it yourself on the chart with drawing tools. Instant feedback, as many tries as you need.</p></div>
+    <div><i>03</i><b>Explain it</b><p>Write the idea in your own words. If you can't explain it, you don't know it yet.</p></div>
+    <div><i>04</i><b>Prove it</b><p>Module exam. No hints, no feedback until you submit, new questions every attempt.</p></div>
+  </section>
+  <div class="rule">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--signal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
+    <div><b>Fail an exam and the module restarts.</b> You re-do the lessons, and the exam is a different set: different charts, different numbers, different questions. There is no memorising your way through. Every phase also ends with a cumulative check that pulls from earlier modules.</div>
+  </div>
+  <div class="cols">
+    <div id="phases"></div>
+    <aside class="aside" id="aside"></aside>
+  </div>
+</main>
+
+<!-- ===================== LESSON WORKSPACE ===================== -->
+<main id="v-lab" class="view lab" hidden>
+  <div class="tvbar">
+    <div class="sym"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>NQ1! <small>Nasdaq 100 E-mini · CME</small></div>
+    <span class="sep"></span>
+    <button class="tvb" disabled title="1m arrives with the full build">1m</button>
+    <button class="tvb on" data-tf="1">5m</button>
+    <button class="tvb" data-tf="3">15m</button>
+    <button class="tvb" disabled title="Full build">1H</button>
+    <button class="tvb" disabled title="Full build">4H</button>
+    <button class="tvb" disabled title="Full build">D</button>
+    <span class="sep"></span>
+    <button class="tvb" id="candleBtn" title="Neutral candles so red and green do not bias you (Module 2)">Candles: neutral</button>
+    <button class="tvb" disabled title="Indicators are introduced in later modules">Indicators</button>
+    <button class="tvb" disabled title="Replay unlocks in the capstone">Replay</button>
+    <span class="sp"></span>
+    <span class="tz">New York · ET (UTC−5)</span>
+  </div>
+  <div class="lab-grid">
+    <div id="tvLeft"></div>
+    <section class="chartcol"><div id="chartHost" class="tvc"></div>
+      <div class="tvfoot"><span id="chartHint">Drag to pan · scroll to zoom · double-click to reset</span><span class="sp"></span><span id="chartTf">5m · each candle = 5 minutes</span></div>
+    </section>
+    <aside class="lesson" id="lesson"></aside>
+  </div>
+</main>
+
+<!-- ===================== EXAM ===================== -->
+<main id="v-exam" class="view exam" hidden><div class="ex-wrap" id="exBody"></div></main>
+
+<div id="toast" role="status"></div>
+<dialog id="dlg"><div class="in" id="dlgBody"></div></dialog>
+<dialog id="notes"><div class="in">
+  <h2 class="h">About this mockup</h2>
+  <p>A clickable mockup, not the real build. Nothing here saves or syncs. <b>Module 6 (Fair Value Gaps)</b> is fully playable end to end, including the exam and the fail-and-restart flow. Every module from your curriculum is on the map.</p>
+  <h4>What's different from today's school</h4>
+  <ul>
+    <li><b>Two looks, same app.</b> Modern is the default. Playful keeps the HUD feel and adds ranks and XP. Flip any time with the switch at the top.</li>
+    <li><b>Teaching first.</b> Every lesson is learn → see it annotated on a chart → mark it yourself → explain it in writing → exam.</li>
+    <li><b>TradingView-style chart</b> with a crosshair, OHLC legend, price axis, drawing tools, pan/zoom and a time-frame switch. Neutral candles by default, as your curriculum recommends.</li>
+    <li><b>Exams that mean something.</b> Charts and numbers are generated fresh each attempt. No feedback until you submit. Fail and the module restarts.</li>
+  </ul>
+  <h4>Try this</h4>
+  <ul>
+    <li>Course map → open Module 6 → <b>Continue</b>. Walk the five steps.</li>
+    <li>In <b>Mark it</b>, pick the rectangle tool and drag over a gap, then <b>Check my marks</b>.</li>
+    <li>Use the dashed <b>Mockup controls</b> (bottom right) to jump straight to a pass or fail result.</li>
+  </ul>
+  <div style="margin-top:18px;display:flex;justify-content:flex-end"><button class="btn primary" onclick="this.closest('dialog').close()">Got it</button></div>
+</div></dialog>
+
+
+<script>
+/* ============================================================
+   helpers
+============================================================ */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const el=h=>{const t=document.createElement('template');t.innerHTML=h.trim();return t.content.firstElementChild};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mulberry=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const shuf=(a,r=Math.random)=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const q4=x=>Math.round(x*4)/4;
+const fm=(p,d=2)=>Number(p).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const theme=()=>document.documentElement.dataset.theme;
+const T=(modern,play)=>theme()==='play'?play:modern;
+const words=s=>(s.trim().match(/\S+/g)||[]).length;
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2300)}
+const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`};
+
+/* ============================================================
+   curriculum  (source: Beginner Trading Curriculum A to Z, 16 modules)
+============================================================ */
+const PH=[
+ {n:'Foundations',d:'Mindset and the chart: the vocabulary everything else uses.',tone:'#3ee0a1'},
+ {n:'Liquidity',d:'Where orders rest, and why price is drawn to them.',tone:'#8cc4ff'},
+ {n:'Structure & imbalance',d:'Confirming a sweep, and spotting where price keeps going.',tone:'#b69cff'},
+ {n:'Context & timing',d:'Cross-checking with a second index, and knowing when to look.',tone:'#ffc861'},
+ {n:'Business, bias & discipline',d:'Funded accounts, daily bias, risk, and the behaviour that keeps you trading.',tone:'#ff6a00'},
+ {n:'Synthesis',d:'The full order-flow model, run on real trades.',tone:'#ff6a00'}];
+const MODS=[
+ {t:'Trading Mindset',ph:0,wk:1,out:'Explain what trading is, and what it is not.',
+  ls:['What day trading actually means','Skill first, money second','Why "I want money today" blows accounts','Losses are lessons, not failures','Technical vs fundamental traders'],
+  task:'Write the definition of day trading in your own words, then list 3 habits of "I\'m here to make money today" vs 3 of "I\'m here to get better today".'},
+ {t:'Chart Reading Basics',ph:0,wk:1,out:'Read any candle on any time frame.',
+  ls:['Set up TradingView (neutral candles, New York time)','Candlestick anatomy: open, high, low, close','Time frames are just resolution','Highs and lows','Trends: up, down, sideways'],
+  task:'Set up your chart, then mark 5 highs, 5 lows, 5 uptrends and 5 downtrends.'},
+ {t:'Liquidity Explained',ph:1,wk:2,out:'Say where orders are resting, and why price goes there.',
+  ls:['Liquidity = resting orders','Why price is drawn to orders','Two stacks of orders at every high and low','Retail vs smart money','A sweep is an opportunity, not a guarantee'],
+  task:'Find 5 examples where price swept a high or low and reversed. Label what was resting there.'},
+ {t:'Advanced Liquidity',ph:1,wk:2,out:'Rank which highs and lows are worth watching.',
+  ls:['The three sessions in New York time','Session highs and lows','Previous day high and low','Low-resistance liquidity','Relative equal highs and lows'],
+  task:'Mark the previous day\'s high and low, then find 3 low-resistance and 3 relative-equal examples.'},
+ {t:'Break of Structure',ph:2,wk:3,out:'Confirm a sweep was taken, using closes, not wicks.',
+  ls:['What a break of structure is','The close rule: a wick doesn\'t count','Only the most recent swing matters','Reversal opportunity vs confirmation','Where it sits in the strategy'],
+  task:'Find 3 bullish and 3 bearish breaks of structure, and the sweep right before each.'},
+ {t:'Fair Value Gaps',ph:2,wk:3,out:'Spot, mark and judge an imbalance: respected or disrespected.',
+  ls:['The idea: an imbalance in price','Anatomy of the three candles','Why price returns and moves through it','What is NOT a fair value gap','When a gap is disrespected','Where it fits: continuation confluence'],
+  task:'Mark 5 bullish and 5 bearish fair value gaps, then find 2 that got disrespected.',live:true},
+ {t:'Advanced Imbalance',ph:2,wk:4,out:'Use opening gaps and BPRs as targets and entries.',
+  ls:['New day opening gap','New week opening gap (most time here)','New candle opening gap (know it exists)','Balanced Price Range (BPR)'],
+  task:'Find 2 new-week opening gaps on the weekly chart and 1 new-day gap. Note whether they filled.'},
+ {t:'Inverse Fair Value Gaps',ph:2,wk:4,out:'Use a disrespected gap as an early confirmation.',
+  ls:['Definition: a gap that gets closed through','Why it beats waiting for a break of structure','How to use it: flip your bias','Never trade it alone'],
+  task:'Find 2 cases where an inverse FVG gave an earlier entry than a break of structure, and measure how much earlier.'},
+ {t:'Equilibrium: Premium & Discount',ph:2,wk:4,out:'Tell "cheap" from "expensive" inside a swing.',
+  ls:['Equilibrium is the midpoint of the swing','Premium above, discount below','Mark it from the most recent connected swing','Equilibrium and FVGs as continuation confluence'],
+  task:'On 3 uptrends, mark equilibrium and find a dip into discount that continued higher. Repeat for a downtrend.'},
+ {t:'SMT Divergence',ph:3,wk:5,out:'Read two correlated indices against each other.',flag:'Index/futures specific',
+  ls:['Comparing ES and NQ at the same moment','Bearish SMT divergence','Bullish SMT divergence','Why it only matters at a real liquidity draw','Trade the leading index'],
+  task:'Pull up ES and NQ side by side. Find 2 bearish and 2 bullish SMT divergences at a higher-time-frame sweep.'},
+ {t:'Time Theory & Session Timing',ph:3,wk:5,out:'Know roughly when the setups tend to play out.',
+  ls:['The session map in New York time','9:30–9:50 manipulation window','9:50–10:10 macro / entry window','The ~10:30 rule of thumb','Windows are guides, not rules'],
+  task:'Watch 3 full days of 9:30–10:30 and log when the manipulation happened and when the entry followed.'},
+ {t:'Funded Accounts & Prop Firms',ph:4,wk:6,out:'Read a prop firm\'s rules before paying for a challenge.',
+  ls:['What a prop firm is','Why it comes after the skill','Key terms: target, drawdown, consistency, split','Trailing vs static drawdown','The honest part: most people fail'],
+  task:'Research 2 prop firms and compare account sizes, profit target, max drawdown, consistency rule and payout split.'},
+ {t:'Building Daily Bias',ph:4,wk:6,out:'Combine every concept into a directional opinion before the open.',
+  ls:['Why bias comes first','Step 1: higher-time-frame trend','Step 2: draws on liquidity','Step 3: check current price action','Step 4: continuation confluences','Let the market prove you wrong'],
+  task:'Each morning for 5 days, write the trend, the liquidity draws and your bias, then review it at day\'s end.'},
+ {t:'Risk Management',ph:4,wk:7,out:'Size every trade so a losing streak can\'t end you.',
+  ls:['Why consistent sizing is the edge','The 1–3% risk range','Fixed contracts as a simpler alternative','When to cut size','Risk-to-reward maths','Matching your prop firm\'s drawdown rules'],
+  task:'From your last 10 trades, work out the average stop and the % of the account each trade risked. Adjust any above 3%.'},
+ {t:'Psychology & Discipline',ph:4,wk:7,out:'Treat psychology as discipline you can measure.',
+  ls:['Psychology is discipline, not a mystery','Strategy + risk plan = good psychology','The root cause: wanting to get rich quickly','Realistic expectations','The journal turns it into data'],
+  task:'For one week log every trade taken and every trade not taken. Find any that broke the plan, and what triggered them.'},
+ {t:'Full Strategy: The Order Flow Model',ph:5,wk:8,out:'Run potential → confirmation → continuation → exit on real trades.',flag:'Capstone',
+  ls:['The 4-stage model as one checklist','A toolbox, not a script','Why this model, not patterns','Explain a live setup out loud'],
+  task:'Pick 5 historical setups in replay. For each, write all four stages with the confluence used, then mark entry, stop, target and R:R.'}
+];
+const STEPS=['Learn','See it','Mark it','Explain','Exam'];
+const DEMO_SC=[92,88,100,83,92];
+
+/* ============================================================
+   candles + scenarios
+============================================================ */
+const mk=(o,h,l,c)=>({o:q4(o),h:q4(h),l:q4(l),c:q4(c)});
+function mirror(cs,M){return cs.map(c=>mk(2*M-c.o,2*M-c.l,2*M-c.h,2*M-c.c))}
+/* three candles. gap>0: real FVG of gap*s points. gap<0: wicks overlap (no FVG). flip: bearish version */
+function tri(P,s,gap,flip){
+  const c1=mk(P-.2*s,P+1*s,P-.6*s,P+.7*s), c2=mk(P+.6*s,P+2.9*s,P+.5*s,P+2.7*s);
+  const l3=c1.h+gap*s, c3=mk(l3+.3*s,l3+1*s,l3,l3+.7*s);
+  const cs=[c1,c2,c3]; return flip?mirror(cs,P):cs;
+}
+function findFVGs(C){const out=[];for(let i=1;i<C.length-1;i++){const a=C[i-1],c=C[i+1];
+  if(c.l>a.h)out.push({type:'bull',i0:i-1,i1:i+1,lo:a.h,hi:c.l});else if(c.h<a.l)out.push({type:'bear',i0:i-1,i1:i+1,lo:c.h,hi:a.l})}return out}
+function genScenario(r,plan){
+  let last;
+  for(let tries=0;tries<120;tries++){
+    const s=5+r()*3;let p=q4(21300+r()*500);const C=[],inj=[];
+    const noise=n=>{for(let k=0;k<n;k++){const o=p,body=(.15+r()*.75)*s*(r()<.5?-1:1),c=o+body;
+      let h=Math.max(o,c)+r()*.45*s,l=Math.min(o,c)-r()*.45*s;const a=C[C.length-2];
+      if(a){if(l>a.h)l=a.h-r()*.2*s;if(h<a.l)h=a.l+r()*.2*s}
+      C.push(mk(o,h,l,c));p=C[C.length-1].c}};
+    noise(3+Math.floor(r()*3));
+    for(const kind of plan){
+      const flip=kind==='bear'||(kind==='decoy'&&r()<.5), gap=kind==='decoy'?-(.2+r()*.4):.45+r()*.65;
+      inj.push({kind,i0:C.length});C.push(...tri(p,s,gap,flip));p=C[C.length-1].c;noise(3+Math.floor(r()*3));
+    }
+    const truth=findFVGs(C),want=plan.filter(k=>k!=='decoy'),cnt=(a,t)=>a.filter(x=>(x.type||x)===t).length;
+    last={C,truth,inj,s};
+    if(truth.length===want.length&&cnt(truth,'bull')===cnt(want,'bull')&&cnt(truth,'bear')===cnt(want,'bear'))return last;
+  }
+  return last;
+}
+const agg=(C,k)=>{const o=[];for(let i=0;i<C.length;i+=k){const s=C.slice(i,i+k);o.push({o:s[0].o,c:s[s.length-1].c,h:Math.max(...s.map(x=>x.h)),l:Math.min(...s.map(x=>x.l))})}return o};
+const hhmm=m=>{m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
+const ov1=(a0,a1,b0,b1)=>{const lo=Math.max(a0,b0),hi=Math.min(a1,b1),u=Math.max(a1,b1)-Math.min(a0,b0);return u>0?Math.max(0,hi-lo)/u:0};
+function gradeMarks(marks,truth){
+  const rects=marks.filter(m=>m.t==='rect'),used=new Set(),found=[],missed=[];
+  for(const z of truth){let hit=-1;rects.forEach((m,k)=>{if(hit>=0||used.has(k))return;
+    if(m.i1>=z.i0&&m.i0<=z.i1&&ov1(m.lo,m.hi,z.lo,z.hi)>=.5)hit=k});
+    if(hit>=0){used.add(hit);found.push(z)}else missed.push(z)}
+  const extra=rects.filter((_,k)=>!used.has(k));
+  return{found,missed,extra,ok:!missed.length&&!extra.length}
+}
+
+/* ============================================================
+   TradingView-style chart
+============================================================ */
+const ICON={
+ cursor:'<svg viewBox="0 0 24 24"><path d="M6 3l12 8-5.5 1.6L10 18z"/></svg>',
+ rect:'<svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="1"/><circle cx="4" cy="7" r="1.2"/><circle cx="20" cy="17" r="1.2"/></svg>',
+ hline:'<svg viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="2.2"/></svg>',
+ erase:'<svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4.5h6V7M7 7l1 13h8l1-13"/></svg>'};
+const TOOLTIP={cursor:'Cursor (drag to pan)',rect:'Rectangle: mark a zone',hline:'Horizontal line',erase:'Remove a drawing (click it)'};
+class Chart{
+  constructor(host,o={}){
+    this.host=host;this.o=o;host.innerHTML='<canvas></canvas><div class="tv-leg"></div>';
+    this.cv=$('canvas',host);this.cx=this.cv.getContext('2d');this.leg=$('.tv-leg',host);
+    Object.assign(this,{C:[],base:[],k:1,ov:[],marks:[],tool:'cursor',from:0,count:40,hover:null,drag:null,neutral:true,onmarks:null,sym:'NQ1!',noLegend:!!o.noLegend});
+    this.ro=new ResizeObserver(()=>this.size());this.ro.observe(host);
+    const c=this.cv;
+    c.addEventListener('pointerdown',e=>this.pd(e));c.addEventListener('pointermove',e=>this.pm(e));
+    this._up=e=>this.pu(e);window.addEventListener('pointerup',this._up);
+    c.addEventListener('pointerleave',()=>{if(!this.drag){this.hover=null;this.draw()}});
+    if(!o.fixed){c.addEventListener('wheel',e=>this.wh(e),{passive:false});c.addEventListener('dblclick',()=>this.fit())}
+    this.size();
+  }
+  destroy(){this.ro.disconnect();window.removeEventListener('pointerup',this._up)}
+  size(){const r=this.host.getBoundingClientRect(),d=window.devicePixelRatio||1;this.W=Math.max(200,r.width);this.H=Math.max(140,r.height);
+    this.cv.width=this.W*d;this.cv.height=this.H*d;this.cv.style.width=this.W+'px';this.cv.style.height=this.H+'px';this.cx.setTransform(d,0,0,d,0,0);this.draw()}
+  setData(C,{k=1,fit=true}={}){this.base=C;this.k=k;this.C=k===1?C:agg(C,k);if(fit)this.fit();else this.draw()}
+  fit(){const n=this.C.length;if(this.o.view){this.from=this.o.view[0];this.count=this.o.view[1]}else{this.count=Math.max(12,Math.min(n+3,44));this.from=-1}this.draw()}
+  focus(i){const j=i/this.k;this.from=j-this.count/2+1.5;this.draw()}
+  tfLabel(){return this.k===1?'5':'15'}
+  G(){const PR=68,PB=24,PT=10,pw=this.W-PR,ph=this.H-PB-PT,bw=pw/this.count,n=this.C.length;
+    const i0=Math.max(0,Math.floor(this.from)),i1=Math.min(n-1,Math.ceil(this.from+this.count));let mn=1e9,mx=-1e9;
+    for(let i=i0;i<=i1;i++){mn=Math.min(mn,this.C[i].l);mx=Math.max(mx,this.C[i].h)}
+    if(mn>mx){mn=0;mx=1}const pad=(mx-mn)*.14||1;mn-=pad;mx+=pad;return{PR,PB,PT,pw,ph,bw,mn,mx}}
+  X(i,g){return(i-this.from+.5)*g.bw}
+  Y(p,g){return g.PT+(g.mx-p)/(g.mx-g.mn)*g.ph}
+  idxAt(px,g){return Math.round(px/g.bw+this.from-.5)}
+  priceAt(py,g){return g.mx-(py-g.PT)/g.ph*(g.mx-g.mn)}
+  pos(e){const r=this.cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+  pd(e){if(this.o.fixed||!this.C.length)return;const g=this.G(),{x,y}=this.pos(e);if(x>g.pw)return;
+    const t=this.tool;
+    if(t==='cursor'){this.drag={type:'pan',x:e.clientX,from:this.from};this.cv.style.cursor='grabbing'}
+    else if(t==='rect'){if(this.k!==1)return toast('Switch back to 5m to draw. Marks belong to the 5m candles.');
+      this.drag={type:'rect',i:this.idxAt(x,g),p:this.priceAt(y,g),ci:this.idxAt(x,g),cp:this.priceAt(y,g)}}
+    else if(t==='hline'){if(this.k!==1)return;this.marks.push({t:'hline',p:q4(this.priceAt(y,g))});this.changed()}
+    else if(t==='erase'){const hit=this.hitMark(x,y,g);if(hit>=0){this.marks.splice(hit,1);this.changed()}}
+  }
+  hitMark(x,y,g){for(let k=this.marks.length-1;k>=0;k--){const m=this.marks[k];
+    if(m.t==='hline'&&Math.abs(this.Y(m.p,g)-y)<7)return k;
+    if(m.t==='rect'){const x0=this.X(m.i0,g)-g.bw/2,x1=this.X(m.i1,g)+g.bw/2,y0=this.Y(m.hi,g),y1=this.Y(m.lo,g);if(x>=x0&&x<=x1&&y>=y0&&y<=y1)return k}}return-1}
+  pm(e){if(!this.C.length)return;const g=this.G(),{x,y}=this.pos(e);
+    this.hover=x<=g.pw&&y<=g.PT+g.ph+1?{x,y,i:this.idxAt(x,g),p:this.priceAt(y,g)}:null;
+    if(this.drag){if(this.drag.type==='pan'){this.from=this.drag.from-(e.clientX-this.drag.x)/g.bw;const n=this.C.length;this.from=Math.max(-this.count*.6,Math.min(n-this.count*.4,this.from))}
+      else if(this.drag.type==='rect'){this.drag.ci=this.idxAt(x,g);this.drag.cp=this.priceAt(y,g)}}
+    else this.cv.style.cursor=this.o.fixed?'default':this.tool==='cursor'?'crosshair':this.tool==='erase'?'not-allowed':'crosshair';
+    this.draw()}
+  pu(){const d=this.drag;if(!d)return;this.drag=null;if(this.tool==='cursor')this.cv.style.cursor='crosshair';
+    if(d.type==='rect'){const i0=Math.min(d.i,d.ci),i1=Math.max(d.i,d.ci),lo=Math.min(d.p,d.cp),hi=Math.max(d.p,d.cp);
+      const g=this.G();if(i1-i0>=1&&(hi-lo)/(g.mx-g.mn)>.012){this.marks.push({t:'rect',i0:Math.max(0,i0),i1:Math.min(this.C.length-1,i1),lo:q4(lo),hi:q4(hi)});this.changed();return}}
+    this.draw()}
+  changed(){this.draw();this.onmarks&&this.onmarks(this.marks)}
+  wh(e){e.preventDefault();const g=this.G(),{x}=this.pos(e),a=this.from+x/g.bw-.5,f=e.deltaY>0?1.12:.89;
+    this.count=Math.max(8,Math.min(120,this.count*f));const g2=this.G();this.from=a-x/g2.bw+.5;this.draw()}
+  draw(){
+    const cx=this.cx,W=this.W,H=this.H,css=getComputedStyle(document.documentElement),col=n=>css.getPropertyValue(n).trim();
+    cx.clearRect(0,0,W,H);cx.fillStyle=col('--chart');cx.fillRect(0,0,W,H);
+    if(!this.C.length)return;
+    const g=this.G(),{PR,PB,PT,pw,ph,bw,mn,mx}=g,X=i=>this.X(i,g),Y=p=>this.Y(p,g),k=this.k;
+    const line=col('--line'),ink3=col('--ink3'),ink=col('--ink'),ink2=col('--ink2');
+    const UP=this.neutral?'#e3e9f2':'#26a69a',DN=this.neutral?'#3d7bff':'#ef5350';
+    cx.font='11px "JetBrains Mono",monospace';cx.textBaseline='middle';
+    // price grid
+    const raw=(mx-mn)/6,mag=Math.pow(10,Math.floor(Math.log10(raw))),st=[1,2,2.5,5,10].map(m=>m*mag).find(s=>s>=raw)||raw;
+    cx.strokeStyle=line;cx.lineWidth=1;cx.fillStyle=ink3;cx.textAlign='left';
+    const lastY=Y(this.C[this.C.length-1].c);
+    for(let p=Math.ceil(mn/st)*st;p<=mx;p+=st){const y=Math.round(Y(p))+.5;cx.beginPath();cx.moveTo(0,y);cx.lineTo(pw,y);cx.stroke();if(Math.abs(y-lastY)>11)cx.fillText(fm(p),pw+8,y)}
+    // time grid
+    const every=Math.max(1,Math.ceil(78/bw));cx.textAlign='center';
+    for(let i=Math.ceil(this.from);i<this.from+this.count;i++){if(i<0||i>=this.C.length||i%every)continue;const x=Math.round(X(i))+.5;
+      cx.strokeStyle=line;cx.beginPath();cx.moveTo(x,PT);cx.lineTo(x,PT+ph);cx.stroke();cx.fillStyle=ink3;cx.fillText(hhmm(510+i*5*k),x,H-PB/2+2)}
+    cx.strokeStyle=col('--line2');cx.beginPath();cx.moveTo(pw+.5,0);cx.lineTo(pw+.5,PT+ph);cx.moveTo(0,PT+ph+.5);cx.lineTo(W,PT+ph+.5);cx.stroke();
+    cx.save();cx.beginPath();cx.rect(0,0,pw,PT+ph);cx.clip();
+    // overlays beneath candles
+    const ci=i=>Math.floor(i/k);
+    for(const o of this.ov)if(o.t==='rect'||o.t==='box'){
+      const x0=X(ci(o.i0))-bw/2,x1=o.ext?pw:X(ci(o.i1))+bw/2,y0=Y(o.hi),y1=Y(o.lo);
+      if(o.t==='rect'){cx.fillStyle=rgba(o.col,.17);cx.fillRect(x0,y0,x1-x0,y1-y0);cx.strokeStyle=rgba(o.col,.85);cx.lineWidth=1;cx.setLineDash(o.dash?[5,4]:[]);cx.strokeRect(x0+.5,y0+.5,x1-x0,y1-y0);cx.setLineDash([])}
+      else{cx.strokeStyle=rgba(o.col,.8);cx.lineWidth=1.2;cx.setLineDash([3,3]);cx.strokeRect(x0+.5,y0+.5,x1-x0,y1-y0);cx.setLineDash([])}}
+    // candles
+    const cw=Math.max(1,Math.min(bw*.66,22));
+    for(let i=Math.max(0,Math.floor(this.from)-1);i<=Math.min(this.C.length-1,Math.ceil(this.from+this.count));i++){
+      const c=this.C[i],x=X(i),up=c.c>=c.o,colr=up?UP:DN;cx.strokeStyle=colr;cx.fillStyle=colr;cx.lineWidth=1;
+      cx.beginPath();cx.moveTo(Math.round(x)+.5,Y(c.h));cx.lineTo(Math.round(x)+.5,Y(c.l));cx.stroke();
+      const y0=Y(Math.max(c.o,c.c)),y1=Y(Math.min(c.o,c.c));cx.fillRect(x-cw/2,y0,cw,Math.max(1,y1-y0))}
+    // overlays above candles
+    cx.textBaseline='middle';
+    for(const o of this.ov){
+      if(o.t==='hl'){const y=Math.round(Y(o.p))+.5,x0=o.i0==null?0:X(ci(o.i0))-bw/2;cx.strokeStyle=o.col;cx.lineWidth=1.2;cx.setLineDash(o.dash===false?[]:[6,4]);cx.beginPath();cx.moveTo(x0,y);cx.lineTo(pw,y);cx.stroke();cx.setLineDash([]);
+        if(o.text)this.tag(cx,o.text,pw-8,y-11,o.col,'right')}
+      if(o.t==='tag')this.tag(cx,o.text,X(ci(o.i)),Y(o.p)+(o.pos==='above'?-12:12),o.col||ink,'center');
+      if(o.t==='rect'&&o.text)this.tag(cx,o.text,Math.max(70,X(ci(o.i0))+bw*1.5),Y(o.hi)-12,o.col,'left')}
+    // user marks
+    for(const m of this.marks){
+      if(m.t==='rect'){const x0=X(m.i0)-bw/2,x1=X(m.i1)+bw/2,y0=Y(m.hi),y1=Y(m.lo);cx.fillStyle=rgba('#8cc4ff',.16);cx.fillRect(x0,y0,x1-x0,y1-y0);cx.strokeStyle='#8cc4ff';cx.lineWidth=1.2;cx.strokeRect(x0+.5,y0+.5,x1-x0,y1-y0)}
+      else{const y=Math.round(Y(m.p))+.5;cx.strokeStyle='#8cc4ff';cx.lineWidth=1.2;cx.beginPath();cx.moveTo(0,y);cx.lineTo(pw,y);cx.stroke()}}
+    if(this.drag&&this.drag.type==='rect'){const d=this.drag,x0=X(Math.min(d.i,d.ci))-bw/2,x1=X(Math.max(d.i,d.ci))+bw/2,y0=Y(Math.max(d.p,d.cp)),y1=Y(Math.min(d.p,d.cp));
+      cx.fillStyle=rgba('#8cc4ff',.12);cx.fillRect(x0,y0,x1-x0,y1-y0);cx.strokeStyle='#8cc4ff';cx.setLineDash([4,3]);cx.strokeRect(x0+.5,y0+.5,x1-x0,y1-y0);cx.setLineDash([])}
+    cx.restore();
+    // last price tag
+    const lc=this.C[this.C.length-1],ly=Y(lc.c);
+    if(ly>PT&&ly<PT+ph){cx.setLineDash([2,3]);cx.strokeStyle=lc.c>=lc.o?UP:DN;cx.beginPath();cx.moveTo(0,Math.round(ly)+.5);cx.lineTo(pw,Math.round(ly)+.5);cx.stroke();cx.setLineDash([]);
+      cx.fillStyle=lc.c>=lc.o?UP:DN;cx.fillRect(pw,ly-9,PR,18);cx.fillStyle='#0a0d12';cx.textAlign='left';cx.fillText(fm(lc.c),pw+6,ly+.5)}
+    // crosshair
+    const h=this.hover;
+    if(h&&!this.o.fixed){cx.setLineDash([4,4]);cx.strokeStyle=ink3;cx.lineWidth=1;cx.beginPath();cx.moveTo(h.x+.5,PT);cx.lineTo(h.x+.5,PT+ph);cx.moveTo(0,h.y+.5);cx.lineTo(pw,h.y+.5);cx.stroke();cx.setLineDash([]);
+      cx.fillStyle=col('--line2');cx.fillRect(pw,h.y-9,PR,18);cx.fillStyle=ink;cx.textAlign='left';cx.fillText(fm(h.p),pw+6,h.y+.5);
+      if(h.i>=0&&h.i<this.C.length){const tx=X(h.i);cx.fillStyle=col('--line2');cx.fillRect(tx-22,H-PB+3,44,17);cx.fillStyle=ink;cx.textAlign='center';cx.fillText(hhmm(510+h.i*5*k),tx,H-PB/2+2)}}
+    this.legend(h&&h.i>=0&&h.i<this.C.length?h.i:this.C.length-1)
+  }
+  tag(cx,text,x,y,colr,al){cx.font='600 11px "JetBrains Mono",monospace';const w=cx.measureText(text).width+12;let x0=al==='right'?x-w:al==='center'?x-w/2:x;
+    cx.fillStyle='rgba(8,11,16,.88)';cx.strokeStyle=colr;cx.lineWidth=1;cx.beginPath();cx.roundRect(x0,y-9,w,18,4);cx.fill();cx.stroke();cx.fillStyle=colr;cx.textAlign='left';cx.fillText(text,x0+6,y+.5);cx.font='11px "JetBrains Mono",monospace'}
+  legend(i){if(this.noLegend){this.leg.innerHTML='';return}const c=this.C[i],p=this.C[i-1]||c,d=c.c-p.c,up=c.c>=c.o,cl=up?'up':'';
+    this.leg.innerHTML=`<b>${this.sym}</b><i>${this.k===1?'5':'15'}</i><i>CME</i><span class="${cl}">O ${fm(c.o)}</span><span class="${cl}">H ${fm(c.h)}</span><span class="${cl}">L ${fm(c.l)}</span><span class="${cl}">C ${fm(c.c)}</span>`}
+}
+function toolbar(chart,tools,cls){
+  const d=el(`<div class="tools ${cls||''}">${tools.map(t=>`<button type="button" data-tool="${t}" title="${TOOLTIP[t]}" aria-label="${TOOLTIP[t]}">${ICON[t]}</button>`).join('')}</div>`);
+  const set=t=>{chart.tool=t;$$('button',d).forEach(b=>b.classList.toggle('on',b.dataset.tool===t));chart.cv.style.cursor=t==='cursor'?'crosshair':t==='erase'?'not-allowed':'crosshair'};
+  d.addEventListener('click',e=>{const b=e.target.closest('button');if(b)set(b.dataset.tool)});set(tools[0]);d.set=set;return d}
+
+/* ============================================================
+   state
+============================================================ */
+const EX=genScenario(mulberry(7),['bull','decoy','bear']);
+const freshLab=()=>({step:0,done:[0,0,0,0],see:0,tf:1,recall:null,seed:Math.floor(Math.random()*1e6),marks:[],fb:null,hint:false,tries:0,t1:'',t2:'',sub:false,ticks:{}});
+const S={view:'map',lab:freshLab(),m6:{passed:false,score:0,attempt:1,history:[]},ex:null,open:5};
+S.lab.scen=null;
+function newPractice(){const r=mulberry(S.lab.seed++);S.lab.scen=genScenario(r,shuf(['bull','bear','decoy','decoy'],r));S.lab.marks=[];S.lab.fb=null;S.lab.hint=false}
+newPractice();
+const labDone=()=>S.lab.done.filter(Boolean).length;
+const modStatus=i=>i<5?'done':i===5?(S.m6.passed?'done':'active'):i===6&&S.m6.passed?'active':'locked';
+const modScore=i=>i<5?DEMO_SC[i]:i===5?S.m6.score:null;
+
+/* ============================================================
+   views + header
+============================================================ */
+function setView(v){
+  if(S.view==='exam'&&v!=='exam')stopClock();
+  S.view=v;$$('main.view').forEach(m=>m.hidden=m.id!=='v-'+v);$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  window.scrollTo(0,0);
+  if(v==='map')renderMap();
+  if(v==='lab'){renderLab();setTimeout(()=>CH.size(),30)}
+  if(v==='exam')renderExam();
+}
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setView(b.dataset.view)});
+function setTheme(t){document.documentElement.dataset.theme=t;$$('#themeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  try{localStorage.setItem('fh-look',t)}catch(e){}
+  if(S.view==='map')renderMap();else if(S.view==='lab'){renderLesson();CH.draw()}else if(S.view==='exam')renderExam(true);
+  toast(t==='play'?'Playful look: ranks, XP and the HUD feel':'Modern look: calm, TradingView-style')}
+$('#themeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTheme(b.dataset.t)});
+$('#notesBtn').onclick=()=>$('#notes').showModal();
+
+/* ============================================================
+   COURSE MAP
+============================================================ */
+function renderMap(){
+  const done=MODS.filter((_,i)=>modStatus(i)==='done').length,scs=MODS.map((_,i)=>modStatus(i)==='done'?modScore(i):null).filter(x=>x!=null),avg=scs.length?Math.round(scs.reduce((a,b)=>a+b,0)/scs.length):0;
+  $('#stats').innerHTML=`<div class="card stat"><b>${done}<span class="dim">/16</span></b><span>modules passed</span></div><div class="card stat"><b>${avg}%</b><span>average exam score</span></div>`+
+    `<div class="card stat only-play"><b>2,140</b><span>XP · 3-day streak</span></div><div class="card stat only-modern"><b>Wk ${MODS[done]?MODS[done].wk:8}<span class="dim">/8</span></b><span>suggested pace</span></div>`;
+  let html='',cur=-1;
+  MODS.forEach((m,i)=>{
+    if(m.ph!==cur){if(cur>=0)html+='</div></section>';cur=m.ph;const P=PH[cur];
+      html+=`<section class="phase" style="--tone:${P.tone}"><div class="phase-h"><span class="pn">PHASE ${cur+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
+    html+=modRow(m,i)});
+  html+='</div></section>';
+  $('#phases').innerHTML=html;
+  $('#aside').innerHTML=asideHTML();
+}
+function modRow(m,i){
+  const st=modStatus(i),P=PH[m.ph],open=S.open===i;
+  let chip;
+  if(st==='done')chip=`<span class="chip ok">✓ Passed · ${modScore(i)}%</span>`;
+  else if(st==='active')chip=`<span class="chip live">${S.m6.attempt>1&&i===5&&labDone()===0?'Restarted · ':''}${labDone()}/4 steps</span>`;
+  else chip=`<span class="chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Locked</span>`;
+  const prev=MODS[i-1]?MODS[i-1].t:'';
+  let act;
+  if(i===5&&st!=='done')act=`<button class="btn primary" data-act="go-lab">${labDone()?'Continue':'Start'} lesson →</button>${S.m6.attempt>1?`<span class="chip bad">Attempt ${S.m6.attempt}: new exam set</span>`:''}`;
+  else if(st==='done')act=`<button class="btn" disabled title="Review mode arrives in the full build">Review lessons</button>`;
+  else if(st==='active')act=`<button class="btn primary" disabled title="Only Module 6 is built in this mockup">Start lesson →</button><span class="dim" style="font-size:13px">Only Module 6 is playable in this mockup.</span>`;
+  else act=`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
+  const hist=i===5&&S.m6.history.length?`<div style="grid-column:1/-1"><h4 class="hud">Attempt history</h4><ul>${S.m6.history.map(h=>`<li>Attempt ${h.n}: ${h.s}/${h.t} (${Math.round(h.s/h.t*100)}%) · ${h.pass?'passed':'failed, module restarted'}</li>`).join('')}</ul></div>`:'';
+  return `<article class="mod ${st}" data-i="${i}" style="--tone:${P.tone}"><button class="mod-h" data-act="tog" aria-expanded="${open}">
+    <span class="num">${String(i+1).padStart(2,'0')}</span>
+    <span class="mod-t"><b>${m.t}</b><small>${m.out}</small></span>
+    <span class="mod-m">${m.flag?`<span class="chip">${m.flag}</span>`:''}<span class="wk">WK ${m.wk}</span>${chip}</span></button>
+    <div class="mod-b" ${open?'':'hidden'}>
+      <div><h4 class="hud">What you'll learn</h4><ul>${m.ls.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div><h4 class="hud">Practice on the chart</h4><p>${m.task}</p><h4 class="hud" style="margin-top:14px">Then prove it</h4><p>Written explanation, then a ${i===15?'capstone review: five replayed setups explained out loud':'module exam with fresh charts and numbers each attempt'}. 80% to pass${i===15?', plus a live walk-through':''}.</p></div>
+      ${hist}<div class="act">${act}</div></div></article>`;
+}
+function asideHTML(){
+  const st=labDone();
+  return `<div class="card next-card"><div class="hud">${S.m6.passed?'Just passed':T('Up next','Current mission')}</div><div class="h">6 · Fair Value Gaps</div>
+    <p class="muted" style="font-size:14px">${S.m6.passed?'Module 6 passed. Module 7 is unlocked next.':`Step ${Math.min(st+1,5)} of 5: <b>${STEPS[Math.min(st,4)]}</b>`}</p>
+    <div class="pbar" style="margin:10px 0 14px"><i style="width:${S.m6.passed?100:st/5*100}%"></i></div>
+    <button class="btn primary" data-act="go-lab">${S.m6.passed?'Review lesson':'Continue'} →</button></div>
+  <div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson done and every chart task marked</li><li>Your written explanation submitted</li><li>Exam at 80% or better, on a set you've never seen</li><li>Cumulative phase checks later pull from this module again</li></ul></div>
+  <div class="card"><h3 class="h">Suggested 8-week pace</h3><div class="weeks"><b>WK 1</b><span>Mindset, chart reading</span><b>WK 2</b><span>Liquidity</span><b>WK 3</b><span>Break of structure, FVGs</span><b>WK 4</b><span>Imbalance, inverse FVG, equilibrium</span><b>WK 5</b><span>SMT, time theory</span><b>WK 6</b><span>Funded accounts, daily bias</span><b>WK 7</b><span>Risk, psychology</span><b>WK 8</b><span>Full strategy + capstone</span></div></div>
+  <div class="card"><h3 class="h">Paper-trade gate</h3><p class="muted" style="font-size:13.5px">After the strategy modules you spend several weeks on a demo account applying the full model before any real or funded capital is mentioned. No real money in the school, ever.</p></div>`;
+}
+$('#v-map').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  if(b.dataset.act==='tog'){const i=+b.closest('.mod').dataset.i;S.open=S.open===i?-1:i;renderMap()}
+  if(b.dataset.act==='go-lab')setView('lab');
+});
+
+/* ============================================================
+   LESSON WORKSPACE (Module 6 · Fair Value Gaps)
+============================================================ */
+const CH=new Chart($('#chartHost'));
+const TB=toolbar(CH,['cursor','rect','hline','erase']);$('#tvLeft').append(TB);
+CH.onmarks=m=>{S.lab.marks=m;if(S.lab.step===2){S.lab.fb=null;renderLesson()}};
+$$('[data-tf]').forEach(b=>b.addEventListener('click',()=>{if(S.lab.step===2)return toast('Time frame is locked during a marking task. Marks belong to the 5m candles.');S.lab.tf=+b.dataset.tf;paintChart(true)}));
+$('#candleBtn').onclick=()=>{CH.neutral=!CH.neutral;$('#candleBtn').textContent='Candles: '+(CH.neutral?'neutral':'green / red');CH.draw()};
+const ZC={bull:'#ff6a00',bear:'#ff6a00',bad:'#ff5d73',ice:'#8cc4ff'};
+function seeSteps(){
+  const z=EX.truth.find(t=>t.type==='bull'),zb=EX.truth.find(t=>t.type==='bear'),d=EX.inj.find(x=>x.kind==='decoy'),C=EX.C;
+  const lab=(i,p,txt,pos)=>({t:'tag',i,p,text:txt,pos,col:ZC.ice});
+  const dc=[C[d.i0],C[d.i0+1],C[d.i0+2]],dz={lo:Math.min(dc[0].h,dc[2].l),hi:Math.max(dc[0].h,dc[2].l)};
+  const nums=(i0)=>[lab(i0,C[i0].l,'1','below'),lab(i0+1,C[i0+1].l,'2','below'),lab(i0+2,C[i0+2].l,'3','below')];
+  return [
+   {focus:z.i0+1,ov:[{t:'box',i0:z.i0,i1:z.i0+2,lo:C[z.i0].l-1,hi:C[z.i0+1].h+1,col:ZC.ice},...nums(z.i0)],
+    cap:'Three candles in a row. Candle 2 is the fast one: a big, one-directional move. Candles 1 and 3 sit on either side of it.'},
+   {focus:z.i0+1,ov:[{t:'box',i0:z.i0,i1:z.i0+2,lo:C[z.i0].l-1,hi:C[z.i0+1].h+1,col:ZC.ice},...nums(z.i0),{t:'hl',p:z.lo,i0:z.i0,col:ZC.ice,text:'Candle 1 high · '+fm(z.lo)}],
+    cap:`Start with candle 1's <b>high</b> (the tip of its upper wick): <b>${fm(z.lo)}</b>. Price traded up to here and no further.`},
+   {focus:z.i0+1,ov:[...nums(z.i0),{t:'hl',p:z.lo,i0:z.i0,col:ZC.ice,text:'Candle 1 high · '+fm(z.lo)},{t:'hl',p:z.hi,i0:z.i0,col:ZC.ice,text:'Candle 3 low · '+fm(z.hi)}],
+    cap:`Now candle 3's <b>low</b> (the tip of its lower wick): <b>${fm(z.hi)}</b>. Candle 3 never traded back down to candle 1's high.`},
+   {focus:z.i0+1,ov:[...nums(z.i0),{t:'rect',i0:z.i0,i1:z.i0+2,lo:z.lo,hi:z.hi,col:ZC.bull,text:`Bullish FVG · ${fm(z.hi-z.lo)} pts`}],
+    cap:`The space between them, <b>${fm(z.lo)} to ${fm(z.hi)}</b>, is the fair value gap: <b>${fm(z.hi-z.lo)} points</b> that candle 2 crossed so fast that neither neighbour traded there. There were almost no <b>sell orders</b> in that range, which is why it moved up so easily.`},
+   {focus:z.i0+8,ov:[{t:'rect',i0:z.i0,i1:z.i0+2,ext:true,lo:z.lo,hi:z.hi,col:ZC.bull,text:'Bullish FVG · price may return'}],
+    cap:'Now the zone extends forward in time. If price comes back, the range has little opposing orders, so price tends to move <b>through it quickly</b>. That is what a continuation looks like. It is a tendency, not a promise.'},
+   {focus:d.i0+1,ov:[...nums(d.i0),{t:'rect',i0:d.i0,i1:d.i0+2,lo:dz.lo,hi:dz.hi,col:ZC.bad,dash:true,text:'No gap: wicks overlap'}],
+    cap:'Compare. This looks similar, with a big middle candle, but candle 1\'s high and candle 3\'s low <b>overlap</b>. Both candles traded in that range, so the orders were already filled. <b>No gap, no FVG.</b>'},
+   {focus:zb.i0+1,ov:[...nums(zb.i0),{t:'rect',i0:zb.i0,i1:zb.i0+2,lo:zb.lo,hi:zb.hi,col:ZC.bear,text:`Bearish FVG · ${fm(zb.hi-zb.lo)} pts`}],
+    cap:`The mirror image. A strong <b>down</b> candle 2, and a gap between candle 1's <b>low</b> (${fm(zb.hi)}) and candle 3's <b>high</b> (${fm(zb.lo)}). A bearish FVG shows a <b>lack of buy orders</b>.`}
+  ];
+}
+function paintChart(refit){
+  const L=S.lab,k=L.step===2?1:L.tf;
+  $$('[data-tf]').forEach(b=>{b.classList.toggle('on',+b.dataset.tf===k);b.disabled=L.step===2&&+b.dataset.tf!==1});
+  $('#chartTf').textContent=k===1?'5m · each candle = 5 minutes':'15m · each candle = three 5m candles';
+  if(L.step===2){CH.setData(L.scen.C,{k:1,fit:refit!==false});CH.ov=[];CH.marks=L.marks;TB.set('rect');$('#chartHint').textContent='Rectangle tool is on: drag from the tip of candle 1\'s wick to the tip of candle 3\'s wick.'}
+  else{CH.setData(EX.C,{k,fit:refit!==false});CH.marks=[];$('#chartHint').textContent='Drag to pan · scroll to zoom · double-click to reset';
+    if(L.step===1){const s=seeSteps()[L.see];CH.ov=s.ov;if(k===1)CH.focus(s.focus)}
+    else if(L.step===0)CH.ov=[];
+    else CH.ov=EX.truth.map(z=>({t:'rect',i0:z.i0,i1:z.i2??z.i1,lo:z.lo,hi:z.hi,col:ZC.bull,text:(z.type==='bull'?'Bullish':'Bearish')+' FVG'}));
+    if(L.step!==2&&TB.querySelector('.on')&&TB.querySelector('.on').dataset.tool==='rect'&&L.step!==3)TB.set('cursor')}
+  CH.draw();
+}
+function renderLab(){renderLesson();paintChart(true)}
+const diag=`<svg class="diag" viewBox="0 0 360 190" role="img" aria-label="Diagram of three candles forming a bullish fair value gap">
+ <g stroke="#e3e9f2" fill="#e3e9f2" stroke-width="1.5"><path d="M70 100V150M70 100"/><rect x="56" y="115" width="28" height="26"/>
+ <path d="M180 26V150"/><rect x="164" y="38" width="32" height="96"/>
+ <path d="M290 28V100"/><rect x="276" y="42" width="28" height="36"/></g>
+ <path d="M70 100H300" stroke="#8cc4ff" stroke-dasharray="4 4"/><path d="M70 60H300" stroke="#8cc4ff" stroke-dasharray="4 4" opacity=".0"/>
+ <path d="M290 100H300" stroke="#8cc4ff"/>
+ <rect x="84" y="78" width="206" height="22" fill="#ff6a00" opacity=".2" stroke="#ff6a00"/>
+ <g font-family="JetBrains Mono,monospace" font-size="11" fill="#9ba7b8"><text x="64" y="172">1</text><text x="176" y="172">2</text><text x="286" y="172">3</text>
+ <text x="94" y="94" fill="#ff6a00">gap</text><text x="198" y="20" fill="#8cc4ff">candle 2 expands</text><text x="46" y="94" fill="#8cc4ff" text-anchor="end">1 high</text><text x="300" y="64" fill="#8cc4ff" text-anchor="end">3 low</text></g></svg>`;
+function stepper(){const L=S.lab;return `<div class="steps">${STEPS.map((s,i)=>`<button type="button" data-step="${i}" class="${L.step===i?'on':''} ${L.done[i]&&i<4?'done':''}"><i></i>${s}</button>`).join('')}</div>`}
+function renderLesson(){
+  const L=S.lab;let body='',foot='';
+  if(L.step===0){
+    body=`
+    <div class="callout key"><span class="hud">Recall · from Module 5</span><p><b>In an uptrend, when does a bearish break of structure happen?</b></p>
+      <div class="opts" id="rc">${[['A full candle closes below the most recent low',0],['A wick trades below the most recent low',1],['Price trades below the previous day\'s low',2],['Price makes a lower high',3]].map(([t,k])=>`<button class="opt ${L.recall==null?'':k===0?'right':k===L.recall?'wrong':''}" data-rc="${k}" ${L.recall!=null?'disabled':''}>${t}</button>`).join('')}</div>
+      ${L.recall==null?'':`<div class="fb ${L.recall===0?'ok':'no'}"><b>${L.recall===0?'Right.':'Not quite.'}</b><p>It must be a candle <b>close</b> beyond the most recent low. A wick poking through doesn't count. You're about to use the same close-based rule on gaps.</p></div>`}</div>
+    <h3>The idea</h3>
+    <p>Price only moves when orders get filled. Usually every price in a move gets traded back and forth. Sometimes price moves so fast that a range barely trades at all. That leftover space is an <b>imbalance</b>, and the simplest version to spot is the <b>fair value gap (FVG)</b>.</p>
+    <div class="callout def"><span class="hud">Definition</span><p>A <b>fair value gap</b> is a <b>3-candle pattern</b> with a gap between <b>candle 1's wick</b> and <b>candle 3's wick</b>, created by a strong, fast ("expansionary") candle 2.</p></div>
+    <h3>Anatomy</h3>${diag}
+    <ul><li><b>Bullish FVG:</b> gap between candle 1's <b>high</b> and candle 3's <b>low</b>, formed by a strong move <b>up</b> in candle 2. It marks a <b>lack of sell orders</b> in that range.</li>
+    <li><b>Bearish FVG:</b> gap between candle 1's <b>low</b> and candle 3's <b>high</b>, formed by a strong move <b>down</b> in candle 2. It marks a <b>lack of buy orders</b>.</li>
+    <li>The <b>colour of candles 1 and 3 doesn't matter</b>. Only the gap between their wicks does.</li></ul>
+    <h3>Why price moves through it</h3>
+    <p>When price returns to the range there are few opposing orders resting in it, so there is little resistance to slow it down. Price moves through the zone quickly, which is why a gap is used as a sign the trend is likely to keep going.</p>
+    <h3>What is not an FVG</h3>
+    <div class="callout warn"><span class="hud">Common mistake</span><p>If the wicks of candle 1 and candle 3 <b>overlap</b>, there is no imbalance. Orders were already filled in that zone. <b>No gap = no FVG</b>, however big candle 2 is.</p></div>
+    <h3>When a gap is "disrespected"</h3>
+    <p>An FVG is disrespected when a candle <b>closes through</b> it. This is the same close-based rule as break of structure: a wick that dips through and closes back doesn't count. A disrespected FVG often signals the trend is changing. That is the setup for Module 8 (inverse FVGs).</p>
+    <h3>Where it fits in the strategy</h3>
+    <div class="model"><span>Potential<br><small>liquidity sweep</small></span><span>Confirmation<br><small>break of structure</small></span><span class="me">Continuation<br><small><b>fair value gap</b> · equilibrium</small></span><span>Exit<br><small>next liquidity</small></span></div>
+    <p>An FVG is a <b>continuation confluence</b>. It tells you the new trend is likely to hold <i>after</i> a sweep and a break of structure. On its own it isn't a trade.</p>`;
+    foot=`<span class="dim" style="font-size:13px">Use the chart: switch to 15m and see the same price action at a different resolution.</span><button class="btn primary" data-next>Show me on the chart →</button>`;
+  }
+  if(L.step===1){
+    const ss=seeSteps(),s=ss[L.see];
+    body=`<h3>Worked example · step ${L.see+1} of ${ss.length}</h3>
+    <div class="cap">${s.cap}</div>
+    <div class="kv">${ss.map((_,i)=>`<span class="chip ${i===L.see?'live':i<L.see?'ok':''}">${i+1}</span>`).join('')}</div>
+    <p class="muted" style="font-size:13.5px">Hover the chart to read each candle's OHLC in the legend. Pan and zoom if you want a closer look.</p>`;
+    foot=`<button class="btn" data-seep ${L.see===0?'disabled':''}>← Back</button><button class="btn primary" data-seen>${L.see===ss.length-1?'Now you try →':'Next ▸'}</button>`;
+  }
+  if(L.step===2){
+    const g=gradeMarks(L.marks,L.scen.truth),n=L.scen.truth.length,rects=L.marks.filter(m=>m.t==='rect').length;
+    let fb='';
+    if(L.fb){const f=L.fb;fb=`<div class="fb ${f.ok?'ok':'no'}"><b>${f.ok?'All correct.':'Not quite yet.'}</b><ul>
+      ${f.found.map(z=>`<li>✓ ${z.type==='bull'?'Bullish':'Bearish'} FVG at ${hhmm(510+z.i0*5)}: nice.</li>`).join('')}
+      ${f.missed.map(z=>`<li>✗ Missed a ${z.type==='bull'?'bullish':'bearish'} FVG around ${hhmm(510+z.i0*5)}. Look for a big candle 2 with a clear gap between the outer wicks.</li>`).join('')}
+      ${f.extra.map(()=>`<li>✗ One of your boxes isn't a gap. Check whether the wicks of candles 1 and 3 overlap, or whether the box spans the right three candles.</li>`).join('')}</ul></div>`}
+    body=`<h3>Your turn</h3>
+    <p>Mark <b>every</b> fair value gap on this chart. Drag a rectangle from <b>candle 1's wick tip to candle 3's wick tip</b>, across the three candles. Some patterns are look-alikes that aren't FVGs.</p>
+    <div class="kv"><span class="chip">${rects} marked</span><span class="chip">${n} to find</span><span class="chip">${L.tries} check${L.tries===1?'':'s'}</span></div>
+    <div class="req"><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+      <button class="btn primary" data-chk ${rects?'':'disabled'}>Check my marks</button><button class="btn" data-hint>Hint</button><button class="btn" data-clr>Clear</button><button class="btn" data-newc>New chart</button></div></div>
+    ${fb}${L.hint?`<div class="cap">Hint: <b>${n}</b> real gap${n>1?'s':''} here. Start at the biggest candle 2, then look at the wicks on each side of it. Do they leave a space?</div>`:''}
+    ${L.done[2]?`<div class="fb ok"><b>Marking complete.</b> You can try another chart for more practice, or continue.</div>`:''}
+    <p class="muted" style="font-size:13.5px">Practice charts are ungraded and unlimited. The exam chart is different, and one attempt.</p>`;
+    foot=`<button class="btn" data-prev>← Back</button><button class="btn primary" data-next ${L.done[2]?'':'disabled'}>Explain it →</button>`;
+  }
+  if(L.step===3){
+    const wc1=words(L.t1),wc2=words(L.t2),ok=wc1>=20&&wc2>=20;
+    const ideas=[['a','A range where few opposing orders are resting'],['b','Candle 2 moved so fast that little trading took place there'],['c','Price meets little resistance when it returns, so it moves through quickly'],['d','It points to continuation: a tendency, not a guarantee'],
+                 ['e','The close must be beyond the gap; a wick doesn\'t count'],['f','Same close-based rule as break of structure'],['g','A disrespected FVG often signals the trend is changing'],['h','It sets up the inverse FVG (Module 8)']];
+    body=`<h3>Say it in your own words</h3><p>No copy-pasting definitions. Write what you'd say to a friend who has never seen a chart. At least 20 words each.</p>
+    <p><b>1. Why does price tend to move quickly through a fair value gap when it comes back to it?</b></p>
+    <textarea id="t1" rows="4" placeholder="Because…" ${L.sub?'disabled':''}>${esc(L.t1)}</textarea><div class="wc">${wc1} words</div>
+    <p><b>2. A candle's wick goes through a gap but closes back above it. Another candle closes through it. What's the difference, and why does it matter?</b></p>
+    <textarea id="t2" rows="4" placeholder="The difference is…" ${L.sub?'disabled':''}>${esc(L.t2)}</textarea><div class="wc">${wc2} words</div>
+    ${L.sub?`<div class="callout key"><span class="hud">Check yourself</span><p>Tick the ideas your answers <b>actually contained</b>. Be honest: this is for you. Fewer than 6 ticks means a re-read of <b>Learn</b> before the exam.</p>
+      ${ideas.map(([k,t])=>`<label class="chk"><input type="checkbox" data-tick="${k}" ${L.ticks[k]?'checked':''}><span>${t}</span></label>`).join('')}
+      <p class="num" style="font-size:12px">${Object.values(L.ticks).filter(Boolean).length} / 8 ticked</p></div>`:`<button class="btn primary" data-sub ${ok?'':'disabled'}>Submit my explanation</button>`}`;
+    foot=`<button class="btn" data-prev>← Back</button><button class="btn primary" data-next ${L.done[3]?'':'disabled'}>Exam checklist →</button>`;
+  }
+  if(L.step===4){
+    const items=[['Learn: lesson read',L.done[0]],['See it: worked example complete',L.done[1]],['Mark it: chart task passed',L.done[2]],['Explain it: written answers submitted and self-checked',L.done[3]]],all=items.every(x=>x[1]);
+    body=`<h3>Ready for the exam?</h3><ul class="req">${items.map(([t,o])=>`<li class="${o?'ok':''}"><span class="tick">${o?'✓':''}</span>${t}</li>`).join('')}</ul>
+    <div class="callout key"><span class="hud">Exam format</span><p><b>12 questions</b> · 30 minutes · <b>80% to pass</b> (10 of 12)</p><p>A mix of definitions, spotting gaps on small charts, measuring gap size in points, judging whether a gap is respected or disrespected, and one full chart where you mark the gaps yourself.</p></div>
+    <p class="muted">There are no hints and no feedback until you submit. If you don't pass, <b>this module restarts</b>: lessons re-open and the exam changes.</p>
+    ${S.m6.attempt>1?`<div class="fb no"><b>Attempt ${S.m6.attempt}.</b> This is a fresh set of lessons practice charts and exam questions.</div>`:''}`;
+    foot=`<button class="btn" data-prev>← Back</button><button class="btn primary" data-exam ${all?'':'disabled'}>Start exam →</button>`;
+  }
+  $('#lesson').innerHTML=`<div class="les-h"><div class="hud">Module 6 · Phase 3 · Structure &amp; imbalance</div><div class="h">Fair Value Gaps</div>${stepper()}</div><div class="les-b">${body}</div><div class="les-f">${foot}</div>`;
+}
+function go(step){const L=S.lab;L.step=step;renderLesson();paintChart(true)}
+function complete(i,msg){if(!S.lab.done[i]){S.lab.done[i]=1;toast(T(msg,msg+' · +40 XP'))}}
+$('#lesson').addEventListener('click',e=>{
+  const L=S.lab,t=e.target;let b;
+  if((b=t.closest('[data-step]')))return go(+b.dataset.step);
+  if((b=t.closest('[data-rc]'))){L.recall=+b.dataset.rc;return renderLesson()}
+  if(t.closest('[data-next]')){if(L.step===0)complete(0,'Lesson read');if(L.step===3&&!L.done[3])return;return go(L.step+1)}
+  if(t.closest('[data-prev]'))return go(L.step-1);
+  if(t.closest('[data-seep]')){L.see--;renderLesson();return paintChart(false)}
+  if(t.closest('[data-seen]')){const n=seeSteps().length;if(L.see<n-1){L.see++;renderLesson();return paintChart(false)}complete(1,'Worked example complete');return go(2)}
+  if(t.closest('[data-chk]')){const g=gradeMarks(L.marks,L.scen.truth);L.tries++;L.fb=g;if(g.ok)complete(2,'Chart task passed');renderLesson();return paintChart(false)}
+  if(t.closest('[data-hint]')){L.hint=true;return renderLesson()}
+  if(t.closest('[data-clr]')){L.marks.length=0;CH.marks=L.marks;L.fb=null;renderLesson();return CH.draw()}
+  if(t.closest('[data-newc]')){newPractice();renderLesson();return paintChart(true)}
+  if(t.closest('[data-sub]')){L.sub=true;return renderLesson()}
+  if((b=t.closest('[data-tick]'))){L.ticks[b.dataset.tick]=b.checked;if(Object.values(L.ticks).filter(Boolean).length>=6)complete(3,'Explanation complete');else L.done[3]=0;return renderLesson()}
+  if(t.closest('[data-exam]'))return setView('exam');
+});
+$('#lesson').addEventListener('input',e=>{const L=S.lab;if(e.target.id==='t1'||e.target.id==='t2'){L[e.target.id]=e.target.value;
+  const w1=words(L.t1),w2=words(L.t2);const wcs=$$('.wc');if(wcs[0])wcs[0].textContent=w1+' words';if(wcs[1])wcs[1].textContent=w2+' words';const sb=$('[data-sub]');if(sb)sb.disabled=!(w1>=20&&w2>=20)}});
+
+/* ============================================================
+   EXAM (Module 6)
+============================================================ */
+const CONCEPTS=[
+ {topic:'Definition',q:'A bullish fair value gap is the empty space between which two price points?',o:['The high (wick) of candle 1 and the low (wick) of candle 3','The close of candle 1 and the open of candle 3','The low of candle 1 and the high of candle 3','The body of candle 2 and the body of candle 3'],why:'It is measured wick to wick: candle 1\'s high up to candle 3\'s low. Candle 2 crossed that range so fast that neither neighbour traded in it.'},
+ {topic:'Definition',q:'What does a bullish FVG tell you about orders in that price range?',o:['There was a lack of sell orders, so price moved up through it quickly','Large sell orders are resting there waiting to be filled','Buyers and sellers were perfectly balanced','Retail stop-losses are stacked there'],why:'An FVG is an imbalance. A bullish one shows a lack of sell orders; a bearish one shows a lack of buy orders.'},
+ {topic:'Definition',q:'Candle 1 is red and candle 3 is green. How does that change whether the pattern is a fair value gap?',o:['It doesn\'t. Only the gap between their wicks matters','A bullish FVG needs both outer candles to be green','A bearish FVG needs candle 3 to be green','Different colours cancel the imbalance'],why:'The colour of candles 1 and 3 is irrelevant. Only the gap between the wicks counts.'},
+ {topic:'Definition',q:'Which candle in the three-candle pattern creates the imbalance?',o:['Candle 2, the strong, fast "expansionary" candle','Candle 1, the first to move','Candle 3, the last to close','All three contribute equally'],why:'Candle 2 moves so fast that candles 1 and 3 never trade in the range it crossed.'},
+ {topic:'Application',q:'Why does price tend to move quickly when it returns to an FVG?',o:['Few opposing orders are resting there, so there is little resistance','Every FVG forces a reversal','Market makers defend every gap','The gap must be filled by the next candle'],why:'The range lacks opposing orders, so price meets little resistance. That is why a gap supports continuation.'},
+ {topic:'Invalidation',q:'A candle\'s body closes below the bottom of a bullish FVG. What does the rule say?',o:['The FVG is disrespected, which can signal the trend is changing','Nothing yet: only a wick counts, so the FVG stands','The FVG moves up to the new candle\'s high','The FVG is confirmed as support'],why:'Disrespect is judged by a candle close through the gap. A disrespected FVG often signals a trend change, which sets up the inverse FVG.'},
+ {topic:'Invalidation',q:'A candle wicks below a bullish FVG but closes back inside it. Is the FVG disrespected?',o:['No. It takes a candle close through the gap, the same rule as break of structure','Yes. Any touch below invalidates it','Yes, if the wick is longer than the body','Only on higher time frames'],why:'A wick doesn\'t count. Only a close through the level does, exactly as with break of structure.'},
+ {topic:'Application',q:'In the strategy\'s order of operations, which role does a fair value gap play?',o:['Continuation confluence: the new trend is likely to keep going','Potential: where orders could be filled','Confirmation: proof that orders were filled','Exit: the profit target'],why:'Potential = liquidity sweep. Confirmation = break of structure (or inverse FVG). Continuation = FVG and equilibrium. Exit = the next draw on liquidity.'},
+ {topic:'Application',q:'You spot a clean FVG with no other context. What is the right call?',o:['Don\'t trade it alone. Check liquidity and structure first','Trade it immediately in its direction','Trade against it','Wait for it to fill, then reverse'],why:'Like every confluence, an FVG is combined with others: liquidity context, structure, trend.'},
+ {topic:'Definition',q:'A bearish FVG is the gap between which two points?',o:['The low of candle 1 and the high of candle 3','The high of candle 1 and the low of candle 3','The low of candle 2 and the high of candle 3','The close of candle 3 and the open of candle 1'],why:'Bearish is the mirror image: candle 1\'s low down to candle 3\'s high.'},
+ {topic:'Definition',q:'A bearish FVG represents a lack of what?',o:['Buy orders','Sell orders','Stop orders','Limit orders'],why:'Bearish FVG: price fell so fast that there were few buy orders in the range. Bullish is the opposite.'},
+ {topic:'Identification',q:'Why is a pattern whose candle-1 and candle-3 wicks overlap not an FVG?',o:['Price traded in that range on both sides, so orders were already filled','The middle candle was too small','Overlapping wicks only count on the daily chart','It is an FVG, just a weak one'],why:'No gap means no imbalance. The zone has been traded by both outer candles.'},
+ {topic:'Definition',q:'Why is the gap measured between wicks, not bodies?',o:['Wicks show where price actually traded; a range neither wick touched was only crossed by the fast middle candle','Bodies are unreliable on small time frames','Wicks carry more volume','It is just a TradingView convention'],why:'The wick tips show the full range each candle traded. A space no wick touched is the imbalance.'},
+ r=>{const a=q4(21000+r()*1800),d=q4(2+r()*9),b=a+d;return{topic:'Identification',q:`Candle 2 is a strong up candle. Candle 1's high is ${fm(a)} and candle 3's low is ${fm(b)}. What do you have?`,
+   o:[`A bullish FVG from ${fm(a)} to ${fm(b)} (${fm(d)} points)`,`A bearish FVG from ${fm(a)} to ${fm(b)}`,`No FVG: the wicks overlap by ${fm(d)} points`,`A bullish FVG from ${fm(b)} to ${fm(b+d)}`],why:`Candle 3's low (${fm(b)}) is above candle 1's high (${fm(a)}), so a gap of ${fm(d)} points exists, and with a strong up candle 2 it is bullish.`}},
+ r=>{const a=q4(21000+r()*1800),d=q4(1+r()*6),b=a-d;return{topic:'Identification',q:`Candle 2 is a strong up candle. Candle 1's high is ${fm(a)} and candle 3's low is ${fm(b)}. What do you have?`,
+   o:[`No FVG: the wicks overlap by ${fm(d)} points`,`A bullish FVG of ${fm(d)} points`,`A bearish FVG of ${fm(d)} points`,`A bullish FVG from ${fm(b)} to ${fm(a)}`],why:`Candle 3's low (${fm(b)}) is below candle 1's high (${fm(a)}). The wicks overlap, so no gap exists, however strong candle 2 is.`}}
+];
+const TRI_L={bull:'A bullish FVG',bear:'A bearish FVG',none:'No FVG: the wicks overlap'};
+function triQ(r,kind){
+  const P=q4(21000+r()*1500),s=q4(4+r()*4),gap=kind==='none'?-(.2+r()*.4):.45+r()*.9,flip=kind==='bear'||(kind==='none'&&r()<.5),C=tri(P,s,gap,flip);
+  return{C,flip,kind}}
+function buildExam(seed){
+  const r=mulberry(seed),items=[];
+  shuf(CONCEPTS,r).slice(0,4).forEach(c=>{const q=typeof c==='function'?c(r):c;items.push({type:'mcq',topic:q.topic,q:q.q,o:q.o,why:q.why})});
+  let kinds;do{kinds=[0,0,0].map(()=>['bull','bear','none'][Math.floor(r()*3)])}while(new Set(kinds).size<2||!kinds.includes('none'));
+  kinds.forEach(k=>{const d=triQ(r,k),O=['bull','bear','none'].filter(x=>x!==k);
+    items.push({type:'tri',topic:'Identification',q:'Candles 1, 2 and 3 are shown. What do they form?',o:[TRI_L[k],TRI_L[O[0]],TRI_L[O[1]]],why:k==='none'?'The wicks of candles 1 and 3 overlap, so no range was left untraded.':`There is a clear gap between candle 1's ${d.flip?'low':'high'} and candle 3's ${d.flip?'high':'low'}, with a strong ${d.flip?'down':'up'} candle 2: a ${k==='bull'?'bullish':'bearish'} FVG.`,data:d})});
+  [0,1].forEach(()=>{const k=r()<.5?'bull':'bear',d=triQ(r,k),a=d.C[0],c=d.C[2],ans=Math.abs(k==='bull'?c.l-a.h:a.l-c.h);
+    items.push({type:'num',topic:'Measurement',q:'Candles 1–3 form a fair value gap. Using the data window, how many points is the gap?',ans,why:`${k==='bull'?`Candle 3's low ${fm(c.l)} − candle 1's high ${fm(a.h)}`:`Candle 1's low ${fm(a.l)} − candle 3's high ${fm(c.h)}`} = ${fm(ans)} points.`,data:d})});
+  ['wick','close','none'].sort(()=>r()-.5).slice(0,2).forEach(v=>{
+    const k=v==='none'?(r()<.5?'bull':'bear'):(r()<.5?'bull':'bear'),P=q4(21000+r()*1500),s=q4(4+r()*4),flip=k==='bear';
+    const gap=v==='none'?-(.25+r()*.35):.5+r()*.6,cs=tri(P,s,gap,flip),a=cs[0],c=cs[2];
+    const lo=Math.min(a.h,c.l,a.l,c.h),zone=flip?{lo:Math.min(c.h,a.l),hi:Math.max(c.h,a.l)}:{lo:Math.min(a.h,c.l),hi:Math.max(a.h,c.l)};
+    // candle 4 pushes toward the zone's far side; flip mirrors
+    const edge=flip?zone.hi:zone.lo,dir=flip?-1:1;
+    const o4=c.c,wick=v!=='close';let c4;
+    if(wick)c4=mk(o4,o4+dir*.2*s,edge-dir*.5*s,edge+dir*.35*s);
+    else c4=mk(o4,o4+dir*.2*s,edge-dir*1*s,edge-dir*.6*s);
+    const C=[...cs,c4],closed=flip?c4.c>edge:c4.c<edge;
+    const ans=v==='none'?2:closed?0:1,O=['The FVG is disrespected: candle 4 closed through it','The FVG is respected: only a wick went through','There was never an FVG: the wicks of candles 1 and 3 overlap'];
+    const order=[ans,...[0,1,2].filter(x=>x!==ans)];
+    items.push({type:'dis',topic:'Invalidation',q:'The shaded zone is the range between candle 1 and candle 3. Candle 4 then trades into it. What is the correct read?',o:order.map(x=>O[x]),
+      why:v==='none'?'Candle 1 and 3\'s wicks overlap, so there was no gap to disrespect in the first place.':closed?'Candle 4 closed beyond the far side of the gap. A close through is what makes it disrespected.':'Candle 4 only poked through with a wick and closed back. By the close rule the FVG stands.',data:{C,zone,v}})});
+  const sc=genScenario(r,shuf(r()<.5?['bull','bear','decoy','decoy']:['bull','bull','bear','decoy'],r));
+  items.push({type:'mark',topic:'Marking',q:'Mark every fair value gap on the chart with the rectangle tool. Some patterns are look-alikes.',data:sc,marks:[],why:`There ${sc.truth.length===1?'was 1 gap':`were ${sc.truth.length} gaps`}, at ${sc.truth.map(z=>hhmm(510+z.i0*5)).join(', ')}.`});
+  items.forEach(it=>{if(it.o)it.order=shuf(it.o.map((_,i)=>i),r)});
+  return shuf(items,r);
+}
+let X=null,clockT=null,xchart=null;
+function stopClock(){clearInterval(clockT);clockT=null;if(xchart){xchart.destroy();xchart=null}}
+function renderExam(keep){
+  if(X&&X.done&&!keep&&!X.review)X=null;
+  if(!X)return examIntro();
+  if(X.done)return examResult();
+  showQ(X.i);
+}
+function examIntro(){
+  const a=S.m6.attempt;
+  $('#exBody').innerHTML=`<div class="ex-intro"><div>
+    <div class="hud" style="margin-bottom:8px">Module 6 · Fair Value Gaps · Attempt ${a}</div>
+    <h1 class="h">Module exam</h1>
+    <p class="muted" style="margin:12px 0 18px;max-width:56ch">This is a real test of whether you can do it, not whether you remember it. You'll read small charts, measure gaps, judge respected vs disrespected, and mark a full chart yourself.</p>
+    ${a>1?`<div class="fb no" style="max-width:56ch"><b>New set.</b> After your last attempt this module restarted. These questions, charts and numbers are different from the ones you saw.</div>`:''}
+    <button class="btn primary" id="startEx" ${labDone()===4||S.m6.passed?'':'disabled'}>Begin exam →</button>
+    ${labDone()===4||S.m6.passed?'':`<p class="dim" style="margin-top:10px;font-size:13.5px">Finish all four lesson steps first (${labDone()}/4 done). <a href="#" id="toLesson" style="color:var(--ice)">Back to the lesson</a></p>`}
+  </div><div class="card"><div class="hud" style="margin-bottom:6px">Before you start</div><ol class="rules">
+    <li><span><b>12 questions, 30 minutes.</b> The clock starts when you press Begin and the exam submits itself at zero.</span></li>
+    <li><span><b>80% to pass</b>, so 10 of 12.</span></li>
+    <li><span><b>No hints, no feedback</b> until you submit. You can change answers and flag questions first.</span></li>
+    <li><span><b>Charts and numbers are generated for you.</b> Your friend's exam, and your next one, will differ.</span></li>
+    <li><span><b>Don't pass and the module restarts.</b> Lessons re-open and you get a different exam.</span></li>
+  </ol></div></div>`;
+  $('#startEx').onclick=()=>startExam();const tl=$('#toLesson');if(tl)tl.onclick=e=>{e.preventDefault();setView('lab')};
+}
+function startExam(){
+  X={items:buildExam(Date.now()%2147483647),ans:{},flag:{},i:0,t0:Date.now(),limit:30*60,done:false};
+  stopClock();clockT=setInterval(tick,500);showQ(0);window.scrollTo(0,0);
+}
+function tick(){if(!X||X.done)return stopClock();const left=Math.max(0,X.limit-Math.floor((Date.now()-X.t0)/1000)),c=$('#clock');
+  if(c){c.textContent=String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0');c.classList.toggle('low',left<300)}if(left<=0)finishExam(true)}
+const TYPE_L={mcq:'Concept',tri:'Spot the pattern',num:'Measure it',dis:'Respected or disrespected',mark:'Chart task'};
+function dataWindow(cs){return `<table class="dw"><tr><th>Candle</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr>${cs.map((c,i)=>`<tr><td>${i+1}</td><td>${fm(c.o)}</td><td>${fm(c.h)}</td><td>${fm(c.l)}</td><td>${fm(c.c)}</td></tr>`).join('')}</table>`}
+function miniChart(host,cs,opts={}){
+  if(xchart){xchart.destroy();xchart=null}
+  const n=cs.length;xchart=new Chart(host,{fixed:true,view:[-1.5,n+3]});xchart.setData(cs);
+  xchart.ov=[...cs.map((c,i)=>({t:'tag',i,p:c.l,text:String(i+1),pos:'below',col:'#8cc4ff'})),...(opts.zone?[{t:'rect',i0:0,i1:n-1,lo:opts.zone.lo,hi:opts.zone.hi,col:'#ff6a00',dash:true,text:'zone'}]:[])];xchart.draw();
+}
+function showQ(i){
+  X.i=i;const it=X.items[i],n=X.items.length;
+  const unans=X.items.filter((_,k)=>!isAns(k)).length;
+  let ui='';
+  if(it.type==='num')ui=`<div style="display:flex;gap:10px;align-items:center;margin-top:12px"><input class="in" id="numIn" type="number" step="0.25" inputmode="decimal" placeholder="e.g. 7.50" style="max-width:180px" value="${X.ans[i]??''}"><span class="muted">points</span></div>`;
+  else if(it.type==='mark')ui=`<div style="display:flex;gap:10px;align-items:center;margin:12px 0 8px;flex-wrap:wrap"><span id="tbSlot"></span><span class="chip" id="mkCount"></span><button class="btn sm" id="mkClr">Clear all</button><span class="dim" style="font-size:13px">Rectangle tool is on. Drag across candles 1–3 from wick tip to wick tip.</span></div>`;
+  else ui=`<div class="opts">${it.order.map(k=>`<button class="opt ${X.ans[i]===k?'sel':''}" data-ans="${k}">${esc(it.o[k])}</button>`).join('')}</div>`;
+  $('#exBody').innerHTML=`<div class="ex-head"><div class="hud">Module 6 · Fair Value Gaps · Attempt ${S.m6.attempt}</div><div class="h">Exam</div><div class="clock num" id="clock">30:00</div></div>
+   <div class="ex-grid"><div><div class="card exq"><div class="exq-h"><span class="hud">Question ${i+1} of ${n}</span><span class="chip">${TYPE_L[it.type]}</span><button class="flag ${X.flag[i]?'on':''}" id="flagBtn">${X.flag[i]?'Flagged':'Flag for review'}</button></div>
+     <p class="exq-t">${it.q}</p>
+     ${it.type==='mark'?'<div id="qc" class="tvc tall"></div>':it.data?'<div id="qc" class="tvc"></div>':''}
+     ${it.type==='tri'||it.type==='num'?dataWindow(it.data.C):it.type==='dis'?dataWindow(it.data.C):''}
+     ${ui}</div>
+    <div class="ex-nav"><button class="btn" id="exPrev" ${i===0?'disabled':''}>← Previous</button><button class="btn" id="exNext" ${i===n-1?'disabled':''}>Next →</button><span style="flex:1"></span><button class="btn primary" id="exSubmit">Submit exam</button></div></div>
+    <aside class="card" style="padding:16px 18px"><div class="hud">Question navigator</div><div class="nav">${X.items.map((_,k)=>`<button data-q="${k}" class="${isAns(k)?'ans':''} ${k===i?'cur':''} ${X.flag[k]?'fl':''}">${k+1}</button>`).join('')}</div>
+      <p class="muted" style="font-size:13px">${unans?`${unans} unanswered`:'All answered'} · ${Object.values(X.flag).filter(Boolean).length} flagged</p>
+      <p class="dim" style="font-size:12.5px;margin-top:10px">Answers aren't marked until you submit.</p></aside></div>`;
+  const host=$('#qc');
+  if(host){
+    if(it.type==='mark'){if(xchart){xchart.destroy()}xchart=new Chart(host);xchart.setData(it.data.C);xchart.marks=it.marks;const tb=toolbar(xchart,['rect','cursor','erase'],'h');$('#tbSlot').append(tb);
+      const upd=()=>{$('#mkCount').textContent=it.marks.filter(m=>m.t==='rect').length+' marked';refreshNav()};xchart.onmarks=()=>{upd()};upd();$('#mkClr').onclick=()=>{it.marks.length=0;xchart.marks=it.marks;xchart.draw();upd()}}
+    else miniChart(host,it.data.C,{zone:it.type==='dis'?it.data.zone:null});
+  }
+  tick();
+}
+const isAns=k=>{const it=X.items[k];return it.type==='mark'?it.marks.length>0:it.type==='num'?X.ans[k]!==undefined&&X.ans[k]!=='':X.ans[k]!==undefined};
+function refreshNav(){$$('.nav button').forEach(b=>{const k=+b.dataset.q;b.classList.toggle('ans',isAns(k))});}
+$('#exBody').addEventListener('click',e=>{
+  if(!X||X.done)return;const t=e.target;let b;
+  if((b=t.closest('[data-ans]'))){X.ans[X.i]=+b.dataset.ans;$$('.opt').forEach(o=>o.classList.toggle('sel',o===b));refreshNav();return}
+  if((b=t.closest('[data-q]')))return showQ(+b.dataset.q);
+  if(t.closest('#exPrev'))return showQ(X.i-1);if(t.closest('#exNext'))return showQ(X.i+1);
+  if(t.closest('#flagBtn')){X.flag[X.i]=!X.flag[X.i];return showQ(X.i)}
+  if(t.closest('#exSubmit'))return confirmSubmit();
+});
+$('#exBody').addEventListener('input',e=>{if(e.target.id==='numIn'&&X){X.ans[X.i]=e.target.value;refreshNav()}});
+function confirmSubmit(){
+  const un=X.items.filter((_,k)=>!isAns(k)).length;
+  $('#dlgBody').innerHTML=`<h2 class="h">Submit your exam?</h2><p>${un?`<b>${un} question${un>1?'s are':' is'} unanswered</b> and will count as wrong. `:'All questions are answered. '}You can't change anything after this, and nothing is shown until you submit.</p>
+   <p>Scoring under 80% restarts the module.</p><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px"><button class="btn" id="dNo">Keep working</button><button class="btn primary" id="dYes">Submit</button></div>`;
+  const d=$('#dlg');d.showModal();$('#dNo').onclick=()=>d.close();$('#dYes').onclick=()=>{d.close();finishExam()};
+}
+function gradeItem(it,a){
+  if(it.type==='mark'){const g=gradeMarks(it.marks,it.data.truth);return g.ok}
+  if(it.type==='num')return a!==undefined&&a!==''&&Math.abs(parseFloat(a)-it.ans)<.011;
+  return a===0}
+const TOPICS=['Definition','Identification','Measurement','Invalidation','Application','Marking'];
+const RESTUDY={Definition:'Learn: anatomy of the three candles',Identification:'Learn: what is not an FVG',Measurement:'See it: reading candle 1\'s high and candle 3\'s low',Invalidation:'Learn: when a gap is disrespected',Application:'Learn: where it fits in the strategy',Marking:'Mark it: practice charts'};
+function finishExam(timed){
+  stopClock();X.done=true;
+  const res=X.items.map((it,i)=>gradeItem(it,X.ans[i])),score=res.filter(Boolean).length,total=X.items.length,pass=score/total>=.8-1e-9;
+  X.res=res;X.score=score;X.pass=pass;X.timed=!!timed;
+  const topics={};X.items.forEach((it,i)=>{const t=topics[it.topic]||(topics[it.topic]={c:0,n:0});t.n++;if(res[i])t.c++});X.topics=topics;
+  S.m6.history.push({n:S.m6.attempt,s:score,t:total,pass});
+  if(pass){S.m6.passed=true;S.m6.score=Math.round(score/total*100)}
+  else{S.m6.restarted=true;const att=S.m6.attempt+1,hist=S.m6.history;S.lab=freshLab();S.lab.scen=null;S.m6.attempt=att;newPractice();S.m6.history=hist}
+  examResult();window.scrollTo(0,0);
+}
+function examResult(){
+  const {score,pass,res,topics}=X,total=X.items.length,pct=Math.round(score/total*100);
+  const miss=X.items.map((it,i)=>({it,i})).filter(o=>!res[o.i]);
+  const correctText=(it)=>it.type==='num'?fm(it.ans)+' points':it.type==='mark'?it.why:it.o[0];
+  $('#exBody').innerHTML=`
+   <div class="card res-top"><div><div class="score" style="color:${pass?'var(--win)':'var(--loss)'}">${score}<small> / ${total}</small></div><div class="muted" style="margin-top:4px">${pct}% · needed 80%</div></div>
+    <div><span class="chip ${pass?'ok':'bad'}">${pass?T('Module passed','Module cleared'):'Not yet'}</span>
+    <h1 class="h" style="font-size:30px;margin:8px 0 6px">${pass?(T('Module 6 complete.','Module 6 cleared.')):'Not this time.'}</h1>
+    <p class="muted">${pass?`You've shown you can spot, measure and judge fair value gaps. <b>Module 7: Advanced Imbalance</b> is now unlocked.${T('','')}`:`${X.timed?'Time ran out. ':''}That's useful information: it shows exactly which ideas haven't landed yet. Use it.`}</p>
+    ${pass?`<p class="only-play hud" style="margin-top:8px;color:var(--signal)">+240 XP · rank progress</p>`:''}</div></div>
+   <div class="ex-grid"><div>
+    <div class="card" style="padding:18px 22px"><div class="hud" style="margin-bottom:8px">Score by topic</div>
+      ${TOPICS.filter(t=>topics[t]).map(t=>{const o=topics[t],p=o.c/o.n;return `<div class="topic"><span>${t}</span><div class="pbar"><i class="${p<.7?'bad':'good'}" style="width:${p*100}%;background:${p<.7?'var(--loss)':'var(--win)'}"></i></div><span class="num">${o.c}/${o.n}</span></div>`}).join('')}
+      ${pass?'':`<p class="muted" style="margin-top:12px;font-size:14px"><b>Focus on:</b> ${TOPICS.filter(t=>topics[t]&&topics[t].c/topics[t].n<.7).map(t=>RESTUDY[t]).join(' · ')||'a careful re-read of the whole lesson'}</p>`}</div>
+    ${miss.length?`<div class="hud" style="margin:22px 0 4px">Review${pass?'':': shown once. Your next exam is a different set.'}</div>${miss.map(({it,i})=>`<div class="rev"><p><b>Q${i+1} · ${TYPE_L[it.type]}</b></p><p>${it.q}</p><p>Correct: <b>${esc(correctText(it))}</b></p>${it.type==='mark'?'':`<p>${it.why}</p>`}</div>`).join('')}`:'<p class="muted" style="margin-top:18px">No missed questions. Clean sheet.</p>'}
+   </div><aside>
+    ${pass?`<div class="card next-card" style="padding:18px"><div class="hud">Unlocked</div><div class="h" style="font-size:22px;margin:4px 0 8px">7 · Advanced Imbalance</div><p class="muted" style="font-size:14px">Opening gaps and balanced price ranges. Phase 3 ends with a cumulative check that revisits modules 5 to 9.</p><button class="btn primary" id="toMap" style="margin-top:12px">Back to course map</button></div>`:
+    `<div class="reset"><div class="hud" style="color:var(--loss)">Module restarted</div><h3 class="h" style="font-size:20px;margin:6px 0">Back to the lesson</h3><p class="muted" style="font-size:14px">Below 80% means a re-learn, not a re-roll. The lessons have re-opened, the practice charts are new, and the exam will be a <b>different set</b>: different charts, numbers and questions.</p>
+     <button class="btn primary" id="restartBtn" style="margin-top:12px;white-space:normal;text-align:left">Restart Module 6 · attempt ${S.m6.attempt}</button></div>`}
+   </aside></div>`;
+  const m=$('#toMap');if(m)m.onclick=()=>{X=null;setView('map')};
+  const r=$('#restartBtn');if(r)r.onclick=()=>{X=null;S.m6.restarted=false;setView('lab');go(0)};
+}
+
+/* ============================================================
+   mockup controls
+============================================================ */
+function autoExam(wrong){
+  stopClock();X={items:buildExam(Date.now()%2147483647+3),ans:{},flag:{},i:0,t0:Date.now(),limit:1800,done:false};
+  const bad=new Set(shuf(X.items.map((_,i)=>i)).slice(0,wrong));
+  X.items.forEach((it,i)=>{const w=bad.has(i);
+    if(it.type==='mark'){if(!w)it.data.truth.forEach(z=>it.marks.push({t:'rect',i0:z.i0,i1:z.i1,lo:z.lo,hi:z.hi}))}
+    else if(it.type==='num')X.ans[i]=w?String(it.ans+2):String(it.ans);
+    else X.ans[i]=w?it.order.find(k=>k!==0):0});
+  S.lab.done=[1,1,1,1];finishExam();
+}
+$('#mockBtn').onclick=()=>{const m=$('#mock');m.hidden=!m.hidden;$('#mockBtn').setAttribute('aria-expanded',!m.hidden)};
+$('#mock').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;$('#mock').hidden=true;
+  if(b.dataset.m==='pass'){S.lab.done=[1,1,1,1];setView('exam');autoExam(1)}
+  if(b.dataset.m==='fail'){S.lab.done=[1,1,1,1];setView('exam');autoExam(4)}
+  if(b.dataset.m==='ready'){S.lab.done=[1,1,1,1];S.lab.sub=true;S.lab.t1=S.lab.t1||'x';S.lab.t2=S.lab.t2||'x';toast('All four lesson steps marked complete');if(S.view==='lab')renderLesson();if(S.view==='map')renderMap();if(S.view==='exam'&&!X)renderExam()}
+  if(b.dataset.m==='reset'){stopClock();X=null;S.lab=freshLab();S.m6={passed:false,score:0,attempt:1,history:[]};newPractice();toast('Demo reset');setView('map')}
+});
+/* boot */
+try{const t=localStorage.getItem('fh-look');if(t==='play'||t==='modern')setTheme(t)}catch(e){}
+renderMap();
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){$$('dialog[open]').forEach(d=>d.close())}});
+</script>
+</body>
+</html>
