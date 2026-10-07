@@ -193,11 +193,12 @@ function LocalLogin({ onLocal }: { onLocal: (u: string, p: string) => Promise<st
   return (
     <form className="grid max-w-md gap-3 border-l border-line-2 pl-4" onSubmit={async (e) => { e.preventDefault(); setBusy(true); setErr(await onLocal(u, p)); setBusy(false); }}>
       <div className="label">Sign in without Discord</div>
-      <input className="border border-line-2 bg-panel px-3 py-2.5 text-[15px] text-ink outline-none focus:border-ice-dim" placeholder="Username" autoComplete="username" value={u} onChange={(e) => setU(e.target.value)} />
+      <input className="border border-line-2 bg-panel px-3 py-2.5 text-[15px] text-ink outline-none focus:border-ice-dim" placeholder="Email or username" autoComplete="username" value={u} onChange={(e) => setU(e.target.value)} />
       <input className="border border-line-2 bg-panel px-3 py-2.5 text-[15px] text-ink outline-none focus:border-ice-dim" placeholder="Password" type="password" autoComplete="current-password" value={p} onChange={(e) => setP(e.target.value)} />
       {err && <p role="alert" className="border-l-2 border-loss bg-loss/10 px-3 py-2 text-sm text-loss">{err}</p>}
       <button type="submit" disabled={busy || !u || !p} className="btn-primary px-4 py-2.5 disabled:opacity-50">{busy ? "Signing in…" : "Sign in"}</button>
-      <p className="text-xs text-ink-3">Your coach creates this login for you. Ask them if you do not have one.</p>
+      <button type="button" className="text-left text-sm text-ink-3 underline underline-offset-4 hover:text-ink-2" onClick={async () => { if (!u.includes("@")) { setErr("Type your email address above, then press this again."); return; } await fetch("/auth/local/forgot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: u }) }); setErr("If that email has an account, a link to choose a new password is on its way."); }}>Forgot password?</button>
+      <p className="text-xs text-ink-3">Your coach sets up this login for you and emails you a link. Ask them if you do not have one.</p>
     </form>
   );
 }

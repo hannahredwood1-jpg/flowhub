@@ -6,7 +6,7 @@ import { sign, verify } from "hono/jwt";
 import { ZodError } from "zod";
 import { SQL } from "bun";
 import { gunzipSync } from "node:zlib";
-import { createCipheriv, createDecipheriv, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 
 // src/lib/planner.ts
 var POINT_VALUE = {
@@ -1116,6 +1116,7 @@ app.post("/auth/local", async (c) => {
   const key = `${(c.req.header("x-forwarded-for") ?? "").split(",")[0].trim()}|${username}`, f = loginFails.get(key);
   if (f && f.n >= 5 && f.until > Date.now()) throw new HttpError(429, "Too many attempts. Try again in 15 minutes.");
   const [a] = await sql`select "userId", "passwordHash", disabled, "expiresAt" from "LocalAccount" where username = ${username}`;
+  if (a && !a.passwordHash) throw new HttpError(403, "Your account is not set up yet. Use the link in your invite email, or ask your coach to resend it.");
   const ok = a ? await Bun.password.verify(pw, a.passwordHash) : (await Bun.password.verify(pw, "$argon2id$v=19$m=65536,t=2,p=1$c29tZXNhbHRzb21lc2FsdA$RdescudvJCsgt3ub+b+dWRWJTmaaJObG1d6wZq7Xz2E").catch(() => false), false);
   if (!ok) {
     loginFails.set(key, { n: (f && f.until > Date.now() ? f.n : 0) + 1, until: Date.now() + 15 * 6e4 });
@@ -1126,6 +1127,72 @@ app.post("/auth/local", async (c) => {
   await sql`update "User" set "lastLoginAt" = now() where id = ${a.userId}`;
   const jwt = await sign({ uid: a.userId, exp: Math.floor(Date.now() / 1e3) + SESSION_DAYS * 86400 }, CFG.sessionSecret, "HS256");
   setCookie(c, "fh_session", jwt, { ...cookieOpts, maxAge: SESSION_DAYS * 86400 });
+  return c.json({ ok: true });
+});
+var sha = (t) => createHash("sha256").update(t).digest("hex");
+var mailFrom = () => process.env.MAIL_FROM || "FLOWHUB <no-reply@flowmtd.com>";
+async function sendMail(to, subject, html) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return false;
+  try {
+    const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: mailFrom(), to: [to], subject, html }) });
+    if (!r.ok) console.error("mail", r.status, await r.text().catch(() => ""));
+    return r.ok;
+  } catch (e) {
+    console.error("mail", e);
+    return false;
+  }
+}
+var baseUrl = () => (CFG.publicUrl || "").replace(/\/$/, "");
+async function makeToken(userId, kind) {
+  const t = randomBytes(32).toString("base64url");
+  await sql`delete from "LocalToken" where "userId" = ${userId} and kind = ${kind}`;
+  await sql`insert into "LocalToken" (hash, "userId", kind, "expiresAt") values (${sha(t)}, ${userId}, ${kind}, ${new Date(Date.now() + (kind === "invite" ? 48 : 1) * 36e5)})`;
+  return t;
+}
+var mailHtml = (name, kind, link) => `<div style="font-family:Arial,sans-serif;background:#030405;color:#e6ebf2;padding:32px"><div style="max-width:480px;margin:auto"><div style="font-weight:900;font-size:22px;letter-spacing:.02em"><span style="color:#ff6a00">F</span>LOWHUB</div><h2 style="margin:24px 0 8px">${kind === "invite" ? `Welcome, ${name.replace(/[<>&"]/g, "")}` : "Reset your password"}</h2><p style="color:#929fb2;line-height:1.6">${kind === "invite" ? "Your coach has set up your FLOWHUB access. Choose a password to finish setting up your account. This link works once and expires in 48 hours." : "Use the button below to choose a new password. This link works once and expires in 1 hour. If you did not ask for this, you can ignore this email."}</p><p style="margin:24px 0"><a href="${link}" style="background:#ff6a00;color:#160a00;font-weight:700;padding:12px 20px;text-decoration:none;border-radius:8px">${kind === "invite" ? "Set up my account" : "Choose a new password"}</a></p><p style="color:#66717f;font-size:12px;word-break:break-all">${link}</p></div></div>`;
+async function inviteMail(userId, name, email, kind) {
+  const link = `${baseUrl()}/setup?token=${await makeToken(userId, kind)}`;
+  const sent = await sendMail(email, kind === "invite" ? "Set up your FLOWHUB account" : "Reset your FLOWHUB password", mailHtml(name, kind, link));
+  return { sent, link };
+}
+var pageShell = (body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FLOWHUB</title><meta name="robots" content="noindex"><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#030405;color:#e6ebf2;font:15px/1.5 Inter,system-ui,sans-serif}.c{width:min(420px,92vw);padding:28px;border:1px solid #28313e;background:#0a0d12;border-radius:12px}.l{font:900 24px Archivo,Arial Black,sans-serif;letter-spacing:.01em;margin-bottom:18px}.l b{color:#ff6a00}h1{font-size:20px;margin:0 0 6px}p{color:#929fb2;margin:0 0 16px}input{width:100%;box-sizing:border-box;padding:12px;margin:0 0 10px;border:1px solid #28313e;border-radius:8px;background:#05070a;color:#e6ebf2;font:inherit}button{width:100%;padding:12px;border:0;border-radius:8px;background:#ff6a00;color:#160a00;font-weight:700;font-size:15px;cursor:pointer}#e{color:#ff5d73;margin:8px 0 0;min-height:20px}</style></head><body><div class="c"><div class="l"><b>F</b>LOWHUB</div>${body}</div></body></html>`;
+app.get("/setup", async (c) => {
+  const t = c.req.query("token") ?? "";
+  const [row] = await sql`select t.kind, t."expiresAt", t."usedAt", u."globalName" as name from "LocalToken" t join "User" u on u.id = t."userId" where t.hash = ${sha(t)}`;
+  if (!row || row.usedAt || new Date(row.expiresAt) < /* @__PURE__ */ new Date()) return c.html(pageShell('<h1>This link has expired</h1><p>Ask your coach to send a new invite, or use \u201CForgot password?\u201D on the sign-in page.</p><p><a href="/" style="color:#8cc4ff">Back to sign in</a></p>'), 410);
+  return c.html(pageShell(`<h1>${row.kind === "invite" ? "Set up your account" : "Choose a new password"}</h1><p>Pick a password with at least 8 characters.</p><form id="f"><input id="p" type="password" placeholder="New password" autocomplete="new-password" minlength="8" required><input id="q" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" required><button>Continue</button><div id="e"></div></form><script>document.getElementById("f").onsubmit=async function(e){e.preventDefault();var p=document.getElementById("p").value,q=document.getElementById("q").value,er=document.getElementById("e");if(p!==q){er.textContent="Passwords do not match.";return}var r=await fetch("/auth/local/setup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:${JSON.stringify(t)},password:p})});var j=await r.json().catch(function(){return{}});if(r.ok){location.href="/#dashboard"}else{er.textContent=j.error||"Something went wrong."}}</script>`));
+});
+app.post("/auth/local/setup", async (c) => {
+  const origin = c.req.header("origin");
+  if (origin && new URL(origin).host !== (c.req.header("host") ?? "")) throw new HttpError(403, "Bad origin");
+  const b = await c.req.json().catch(() => ({}));
+  const pw = String(b.password ?? "");
+  if (pw.length < 8 || pw.length > 100) throw new HttpError(400, "Password must be 8\u2013100 characters");
+  const [t] = await sql`select "userId", "expiresAt", "usedAt" from "LocalToken" where hash = ${sha(String(b.token ?? ""))}`;
+  if (!t || t.usedAt || new Date(t.expiresAt) < /* @__PURE__ */ new Date()) throw new HttpError(410, "This link has expired. Ask for a new one.");
+  const [a] = await sql`select days, "activatedAt" from "LocalAccount" where "userId" = ${t.userId}`;
+  if (!a) throw new HttpError(404, "Account not found");
+  const exp = !a.activatedAt && a.days ? new Date(Date.now() + a.days * 864e5) : null;
+  await sql`update "LocalAccount" set "passwordHash" = ${await Bun.password.hash(pw)}, "activatedAt" = coalesce("activatedAt", now()), "expiresAt" = coalesce(${exp}, "expiresAt") where "userId" = ${t.userId}`;
+  await sql`update "LocalToken" set "usedAt" = now() where "userId" = ${t.userId}`;
+  const [acct] = await sql`select disabled, "expiresAt" from "LocalAccount" where "userId" = ${t.userId}`;
+  if (acct.disabled) throw new HttpError(403, "Your access has ended. Ask your coach.");
+  await sql`update "User" set "lastLoginAt" = now() where id = ${t.userId}`;
+  const jwt = await sign({ uid: t.userId, exp: Math.floor(Date.now() / 1e3) + SESSION_DAYS * 86400 }, CFG.sessionSecret, "HS256");
+  setCookie(c, "fh_session", jwt, { ...cookieOpts, maxAge: SESSION_DAYS * 86400 });
+  return c.json({ ok: true });
+});
+var forgotHits = /* @__PURE__ */ new Map();
+app.post("/auth/local/forgot", async (c) => {
+  const origin = c.req.header("origin");
+  if (origin && new URL(origin).host !== (c.req.header("host") ?? "")) throw new HttpError(403, "Bad origin");
+  const ip = (c.req.header("x-forwarded-for") ?? "").split(",")[0].trim(), hits = (forgotHits.get(ip) ?? []).filter((x) => x > Date.now() - 36e5);
+  if (hits.length >= 5) throw new HttpError(429, "Too many requests. Try again later.");
+  forgotHits.set(ip, [...hits, Date.now()]);
+  const email = String((await c.req.json().catch(() => ({}))).email ?? "").trim().toLowerCase().slice(0, 120);
+  const [a] = await sql`select a."userId", a.email, a.disabled, a."expiresAt", a."passwordHash", u."globalName" as name from "LocalAccount" a join "User" u on u.id = a."userId" where lower(a.email) = ${email}`;
+  if (a && a.email && !a.disabled && !(a.expiresAt && new Date(a.expiresAt) < /* @__PURE__ */ new Date())) await inviteMail(a.userId, a.name ?? "", a.email, a.passwordHash ? "reset" : "invite");
   return c.json({ ok: true });
 });
 app.use("/api/*", async (c, next) => {
@@ -1426,45 +1493,47 @@ app.patch("/api/admin/catalog/:id", async (c) => {
   await audit(c.get("user").id, "CATALOG_UPDATE", before.id, { changes: d });
   return c.json({ ok: true });
 });
-var expiryFrom = (days) => {
-  if (days === null || days === void 0 || days === "") return null;
-  const n2 = Math.round(Number(days));
-  if (!(n2 >= 1 && n2 <= 3650)) throw new HttpError(400, "Days must be 1\u20133650, or blank for no limit");
-  return new Date(Date.now() + n2 * 864e5);
-};
 app.get("/api/local-accounts", async (c) => {
   staffOnly(c);
-  const rows = await sql`select u.id, a.username, u."globalName" as name, a.disabled, a."expiresAt", u."lastLoginAt", a."createdAt" from "LocalAccount" a join "User" u on u.id = a."userId" order by a."createdAt" desc`;
-  return c.json(rows.map((r) => ({ ...r, expiresAt: r.expiresAt ? new Date(r.expiresAt).toISOString() : null, lastLoginAt: r.lastLoginAt ? new Date(r.lastLoginAt).toISOString() : null, createdAt: new Date(r.createdAt).toISOString() })));
+  const rows = await sql`select u.id, a.username, a.email, u."globalName" as name, a.disabled, a."expiresAt", a.days, (a."passwordHash" is not null) as active, u."lastLoginAt", a."createdAt" from "LocalAccount" a join "User" u on u.id = a."userId" order by a."createdAt" desc`;
+  const iso = (v) => v ? new Date(v).toISOString() : null;
+  return c.json(rows.map((r) => ({ ...r, expiresAt: iso(r.expiresAt), lastLoginAt: r.active ? iso(r.lastLoginAt) : null, createdAt: iso(r.createdAt) })));
 });
 app.post("/api/local-accounts", async (c) => {
   staffOnly(c);
   const b = await c.req.json();
-  const username = String(b.username ?? "").trim().toLowerCase(), name = String(b.name ?? "").trim(), pw = String(b.password ?? "");
-  if (!/^[a-z0-9._-]{3,30}$/.test(username)) throw new HttpError(400, "Username: 3\u201330 letters, numbers, . _ -");
+  const email = String(b.email ?? "").trim().toLowerCase(), name = String(b.name ?? "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 120) throw new HttpError(400, "Enter a valid email address");
   if (name.length < 1 || name.length > 60) throw new HttpError(400, "Enter a name");
-  if (pw.length < 8 || pw.length > 100) throw new HttpError(400, "Password must be 8\u2013100 characters");
-  const exp = expiryFrom(b.days);
-  const [dupe] = await sql`select 1 as x from "LocalAccount" where username = ${username}`;
-  if (dupe) throw new HttpError(409, "That username is taken");
+  const days = b.days === null || b.days === void 0 || b.days === "" ? null : Math.round(Number(b.days));
+  if (days !== null && !(days >= 1 && days <= 3650)) throw new HttpError(400, "Days must be 1\u20133650, or blank for no limit");
+  const [dupe] = await sql`select 1 as x from "LocalAccount" where username = ${email} or lower(email) = ${email}`;
+  if (dupe) throw new HttpError(409, "That email already has an account");
   const id = randomUUID();
   await sql`insert into "User" (id, "discordId", username, "globalName", role, "guildRoleIds", "isGuildMember", "rolesSyncedAt", "lastLoginAt")
-            values (${id}, ${"local:" + username}, ${username}, ${name}, 'MEMBER'::"Role", ${pgArray([])}::text[], true, now(), now())`;
-  await sql`insert into "LocalAccount" ("userId", username, "passwordHash", "expiresAt", "createdById") values (${id}, ${username}, ${await Bun.password.hash(pw)}, ${exp}, ${c.get("user").id})`;
-  return c.json({ id });
+            values (${id}, ${"local:" + email}, ${email}, ${name}, 'MEMBER'::"Role", ${pgArray([])}::text[], true, now(), now())`;
+  await sql`insert into "LocalAccount" ("userId", username, email, days, "createdById") values (${id}, ${email}, ${email}, ${days}, ${c.get("user").id})`;
+  const m = await inviteMail(id, name, email, "invite");
+  return c.json({ id, emailed: m.sent, link: m.sent ? void 0 : m.link });
 });
 app.patch("/api/local-accounts/:id", async (c) => {
   staffOnly(c);
   const id = c.req.param("id"), b = await c.req.json();
-  const [a] = await sql`select "userId" from "LocalAccount" where "userId" = ${id}`;
+  const [a] = await sql`select "userId", email, "passwordHash" from "LocalAccount" where "userId" = ${id}`;
   if (!a) throw new HttpError(404, "Not found");
   if (typeof b.disabled === "boolean") await sql`update "LocalAccount" set disabled = ${b.disabled} where "userId" = ${id}`;
-  if ("days" in b) await sql`update "LocalAccount" set "expiresAt" = ${expiryFrom(b.days)} where "userId" = ${id}`;
-  if (b.password !== void 0) {
-    if (b.password.length < 8 || b.password.length > 100) throw new HttpError(400, "Password must be 8\u2013100 characters");
-    await sql`update "LocalAccount" set "passwordHash" = ${await Bun.password.hash(b.password)} where "userId" = ${id}`;
+  if ("days" in b) {
+    const d = b.days === null || b.days === "" ? null : Math.round(Number(b.days));
+    if (d !== null && !(d >= 1 && d <= 3650)) throw new HttpError(400, "Days must be 1\u20133650, or blank for no limit");
+    await sql`update "LocalAccount" set days = ${d}, "expiresAt" = ${a.passwordHash && d ? new Date(Date.now() + d * 864e5) : null} where "userId" = ${id}`;
   }
   if (b.name !== void 0 && b.name.trim()) await sql`update "User" set "globalName" = ${b.name.trim().slice(0, 60)} where id = ${id}`;
+  if (b.resend) {
+    if (!a.email) throw new HttpError(400, "This account has no email address");
+    const [u] = await sql`select "globalName" as name from "User" where id = ${id}`;
+    const m = await inviteMail(id, u.name ?? "", a.email, a.passwordHash ? "reset" : "invite");
+    return c.json({ ok: true, emailed: m.sent, link: m.sent ? void 0 : m.link });
+  }
   return c.json({ ok: true });
 });
 app.all("/api/*", () => {
