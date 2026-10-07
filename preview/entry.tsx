@@ -8,6 +8,7 @@ import { buildDashboard, buildDirectoryRow, sortDirectory, type RawAccount, type
 import type { CatalogFirm, FeedbackDTO, JournalDTO, PersonDTO, RoadmapDTO, RulesDTO, Stage } from "../src/lib/types";
 import { todayET } from "../src/lib/types";
 import { AppShell } from "../src/components/AppShell";
+import { HomeScreen } from "../src/components/HomeScreen";
 import { LoginScreen } from "../src/components/LoginScreen";
 import { blendedWinRate, strategyLabel, type StrategyKey } from "../src/lib/strategies";
 import { MemberDashboard } from "../src/components/MemberDashboard";
@@ -219,7 +220,7 @@ function PlanView() {
 
 // ── App ────────────────────────────────────────────────────
 function App() {
-  const pick = () => (location.hash === "#coach" ? "coach" : location.hash === "#dashboard" ? "dashboard" : location.hash.startsWith("#plan") ? "plan" : "login") as "login" | "dashboard" | "plan" | "coach";
+  const pick = () => (location.hash === "#coach" ? "coach" : location.hash === "#dashboard" ? "dashboard" : location.hash.startsWith("#plan") ? "plan" : location.hash === "#login" ? "login" : "home") as "login" | "home" | "dashboard" | "plan" | "coach";
   const [view, setView] = useState(pick);
   useEffect(() => {
     const on = () => { setView(pick()); window.scrollTo(0, 0); };
@@ -229,8 +230,9 @@ function App() {
   const initialDir = sortDirectory([...db.keys()].map((id) => buildDirectoryRow(dash(ME, id))), "drawdown");
   if (view === "login")
     return <LoginScreen action={async () => { await new Promise((r) => setTimeout(r, 2200)); location.hash = "dashboard"; }} />;
+  if (view === "home") return <HomeScreen viewer={coach} />;
   return (
-    <AppShell viewer={coach} active={view} links={{ dashboard: "#dashboard", plan: "#plan", school: "https://claude.ai/artifact/TeTW45zgMgzPLasmC1PQUr", practice: "https://claude.ai/artifact/9sx6av7g7VLRg4bYzWRaPN", coach: "#coach" }}>
+    <AppShell viewer={coach} active={view} links={{ home: "#home", dashboard: "#dashboard", plan: "#plan", school: "https://claude.ai/artifact/TeTW45zgMgzPLasmC1PQUr", practice: "https://claude.ai/artifact/9sx6av7g7VLRg4bYzWRaPN", coach: "#coach" }}>
       <div className="mb-4 flex flex-wrap items-center gap-2 border border-dashed border-line-2 px-3 py-2 text-xs text-ink-3">
         <span className="chip text-ice">Preview</span>
         Sample traders and trades. Changes you make here stay in this tab. You&apos;re viewing as a Trading Coach, so both views are unlocked. <a href="#login" className="text-ice underline-offset-2 hover:underline">See the login screen</a>

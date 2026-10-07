@@ -1101,7 +1101,7 @@ app.get("/auth/callback", async (c) => {
     returning id`;
   const jwt = await sign({ uid: u.id, exp: Math.floor(Date.now() / 1e3) + SESSION_DAYS * 86400 }, CFG.sessionSecret, "HS256");
   setCookie(c, "fh_session", jwt, { ...cookieOpts, maxAge: SESSION_DAYS * 86400 });
-  return c.redirect("/#dashboard");
+  return c.redirect("/#home");
 });
 app.get("/auth/logout", (c) => {
   deleteCookie(c, "fh_session", { path: "/" });
@@ -1161,7 +1161,7 @@ app.get("/setup", async (c) => {
   const t = c.req.query("token") ?? "";
   const [row] = await sql`select t.kind, t."expiresAt", t."usedAt", u."globalName" as name from "LocalToken" t join "User" u on u.id = t."userId" where t.hash = ${sha(t)}`;
   if (!row || row.usedAt || new Date(row.expiresAt) < /* @__PURE__ */ new Date()) return c.html(pageShell('<h1>This link has expired</h1><p>Ask your coach to send a new invite, or use \u201CForgot password?\u201D on the sign-in page.</p><p><a href="/" style="color:#8cc4ff">Back to sign in</a></p>'), 410);
-  return c.html(pageShell(`<h1>${row.kind === "invite" ? "Set up your account" : "Choose a new password"}</h1><p>Pick a password with at least 8 characters.</p><form id="f"><input id="p" type="password" placeholder="New password" autocomplete="new-password" minlength="8" required><input id="q" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" required><button>Continue</button><div id="e"></div></form><script>document.getElementById("f").onsubmit=async function(e){e.preventDefault();var p=document.getElementById("p").value,q=document.getElementById("q").value,er=document.getElementById("e");if(p!==q){er.textContent="Passwords do not match.";return}var r=await fetch("/auth/local/setup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:${JSON.stringify(t)},password:p})});var j=await r.json().catch(function(){return{}});if(r.ok){location.href="/#dashboard"}else{er.textContent=j.error||"Something went wrong."}}</script>`));
+  return c.html(pageShell(`<h1>${row.kind === "invite" ? "Set up your account" : "Choose a new password"}</h1><p>Pick a password with at least 8 characters.</p><form id="f"><input id="p" type="password" placeholder="New password" autocomplete="new-password" minlength="8" required><input id="q" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" required><button>Continue</button><div id="e"></div></form><script>document.getElementById("f").onsubmit=async function(e){e.preventDefault();var p=document.getElementById("p").value,q=document.getElementById("q").value,er=document.getElementById("e");if(p!==q){er.textContent="Passwords do not match.";return}var r=await fetch("/auth/local/setup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:${JSON.stringify(t)},password:p})});var j=await r.json().catch(function(){return{}});if(r.ok){location.href="/#home"}else{er.textContent=j.error||"Something went wrong."}}</script>`));
 });
 app.post("/auth/local/setup", async (c) => {
   const origin = c.req.header("origin");
@@ -1592,7 +1592,7 @@ var SHELL = `<!doctype html>
 <script type="module" src="/assets/app.js?v=__V__"></script>
 </body></html>`;
 var pageHtml = /* @__PURE__ */ new Map();
-var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">Home</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
 var PAGES = [["school", "/school", "school"], ["classic", "/school/classic", "school"], ["practice", "/practice", "practice"]];
 for (const [name, route, current] of PAGES) {
   app.get(route, async (c) => {

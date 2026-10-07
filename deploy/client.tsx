@@ -6,6 +6,7 @@ import type { CatalogFirm, CoachDirectoryRow, DashboardData } from "../src/lib/t
 import { todayET } from "../src/lib/types";
 import { AppShell } from "../src/components/AppShell";
 import { LoginScreen } from "../src/components/LoginScreen";
+import { HomeScreen } from "../src/components/HomeScreen";
 import { MemberDashboard } from "../src/components/MemberDashboard";
 import { CoachPortal } from "../src/components/CoachPortal";
 import { TradingPlanPage } from "../src/components/TradingPlan";
@@ -27,7 +28,7 @@ type State =
 
 function App() {
   const [state, setState] = useState<State>({ kind: "loading" });
-  const pickView = () => (location.hash === "#coach" ? "coach" : location.hash.startsWith("#plan") ? "plan" : "dashboard") as "dashboard" | "plan" | "coach";
+  const pickView = () => (location.hash === "#coach" ? "coach" : location.hash.startsWith("#plan") ? "plan" : location.hash.startsWith("#dashboard") ? "dashboard" : "home") as "home" | "dashboard" | "plan" | "coach";
   const [view, setView] = useState(pickView);
   const [directory, setDirectory] = useState<CoachDirectoryRow[] | null>(null);
 
@@ -60,12 +61,13 @@ function App() {
   if (state.kind === "loading") return <div id="boot">FLOWHUB // SYNCING</div>;
   if (state.kind === "error") return <div id="boot">{state.message}</div>;
   if (state.kind === "login")
-    return <LoginScreen notice={state.notice} action={async () => { location.href = "/auth/discord"; await new Promise(() => {}); }} onLocal={async (username, password) => { const r = await fetch("/auth/local", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }), credentials: "same-origin" }); const j = await r.json().catch(() => ({})); if (!r.ok) return (j as { error?: string }).error ?? "Sign-in failed"; location.href = "/#dashboard"; location.reload(); return undefined; }} />;
+    return <LoginScreen notice={state.notice} action={async () => { location.href = "/auth/discord"; await new Promise(() => {}); }} onLocal={async (username, password) => { const r = await fetch("/auth/local", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }), credentials: "same-origin" }); const j = await r.json().catch(() => ({})); if (!r.ok) return (j as { error?: string }).error ?? "Sign-in failed"; location.href = "/#home"; location.reload(); return undefined; }} />;
 
-  const active = view === "coach" && !staff ? "dashboard" : view;
+  const active = view === "coach" && !staff ? "home" : view;
+  if (active === "home") return <HomeScreen viewer={state.data.viewer} signOutHref="/auth/logout" />;
   const reload = async () => { const data = await api.dashboard(); setState((s) => (s.kind === "app" ? { ...s, data } : s)); };
   return (
-    <AppShell viewer={state.data.viewer} active={active} links={{ dashboard: "#dashboard", plan: "#plan", school: "/school", practice: "/practice", coach: "#coach" }} signOutHref="/auth/logout">
+    <AppShell viewer={state.data.viewer} active={active} links={{ home: "#home", dashboard: "#dashboard", plan: "#plan", school: "/school", practice: "/practice", coach: "#coach" }} signOutHref="/auth/logout">
       {active === "coach"
         ? directory
           ? <CoachPortal key="c" initial={directory} today={todayET()} />
