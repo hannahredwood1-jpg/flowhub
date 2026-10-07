@@ -1292,7 +1292,17 @@ app.get("/api/school", async (c) => {
   return c.json({ state: row ? typeof row.state === "string" ? JSON.parse(row.state) : row.state : null, unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username });
 });
 app.put("/api/school", async (c) => {
-  const json = JSON.stringify(cleanSchoolState(await c.req.json()));
+  const clean = cleanSchoolState(await c.req.json());
+  const mods = clean.v2?.m;
+  if (mods && Object.values(mods).some((x) => x.p === 1)) {
+    const rows = await sql`select distinct ref from "SchoolAttempt" where "userId" = ${c.get("user").id} and kind = 'ex' and pass = true`;
+    const passed = new Set(rows.map((r) => r.ref));
+    for (const [id, x] of Object.entries(mods)) if (x.p === 1 && !passed.has(id)) {
+      x.p = 0;
+      x.sc = 0;
+    }
+  }
+  const json = JSON.stringify(clean);
   if (json.length > 2e4) throw new HttpError(400, "Too long");
   await sql`insert into "SchoolProgress" ("userId", state) values (${c.get("user").id}, ${json}::jsonb)
             on conflict ("userId") do update set state = coalesce("SchoolProgress".state, '{}'::jsonb) || excluded.state, "updatedAt" = now()`;
@@ -1303,6 +1313,7 @@ app.post("/api/school/attempt", async (c) => {
   const score = Math.round(Number(b.score)), total = Math.round(Number(b.total));
   if (b.kind !== "ck" && b.kind !== "ex" || !b.ref || !ID_RE.test(b.ref) || !(total > 0 && total <= 50) || !(score >= 0 && score <= total) || typeof b.pass !== "boolean")
     throw new HttpError(400, "Bad attempt");
+  if (b.kind === "ex" && b.pass && SCHOOL_MODULE_SET.has(b.ref) && score < Math.ceil(total * 0.8 - 1e-9)) throw new HttpError(400, "Bad attempt");
   await sql`insert into "SchoolAttempt" (id, "userId", kind, ref, score, total, pass) values (${randomUUID()}, ${c.get("user").id}, ${b.kind}, ${b.ref}, ${score}, ${total}, ${b.pass})`;
   return c.json({ ok: true });
 });
