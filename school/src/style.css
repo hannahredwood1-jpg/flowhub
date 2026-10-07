@@ -280,3 +280,8 @@ dialog p{color:var(--ink2);margin:4px 0}
 .tkr input.in{max-width:200px}.tkx{font:500 12.5px var(--f-mono);color:var(--ink2);min-height:18px}
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}.seg button{padding:7px 13px;background:var(--panel2);color:var(--ink2);font:600 13px var(--f-body);border-right:1px solid var(--line2)}.seg button:last-child{border-right:0}
 .seg button.on{background:color-mix(in srgb,var(--signal) 18%,var(--panel2));color:var(--ink)}
+
+.dw td.sw,.dw td.sl{text-align:center;font:600 13px var(--f-mono);padding:6px 8px}.dw td.sw{color:var(--win)}.dw td.sl{color:var(--loss)}
+.sim{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:8px 0;background:var(--panel2)}.simc{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--ink2)}
+.simc input[type=range]{accent-color:var(--signal);vertical-align:middle}.simsvg{width:100%;height:90px;margin:8px 0;background:var(--chart);border-radius:8px}
+.simgrid{display:grid;grid-template-columns:repeat(20,1fr);gap:2px;margin-bottom:8px}.simgrid i{font:600 10px var(--f-mono);font-style:normal;text-align:center;padding:2px 0;border-radius:3px}.simgrid i.sw{color:var(--win);background:color-mix(in srgb,var(--win) 12%,transparent)}.simgrid i.sl{color:var(--loss);background:color-mix(in srgb,var(--loss) 12%,transparent)}

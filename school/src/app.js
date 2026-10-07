@@ -185,6 +185,7 @@ function renderLesson(){
   }
   $('#lesson').innerHTML=`<div class="les-h"><div class="hud">Module ${m.n} · Phase ${m.ph+1} · ${PH[m.ph].n}</div><div class="h">${m.t}</div>${stepper()}</div><div class="les-b">${body}</div><div class="les-f">${foot}</div>`;
   if(L.step===2)updateMarkPanel();
+  initSims($('#lesson'));
 }
 function newDrill(){
   const m=LAB.m,f=m.drills[LAB.dn++%m.drills.length],r=mulberry(Math.floor(Math.random()*1e9));
@@ -331,6 +332,23 @@ function examResult(){
   const r=$('#restartBtn');if(r)r.onclick=()=>{X=null;nav(`/${m.id}/learn`)};
 }
 
+
+
+/* ---------- the 100-trade simulator ---------- */
+function simStats(res,s,t){let eq=0,peak=0,dd=0,run=0,best=0;const pts=[0];
+  res.forEach(w=>{eq+=w?t:-s;pts.push(eq);peak=Math.max(peak,eq);dd=Math.max(dd,peak-eq);run=w?0:run+1;best=Math.max(best,run)});
+  const wins=res.filter(Boolean).length;return{wins,losses:res.length-wins,net:eq,streak:best,dd,pts}}
+function initSims(root){$$('.sim',root).forEach(el=>{if(el.dataset.on)return;el.dataset.on='1';
+  const w0=+el.dataset.w||40,s=+el.dataset.s||15,t=+el.dataset.t||40;
+  el.innerHTML=`<div class="simc"><label>Win rate <input type="range" min="20" max="70" value="${w0}"> <b data-wv>${w0}%</b></label><span class="dim">stop ${s} · target ${t} · 1 MNQ</span><button type="button" class="btn sm" data-run>Run 100 trades</button></div><div data-out></div>`;
+  const inp=$('input',el),out=$('[data-out]',el),wv=$('[data-wv]',el);
+  const run=()=>{const w=+inp.value,r=mulberry(Math.floor(Math.random()*1e9)),res=Array.from({length:100},()=>r()<w/100),st=simStats(res,s,t),mx=Math.max(...st.pts),mn=Math.min(...st.pts,0),H=90,W=300,y=v=>H-6-(v-mn)/Math.max(1,mx-mn)*(H-12);
+    const path=st.pts.map((v,i)=>`${i?'L':'M'}${(i/100*W).toFixed(1)} ${y(v).toFixed(1)}`).join('');
+    out.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="simsvg"><path d="M0 ${y(0)}H${W}" stroke="#28313e" stroke-dasharray="3 3"/><path d="${path}" fill="none" stroke="${st.net>=0?'#3ee0a1':'#ff5d73'}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>
+    <div class="simgrid">${res.map(x=>`<i class="${x?'sw':'sl'}">${x?'W':'L'}</i>`).join('')}</div>
+    <table class="tblx"><tr><th>Wins</th><th>Losses</th><th>Net</th><th>Longest losing streak</th><th>Biggest drawdown</th></tr><tr><td>${st.wins}</td><td>${st.losses}</td><td>${st.net>=0?'+':''}${st.net} pts (${usd(st.net*2)})</td><td>${st.streak}</td><td>${st.dd} pts</td></tr></table>
+    <p class="dim" style="font-size:12.5px">Same edge, random order. Press run again: even a profitable system has ugly stretches.</p>`};
+  inp.addEventListener('input',()=>{wv.textContent=inp.value+'%'});$('[data-run]',el).onclick=run;run()})}
 
 /* ============================================================
    PLAN CHECK + GRADUATION (certificate and the ECHO X ORBIT bot reward)
