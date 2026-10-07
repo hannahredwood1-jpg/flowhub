@@ -389,6 +389,25 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#copyBook')){const b=e.target.closest('#copyBook');try{navigator.clipboard.writeText(BOOK_MSG).then(()=>{b.textContent='Copied'},()=>{b.textContent='Select and copy above'})}catch(x){b.textContent='Select and copy above'}}
 });
 
+
+/* ============================================================
+   GLOSSARY: always one click away in the header
+============================================================ */
+function openGloss(q=''){
+  const d=$('#dlg'),list=(f,c)=>GLOSS.filter(t=>(c==null||t[3]===c)&&(!f||(t[0]+' '+t[1]+' '+t[2]).toLowerCase().includes(f.toLowerCase())));
+  $('#dlgBody').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2 class="h" style="font-size:21px">Glossary</h2><button class="btn sm" id="gClose">Close</button></div>
+   <input class="in" id="gQ" placeholder="Search a term (FVG, sweep, OTE…)" value="${esc(q)}" style="margin:12px 0 10px" autocomplete="off">
+   <div class="kv" id="gCats"><span class="chip live" data-c="">All</span>${GLOSS_CATS.map((c,i)=>`<span class="chip" data-c="${i}" style="cursor:pointer">${c}</span>`).join('')}</div>
+   <div id="gList" style="margin-top:12px;max-height:52vh;overflow:auto"></div>`;
+  let cat=null;
+  const paint=()=>{const f=$('#gQ').value.trim(),L=list(f,cat);$('#gList').innerHTML=L.length?L.map(t=>`<div class="rev" id="g-${esc(t[0])}"><p><b>${esc(t[0])}</b> <span class="muted">${esc(t[1])}</span> <span class="chip" style="margin-left:6px">${GLOSS_CATS[t[3]]}</span></p><p>${esc(t[2])}</p>${t[4].some(r=>GLOSS.some(x=>x[0]===r))?`<p class="dim" style="font-size:12.5px">Related: ${t[4].filter(r=>GLOSS.some(x=>x[0]===r)).map(r=>`<a href="#" data-g="${esc(r)}" style="color:var(--ice)">${esc(r)}</a>`).join(' · ')}</p>`:''}</div>`).join(''):'<p class="muted">No term matches that.</p>'};
+  paint();$$('#gCats .chip').forEach(c=>c.onclick=()=>{cat=c.dataset.c===''?null:+c.dataset.c;$$('#gCats .chip').forEach(x=>x.classList.toggle('live',x===c));paint()});
+  $('#gQ').oninput=paint;$('#gClose').onclick=()=>d.close();
+  $('#gList').onclick=e=>{const a=e.target.closest('[data-g]');if(!a)return;e.preventDefault();$('#gQ').value=a.dataset.g;cat=null;$$('#gCats .chip').forEach(x=>x.classList.toggle('live',x.dataset.c===''));paint()};
+  if(!d.open)d.showModal();$('#gQ').focus();
+}
+$('#glossBtn').addEventListener('click',()=>openGloss());
+
 /* ============================================================
    boot
 ============================================================ */
