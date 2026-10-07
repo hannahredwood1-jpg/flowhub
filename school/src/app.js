@@ -419,6 +419,19 @@ document.addEventListener('click',e=>{
 /* ============================================================
    GLOSSARY: always one click away in the header
 ============================================================ */
+
+/* glossary: a small generated example chart for the terms that have one */
+const GEX={
+ FVG:()=>{const e=echoScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:e,upto:e.rbI,ov:[rectAt(e.fvg.i0,e.rbI,e.fvg.lo,e.fvg.hi,'fair value gap',COL.lag,{dash:true})],cap:'Three candles: the space between candle 1\'s wick and candle 3\'s wick that candle 2 never traded in.'}},
+ SWEEP:()=>{const e=echoScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:e,upto:e.sweepI+3,ov:[hlAt(e.lvl,'old low',COL.ice,0,{scale:true}),tagAt(e.sweepI,e.C[e.sweepI].l,'sweep','below',COL.sig)],cap:'Price trades through the old low, taking the stops resting under it.'}},
+ CISD:()=>{const e=echoScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:e,upto:e.cisdI+3,ov:[hlAt(e.cisdLevel,'open of the down-move',COL.gold,e.cisdFrom,{scale:true}),tagAt(e.cisdI,e.C[e.cisdI].c,'CISD','above',COL.sig)],cap:'The first candle to close back through the open of the move that just ran.'}},
+ RB:()=>{const e=echoScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:e,upto:e.rbI+3,ov:[rectAt(e.fvg.i0,e.rbI+2,e.fvg.lo,e.fvg.hi,'FVG',COL.lag,{dash:true}),tagAt(e.rbI,e.C[e.rbI].l,'rejection block','below',COL.sig)],cap:'A wick that goes into the gap and is rejected out of it.'}},
+ OTE:()=>{const o=orbitScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:o,upto:o.gap.i1+2,ov:[rectAt(o.aI,o.gap.i1+2,Math.min(o.fib(.62),o.fib(.79)),Math.max(o.fib(.62),o.fib(.79)),'OTE 0.62–0.79',COL.sig,{dash:true})],cap:'The deep part of a pullback: 0.62 to 0.79 of the swing.'}},
+ IFVG:()=>{const o=orbitScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:o,upto:o.invI+3,ov:[rectAt(o.gap.i0,o.invI,o.gap.lo,o.gap.hi,'gap',COL.lag,{dash:true}),tagAt(o.invI,o.C[o.invI].c,'inverted','above',COL.sig)],cap:'A candle closes back through the gap: it now acts the other way.'}},
+ PLC:()=>{const p=plcScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:p,upto:p.plcI+4,ov:[rectAt(p.gap.i0,p.plcI+3,p.gap.lo,p.gap.hi,'bullish FVG',COL.lag,{dash:true}),tagAt(p.plcI,p.C[p.plcI].l,'PLC','below',COL.sig)],cap:'A swing low formed inside a bullish gap that held.'}},
+ RS:()=>{const r=rsScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:r,upto:r.fillI+3,ov:[hlAt(r.RS,'Range Settlement',COL.lag,0,{scale:true}),{t:'vline',i:r.openI,col:COL.ice,text:'9:30 open'}],cap:'Open below RS at 9:30 and the AM draw is up toward it.'}},
+};
+let GCH=null;
 function openGloss(q=''){
   const d=$('#dlg'),list=(f,c)=>GLOSS.filter(t=>(c==null||t[3]===c)&&(!f||(t[0]+' '+t[1]+' '+t[2]).toLowerCase().includes(f.toLowerCase())));
   $('#dlgBody').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2 class="h" style="font-size:21px">Glossary</h2><button class="btn sm" id="gClose">Close</button></div>
@@ -426,10 +439,11 @@ function openGloss(q=''){
    <div class="kv" id="gCats"><span class="chip live" data-c="">All</span>${GLOSS_CATS.map((c,i)=>`<span class="chip" data-c="${i}" style="cursor:pointer">${c}</span>`).join('')}</div>
    <div id="gList" style="margin-top:12px;max-height:52vh;overflow:auto"></div>`;
   let cat=null;
-  const paint=()=>{const f=$('#gQ').value.trim(),L=list(f,cat);$('#gList').innerHTML=L.length?L.map(t=>`<div class="rev" id="g-${esc(t[0])}"><p><b>${esc(t[0])}</b> <span class="muted">${esc(t[1])}</span> <span class="chip" style="margin-left:6px">${GLOSS_CATS[t[3]]}</span></p><p>${esc(t[2])}</p>${t[4].some(r=>GLOSS.some(x=>x[0]===r))?`<p class="dim" style="font-size:12.5px">Related: ${t[4].filter(r=>GLOSS.some(x=>x[0]===r)).map(r=>`<a href="#" data-g="${esc(r)}" style="color:var(--ice)">${esc(r)}</a>`).join(' · ')}</p>`:''}</div>`).join(''):'<p class="muted">No term matches that.</p>'};
+  const paint=()=>{const f=$('#gQ').value.trim(),L=list(f,cat);$('#gList').innerHTML=L.length?L.map(t=>`<div class="rev" id="g-${esc(t[0])}"><p><b>${esc(t[0])}</b> <span class="muted">${esc(t[1])}</span> <span class="chip" style="margin-left:6px">${GLOSS_CATS[t[3]]}</span></p><p>${esc(t[2])}</p>${GEX[t[0]]?`<p><button type="button" class="btn sm" data-gx="${esc(t[0])}">Show on a chart</button></p><div data-gxh="${esc(t[0])}"></div>`:''}${t[4].some(r=>GLOSS.some(x=>x[0]===r))?`<p class="dim" style="font-size:12.5px">Related: ${t[4].filter(r=>GLOSS.some(x=>x[0]===r)).map(r=>`<a href="#" data-g="${esc(r)}" style="color:var(--ice)">${esc(r)}</a>`).join(' · ')}</p>`:''}</div>`).join(''):'<p class="muted">No term matches that.</p>'};
   paint();$$('#gCats .chip').forEach(c=>c.onclick=()=>{cat=c.dataset.c===''?null:+c.dataset.c;$$('#gCats .chip').forEach(x=>x.classList.toggle('live',x===c));paint()});
   $('#gQ').oninput=paint;$('#gClose').onclick=()=>d.close();
-  $('#gList').onclick=e=>{const a=e.target.closest('[data-g]');if(!a)return;e.preventDefault();$('#gQ').value=a.dataset.g;cat=null;$$('#gCats .chip').forEach(x=>x.classList.toggle('live',x.dataset.c===''));paint()};
+  $('#gList').onclick=e=>{const x=e.target.closest('[data-gx]');if(x){const k=x.dataset.gx,host=$(`[data-gxh="${k}"]`);if(GCH){GCH.destroy();GCH=null;$$('[data-gxh]').forEach(h=>h.innerHTML='')}const g=GEX[k]();host.innerHTML=`<div class="tvc" style="height:230px;margin:6px 0"></div><p class="muted" style="font-size:13px">${g.cap}</p>`;GCH=new Chart($('.tvc',host),{fixed:true});GCH.neutral=true;GCH.setData(g.sc.C.slice(0,g.upto),{t0:g.sc.t0,stepMin:g.sc.step||5,k:1});GCH.ov=g.ov;GCH.size();GCH.fit();return}
+    const a=e.target.closest('[data-g]');if(!a)return;e.preventDefault();$('#gQ').value=a.dataset.g;cat=null;$$('#gCats .chip').forEach(x=>x.classList.toggle('live',x.dataset.c===''));paint()};
   if(!d.open)d.showModal();$('#gQ').focus();
 }
 $('#glossBtn').addEventListener('click',()=>openGloss());
