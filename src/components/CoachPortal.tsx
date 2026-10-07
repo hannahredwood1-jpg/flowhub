@@ -45,7 +45,7 @@ export function CoachPortal({ initial, today }: { initial: CoachDirectoryRow[]; 
       <section className="hud animate-rise grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-end">
         <div>
           <div className="label flex items-center gap-2 !text-ice"><IconUsers size={13} /> Coach portal</div>
-          <h1 className="mt-2 font-display text-2xl font-extrabold uppercase tracking-[0.01em]">Community roster</h1>
+          <h1 className="mt-2 font-display text-2xl font-extrabold">Community roster</h1>
           <p className="mt-1 text-sm text-ink-3">Every member&apos;s plan and journal, read-only. Your views are logged.</p>
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-5">
@@ -66,7 +66,7 @@ export function CoachPortal({ initial, today }: { initial: CoachDirectoryRow[]; 
         <div className="flex flex-wrap border border-line-2" role="radiogroup" aria-label="Sort members">
           {SORTS.map((s) => (
             <button key={s.v} role="radio" aria-checked={sort === s.v} onClick={() => setSort(s.v)}
-              className={cx("relative h-[38px] px-3.5 font-hud text-[10px] tracking-[0.14em] uppercase transition-colors", sort === s.v ? "bg-ice/10 text-ink" : "text-ink-3 hover:text-ink-2")}>
+              className={cx("relative h-[38px] px-3.5 font-hud text-[12px] transition-colors", sort === s.v ? "bg-ice/10 text-ink" : "text-ink-3 hover:text-ink-2")}>
               {s.t}
               {sort === s.v && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-ice"><span className="absolute left-0 h-full w-2 bg-signal" /></span>}
             </button>
@@ -99,7 +99,7 @@ function MemberRow({ r, today, open, onToggle, index }: { r: CoachDirectoryRow; 
         <div className="min-w-0">
           <div className="flex items-center gap-2 truncate">
             {r.trader.name}
-            {r.trader.role !== "MEMBER" && <span className="chip !h-[18px] !text-[8.5px] text-ice">{r.trader.role === "ADMIN" ? "Admin" : "Coach"}</span>}
+            {r.trader.role !== "MEMBER" && <span className="chip !h-[18px] !text-[11px] text-ice">{r.trader.role === "ADMIN" ? "Admin" : "Coach"}</span>}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {r.statuses.map((s, i) => <span key={i} title={`${s.label}: ${s.status.replace("_", " ").toLowerCase()}`} className={cx("h-2 w-2 rotate-45", statusBg(s.status))} />)}

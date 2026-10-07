@@ -26,7 +26,7 @@ export function JournalTable({ data, readOnly, onNew, onEdit, onChanged }: {
     <Panel
       delay={40}
       title={<span className="flex items-center gap-2"><IconBook size={13} /> Trading journal</span>}
-      right={!readOnly && <button className="btn btn-primary !h-8 !text-[10px]" onClick={onNew}><IconPlus size={14} /> New log</button>}
+      right={!readOnly && <button className="btn btn-primary !h-8 !text-[12px]" onClick={onNew}><IconPlus size={14} /> New log</button>}
     >
       <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5">
         <FilterChip on={acct === "all"} onClick={() => setAcct("all")}>All accounts</FilterChip>
@@ -59,7 +59,7 @@ export function JournalTable({ data, readOnly, onNew, onEdit, onChanged }: {
                       <td className="max-w-[140px] truncate text-ink-2">{j.accountLabel ?? "—"}</td>
                       <td>
                         <span className="num">{j.ticker}</span>{" "}
-                        <span className={cx("font-hud text-[9px] tracking-[0.12em]", j.direction === "LONG" ? "text-win" : "text-loss")}>{j.direction === "LONG" ? "▲ L" : "▼ S"}</span>
+                        <span className={cx("font-hud text-[12px]", j.direction === "LONG" ? "text-win" : "text-loss")}>{j.direction === "LONG" ? "▲ L" : "▼ S"}</span>
                       </td>
                       <td className="max-w-[170px] truncate">{j.setupType}</td>
                       <td className="num text-right text-ink-2">{j.riskDollars != null ? usd(j.riskDollars) : j.riskPct != null ? `${j.riskPct}%` : "—"}</td>

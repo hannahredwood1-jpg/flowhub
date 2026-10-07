@@ -20,7 +20,7 @@ import { accountInput, accountPatch, feedbackInput, journalInput, journalPatch, 
 import { todayET, type CatalogFirm, type DashboardData, type PersonDTO, type ProjectionDTO, type RulesDTO } from "../src/lib/types";
 import type { Instrument } from "../src/lib/planner";
 import { PRACTICE_MODELS, summarizePractice } from "../src/lib/practice";
-import { SCHOOL_LEVEL_IDS, summarizeSchool, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
+import { SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
 import type { TradingPlanDTO } from "../src/lib/tradingPlan";
 
 // ─────────────────────────────────────────────────────────────
@@ -492,26 +492,43 @@ app.put("/api/practice/state", async (c) => {
 });
 
 
-// Trading School: progress synced from the school page, checkpoint/exam attempts, coach unlocks.
-const SCHOOL_LEVELS_SET = new Set(SCHOOL_LEVEL_IDS);
+// Trading School: progress synced from the school page, exam attempts, coach unlocks.
+// The page saves under `v2`; the Classic school (earlier page) saves ch / dives / ck / ex. Each save only sends its own keys and they are merged.
+const SCHOOL_MODULE_SET = new Set(SCHOOL_MODULE_IDS);
 const ID_RE = /^[a-z0-9-]{1,20}$/;
+const clampInt = (v: unknown, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
 function cleanSchoolState(b: unknown): SchoolState {
   const o = (b && typeof b === "object" ? b : {}) as Record<string, unknown>;
-  const ch = Array.isArray(o.ch) ? o.ch.filter((x): x is string => typeof x === "string" && ID_RE.test(x)).slice(0, 60) : [];
-  const dives: Record<string, Record<string, number>> = {};
-  for (const [k, v] of Object.entries((o.dives && typeof o.dives === "object" ? o.dives : {}) as Record<string, unknown>).slice(0, 60)) {
-    if (!ID_RE.test(k) || !v || typeof v !== "object") continue;
-    dives[k] = Object.fromEntries(Object.keys(v).filter((x) => ID_RE.test(x)).slice(0, 30).map((x) => [x, 1]));
+  const out: SchoolState = {};
+  if (o.v2 && typeof o.v2 === "object") {
+    const m: Record<string, ModuleProgress> = {};
+    for (const [k, v] of Object.entries(((o.v2 as Record<string, unknown>).m && typeof (o.v2 as Record<string, unknown>).m === "object" ? (o.v2 as Record<string, unknown>).m : {}) as Record<string, Record<string, unknown>>).slice(0, 40)) {
+      if (!SCHOOL_MODULE_SET.has(k) || !v || typeof v !== "object") continue;
+      const s = String(v.s ?? "0000");
+      m[k] = { s: /^[01]{4}$/.test(s) ? s : "0000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+    }
+    out.v2 = { m };
+  }
+  if (Array.isArray(o.ch)) out.ch = o.ch.filter((x): x is string => typeof x === "string" && ID_RE.test(x)).slice(0, 60);
+  if (o.dives && typeof o.dives === "object") {
+    const dives: Record<string, Record<string, number>> = {};
+    for (const [k, v] of Object.entries(o.dives as Record<string, unknown>).slice(0, 60)) {
+      if (!ID_RE.test(k) || !v || typeof v !== "object") continue;
+      dives[k] = Object.fromEntries(Object.keys(v).filter((x) => ID_RE.test(x)).slice(0, 30).map((x) => [x, 1]));
+    }
+    out.dives = dives;
   }
   const best = (m: unknown) => {
-    const out: Record<string, { best: number; pass: boolean; n: number; at: number }> = {};
+    const res: Record<string, { best: number; pass: boolean; n: number; at: number }> = {};
     for (const [k, v] of Object.entries((m && typeof m === "object" ? m : {}) as Record<string, Record<string, unknown>>).slice(0, 40)) {
       if (!ID_RE.test(k) || !v || typeof v !== "object") continue;
-      out[k] = { best: Math.max(0, Math.min(1, Number(v.best) || 0)), pass: v.pass === true, n: Math.max(0, Math.min(10000, Math.round(Number(v.n) || 0))), at: Math.max(0, Number(v.at) || 0) };
+      res[k] = { best: Math.max(0, Math.min(1, Number(v.best) || 0)), pass: v.pass === true, n: Math.max(0, Math.min(10000, Math.round(Number(v.n) || 0))), at: Math.max(0, Number(v.at) || 0) };
     }
-    return out;
+    return res;
   };
-  return { ch, dives, ck: best(o.ck), ex: best(o.ex) };
+  if (o.ck && typeof o.ck === "object") out.ck = best(o.ck);
+  if (o.ex && typeof o.ex === "object") out.ex = best(o.ex);
+  return out;
 }
 app.get("/api/school", async (c) => {
   const u = c.get("user");
@@ -522,7 +539,7 @@ app.put("/api/school", async (c) => {
   const json = JSON.stringify(cleanSchoolState(await c.req.json()));
   if (json.length > 20000) throw new HttpError(400, "Too long");
   await sql`insert into "SchoolProgress" ("userId", state) values (${c.get("user").id}, ${json}::jsonb)
-            on conflict ("userId") do update set state = excluded.state, "updatedAt" = now()`;
+            on conflict ("userId") do update set state = coalesce("SchoolProgress".state, '{}'::jsonb) || excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
 });
 app.post("/api/school/attempt", async (c) => {
@@ -590,7 +607,7 @@ app.get("/api/coach/members/:id", async (c) => {
 app.post("/api/coach/members/:id/unlock", async (c) => {
   staffOnly(c);
   const b = (await c.req.json()) as { level?: string; on?: boolean };
-  if (!b.level || !SCHOOL_LEVELS_SET.has(b.level) || b.level === "beginner" || typeof b.on !== "boolean") throw new HttpError(400, "Bad level");
+  if (!b.level || !SCHOOL_MODULE_SET.has(b.level) || typeof b.on !== "boolean") throw new HttpError(400, "Bad module");
   const id = c.req.param("id");
   if (!(await sql`select 1 from "User" where id = ${id}`).length) throw new HttpError(404, "Not found");
   if (b.on)
@@ -626,7 +643,7 @@ app.patch("/api/admin/catalog/:id", async (c) => {
 app.all("/api/*", () => { throw new HttpError(404, "Not found"); });
 
 // ── Static app: gzipped files shipped next to server.js (repo deploys), else the "AppAsset" table ─
-const ASSET_TYPES: Record<string, string> = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8", "practice.html": "text/html; charset=utf-8" };
+const ASSET_TYPES: Record<string, string> = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8", "classic.html": "text/html; charset=utf-8", "practice.html": "text/html; charset=utf-8" };
 const assetCache = new Map<string, { type: string; body: Uint8Array; etag: string }>();
 async function asset(path: string) {
   const hit = assetCache.get(path);
@@ -663,8 +680,8 @@ const SHELL = `<!doctype html>
 <meta name="theme-color" content="#030405">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23030405'/%3E%3Ctext x='16' y='25' font-family='Arial Black,Arial' font-weight='900' font-size='24' text-anchor='middle' fill='%23ff6a00'%3EF%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,700..900;1,100..125,700..900&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<style>:root{color-scheme:dark;--font-archivo:"Archivo";--font-orbitron:"Orbitron";--font-rajdhani:"Rajdhani";--font-jetbrains:"JetBrains Mono"}html,body{margin:0;background:#030405;color:#e6ebf2}#boot{font:12px/1.4 monospace;letter-spacing:.2em;color:#58626f;padding:40px 16px;text-align:center}</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,700..900;1,100..125,700..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap">
+<style>:root{color-scheme:dark;--font-archivo:"Archivo";--font-orbitron:"Orbitron";--font-rajdhani:"Rajdhani";--font-inter:"Inter";--font-jetbrains:"JetBrains Mono"}html,body{margin:0;background:#030405;color:#e6ebf2}#boot{font:12px/1.4 monospace;letter-spacing:.2em;color:#58626f;padding:40px 16px;text-align:center}</style>
 <link rel="stylesheet" href="/assets/app.css?v=__V__">
 </head><body><div id="root"><div id="boot">FLOWHUB // BOOTING</div></div>
 <script type="importmap">{"imports":{
@@ -681,15 +698,16 @@ const fhNav = (user: UserRow, current: "school" | "practice") =>
   `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a>` +
   `<a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>` +
   `${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-for (const page of ["school", "practice"] as const) {
-  app.get(`/${page}`, async (c) => {
+const PAGES: [asset: string, route: string, current: "school" | "practice"][] = [["school", "/school", "school"], ["classic", "/school/classic", "school"], ["practice", "/practice", "practice"]];
+for (const [name, route, current] of PAGES) {
+  app.get(route, async (c) => {
     const user = await currentUser(c);
     if (!user) return c.redirect("/");
-    const a = await asset(`${page}.html`);
+    const a = await asset(`${name}.html`);
     if (!a) return c.text("This page isn't installed yet.", 404);
-    const key = `${page}:${a.etag}`;
+    const key = `${name}:${a.etag}`;
     if (!pageHtml.has(key)) pageHtml.set(key, gunzipSync(a.body).toString("utf8"));
-    return c.html(pageHtml.get(key)!.replace("<!--FH_NAV-->", fhNav(user, page)), 200, { "Cache-Control": "no-cache" });
+    return c.html(pageHtml.get(key)!.replace("<!--FH_NAV-->", fhNav(user, current)), 200, { "Cache-Control": "no-cache" });
   });
 }
 

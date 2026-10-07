@@ -145,7 +145,7 @@ function Reticle({ linking }: { linking: boolean }) {
         {/* core hex with the F */}
         <polygon points="200,152 241.6,176 241.6,224 200,248 158.4,224 158.4,176" fill="#07090c" stroke="#3b5f86" strokeWidth="1.5" />
         <polygon points="200,160 234.6,180 234.6,220 200,240 165.4,220 165.4,180" fill="none" stroke="#9ccbff" strokeOpacity="0.25" className="breathe" />
-        <text x="200" y="219" textAnchor="middle" fontSize="52" fontWeight="900" fill="#ff6a00" style={{ fontFamily: "var(--font-display)" }}>F</text>
+        <text x="200" y="219" textAnchor="middle" fontSize="52" fontWeight="900" fill="#ff6a00" style={{ fontFamily: "var(--font-login-display)" }}>F</text>
       </svg>
 
       {/* corner readouts */}
@@ -186,7 +186,7 @@ function Linking({ onChange }: { onChange: (v: boolean) => void }) {
 export function LoginScreen({ action, notice }: { action: (fd: FormData) => void | Promise<void>; notice?: string }) {
   const [linking, setLinking] = useState(false);
   return (
-    <main className="relative min-h-dvh overflow-hidden">
+    <main className="login-scope relative min-h-dvh overflow-hidden">
       <div className="grid-bg" />
       <div className="vignette" />
       <div className="horizon" />
@@ -203,7 +203,7 @@ export function LoginScreen({ action, notice }: { action: (fd: FormData) => void
           <Logo size="lg" />
 
           <div className="grid gap-3">
-            <h1 className="font-display text-[clamp(28px,4.2vw,44px)] font-black uppercase leading-[0.95] tracking-[-0.01em]">
+            <h1 className="font-login-display text-[clamp(28px,4.2vw,44px)] font-black uppercase leading-[0.95] tracking-[-0.01em]">
               Connect your<br /><span className="text-ice">Discord.</span>
             </h1>
             <p className="max-w-md text-[17px] leading-relaxed text-ink-2">

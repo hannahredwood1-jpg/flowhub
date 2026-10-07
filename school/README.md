@@ -1,7 +1,9 @@
 # Trading School
 
-`trading-school.html` is the whole interactive walkthrough (TradingView basics + NYFlow H/L, NYFlow PO3 and AsiaFlow PO3 replays) as one self-contained page body.
+The school at `/school` is one self-contained page assembled from `school/src/` by `school/build.mjs` (called from `deploy/build.mjs`).
 
-- `deploy/build.mjs` wraps it into a full HTML document and stores it in the `AppAsset` table as `school.html`; the server serves it at `/school` to signed-in members and fills in the `<!--FH_NAV-->` placeholder with the FLOWHUB tabs.
-- `public/school.html` is the same full document for the Next.js app.
-- The model replays are scripted practice sessions in the `MODELS` section (`HL`, `PO3`, `ASIA`). To add a model, add a session there and a `replaySteps(...)` branch plus a chapter in `CH`.
+- `src/util.js`, `gen.js`, `chart.js`, `items.js`, `app.js` — helpers, procedural chart generators (every scenario has ground truth), the TradingView-style canvas chart, the task types (mcq, tap, rect, level, num, sort, order, time), and the app (hash routing, progress, exams).
+- `src/content/*.js` — the 18 modules (`MODS.push({...})`). Each module is learn → apply on a chart → explain in your own words → exam. `src/lib/school.ts` mirrors the module list for coaches; a test keeps the two in step.
+- Exams are generated fresh each attempt. Pass mark is 80%; failing restarts the module with new questions. There are no timers and no suggested pacing.
+- Progress is saved in `localStorage` and in `/api/school` under `state.v2`; exam attempts post to `/api/school/attempt` (`kind: 'ex'`, `ref: 'mNN'`).
+- `classic.html` (+ `skin.css`) is the earlier walkthrough, still served at `/school/classic`.

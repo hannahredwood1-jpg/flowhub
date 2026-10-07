@@ -69,8 +69,6 @@ function Checklist({ logs, today, items = CHECKLIST, fromPlan }: { logs: Logs; t
   const entry = logs.list.find((e) => e.kind === "checklist" && e.day === today);
   const done = new Set<number>((entry?.data.done as number[]) ?? []);
   const byDay = new Map(logs.list.filter((e) => e.kind === "checklist").map((e) => [e.day, e]));
-  let streak = 0;
-  for (let d = complete(byDay.get(today), CHECKLIST.length) ? today : prevWeekday(today); complete(byDay.get(d), CHECKLIST.length); d = prevWeekday(d)) streak++;
   const weekend = weekday(today) === 0 || weekday(today) === 6;
   const toggle = (i: number) => {
     const next = new Set(done); next.has(i) ? next.delete(i) : next.add(i);
@@ -78,7 +76,7 @@ function Checklist({ logs, today, items = CHECKLIST, fromPlan }: { logs: Logs; t
   };
   const all = done.size >= CHECKLIST.length;
   return (
-    <Panel title="Before you trade" right={<span className="chip text-ice">{streak} day streak</span>}>
+    <Panel title="Before you trade">
       <div className="grid gap-2 p-4">
         <p className="text-sm text-ink-3">{weekend ? "Weekend. Use it to prep Monday's levels." : fromPlan ? "From your trading plan. Tick every line before your first trade." : "Tick every line before your first trade. Only you see this."}</p>
         <ul className="grid gap-1.5">

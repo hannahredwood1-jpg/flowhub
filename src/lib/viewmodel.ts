@@ -103,11 +103,6 @@ export function buildDashboard(raw: RawInput): DashboardData {
   const last30 = journal.filter((j) => j.tradeDate >= daysAgo(raw.today, 30));
   const decided = last30.filter((j) => j.outcome !== "BREAKEVEN");
 
-  // Gamification: XP rewards process (logging, following the plan, green days), not just P/L.
-  const greenDays = new Set(journal.filter((j) => j.pnl > 0).map((j) => j.tradeDate)).size;
-  const xp = journal.length * 10 + journal.filter((j) => j.followedPlan).length * 15 + greenDays * 25 + (journal.filter((j) => j.screenshotUrl).length * 5);
-  const level = Math.floor(Math.sqrt(xp / 100)) + 1;
-  const nextLevelXp = level * level * 100;
 
   // Actual win rate per FLOWMTD strategy (journal "Strategy" field) vs its fixed win rate
   const strategyStats = STRATEGY_KEYS.map((key) => {
@@ -138,19 +133,15 @@ export function buildDashboard(raw: RawInput): DashboardData {
       trades30: last30.length,
       winRate30: decided.length ? decided.filter((j) => j.outcome === "WIN").length / decided.length : null,
       planFollowed30: last30.length ? last30.filter((j) => j.followedPlan).length / last30.length : null,
-      level,
-      xp,
-      xpToNext: nextLevelXp - xp,
     },
   };
 }
 
-const schoolProgress = (s: SchoolSummary) => {
-  let done = 0, total = 0;
-  for (const l of s.levels) { done += l.lessonsDone + l.checkpointsPassed + (l.exam?.pass ? 1 : 0); total += l.lessons + l.checkpoints + (l.exam ? 1 : 0); }
-  const certified = s.levels.every((l) => l.lessonsDone >= l.lessons && l.checkpointsPassed >= l.checkpoints && (!l.exam || l.exam.pass));
-  return { current: certified ? "Certified" : s.current, pct: total ? done / total : 0, certified };
-};
+const schoolProgress = (s: SchoolSummary) => ({
+  current: s.passed === s.total ? "Course complete" : s.current,
+  pct: s.total ? s.passed / s.total : 0,
+  certified: s.passed === s.total,
+});
 export function buildDirectoryRow(d: DashboardData): CoachDirectoryRow {
   const live = d.accounts.filter((a) => ACTIVE.includes(a.stage));
   const summary = memberRiskSummary(live.map((a) => a.pace));

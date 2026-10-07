@@ -1,11 +1,8 @@
 @import "tailwindcss";
 
-/* ─────────────────────────────────────────────────────────────
-   FLOWHUB by FLOWMTD Trading — "Night Ops" theme
-   Brand: black, heavy white type, one orange F. The UI stays cool and dark;
-   orange (--color-signal, the logo's orange) is used in tiny doses only:
-   the F mark, active tab tick, XP bar tip, primary button edge, live pulse.
-   ───────────────────────────────────────────────────────────── */
+/* FLOWHUB by FLOWMTD Trading: a calm, modern dark theme.
+   Brand: black, heavy white type, one orange F. Orange is used in small doses:
+   the F mark, the primary button, the active tab. */
 @theme {
   --color-void: #030405;
   --color-abyss: #07090c;
@@ -23,25 +20,27 @@
   --color-loss: #ff4f6d;
   --color-lag: #b69cff;
 
-  --font-display: var(--font-archivo), "Arial Black", "Helvetica Neue", system-ui, sans-serif;
-  --font-hud: var(--font-orbitron), "Eurostile", "Bank Gothic", system-ui, sans-serif;
-  --font-sans: var(--font-rajdhani), "Barlow Semi Condensed", system-ui, sans-serif;
+  --font-display: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-hud: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-login-display: var(--font-archivo), "Arial Black", "Helvetica Neue", system-ui, sans-serif;
+  --font-login-hud: var(--font-orbitron), "Eurostile", "Bank Gothic", system-ui, sans-serif;
+  --font-login-sans: var(--font-rajdhani), "Barlow Semi Condensed", system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
 
-  --animate-rise: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  --animate-scan: scan 7s linear infinite;
+  --animate-rise: rise 0.35s ease both;
   --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
+  --animate-scan: scan 7s linear infinite;
   --animate-sweep: sweep 2.4s ease-in-out infinite;
   --animate-grid: grid-drift 40s linear infinite;
-  --animate-flicker: flicker 5s linear infinite;
 
-  @keyframes rise { from { opacity: 0.001; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  @keyframes scan { from { transform: translateY(-100%); } to { transform: translateY(100vh); } }
+  @keyframes rise { from { opacity: 0.001; transform: translateY(4px); } to { opacity: 1; transform: none; } }
   @keyframes pulse-dot { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgb(255 106 0 / 0.55); } 50% { opacity: 0.6; box-shadow: 0 0 0 5px rgb(255 106 0 / 0); } }
+  @keyframes scan { from { transform: translateY(-100%); } to { transform: translateY(100vh); } }
   @keyframes sweep { 0% { transform: translateX(-120%); } 100% { transform: translateX(220%); } }
   @keyframes grid-drift { from { background-position: 0 0, 0 0; } to { background-position: 0 480px, 480px 0; } }
-  @keyframes flicker { 0%, 96%, 100% { opacity: 1; } 97% { opacity: 0.55; } 98% { opacity: 1; } 99% { opacity: 0.7; } }
 }
+
 
 @layer base {
   html { color-scheme: dark; background: var(--color-void); }
@@ -50,11 +49,12 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 400;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3 { text-wrap: balance; }
-  :focus-visible { outline: 1px solid var(--color-ice); outline-offset: 2px; }
+  h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
+  :focus-visible { outline: 2px solid var(--color-ice); outline-offset: 2px; }
   ::selection { background: rgb(142 197 255 / 0.3); }
   input, select, textarea { font: inherit; }
 }
@@ -83,76 +83,59 @@
     animation: var(--animate-scan);
   }
 
-  /* HUD panel: clipped corners + corner brackets */
+  /* Panel */
   .hud {
     position: relative;
-    background: linear-gradient(180deg, rgb(14 18 25 / 0.92), rgb(10 13 18 / 0.92));
+    background: var(--color-panel);
     border: 1px solid var(--color-line);
-    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    border-radius: 12px;
   }
-  .hud::before, .hud::after {
-    content: ""; position: absolute; width: 10px; height: 10px; pointer-events: none;
-    border-color: var(--color-ice-dim); border-style: solid;
-  }
-  .hud::before { top: 5px; left: 5px; border-width: 1px 0 0 1px; }
-  .hud::after { bottom: 5px; right: 5px; border-width: 0 1px 1px 0; }
 
-  .label { font-family: var(--font-hud); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-ink-3); }
+  .label { font-size: 12.5px; font-weight: 500; color: var(--color-ink-3); }
   .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    height: 36px; padding-inline: 14px; border: 1px solid var(--color-line-2);
+    height: 36px; padding-inline: 14px; border: 1px solid var(--color-line-2); border-radius: 8px;
     background: var(--color-panel-2); color: var(--color-ink);
-    font-family: var(--font-hud); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
-    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    font-size: 13.5px; font-weight: 600;
     transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
     cursor: pointer;
   }
-  .btn:hover { border-color: var(--color-ice-dim); background: #121822; }
+  .btn:hover { border-color: var(--color-ink-3); }
   .btn:active { transform: translateY(1px); }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-  .btn-primary { position: relative; overflow: hidden; border-color: var(--color-ice-dim); background: linear-gradient(180deg, #131c28, #0d131c); color: #f2f6fb; }
-  .btn-primary::after { /* the orange edge */
-    content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 28%; background: var(--color-signal);
-  }
-  .btn-primary::before {
-    content: ""; position: absolute; inset: 0; width: 40%;
-    background: linear-gradient(90deg, transparent, rgb(142 197 255 / 0.18), transparent);
-    animation: var(--animate-sweep);
-  }
+  .btn-primary { border-color: var(--color-signal); background: var(--color-signal); color: #160a00; }
+  .btn-primary:hover { border-color: #ff8a3a; background: #ff7a1a; }
   .btn-ghost { background: transparent; border-color: transparent; }
-  .btn-ghost:hover { background: rgb(142 197 255 / 0.06); border-color: var(--color-line); }
+  .btn-ghost:hover { background: rgb(142 197 255 / 0.07); border-color: var(--color-line); }
 
   .field {
-    width: 100%; height: 38px; padding-inline: 10px; background: var(--color-abyss); color: var(--color-ink);
-    border: 1px solid var(--color-line-2); outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%; height: 38px; padding-inline: 11px; background: var(--color-abyss); color: var(--color-ink);
+    border: 1px solid var(--color-line-2); border-radius: 8px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
   }
   textarea.field { height: auto; padding-block: 8px; }
-  .field:focus { border-color: var(--color-ice); box-shadow: 0 0 0 3px rgb(142 197 255 / 0.12); }
+  .field:focus { border-color: var(--color-ice); box-shadow: 0 0 0 3px rgb(142 197 255 / 0.14); }
 
   .chip {
-    display: inline-flex; align-items: center; gap: 6px; height: 22px; padding-inline: 8px;
-    font-family: var(--font-hud); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
-    border: 1px solid currentColor; background: color-mix(in oklab, currentColor 10%, transparent);
+    display: inline-flex; align-items: center; gap: 6px; height: 22px; padding-inline: 9px; border-radius: 99px;
+    font-size: 12px; font-weight: 550;
+    border: 1px solid color-mix(in oklab, currentColor 45%, transparent); background: color-mix(in oklab, currentColor 9%, transparent);
   }
   .live-dot { width: 6px; height: 6px; border-radius: 99px; background: var(--color-signal); animation: var(--animate-pulse-dot); }
 
   .tbl { width: 100%; border-collapse: collapse; }
-  .tbl th { font-family: var(--font-hud); font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-ink-3); text-align: left; font-weight: 500; padding: 10px 10px; border-bottom: 1px solid var(--color-line); white-space: nowrap; }
+  .tbl th { font-size: 12.5px; color: var(--color-ink-3); text-align: left; font-weight: 500; padding: 10px 10px; border-bottom: 1px solid var(--color-line); white-space: nowrap; }
   .tbl td { padding: 10px 10px; border-bottom: 1px solid rgb(26 36 52 / 0.7); white-space: nowrap; }
   .tbl tbody tr { transition: background 0.12s; }
-  .tbl tbody tr:hover { background: rgb(142 197 255 / 0.035); }
-
-  .glitch { position: relative; animation: var(--animate-flicker); }
+  .tbl tbody tr:hover { background: rgb(142 197 255 / 0.04); }
 }
 
-
-/* ── Brand mark ─────────────────────────────────────────────── */
+/* Brand mark */
 @layer components {
-  .brand { font-family: var(--font-display); font-weight: 900; font-stretch: 112%; letter-spacing: -0.01em; line-height: 0.9; text-transform: uppercase; }
+  .brand { font-family: "Archivo", var(--font-inter), system-ui, sans-serif; font-weight: 900; letter-spacing: 0; line-height: 0.95; text-transform: uppercase; }
   .brand-f { color: var(--color-signal); }
-  .brand-sub { font-family: var(--font-display); font-weight: 800; font-style: italic; letter-spacing: 0.02em; text-transform: uppercase; }
+  .brand-sub { font-family: var(--font-sans); font-weight: 600; letter-spacing: 0.02em; }
 }
 
 /* ── Login: "uplink" scene ──────────────────────────────────── */
@@ -194,7 +177,7 @@
   .connect-btn {
     position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 12px;
     height: 56px; padding-inline: 28px; width: 100%;
-    font-family: var(--font-hud); font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; color: #fff;
+    font-family: var(--font-login-hud); font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; color: #fff;
     background: linear-gradient(180deg, #151c27, #0c1119); border: 1px solid var(--color-ice-dim);
     clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
     transition: border-color .2s, box-shadow .2s, transform .1s; overflow: hidden; cursor: pointer;
@@ -205,6 +188,15 @@
   .connect-btn:hover::after { width: 100%; }
   .connect-btn:active { transform: translateY(1px); }
   .connect-btn:disabled { cursor: wait; }
+}
+
+/* Sign-in screen keeps its original look: its own fonts for labels, brand and body */
+@layer components {
+  .login-scope { font-family: var(--font-login-sans); font-weight: 500; }
+  .login-scope .label { font-family: var(--font-login-hud); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 400; color: var(--color-ink-3); }
+  .login-scope .brand { font-family: var(--font-login-display); font-weight: 900; font-stretch: 112%; letter-spacing: -0.01em; line-height: 0.9; text-transform: uppercase; }
+  .login-scope .brand-sub { font-family: var(--font-login-display); font-weight: 800; font-style: italic; letter-spacing: 0.02em; text-transform: uppercase; }
+  .login-scope .live-dot { box-shadow: 0 0 0 0 rgb(255 106 0 / 0.55); }
 }
 
 @media (prefers-reduced-motion: reduce) {

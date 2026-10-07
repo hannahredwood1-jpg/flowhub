@@ -1,65 +1,64 @@
-// Trading School progress summary for coaches. Mirrors the level/module/lesson map in school/trading-school.html.
-export const SCHOOL_LEVELS = [
-  { id: "beginner", name: "Beginner", modules: [
-    { id: "b0", lessons: ["d:mindset", "d:tv", "d:setup"] }, { id: "b1", lessons: ["d:futures"] }, { id: "b2", lessons: ["d:charts"] },
-    { id: "b6", lessons: ["d:liq"] }, { id: "b3", lessons: ["c:chart", "c:connect+order", "d:orders"] },
-    { id: "b4", lessons: ["d:risk", "c:manage", "c:limits"] }, { id: "b5", lessons: ["c:end"], noCheck: true },
-  ], exam: true },
-  { id: "intermediate", name: "Intermediate", modules: [
-    { id: "i1", lessons: ["d:prop"] }, { id: "i2", lessons: ["d:math"] }, { id: "i3", lessons: ["d:manage", "d:mistakes"] },
-    { id: "i4", lessons: ["d:psych"] }, { id: "i6", lessons: ["d:bias"] }, { id: "i5", lessons: ["d:day", "d:planlesson"] },
-  ], exam: true },
-  { id: "advanced", name: "Advanced", modules: [
-    { id: "a1", lessons: ["d:rs", "c:dl"] }, { id: "a2", lessons: ["d:hl-learn", "c:hl", "d:po3-learn", "c:po3+asia"] },
-  ], exam: true },
-  { id: "exo", name: "ECHO X ORBIT", modules: [
-    { id: "x1", lessons: ["d:exo-intro", "d:echo", "d:orbit", "d:exo-rules", "d:exo-replay"] },
-  ], exam: false },
+// Trading School progress, summarised for coaches. Mirrors the module list in school/src/content/*.js
+// (a test keeps the two in step). The page itself saves progress under `state.v2`; the older keys
+// (ch, dives, ck, ex) belong to the Classic school and are left untouched.
+export const SCHOOL_MODULES = [
+  { id: "m01", n: 1, title: "Trading Mindset" },
+  { id: "m02", n: 2, title: "Chart Reading Basics" },
+  { id: "m03", n: 3, title: "Liquidity Explained" },
+  { id: "m04", n: 4, title: "Advanced Liquidity Concepts" },
+  { id: "m05", n: 5, title: "Break of Structure" },
+  { id: "m06", n: 6, title: "Fair Value Gaps" },
+  { id: "m07", n: 7, title: "Advanced Imbalance Concepts" },
+  { id: "m08", n: 8, title: "Inverse Fair Value Gaps" },
+  { id: "m09", n: 9, title: "Equilibrium: Premium & Discount" },
+  { id: "m10", n: 10, title: "SMT Divergence" },
+  { id: "m11", n: 11, title: "Time Theory & Session Timing" },
+  { id: "m12", n: 12, title: "Funded Accounts & Prop Firms" },
+  { id: "m13", n: 13, title: "Building Daily Bias" },
+  { id: "m14", n: 14, title: "Risk Management" },
+  { id: "m15", n: 15, title: "Trading Psychology & Discipline" },
+  { id: "m16", n: 16, title: "Full Strategy: The Order Flow Model" },
+  { id: "m17", n: 17, title: "Range, Sweep, Reversal (H/L · NY ATM)" },
+  { id: "m18", n: 18, title: "AMD / PO3: Accumulation, Manipulation, Distribution" },
 ] as const;
-export const SCHOOL_LEVEL_IDS = SCHOOL_LEVELS.map((l) => l.id) as string[];
-// Section counts per dive, so "done" means every part is finished.
-export const DIVE_PARTS: Record<string, number> = {
-  prop: 4, math: 4, manage: 3, mistakes: 4, psych: 1, setup: 5, day: 4, tv: 7, futures: 5, charts: 5, orders: 3, risk: 3, rs: 3, planlesson: 2,
-  "exo-intro": 5, echo: 9, orbit: 8, "exo-rules": 4, "exo-replay": 2, mindset: 2, liq: 6, bias: 4, "hl-learn": 4, "po3-learn": 4,
-};
+export const SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id) as string[];
+
+/** What the school page saves for each module: steps done ("1101"), passed, best score %, attempt number, exam tries, last attempt time. */
+export type ModuleProgress = { s?: string; p?: number; sc?: number; a?: number; n?: number; at?: number };
 type Best = { best?: number; pass?: boolean; n?: number; at?: number };
-export type SchoolState = { ch?: string[]; dives?: Record<string, Record<string, number>>; ck?: Record<string, Best>; ex?: Record<string, Best> };
+export type SchoolState = {
+  v2?: { m?: Record<string, ModuleProgress> };
+  // Classic school (earlier page)
+  ch?: string[]; dives?: Record<string, Record<string, number>>; ck?: Record<string, Best>; ex?: Record<string, Best>;
+};
 export type SchoolAttemptRow = { kind: string; ref: string; score: number; total: number; pass: boolean; createdAt: Date | string };
 export type SchoolSummary = {
-  levels: { id: string; name: string; lessons: number; lessonsDone: number; checkpoints: number; checkpointsPassed: number; exam: { best: number; pass: boolean; tries: number } | null; manualUnlock: boolean }[];
-  attempts: { kind: "ck" | "ex"; ref: string; label: string; pct: number; pass: boolean; at: string }[];
+  modules: { id: string; n: number; title: string; stepsDone: number; passed: boolean; best: number; tries: number; attempt: number; manualUnlock: boolean }[];
+  passed: number; total: number;
   current: string;
+  attempts: { label: string; pct: number; pass: boolean; at: string }[];
 };
-const MODULE_LABEL: Record<string, string> = {
-  b0: "Mindset & TradingView", b6: "Liquidity & structure", i6: "Daily bias & timing", b1: "How futures & NQ work", b2: "Reading charts", b3: "Orders & your first trade", b4: "Risk basics", i1: "Prop Firm 101", i2: "Why the math works",
-  i3: "Trade management", i4: "Trading psychology", i5: "Day in the life & plan", a1: "Extended Learning", a2: "H/L & PO3", x1: "ECHO X ORBIT",
-};
+
 export function summarizeSchool(state: SchoolState | null, unlocks: string[], attempts: SchoolAttemptRow[]): SchoolSummary {
-  const s = state ?? {}, ch = new Set(s.ch ?? []), dives = s.dives ?? {};
-  const done = (key: string) => {
-    const [k, id] = key.split(":");
-    if (k === "c") return id.split("+").every((c) => ch.has(c));
-    return Object.keys(dives[id] ?? {}).length >= (DIVE_PARTS[id] ?? 1);
-  };
-  const levels = SCHOOL_LEVELS.map((l) => {
-    const mods = l.modules as readonly { id: string; lessons: readonly string[]; noCheck?: boolean }[];
-    const lessons = mods.flatMap((m) => m.lessons);
-    const cks = mods.filter((m) => !m.noCheck);
-    const ex = s.ex?.[l.id];
+  const m = state?.v2?.m ?? {};
+  const modules = SCHOOL_MODULES.map((def) => {
+    const p = m[def.id] ?? {};
     return {
-      id: l.id, name: l.name, lessons: lessons.length, lessonsDone: lessons.filter(done).length,
-      checkpoints: cks.length, checkpointsPassed: cks.filter((m) => s.ck?.[m.id]?.pass).length,
-      exam: l.exam ? { best: ex?.best ?? 0, pass: !!ex?.pass, tries: ex?.n ?? 0 } : null,
-      manualUnlock: unlocks.includes(l.id),
+      id: def.id, n: def.n, title: def.title,
+      stepsDone: String(p.s ?? "").split("").filter((c) => c === "1").length,
+      passed: p.p === 1, best: p.p === 1 ? Math.max(0, Math.min(100, p.sc ?? 0)) : 0, tries: p.n ?? 0, attempt: p.a ?? 1,
+      manualUnlock: unlocks.includes(def.id),
     };
   });
-  const current = (levels.find((l) => l.lessonsDone < l.lessons || l.checkpointsPassed < l.checkpoints || (l.exam && !l.exam.pass)) ?? levels[levels.length - 1]).name;
+  const passed = modules.filter((x) => x.passed).length;
+  const unlocked = (i: number) => i === 0 || modules[i - 1].passed || modules[i].manualUnlock;
+  const cur = modules.findIndex((x, i) => !x.passed && unlocked(i));
+  const label = (ref: string) => { const d = SCHOOL_MODULES.find((x) => x.id === ref); return d ? `Module ${d.n} exam · ${d.title}` : ref; };
   return {
-    levels, current,
-    attempts: attempts.slice(0, 12).map((a) => ({
-      kind: a.kind === "ex" ? "ex" : "ck", ref: a.ref,
-      label: a.kind === "ex" ? `${SCHOOL_LEVELS.find((l) => l.id === a.ref)?.name ?? a.ref} exam` : `Checkpoint · ${MODULE_LABEL[a.ref] ?? a.ref}`,
-      pct: a.total ? a.score / a.total : 0, pass: a.pass, at: new Date(a.createdAt).toISOString(),
+    modules, passed, total: modules.length,
+    current: passed === modules.length ? "Course complete" : cur >= 0 ? `Module ${modules[cur].n}` : "Not started",
+    attempts: attempts.filter((a) => a.kind === "ex" && SCHOOL_MODULE_IDS.includes(a.ref)).slice(0, 12).map((a) => ({
+      label: label(a.ref), pct: a.total ? a.score / a.total : 0, pass: a.pass, at: new Date(a.createdAt).toISOString(),
     })),
   };
 }

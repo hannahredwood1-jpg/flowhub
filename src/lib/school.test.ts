@@ -1,18 +1,27 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { summarizeSchool, DIVE_PARTS } from "./school";
+import { readdirSync, readFileSync } from "node:fs";
+import { summarizeSchool, SCHOOL_MODULES } from "./school";
 import { planChecklist, planRiskPerTrade, type TradingPlanInput } from "./tradingPlan";
 
-test("school summary counts lessons, checkpoints and exams", () => {
-  const s = summarizeSchool({ ch: ["chart", "connect", "order"], dives: { futures: Object.fromEntries(Array.from({ length: DIVE_PARTS.futures }, (_, i) => [`s${i}`, 1])), charts: { candle: 1 } }, ck: { b1: { best: 0.86, pass: true } }, ex: {} }, ["intermediate"],
-    [{ kind: "ck", ref: "b1", score: 6, total: 7, pass: true, createdAt: "2026-10-01T10:00:00Z" }]);
-  const b = s.levels[0];
-  assert.equal(b.lessonsDone, 3); // futures dive + chart + connect/order
-  assert.equal(b.checkpointsPassed, 1);
-  assert.equal(b.checkpoints, 6); // b0–b4 + b6 (wrap-up has none)
-  assert.equal(s.levels[1].manualUnlock, true);
-  assert.equal(s.current, "Beginner");
-  assert.equal(s.attempts[0].label, "Checkpoint · How futures & NQ work");
+test("school summary counts steps, passed modules and exam attempts", () => {
+  const s = summarizeSchool({ v2: { m: { m01: { s: "1111", p: 1, sc: 92, n: 2 }, m02: { s: "110" } } } }, ["m05"],
+    [{ kind: "ex", ref: "m01", score: 23, total: 25, pass: true, createdAt: "2026-10-01T10:00:00Z" }, { kind: "ck", ref: "b1", score: 1, total: 1, pass: true, createdAt: "2026-10-01T10:00:00Z" }]);
+  assert.equal(s.passed, 1);
+  assert.equal(s.total, SCHOOL_MODULES.length);
+  assert.equal(s.modules[0].best, 92);
+  assert.equal(s.modules[1].stepsDone, 2);
+  assert.equal(s.modules[4].manualUnlock, true);
+  assert.equal(s.current, "Module 2");
+  assert.equal(s.attempts.length, 1);
+  assert.equal(s.attempts[0].label, "Module 1 exam · Trading Mindset");
+});
+
+test("module list matches the school page content", () => {
+  const dir = new URL("../../school/src/content/", import.meta.url);
+  const src = readdirSync(dir).filter((f) => f.endsWith(".js")).map((f) => readFileSync(new URL(f, dir), "utf8")).join("\n");
+  const found = [...src.matchAll(/MODS\.push\(\{id:'(m\d+)',[^]*?\bt:'((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], m[2].replace(/\\'/g, "'")]);
+  assert.deepEqual(found, SCHOOL_MODULES.map((m) => [m.id, m.title]));
 });
 
 test("trading plan validates and drives the checklist", () => {

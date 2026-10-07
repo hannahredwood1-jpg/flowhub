@@ -36,7 +36,7 @@ export function TradingPlanPage({ data, catalog, onSaved }: { data: DashboardDat
       <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Trading Plan">
         {([["build", "Build your plan"], ["proj", "Projections"], ["sniper", "EVAL SNIPER"]] as const).map(([k, t]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-            className={cx("border px-4 py-2 font-hud text-[10.5px] uppercase tracking-[0.16em]", tab === k ? "border-ice bg-ice/10 text-ice shadow-[inset_0_-2px_0_var(--color-signal)]" : "border-line text-ink-3 hover:text-ink-2")}>{t}</button>
+            className={cx("border px-4 py-2 font-hud text-[12.5px]", tab === k ? "border-ice bg-ice/10 text-ice shadow-[inset_0_-2px_0_var(--color-signal)]" : "border-line text-ink-3 hover:text-ink-2")}>{t}</button>
         ))}
       </div>
       {tab === "build" ? <PlanBuilder data={data} onSaved={onSaved} onProjections={() => setTab("proj")} /> : tab === "sniper" ? <EvalSniperPage data={data} catalog={catalog} /> : <ProjectionsPage data={data} catalog={catalog} onSaved={onSaved} />}
@@ -91,7 +91,7 @@ function PlanBuilder({ data, onSaved, onProjections }: { data: DashboardData; on
       <header className="hud animate-rise flex flex-wrap items-end justify-between gap-4 px-4 py-4">
         <div className="min-w-0">
           <div className="label flex items-center gap-2 !text-ice"><IconTarget size={13} /> Trading plan</div>
-          <h1 className="mt-1 font-display text-[clamp(22px,3vw,30px)] font-black uppercase leading-none">Build your plan</h1>
+          <h1 className="mt-1 font-display text-[clamp(22px,3vw,30px)] font-bold leading-none">Build your plan</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink-2">Six steps. Every decision you make here is one you don’t make under pressure. Your plan card shows on your dashboard and turns into your pre-trade checklist.</p>
         </div>
         <span className="text-xs text-ink-3">{saved ? `Saved ${new Date(saved).toLocaleDateString()}` : "Not saved yet"}</span>

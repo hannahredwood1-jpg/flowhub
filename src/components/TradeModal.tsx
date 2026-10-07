@@ -67,7 +67,7 @@ export function TradeModal({ open, onClose, accounts, editing, today, onSaved }:
 
   const seg = (value: string, current: string, onPick: () => void, tone: string) => (
     <button type="button" onClick={onPick} aria-pressed={value === current}
-      className={cx("h-[38px] flex-1 border font-hud text-[10px] tracking-[0.14em] uppercase transition-colors", value === current ? tone : "border-line-2 text-ink-3 hover:text-ink-2")}>
+      className={cx("h-[38px] flex-1 border font-hud text-[12px] transition-colors", value === current ? tone : "border-line-2 text-ink-3 hover:text-ink-2")}>
       {titleCase(value)}
     </button>
   );
@@ -83,7 +83,7 @@ export function TradeModal({ open, onClose, accounts, editing, today, onSaved }:
             </select>
           </Field>
           <Field label="Date" htmlFor="t-date"><input id="t-date" type="date" className="field" value={f.tradeDate} onChange={set("tradeDate")} required /></Field>
-          <Field label="Ticker" htmlFor="t-ticker"><input id="t-ticker" className="field uppercase" maxLength={12} value={f.ticker} onChange={set("ticker")} required /></Field>
+          <Field label="Ticker" htmlFor="t-ticker"><input id="t-ticker" className="field " maxLength={12} value={f.ticker} onChange={set("ticker")} required /></Field>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

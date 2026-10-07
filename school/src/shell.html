@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trading School · FLOWHUB</title>
+<meta name="robots" content="noindex"><meta name="theme-color" content="#030405">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23030405'/%3E%3Ctext x='16' y='25' font-family='Arial Black,Arial' font-weight='900' font-size='24' text-anchor='middle' fill='%23ff6a00'%3EF%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>/*CSS*/</style>
+</head><body>
+<header class="top">
+  <a class="brand" href="/" aria-label="FLOWHUB home"><span class="logo"><b>F</b>LOWHUB</span><small>by FLOWMTD Trading</small></a>
+  <!--FH_NAV-->
+  <div class="top-r"><span class="pill"><span class="dot"></span>Practice · no real money</span><span id="who" class="dim" style="font-size:13px"></span></div>
+</header>
+
+<main id="v-map" class="view">
+  <section class="hero">
+    <div>
+      <div class="hud" style="margin-bottom:8px">Trading School</div>
+      <h1 class="h">Learn to trade, <span class="f">A to Z.</span></h1>
+      <p>Each module teaches one idea, makes you apply it on a real chart, makes you explain it in your own words, and then tests you. You move on by proving it, not by clicking through.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+  <section class="card loop">
+    <div><i>01</i><b>Learn it</b><p>One concept, built from the one before it, with a worked example on a live chart.</p></div>
+    <div><i>02</i><b>Mark it</b><p>Do it yourself on the chart with drawing tools. Tasks count when you get them right on the first check.</p></div>
+    <div><i>03</i><b>Explain it</b><p>Write the idea in your own words. If you can't explain it, you don't know it yet.</p></div>
+    <div><i>04</i><b>Prove it</b><p>Module exam. No hints, no feedback until you submit, and new questions every attempt.</p></div>
+  </section>
+  <div class="rule">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--signal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
+    <div><b>Fail an exam and the module restarts.</b> You re-do the lessons, and the exam is a different set: different charts, different numbers, different questions. There is no memorising your way through.</div>
+  </div>
+  <div class="cols">
+    <div id="phases"></div>
+    <aside class="aside" id="aside"></aside>
+  </div>
+  <p class="foot">Looking for the earlier lessons, replays, terminology and ECHO X ORBIT? They are still here: <a href="/school/classic">Classic school</a>.</p>
+</main>
+
+<main id="v-lab" class="view lab" hidden>
+  <div class="crumb" id="crumb"></div>
+  <div class="tvbar">
+    <div class="sym"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>NQ1! <small>Nasdaq 100 E-mini · CME</small></div>
+    <span class="sep"></span>
+    <button class="tvb on" data-tf="1">5m</button>
+    <button class="tvb" data-tf="3">15m</button>
+    <span class="sep"></span>
+    <button class="tvb" id="candleBtn" title="Neutral candles so red and green do not bias you">Candles: neutral</button>
+    <span class="sp"></span>
+    <span class="tz">New York · ET</span>
+  </div>
+  <div class="lab-grid">
+    <div id="tvLeft"></div>
+    <section class="chartcol"><div id="chartHost" class="tvc"></div><div id="chartHost2" class="tvc" hidden style="border-top:1px solid var(--line)"></div>
+      <div class="tvfoot"><span id="chartHint">Drag to pan · scroll to zoom · double-click to reset</span><span class="sp"></span><span id="chartTf">5m candles</span></div>
+    </section>
+    <aside class="lesson" id="lesson"></aside>
+  </div>
+</main>
+
+<main id="v-exam" class="view exam" hidden><div class="ex-wrap" id="exBody"></div></main>
+
+<div id="toast" role="status"></div>
+<dialog id="dlg"><div class="in" id="dlgBody"></div></dialog>
+<script>/*JS*/</script>
+</body></html>

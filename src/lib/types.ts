@@ -106,7 +106,7 @@ export type DashboardData = {
   practice: PracticeSummary | null; // Practice tab results (coaches see this)
   school: SchoolSummary | null;    // Trading School progress (coaches see this)
   tradingPlan: TradingPlanDTO | null; // written plan from Trading Plan → Build your plan
-  stats: { todayPnl: number; weekPnl: number; monthPnl: number; trades30: number; winRate30: number | null; planFollowed30: number | null; level: number; xp: number; xpToNext: number };
+  stats: { todayPnl: number; weekPnl: number; monthPnl: number; trades30: number; winRate30: number | null; planFollowed30: number | null};
 };
 
 export type CatalogSize = {

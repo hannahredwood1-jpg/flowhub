@@ -60,7 +60,7 @@ export function EvalSniperPage({ data, catalog }: { data: DashboardData; catalog
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <header className="hud animate-rise px-4 py-4">
         <div className="label flex items-center gap-2 !text-ice"><IconTarget size={13} /> Eval pass indicator</div>
-        <h1 className="mt-1 font-display text-[clamp(22px,3vw,30px)] font-black uppercase leading-none">EVAL SNIPER</h1>
+        <h1 className="mt-1 font-display text-[clamp(22px,3vw,30px)] font-bold leading-none">EVAL SNIPER</h1>
         <p className="mt-2 max-w-3xl text-sm text-ink-2">Built to pass evaluations fast during <b className="text-ink">red-folder news events</b>. It doesn’t predict direction: it sets a trap on both sides of price and lets the news spike pick the side. Run it on the <b className="text-ink">1-minute chart</b>, and size it so one or two clean wins hit your profit target without one loss ending the account.</p>
       </header>
 

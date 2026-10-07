@@ -14,7 +14,7 @@ export function FeedbackItem({ f, onRead }: { f: FeedbackDTO; onRead?: (id: stri
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="text-ink">{f.coach.name}</span>
-          <span className={cx("chip !h-[18px] !text-[8.5px]", KIND_TONE[f.kind])}>{titleCase(f.kind)}</span>
+          <span className={cx("chip !h-[18px] !text-[11px]", KIND_TONE[f.kind])}>{titleCase(f.kind)}</span>
           <span className="text-ink-3">{shortDate(f.createdAt.slice(0, 10))}</span>
           {!f.readAt && onRead && <button className="ml-auto text-ink-3 hover:text-ice" onClick={() => onRead(f.id)}>Mark read</button>}
         </div>

@@ -36,49 +36,17 @@ export const statusColor = (s: PaceStatus) => STATUS[s].color;
 const BG: Record<PaceStatus, string> = { PASSED: "bg-win", AHEAD: "bg-win", ON_PACE: "bg-ice", BEHIND: "bg-lag", AT_RISK: "bg-loss", FAILED: "bg-loss", NO_TRADES: "bg-ink-3" };
 export const statusBg = (s: PaceStatus) => BG[s];
 
-/** Segmented HUD bar. value 0..1. marker = expected position. */
-export function Meter({ value, marker, tone = "ice", segments = 24, label }: { value: number; marker?: number; tone?: "ice" | "win" | "loss" | "lag"; segments?: number; label?: string }) {
-  const filled = Math.round(Math.max(0, Math.min(1, value)) * segments);
+/** Progress bar. value 0..1. marker = expected position. */
+export function Meter({ value, marker, tone = "ice", label }: { value: number; marker?: number; tone?: "ice" | "win" | "loss" | "lag"; segments?: number; label?: string }) {
   const toneBg = { ice: "bg-ice", win: "bg-win", loss: "bg-loss", lag: "bg-lag" }[tone];
   return (
-    <div className="relative" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(value * 100)} aria-label={label}>
-      <div className="flex gap-[3px]">
-        {Array.from({ length: segments }, (_, i) => (
-          <div
-            key={i}
-            className={cx("h-2.5 flex-1 skew-x-[-20deg] transition-colors duration-500", i < filled ? toneBg : "bg-line")}
-            style={{ transitionDelay: `${i * 18}ms`, opacity: i < filled ? 0.35 + (0.65 * (i + 1)) / Math.max(filled, 1) : 1 }}
-          />
-        ))}
+    <div className="relative py-1" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(value * 100)} aria-label={label}>
+      <div className="h-2 overflow-hidden rounded-full bg-line">
+        <div className={cx("h-full rounded-full transition-[width] duration-500", toneBg)} style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
       </div>
       {marker != null && marker > 0 && marker < 1 && (
-        <div className="absolute -top-1 bottom-[-4px] w-px bg-ink-2" style={{ left: `${marker * 100}%` }} title="Where your plan says you should be today">
-          <div className="absolute -top-1 -left-[3px] h-0 w-0 border-x-[3.5px] border-t-[4px] border-x-transparent border-t-ink-2" />
-        </div>
+        <div className="absolute inset-y-0 w-px bg-ink-2" style={{ left: `${marker * 100}%` }} title="Where your plan says you should be today" />
       )}
-    </div>
-  );
-}
-
-export function XPBar({ level, xp, xpToNext }: { level: number; xp: number; xpToNext: number }) {
-  const start = (level - 1) * (level - 1) * 100;
-  const end = level * level * 100;
-  const v = (xp - start) / (end - start);
-  return (
-    <div className="flex items-center gap-3">
-      <div className="grid h-9 w-9 place-items-center border border-ice-dim bg-panel-2 font-hud text-sm text-ice [clip-path:polygon(25%_0,100%_0,100%_75%,75%_100%,0_100%,0_25%)]">
-        {level}
-      </div>
-      <div className="min-w-[120px] flex-1">
-        <div className="flex justify-between">
-          <span className="label">Level {level}</span>
-          <span className="num text-[11px] text-ink-3">{xpToNext} XP to next</span>
-        </div>
-        <div className="relative mt-1 h-1.5 overflow-hidden bg-line">
-          <div className="h-full bg-gradient-to-r from-ice-dim to-ice transition-[width] duration-700" style={{ width: `${v * 100}%` }} />
-          <div className="absolute top-0 h-full w-[3px] bg-signal shadow-[0_0_8px_var(--color-signal)]" style={{ left: `calc(${v * 100}% - 3px)` }} />
-        </div>
-      </div>
     </div>
   );
 }
@@ -102,14 +70,11 @@ export function Ring({ value, label }: { value: number; label: string }) {
     <div className="relative grid h-[76px] w-[76px] place-items-center">
       <svg viewBox="0 0 76 76" className="absolute inset-0 -rotate-90">
         <circle cx="38" cy="38" r={r} fill="none" stroke="var(--color-line)" strokeWidth="5" />
-        <circle cx="38" cy="38" r={r} fill="none" stroke={tone} strokeWidth="5" strokeDasharray={`${c * value} ${c}`} strokeLinecap="butt" className="transition-[stroke-dasharray] duration-1000" />
-        {Array.from({ length: 12 }, (_, i) => (
-          <line key={i} x1="38" y1="3" x2="38" y2="7" stroke="var(--color-void)" strokeWidth="2" transform={`rotate(${i * 30} 38 38)`} />
-        ))}
+        <circle cx="38" cy="38" r={r} fill="none" stroke={tone} strokeWidth="5" strokeDasharray={`${c * value} ${c}`} strokeLinecap="round" className="transition-[stroke-dasharray] duration-1000" />
       </svg>
       <div className="num text-base leading-none">{Math.round(value * 100)}%</div>
     </div>
-    <div className="label !text-[8.5px]">{label}</div>
+    <div className="label !text-[11px]">{label}</div>
     </div>
   );
 }
@@ -128,7 +93,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
     <div className="fixed inset-0 z-40 grid place-items-center overflow-y-auto bg-void/80 p-4 backdrop-blur-sm" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className={cx("hud animate-rise w-full", wide ? "max-w-3xl" : "max-w-xl")}>
         <header className="flex items-center justify-between border-b border-line px-5 py-3">
-          <h2 className="font-hud text-[12px] tracking-[0.16em] uppercase">{title}</h2>
+          <h2 className="font-hud text-[12px] ">{title}</h2>
           <button className="btn btn-ghost !h-8 !px-2" onClick={onClose} aria-label="Close"><IconX /></button>
         </header>
         <div className="p-5">{children}</div>

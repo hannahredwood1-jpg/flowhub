@@ -9,7 +9,7 @@ import { AccountModal } from "./AccountModal";
 import { RoadmapModal } from "./RoadmapModal";
 import { TradeModal } from "./TradeModal";
 import { FeedbackItem } from "./Feedback";
-import { Panel, Stat, XPBar } from "./ui";
+import { Panel, Stat } from "./ui";
 import { IconChat } from "./icons";
 import { TradingPlanCard } from "./Projections";
 import { PlanCard } from "./TradingPlan";
@@ -71,12 +71,12 @@ export function StatsStrip({ data }: { data: DashboardData }) {
   const s = data.stats;
   const tone = (n: number) => (n > 0 ? "win" : n < 0 ? "loss" : undefined);
   return (
-    <section className="hud animate-rise grid grid-cols-2 items-center gap-x-6 gap-y-4 px-4 py-4 sm:grid-cols-3 lg:grid-cols-[minmax(220px,1.4fr)_repeat(5,1fr)]">
-      <div className="col-span-2 sm:col-span-3 lg:col-span-1"><XPBar level={s.level} xp={s.xp} xpToNext={s.xpToNext} /></div>
+    <section className="hud animate-rise grid grid-cols-2 items-center gap-x-6 gap-y-4 px-4 py-4 sm:grid-cols-3 lg:grid-cols-6">
+      <Stat label="Trades · 30d" value={String(s.trades30)} sub={s.trades30 === 1 ? "1 trade logged" : `${s.trades30} trades logged`} />
       <Stat label="Today" value={usd(s.todayPnl, { sign: true })} tone={tone(s.todayPnl)} />
       <Stat label="This week" value={usd(s.weekPnl, { sign: true })} tone={tone(s.weekPnl)} />
       <Stat label="This month" value={usd(s.monthPnl, { sign: true })} tone={tone(s.monthPnl)} sub={data.income ? `goal ${usd(data.income.grossMonthlyNeeded)} gross` : undefined} />
-      <Stat label="Win rate · 30d" value={pct(s.winRate30)} sub={`${s.trades30} trades`} />
+      <Stat label="Win rate · 30d" value={pct(s.winRate30)} />
       <Stat label="Plan followed · 30d" value={pct(s.planFollowed30)} tone={s.planFollowed30 != null && s.planFollowed30 >= 0.8 ? "ice" : undefined} />
     </section>
   );
