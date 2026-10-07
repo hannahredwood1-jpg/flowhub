@@ -63,7 +63,7 @@ function renderMap(){
     if(m.ph!==ph){if(ph>=0)html+='</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
     html+=modRow(m,i)});
   html+='</div></section>';
-  $('#phases').innerHTML=(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">Course complete.</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
+  $('#phases').innerHTML=(pm('m30').p?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">Course complete.</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
   $('#aside').innerHTML=`<div class="card next-card"><div class="hud">${finished?'All modules passed':'Up next'}</div><div class="h">${cur.n}. ${cur.t}</div>
     <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':`Step <b>${Math.min(stepsDone(cur)+1,5)}</b> of 5: ${STEPS[Math.min(stepsDone(cur),4)]}`}</p>
     <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:stepsDone(cur)/5*100}%"></i></div>
@@ -139,7 +139,7 @@ function paintChart(refit){
   $('#chartTf').textContent=(CH.tfName?(CH.tfName==='D'?'Daily':CH.tfName==='60'?'1-hour':CH.tfName+'-minute')+' candles':CH.labelFn?'Daily candles':(CH.stepMin*CH.k>=60?(CH.stepMin*CH.k/60)+'-hour candles':`${CH.stepMin*CH.k}m candles`));
   CH.draw();CH2.draw();
 }
-const seeSteps=(m,sc)=>{if(!m._see)m._see=m.see(sc);return m._see};
+const seeSteps=(m,sc)=>{if(!m._see)m._see=m.see(sc).map(s=>({...s,cap:refx(s.cap),html:refx(s.html)}));return m._see};
 
 function stepper(){const m=LAB.m,s=pm(m.id).s;return `<div class="steps">${STEPS.map((x,i)=>`<button type="button" data-step="${i}" class="${LAB.step===i?'on':''} ${i<4&&s[i]?'done':''}"><i></i>${x}</button>`).join('')}</div>`}
 function renderLesson(){
@@ -223,6 +223,7 @@ $('#lesson').addEventListener('click',e=>{
   if(t.closest('[data-sub]')){L.sub=true;storeTxt();return renderLesson()}
   if((b=t.closest('[data-tick]'))){L.ticks[b.dataset.tick]=b.checked;storeTxt();const need=Math.ceil(m.explain.ideas.length*.75);if(Object.values(L.ticks).filter(Boolean).length>=need){complete(3,'Explanation complete')}else{p.s[3]=0;persist()}return renderLesson()}
   if(t.closest('[data-exam]'))return nav(`/${m.id}/exam`);
+  if(t.closest('[data-plan-check]'))return planCheck();
 });
 $('#lesson').addEventListener('input',e=>{const L=LAB;if(!L)return;const id=e.target.id;if(id==='t0'||id==='t1'){const i=+id[1];L.t[i]=e.target.value;storeTxt();$$('[data-wc]').forEach(w=>w.textContent=words(L.t[+w.dataset.wc]||'')+' words');const sb=$('[data-sub]');if(sb)sb.disabled=!L.t.every(t=>words(t)>=20)}});
 
@@ -329,6 +330,46 @@ function examResult(){
    </aside></div>`;
   const r=$('#restartBtn');if(r)r.onclick=()=>{X=null;nav(`/${m.id}/learn`)};
 }
+
+
+/* ============================================================
+   PLAN CHECK + GRADUATION (certificate and the ECHO X ORBIT bot reward)
+============================================================ */
+async function planCheck(){
+  const fb=$('[data-plan-fb]');if(!fb)return;
+  if(!LIVE){fb.innerHTML='<div class="fb ok"><b>Preview.</b> In FLOWHUB this checks your saved plan.</div>';return}
+  try{const r=await fetch('/api/plan',{credentials:'same-origin'}),j=r.ok?await r.json():null;
+    fb.innerHTML=j&&j.plan&&j.plan.done?'<div class="fb ok"><b>Plan found.</b> Your plan card is saved. It shows on your dashboard and feeds your pre-trade checklist.</div>':'<div class="fb no"><b>No plan yet.</b> Finish all 6 steps in Trading Plan, save it, then check again.</div>'}
+  catch(e){fb.innerHTML='<div class="fb no"><b>Could not check.</b> Try again in a moment.</div>'}
+}
+const BOOK_MSG='Hi Hannah! I finished the FLOWMTD Trading School and passed the ECHO X ORBIT exam. I\'d like to book a Zoom call to set up the ECHO X ORBIT bot and private indicator.\n\nTradingView username: \nProp firm / account: \nTime zone + best times for a call: ';
+function drawCertificate(name){
+  const W=1600,H=1130,cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');
+  c.fillStyle='#030405';c.fillRect(0,0,W,H);c.strokeStyle='#28313e';c.lineWidth=2;c.strokeRect(48,48,W-96,H-96);c.strokeStyle='#ff6a00';c.lineWidth=4;c.beginPath();c.moveTo(48,120);c.lineTo(48,48);c.lineTo(120,48);c.stroke();c.beginPath();c.moveTo(W-48,H-120);c.lineTo(W-48,H-48);c.lineTo(W-120,H-48);c.stroke();
+  c.textAlign='center';c.fillStyle='#e6ebf2';c.font='900 46px Archivo, Arial Black, sans-serif';c.fillText('FLOWHUB',W/2,170);c.fillStyle='#ff6a00';c.font='600 20px Inter, sans-serif';c.fillText('Certificate of completion',W/2,215);
+  c.fillStyle='#929fb2';c.font='400 26px Inter, sans-serif';c.fillText('This certifies that',W/2,400);
+  let fs=96;c.font=`700 ${fs}px Inter, sans-serif`;while(c.measureText(name).width>W-300&&fs>40){fs-=4;c.font=`700 ${fs}px Inter, sans-serif`}c.fillStyle='#e6ebf2';c.fillText(name,W/2,520);
+  c.strokeStyle='#ff6a00';c.lineWidth=2;c.beginPath();c.moveTo(W/2-300,560);c.lineTo(W/2+300,560);c.stroke();
+  c.fillStyle='#c9d3e1';c.font='400 30px Inter, sans-serif';c.fillText('has completed the FLOWMTD Trading School and passed every module exam,',W/2,660);c.fillText('including the ECHO X ORBIT model.',W/2,704);
+  const d=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});let h=7;for(const ch of name+d)h=(h*31+ch.charCodeAt(0))>>>0;
+  c.textAlign='left';c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('DATE',150,930);c.fillStyle='#e6ebf2';c.font='500 26px JetBrains Mono, monospace';c.fillText(d,150,968);c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('CERTIFICATE ID',150,1020);c.fillStyle='#e6ebf2';c.font='500 22px JetBrains Mono, monospace';c.fillText('FMTD-'+h.toString(36).toUpperCase().padStart(7,'0'),150,1054);
+  c.textAlign='center';c.fillStyle='#66717f';c.font='400 15px Inter, sans-serif';c.fillText('Educational certificate of course completion. Not a trading license, qualification or financial advice.',W/2,H-72);
+  return cv}
+function gradCard(){
+  return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">Trading School complete</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You passed every module, including ECHO X ORBIT.</h2>
+   <p class="muted" style="max-width:62ch">Download your certificate, then read how to claim the ECHO X ORBIT private indicator and bot: set up with you on a one-on-one Zoom call.</p>
+   <div class="row" style="align-items:center;margin-top:14px"><input class="in" id="certName" placeholder="Your name for the certificate" maxlength="40" value="${esc(WHO||'')}" style="max-width:300px"><button class="btn primary" id="certBtn">Download certificate</button></div>
+   <h3 class="h" style="font-size:17px;margin:22px 0 6px">Your reward: the ECHO X ORBIT private indicator and bot</h3>
+   <p class="muted" style="max-width:66ch;font-size:14px">The <b>private indicator</b> runs on your own TradingView chart and marks setups as they form. The <b>bot</b> places that same order in your connected accounts with the stop and target attached, then applies <b>your</b> safety limits: daily loss and profit caps, max contracts, sessions, and when to be flat. You start on Paper and move to Live when you are ready. It is yours, not shared.</p>
+   <p style="margin-top:10px;font-size:14px"><b>Have ready for the call:</b></p><ul class="muted" style="font-size:14px;margin:4px 0 0 18px"><li>A TradingView paid plan that supports webhook alerts, and your TradingView username</li><li>A PickMyTrade account</li><li>Your prop firm or broker account ready to connect (you log in yourself: never send a password in Discord)</li><li>Your firm's daily loss limit and max contracts, and its rules on automation</li><li>Zoom installed on a computer</li></ul>
+   <p style="margin-top:12px;font-size:14px"><b>Book it:</b> send Hannah a DM on Discord with the message below.</p><textarea class="in" id="bookMsg" readonly rows="6" style="margin-top:6px">${esc(BOOK_MSG)}</textarea>
+   <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a></div></div>`}
+document.addEventListener('click',e=>{
+  if(e.target.closest('#certBtn')){const n=($('#certName').value||'').trim();if(!n){toast('Type your name for the certificate.');return}
+    const run=()=>{const a=document.createElement('a');a.download='FLOWMTD-certificate-'+n.replace(/[^a-z0-9]+/gi,'-')+'.png';a.href=drawCertificate(n).toDataURL('image/png');document.body.append(a);a.click();a.remove()};
+    (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(run)}
+  if(e.target.closest('#copyBook')){const b=e.target.closest('#copyBook');try{navigator.clipboard.writeText(BOOK_MSG).then(()=>{b.textContent='Copied'},()=>{b.textContent='Select and copy above'})}catch(x){b.textContent='Select and copy above'}}
+});
 
 /* ============================================================
    boot

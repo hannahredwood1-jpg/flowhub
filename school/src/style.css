@@ -266,3 +266,17 @@ dialog p{color:var(--ink2);margin:4px 0}
 }
 @media(max-width:620px){.top{padding:8px 14px;gap:12px}.view{padding:18px 14px 60px}.loop{grid-template-columns:1fr}.mod-h{grid-template-columns:30px 1fr}.mod-m{grid-column:2}.res-top{grid-template-columns:1fr}.topic{grid-template-columns:110px 1fr 40px}.calc{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* find-it-on-screen mock + order ticket */
+.spot{max-width:640px;margin:6px 0}
+.tvmock{width:100%;height:auto;background:var(--chart);border:1px solid var(--line2);border-radius:8px;display:block}
+.tvmock .sp{cursor:pointer}.tvmock .sp rect{fill:var(--panel2);stroke:var(--line2);stroke-width:1;transition:.12s}.tvmock .sp text{fill:var(--ink2);font:600 11px var(--f-body);pointer-events:none}
+.tvmock .sp:hover rect{stroke:var(--ink3)}.tvmock .sp.sel rect{stroke:var(--signal);fill:color-mix(in srgb,var(--signal) 14%,var(--panel2))}
+.tvmock .sp.right rect{stroke:var(--win);fill:color-mix(in srgb,var(--win) 16%,var(--panel2))}.tvmock .sp.wrong rect{stroke:var(--loss);fill:color-mix(in srgb,var(--loss) 14%,var(--panel2))}
+.tvmock .ch rect{fill:#3d4a5c}.tvmock .ch path{stroke:#3d4a5c;stroke-width:1.5}
+.tvmock g[data-spot=draw] rect:not(:first-child){fill:var(--ink3);stroke:none}
+.tk{display:grid;gap:10px;margin:8px 0}
+.tkq{font-size:14px}.tkr{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:10px;font-size:13.5px;color:var(--ink2)}
+.tkr input.in{max-width:200px}.tkx{font:500 12.5px var(--f-mono);color:var(--ink2);min-height:18px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}.seg button{padding:7px 13px;background:var(--panel2);color:var(--ink2);font:600 13px var(--f-body);border-right:1px solid var(--line2)}.seg button:last-child{border-right:0}
+.seg button.on{background:color-mix(in srgb,var(--signal) 18%,var(--panel2));color:var(--ink)}
