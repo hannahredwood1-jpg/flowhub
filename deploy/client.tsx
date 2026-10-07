@@ -60,7 +60,7 @@ function App() {
   if (state.kind === "loading") return <div id="boot">FLOWHUB // SYNCING</div>;
   if (state.kind === "error") return <div id="boot">{state.message}</div>;
   if (state.kind === "login")
-    return <LoginScreen notice={state.notice} action={async () => { location.href = "/auth/discord"; await new Promise(() => {}); }} />;
+    return <LoginScreen notice={state.notice} action={async () => { location.href = "/auth/discord"; await new Promise(() => {}); }} onLocal={async (username, password) => { const r = await fetch("/auth/local", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }), credentials: "same-origin" }); const j = await r.json().catch(() => ({})); if (!r.ok) return (j as { error?: string }).error ?? "Sign-in failed"; location.href = "/#dashboard"; location.reload(); return undefined; }} />;
 
   const active = view === "coach" && !staff ? "dashboard" : view;
   const reload = async () => { const data = await api.dashboard(); setState((s) => (s.kind === "app" ? { ...s, data } : s)); };

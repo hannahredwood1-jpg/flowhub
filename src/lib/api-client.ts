@@ -15,7 +15,11 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 const send = (method: string, body?: unknown): RequestInit => ({ method, body: body === undefined ? undefined : JSON.stringify(body) });
 
+export type LocalAccountRow = { id: string; username: string; name: string; disabled: boolean; expiresAt: string | null; lastLoginAt: string | null; createdAt: string };
 export const api = {
+  localAccounts: () => call<LocalAccountRow[]>("/api/local-accounts"),
+  createLocal: (data: { username: string; name: string; password: string; days: number | null }) => call<{ id: string }>("/api/local-accounts", send("POST", data)),
+  patchLocal: (id: string, data: { disabled?: boolean; days?: number | null; password?: string; name?: string }) => call(`/api/local-accounts/${id}`, send("PATCH", data)),
   dashboard: () => call<DashboardData>("/api/dashboard"),
   catalog: () => call<CatalogFirm[]>("/api/catalog"),
   saveRoadmap: (data: unknown) => call("/api/roadmap", send("PUT", data)),
