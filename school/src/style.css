@@ -285,3 +285,5 @@ dialog p{color:var(--ink2);margin:4px 0}
 .sim{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:8px 0;background:var(--panel2)}.simc{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--ink2)}
 .simc input[type=range]{accent-color:var(--signal);vertical-align:middle}.simsvg{width:100%;height:90px;margin:8px 0;background:var(--chart);border-radius:8px}
 .simgrid{display:grid;grid-template-columns:repeat(20,1fr);gap:2px;margin-bottom:8px}.simgrid i{font:600 10px var(--f-mono);font-style:normal;text-align:center;padding:2px 0;border-radius:3px}.simgrid i.sw{color:var(--win);background:color-mix(in srgb,var(--win) 12%,transparent)}.simgrid i.sl{color:var(--loss);background:color-mix(in srgb,var(--loss) 12%,transparent)}
+
+.rp{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:8px 0;background:var(--panel2)}.rp.ok{border-color:color-mix(in srgb,var(--win) 50%,var(--line))}.rp.no{border-color:color-mix(in srgb,var(--loss) 50%,var(--line))}
