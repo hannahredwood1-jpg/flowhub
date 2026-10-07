@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Archivo, Orbitron, Rajdhani, JetBrains_Mono } from "next/font/google";
+import { Archivo, Inter, JetBrains_Mono, Orbitron, Rajdhani } from "next/font/google";
 import "./globals.css";
 
-// Archivo (heavy, wide) = FLOWMTD brand type · Orbitron = HUD labels · Rajdhani = UI text · JetBrains Mono = numbers
+// Inter = UI text · Archivo (heavy) = the FLOWHUB wordmark · JetBrains Mono = numbers
+// Archivo + Orbitron + Rajdhani are kept only for the Discord sign-in screen
 const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo", axes: ["wdth"], style: ["normal", "italic"] });
 const orbitron = Orbitron({ subsets: ["latin"], variable: "--font-orbitron", weight: ["500", "700"] });
 const rajdhani = Rajdhani({ subsets: ["latin"], variable: "--font-rajdhani", weight: ["500", "600", "700"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", weight: ["400", "500", "600", "700"] });
 const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", weight: ["400", "500"] });
 
 export const metadata: Metadata = {
@@ -16,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${archivo.variable} ${orbitron.variable} ${rajdhani.variable} ${jetbrains.variable}`}>
+    <html lang="en" className={`${archivo.variable} ${orbitron.variable} ${rajdhani.variable} ${inter.variable} ${jetbrains.variable}`}>
       <body>{children}</body>
     </html>
   );

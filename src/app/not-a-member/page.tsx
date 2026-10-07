@@ -11,10 +11,9 @@ export default async function NotAMember({ searchParams }: { searchParams: Promi
   const c = COPY[reason ?? ""] ?? COPY.default;
   return (
     <main className="grid min-h-dvh place-items-center px-4">
-      <div className="grid-bg" />
       <div className="hud w-full max-w-md p-8">
         <Logo />
-        <h1 className="mt-8 font-display text-2xl font-black uppercase">{c.title}</h1>
+        <h1 className="mt-8 font-display text-2xl font-bold ">{c.title}</h1>
         <p className="mt-3 text-ink-2">{c.body}</p>
         <a href="/" className="btn mt-6">Back to sign in</a>
       </div>

@@ -22,7 +22,7 @@ export function PlanPanel({ data, readOnly, onAddAccount, onEditAccount, onEditR
     <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
       <Panel
         title={<span className="flex items-center gap-2"><IconTarget size={13} /> Account plans</span>}
-        right={!readOnly && <button className="btn !h-8 !text-[10px]" onClick={onAddAccount}><IconPlus size={14} /> Add account</button>}
+        right={!readOnly && <button className="btn !h-8 !text-[12px]" onClick={onAddAccount}><IconPlus size={14} /> Add account</button>}
       >
         {active.length === 0 ? (
           <EmptyAccounts readOnly={readOnly} onAdd={onAddAccount} />
@@ -79,7 +79,7 @@ function AccountDetail({ a, readOnly, onEdit }: { a: AccountDTO; readOnly?: bool
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="label">{r.firm}</div>
-          <div className="mt-1 font-display text-xl font-extrabold tracking-[0.01em]">{r.planName} · {k(r.accountSize)}</div>
+          <div className="mt-1 font-display text-xl font-extrabold">{r.planName} · {k(r.accountSize)}</div>
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <StatusChip status={pace.status} />
             <span className="chip text-ink-3">{titleCase(a.stage)}</span>

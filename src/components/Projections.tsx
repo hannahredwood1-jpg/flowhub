@@ -109,7 +109,7 @@ export function ProjectionsPage({ data, catalog, onSaved }: { data: DashboardDat
       <header className="hud animate-rise flex flex-wrap items-end justify-between gap-4 px-4 py-4">
         <div className="min-w-0">
           <div className="label flex items-center gap-2 !text-ice"><IconCoin size={13} /> Income projection</div>
-          <h1 className="mt-1 font-display text-[clamp(22px,3vw,30px)] font-black uppercase leading-none">Plan your accounts</h1>
+          <h1 className="mt-1 font-display text-[clamp(22px,3vw,30px)] font-bold leading-none">Plan your accounts</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink-2">
             Pick the accounts you run or plan to buy. FLOWHUB projects what they can pay you month by month, then turns it into a daily plan. It uses your setups
             ({roadmap.strategies.map(strategyLabel).join(", ")} · {pct(roadmap.winRate, 1)} win rate), {roadmap.avgRR}R, {roadmap.tradesPerDay} trades a day.{" "}
@@ -251,7 +251,7 @@ function Segmented({ id, value, options, onChange }: { id: string; value: string
     <div id={id} role="radiogroup" className="flex h-10 border border-line-2">
       {options.map(([v, l]) => (
         <button key={v} type="button" role="radio" aria-checked={value === v} onClick={() => onChange(v)}
-          className={cx("min-w-0 flex-1 truncate px-2 font-hud text-[10px] tracking-[0.12em] uppercase transition-colors", value === v ? "bg-ice/10 text-ice" : "text-ink-3 hover:text-ink-2")}>
+          className={cx("min-w-0 flex-1 truncate px-2 font-hud text-[12px] transition-colors", value === v ? "bg-ice/10 text-ice" : "text-ink-3 hover:text-ink-2")}>
           {l}
         </button>
       ))}
@@ -280,7 +280,7 @@ function IncomePanel({ result, goal }: { result: ProjectionResult; goal: number 
     <Panel delay={60} title="Take-home by month · after costs" right={
       <div className="flex border border-line-2">
         {(["chart", "table"] as const).map((v) => (
-          <button key={v} onClick={() => setView(v)} className={cx("px-2.5 py-1 font-hud text-[9.5px] tracking-[0.12em] uppercase", view === v ? "bg-ice/10 text-ice" : "text-ink-3")}>{v}</button>
+          <button key={v} onClick={() => setView(v)} className={cx("px-2.5 py-1 font-hud text-[12px] ", view === v ? "bg-ice/10 text-ice" : "text-ink-3")}>{v}</button>
         ))}
       </div>
     }>
@@ -486,7 +486,7 @@ function DayPlanPanel({ plan, roadmap }: { plan: DayPlan; roadmap: RoadmapDTO })
 
         <ol className="grid gap-2 border-t border-line pt-4 text-sm text-ink-2 md:grid-cols-2">
           {planRules(plan, roadmap).map((t, i) => (
-            <li key={i} className="flex gap-3"><span className="num mt-0.5 grid h-5 w-5 shrink-0 place-items-center border border-line-2 text-[10px] text-ice">{i + 1}</span><span>{t}</span></li>
+            <li key={i} className="flex gap-3"><span className="num mt-0.5 grid h-5 w-5 shrink-0 place-items-center border border-line-2 text-[12px] text-ice">{i + 1}</span><span>{t}</span></li>
           ))}
         </ol>
       </div>
@@ -534,7 +534,7 @@ export function TradingPlanCard({ data, catalog, planHref }: { data: DashboardDa
         <ul className="grid gap-1.5 text-sm">
           {plan.rows.map((r) => (
             <li key={r.key} className="flex flex-wrap items-baseline justify-between gap-x-3 border-t border-line pt-1.5">
-              <span>{r.label}{r.quantity > 1 && <span className="text-ice"> ×{r.quantity}</span>} <span className={cx("label !text-[9px]", r.phase === "EVAL" ? "!text-lag" : "!text-win")}>{r.phase === "EVAL" ? "eval" : "funded"}</span></span>
+              <span>{r.label}{r.quantity > 1 && <span className="text-ice"> ×{r.quantity}</span>} <span className={cx("label !text-[12px]", r.phase === "EVAL" ? "!text-lag" : "!text-win")}>{r.phase === "EVAL" ? "eval" : "funded"}</span></span>
               <span className="num text-ink-2">{usd(r.plan.riskPerTrade)} · {sizeText(r.plan.contracts)} · target {usd(r.plan.dailyTarget)} · stop {usd(r.plan.dailyStop)} · firm DD {usd(r.firmMaxLoss)}</span>
             </li>
           ))}

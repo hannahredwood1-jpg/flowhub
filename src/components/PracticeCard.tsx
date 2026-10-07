@@ -21,7 +21,7 @@ export function PracticeCard({ data }: { data: DashboardData }) {
     return (
       <div className="hud flex flex-wrap items-center gap-3 px-4 py-3">
         <span className="chip text-signal">New · Practice</span>
-        <p className="min-w-0 flex-1 text-sm text-ink-2">Hands-on NQ drills for every model: mark trades, set Extended Learning limits, read ECHO X ORBIT setups, replay sessions. 10 reps a day builds the streak.</p>
+        <p className="min-w-0 flex-1 text-sm text-ink-2">Hands-on NQ drills for every model: mark trades, set Extended Learning limits, read ECHO X ORBIT setups, replay sessions.</p>
         <a href="/practice" className="btn btn-primary">Start practicing</a>
       </div>
     );
@@ -38,7 +38,7 @@ export function PracticeCard({ data }: { data: DashboardData }) {
               <span className="truncate">{m.label}</span>
               <span className="relative h-1.5 bg-line"><span className={cx("absolute inset-y-0 left-0", tone(m.accuracy))} style={{ width: `${Math.round((m.accuracy ?? 0) * 100)}%` }} /></span>
               <span className="num w-20 text-right text-ink-2">{m.accuracy == null ? "–" : `${Math.round(m.accuracy * 100)}%`} · {m.reps}</span>
-              <span className={cx("border px-1.5 py-0.5 font-hud text-[8.5px] uppercase tracking-[0.14em]", TIER[m.tier].cls)}>{TIER[m.tier].label}</span>
+              <span className={cx("border px-1.5 py-0.5 font-hud text-[11px]", TIER[m.tier].cls)}>{TIER[m.tier].label}</span>
             </div>
           ))}
         </div>

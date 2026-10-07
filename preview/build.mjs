@@ -49,7 +49,7 @@ for (const [k, v] of decls) {
 const input = `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n:root{${decls.map(([k, v]) => `--${k}:${v};`).join("")}}\n${keyframes.join("\n")}\n${src}`;
 const config = {
   content: [{ raw: js, extension: "js" }],
-  theme: { extend: { colors, animation, fontFamily: { display: [fontFamily.display], hud: [fontFamily.hud], sans: [fontFamily.sans], mono: [fontFamily.mono] } } },
+  theme: { extend: { colors, animation, fontFamily: Object.fromEntries(Object.entries(fontFamily).map(([k, v]) => [k, [v]])) } },
 };
 const css = (await postcss([tailwind(config)]).process(input, { from: undefined })).css;
 
@@ -58,8 +58,8 @@ writeFileSync(out, `<title>FLOWHUB Preview</title>
 <meta name="description" content="Clickable preview of FLOWHUB: Discord login, member dashboard and coach portal with sample data.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,700..900;1,100..125,700..900&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<style>:root{color-scheme:dark;--font-archivo:"Archivo";--font-orbitron:"Orbitron";--font-rajdhani:"Rajdhani";--font-jetbrains:"JetBrains Mono"}html,body{background:#030405;color:#e6ebf2}#boot{font:12px/1.4 monospace;letter-spacing:.2em;color:#56667e;padding:40px 16px;text-align:center}</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,700..900;1,100..125,700..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap">
+<style>:root{color-scheme:dark;--font-archivo:"Archivo";--font-orbitron:"Orbitron";--font-rajdhani:"Rajdhani";--font-inter:"Inter";--font-jetbrains:"JetBrains Mono"}html,body{background:#030405;color:#e6ebf2}#boot{font:12px/1.4 monospace;letter-spacing:.2em;color:#56667e;padding:40px 16px;text-align:center}</style>
 <style>${css}</style>
 <div id="root"><div id="boot">FLOWHUB // BOOTING</div></div>
 <script>${js.replace(/<\/script/gi, "<\\/script")}</script>

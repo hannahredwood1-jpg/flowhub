@@ -453,10 +453,6 @@ function buildDashboard(raw) {
   const sum = (from) => journal.filter((j) => j.tradeDate >= from).reduce((s, j) => s + j.pnl, 0);
   const last30 = journal.filter((j) => j.tradeDate >= daysAgo(raw.today, 30));
   const decided = last30.filter((j) => j.outcome !== "BREAKEVEN");
-  const greenDays = new Set(journal.filter((j) => j.pnl > 0).map((j) => j.tradeDate)).size;
-  const xp = journal.length * 10 + journal.filter((j) => j.followedPlan).length * 15 + greenDays * 25 + journal.filter((j) => j.screenshotUrl).length * 5;
-  const level = Math.floor(Math.sqrt(xp / 100)) + 1;
-  const nextLevelXp = level * level * 100;
   const strategyStats = STRATEGY_KEYS.map((key) => {
     const label = strategyLabel(key);
     const t = journal.filter((j) => j.setupType === label && j.outcome !== "BREAKEVEN");
@@ -483,22 +479,15 @@ function buildDashboard(raw) {
       monthPnl: sum(raw.today.slice(0, 8) + "01"),
       trades30: last30.length,
       winRate30: decided.length ? decided.filter((j) => j.outcome === "WIN").length / decided.length : null,
-      planFollowed30: last30.length ? last30.filter((j) => j.followedPlan).length / last30.length : null,
-      level,
-      xp,
-      xpToNext: nextLevelXp - xp
+      planFollowed30: last30.length ? last30.filter((j) => j.followedPlan).length / last30.length : null
     }
   };
 }
-var schoolProgress = (s) => {
-  let done = 0, total = 0;
-  for (const l of s.levels) {
-    done += l.lessonsDone + l.checkpointsPassed + (l.exam?.pass ? 1 : 0);
-    total += l.lessons + l.checkpoints + (l.exam ? 1 : 0);
-  }
-  const certified = s.levels.every((l) => l.lessonsDone >= l.lessons && l.checkpointsPassed >= l.checkpoints && (!l.exam || l.exam.pass));
-  return { current: certified ? "Certified" : s.current, pct: total ? done / total : 0, certified };
-};
+var schoolProgress = (s) => ({
+  current: s.passed === s.total ? "Course complete" : s.current,
+  pct: s.total ? s.passed / s.total : 0,
+  certified: s.passed === s.total
+});
 function buildDirectoryRow(d) {
   const live = d.accounts.filter((a) => ACTIVE.includes(a.stage));
   const summary = memberRiskSummary(live.map((a) => a.pace));
@@ -717,107 +706,57 @@ function summarizePractice(rows, now = Date.now()) {
 }
 
 // src/lib/school.ts
-var SCHOOL_LEVELS = [
-  { id: "beginner", name: "Beginner", modules: [
-    { id: "b0", lessons: ["d:mindset", "d:tv", "d:setup"] },
-    { id: "b1", lessons: ["d:futures"] },
-    { id: "b2", lessons: ["d:charts"] },
-    { id: "b6", lessons: ["d:liq"] },
-    { id: "b3", lessons: ["c:chart", "c:connect+order", "d:orders"] },
-    { id: "b4", lessons: ["d:risk", "c:manage", "c:limits"] },
-    { id: "b5", lessons: ["c:end"], noCheck: true }
-  ], exam: true },
-  { id: "intermediate", name: "Intermediate", modules: [
-    { id: "i1", lessons: ["d:prop"] },
-    { id: "i2", lessons: ["d:math"] },
-    { id: "i3", lessons: ["d:manage", "d:mistakes"] },
-    { id: "i4", lessons: ["d:psych"] },
-    { id: "i6", lessons: ["d:bias"] },
-    { id: "i5", lessons: ["d:day", "d:planlesson"] }
-  ], exam: true },
-  { id: "advanced", name: "Advanced", modules: [
-    { id: "a1", lessons: ["d:rs", "c:dl"] },
-    { id: "a2", lessons: ["d:hl-learn", "c:hl", "d:po3-learn", "c:po3+asia"] }
-  ], exam: true },
-  { id: "exo", name: "ECHO X ORBIT", modules: [
-    { id: "x1", lessons: ["d:exo-intro", "d:echo", "d:orbit", "d:exo-rules", "d:exo-replay"] }
-  ], exam: false }
+var SCHOOL_MODULES = [
+  { id: "m01", n: 1, title: "Trading Mindset" },
+  { id: "m02", n: 2, title: "Chart Reading Basics" },
+  { id: "m03", n: 3, title: "Liquidity Explained" },
+  { id: "m04", n: 4, title: "Advanced Liquidity Concepts" },
+  { id: "m05", n: 5, title: "Break of Structure" },
+  { id: "m06", n: 6, title: "Fair Value Gaps" },
+  { id: "m07", n: 7, title: "Advanced Imbalance Concepts" },
+  { id: "m08", n: 8, title: "Inverse Fair Value Gaps" },
+  { id: "m09", n: 9, title: "Equilibrium: Premium & Discount" },
+  { id: "m10", n: 10, title: "SMT Divergence" },
+  { id: "m11", n: 11, title: "Time Theory & Session Timing" },
+  { id: "m12", n: 12, title: "Funded Accounts & Prop Firms" },
+  { id: "m13", n: 13, title: "Building Daily Bias" },
+  { id: "m14", n: 14, title: "Risk Management" },
+  { id: "m15", n: 15, title: "Trading Psychology & Discipline" },
+  { id: "m16", n: 16, title: "Full Strategy: The Order Flow Model" },
+  { id: "m17", n: 17, title: "Range, Sweep, Reversal (H/L \xB7 NY ATM)" },
+  { id: "m18", n: 18, title: "AMD / PO3: Accumulation, Manipulation, Distribution" }
 ];
-var SCHOOL_LEVEL_IDS = SCHOOL_LEVELS.map((l) => l.id);
-var DIVE_PARTS = {
-  prop: 4,
-  math: 4,
-  manage: 3,
-  mistakes: 4,
-  psych: 1,
-  setup: 5,
-  day: 4,
-  tv: 7,
-  futures: 5,
-  charts: 5,
-  orders: 3,
-  risk: 3,
-  rs: 3,
-  planlesson: 2,
-  "exo-intro": 5,
-  echo: 9,
-  orbit: 8,
-  "exo-rules": 4,
-  "exo-replay": 2,
-  mindset: 2,
-  liq: 6,
-  bias: 4,
-  "hl-learn": 4,
-  "po3-learn": 4
-};
-var MODULE_LABEL = {
-  b0: "Mindset & TradingView",
-  b6: "Liquidity & structure",
-  i6: "Daily bias & timing",
-  b1: "How futures & NQ work",
-  b2: "Reading charts",
-  b3: "Orders & your first trade",
-  b4: "Risk basics",
-  i1: "Prop Firm 101",
-  i2: "Why the math works",
-  i3: "Trade management",
-  i4: "Trading psychology",
-  i5: "Day in the life & plan",
-  a1: "Extended Learning",
-  a2: "H/L & PO3",
-  x1: "ECHO X ORBIT"
-};
+var SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id);
 function summarizeSchool(state, unlocks, attempts) {
-  const s = state ?? {}, ch = new Set(s.ch ?? []), dives = s.dives ?? {};
-  const done = (key) => {
-    const [k, id] = key.split(":");
-    if (k === "c") return id.split("+").every((c) => ch.has(c));
-    return Object.keys(dives[id] ?? {}).length >= (DIVE_PARTS[id] ?? 1);
-  };
-  const levels = SCHOOL_LEVELS.map((l) => {
-    const mods = l.modules;
-    const lessons = mods.flatMap((m) => m.lessons);
-    const cks = mods.filter((m) => !m.noCheck);
-    const ex = s.ex?.[l.id];
+  const m = state?.v2?.m ?? {};
+  const modules = SCHOOL_MODULES.map((def) => {
+    const p = m[def.id] ?? {};
     return {
-      id: l.id,
-      name: l.name,
-      lessons: lessons.length,
-      lessonsDone: lessons.filter(done).length,
-      checkpoints: cks.length,
-      checkpointsPassed: cks.filter((m) => s.ck?.[m.id]?.pass).length,
-      exam: l.exam ? { best: ex?.best ?? 0, pass: !!ex?.pass, tries: ex?.n ?? 0 } : null,
-      manualUnlock: unlocks.includes(l.id)
+      id: def.id,
+      n: def.n,
+      title: def.title,
+      stepsDone: String(p.s ?? "").split("").filter((c) => c === "1").length,
+      passed: p.p === 1,
+      best: p.p === 1 ? Math.max(0, Math.min(100, p.sc ?? 0)) : 0,
+      tries: p.n ?? 0,
+      attempt: p.a ?? 1,
+      manualUnlock: unlocks.includes(def.id)
     };
   });
-  const current = (levels.find((l) => l.lessonsDone < l.lessons || l.checkpointsPassed < l.checkpoints || l.exam && !l.exam.pass) ?? levels[levels.length - 1]).name;
+  const passed = modules.filter((x) => x.passed).length;
+  const unlocked = (i) => i === 0 || modules[i - 1].passed || modules[i].manualUnlock;
+  const cur = modules.findIndex((x, i) => !x.passed && unlocked(i));
+  const label = (ref) => {
+    const d = SCHOOL_MODULES.find((x) => x.id === ref);
+    return d ? `Module ${d.n} exam \xB7 ${d.title}` : ref;
+  };
   return {
-    levels,
-    current,
-    attempts: attempts.slice(0, 12).map((a) => ({
-      kind: a.kind === "ex" ? "ex" : "ck",
-      ref: a.ref,
-      label: a.kind === "ex" ? `${SCHOOL_LEVELS.find((l) => l.id === a.ref)?.name ?? a.ref} exam` : `Checkpoint \xB7 ${MODULE_LABEL[a.ref] ?? a.ref}`,
+    modules,
+    passed,
+    total: modules.length,
+    current: passed === modules.length ? "Course complete" : cur >= 0 ? `Module ${modules[cur].n}` : "Not started",
+    attempts: attempts.filter((a) => a.kind === "ex" && SCHOOL_MODULE_IDS.includes(a.ref)).slice(0, 12).map((a) => ({
+      label: label(a.ref),
       pct: a.total ? a.score / a.total : 0,
       pass: a.pass,
       at: new Date(a.createdAt).toISOString()
@@ -855,7 +794,6 @@ var HttpError = class extends Error {
     super(msg);
     this.status = status;
   }
-  status;
 };
 var n = (v) => v == null ? null : Number(v);
 var pgArray = (xs) => `{${xs.map((x) => `"${x.replace(/["\\]/g, "\\$&")}"`).join(",")}}`;
@@ -1300,25 +1238,41 @@ app.put("/api/practice/state", async (c) => {
             on conflict ("userId") do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
 });
-var SCHOOL_LEVELS_SET = new Set(SCHOOL_LEVEL_IDS);
+var SCHOOL_MODULE_SET = new Set(SCHOOL_MODULE_IDS);
 var ID_RE = /^[a-z0-9-]{1,20}$/;
+var clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(Number(v) || 0)));
 function cleanSchoolState(b) {
   const o = b && typeof b === "object" ? b : {};
-  const ch = Array.isArray(o.ch) ? o.ch.filter((x) => typeof x === "string" && ID_RE.test(x)).slice(0, 60) : [];
-  const dives = {};
-  for (const [k, v] of Object.entries(o.dives && typeof o.dives === "object" ? o.dives : {}).slice(0, 60)) {
-    if (!ID_RE.test(k) || !v || typeof v !== "object") continue;
-    dives[k] = Object.fromEntries(Object.keys(v).filter((x) => ID_RE.test(x)).slice(0, 30).map((x) => [x, 1]));
+  const out = {};
+  if (o.v2 && typeof o.v2 === "object") {
+    const m = {};
+    for (const [k, v] of Object.entries(o.v2.m && typeof o.v2.m === "object" ? o.v2.m : {}).slice(0, 40)) {
+      if (!SCHOOL_MODULE_SET.has(k) || !v || typeof v !== "object") continue;
+      const s = String(v.s ?? "0000");
+      m[k] = { s: /^[01]{4}$/.test(s) ? s : "0000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+    }
+    out.v2 = { m };
+  }
+  if (Array.isArray(o.ch)) out.ch = o.ch.filter((x) => typeof x === "string" && ID_RE.test(x)).slice(0, 60);
+  if (o.dives && typeof o.dives === "object") {
+    const dives = {};
+    for (const [k, v] of Object.entries(o.dives).slice(0, 60)) {
+      if (!ID_RE.test(k) || !v || typeof v !== "object") continue;
+      dives[k] = Object.fromEntries(Object.keys(v).filter((x) => ID_RE.test(x)).slice(0, 30).map((x) => [x, 1]));
+    }
+    out.dives = dives;
   }
   const best = (m) => {
-    const out = {};
+    const res = {};
     for (const [k, v] of Object.entries(m && typeof m === "object" ? m : {}).slice(0, 40)) {
       if (!ID_RE.test(k) || !v || typeof v !== "object") continue;
-      out[k] = { best: Math.max(0, Math.min(1, Number(v.best) || 0)), pass: v.pass === true, n: Math.max(0, Math.min(1e4, Math.round(Number(v.n) || 0))), at: Math.max(0, Number(v.at) || 0) };
+      res[k] = { best: Math.max(0, Math.min(1, Number(v.best) || 0)), pass: v.pass === true, n: Math.max(0, Math.min(1e4, Math.round(Number(v.n) || 0))), at: Math.max(0, Number(v.at) || 0) };
     }
-    return out;
+    return res;
   };
-  return { ch, dives, ck: best(o.ck), ex: best(o.ex) };
+  if (o.ck && typeof o.ck === "object") out.ck = best(o.ck);
+  if (o.ex && typeof o.ex === "object") out.ex = best(o.ex);
+  return out;
 }
 app.get("/api/school", async (c) => {
   const u = c.get("user");
@@ -1329,7 +1283,7 @@ app.put("/api/school", async (c) => {
   const json = JSON.stringify(cleanSchoolState(await c.req.json()));
   if (json.length > 2e4) throw new HttpError(400, "Too long");
   await sql`insert into "SchoolProgress" ("userId", state) values (${c.get("user").id}, ${json}::jsonb)
-            on conflict ("userId") do update set state = excluded.state, "updatedAt" = now()`;
+            on conflict ("userId") do update set state = coalesce("SchoolProgress".state, '{}'::jsonb) || excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
 });
 app.post("/api/school/attempt", async (c) => {
@@ -1390,7 +1344,7 @@ app.get("/api/coach/members/:id", async (c) => {
 app.post("/api/coach/members/:id/unlock", async (c) => {
   staffOnly(c);
   const b = await c.req.json();
-  if (!b.level || !SCHOOL_LEVELS_SET.has(b.level) || b.level === "beginner" || typeof b.on !== "boolean") throw new HttpError(400, "Bad level");
+  if (!b.level || !SCHOOL_MODULE_SET.has(b.level) || typeof b.on !== "boolean") throw new HttpError(400, "Bad module");
   const id = c.req.param("id");
   if (!(await sql`select 1 from "User" where id = ${id}`).length) throw new HttpError(404, "Not found");
   if (b.on)
@@ -1426,7 +1380,7 @@ app.patch("/api/admin/catalog/:id", async (c) => {
 app.all("/api/*", () => {
   throw new HttpError(404, "Not found");
 });
-var ASSET_TYPES = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8", "practice.html": "text/html; charset=utf-8" };
+var ASSET_TYPES = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8", "classic.html": "text/html; charset=utf-8", "practice.html": "text/html; charset=utf-8" };
 var assetCache = /* @__PURE__ */ new Map();
 async function asset(path) {
   const hit = assetCache.get(path);
@@ -1466,8 +1420,8 @@ var SHELL = `<!doctype html>
 <meta name="theme-color" content="#030405">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23030405'/%3E%3Ctext x='16' y='25' font-family='Arial Black,Arial' font-weight='900' font-size='24' text-anchor='middle' fill='%23ff6a00'%3EF%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,700..900;1,100..125,700..900&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<style>:root{color-scheme:dark;--font-archivo:"Archivo";--font-orbitron:"Orbitron";--font-rajdhani:"Rajdhani";--font-jetbrains:"JetBrains Mono"}html,body{margin:0;background:#030405;color:#e6ebf2}#boot{font:12px/1.4 monospace;letter-spacing:.2em;color:#58626f;padding:40px 16px;text-align:center}</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,700..900;1,100..125,700..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap">
+<style>:root{color-scheme:dark;--font-archivo:"Archivo";--font-orbitron:"Orbitron";--font-rajdhani:"Rajdhani";--font-inter:"Inter";--font-jetbrains:"JetBrains Mono"}html,body{margin:0;background:#030405;color:#e6ebf2}#boot{font:12px/1.4 monospace;letter-spacing:.2em;color:#58626f;padding:40px 16px;text-align:center}</style>
 <link rel="stylesheet" href="/assets/app.css?v=__V__">
 </head><body><div id="root"><div id="boot">FLOWHUB // BOOTING</div></div>
 <script type="importmap">{"imports":{
@@ -1480,15 +1434,16 @@ var SHELL = `<!doctype html>
 </body></html>`;
 var pageHtml = /* @__PURE__ */ new Map();
 var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-for (const page of ["school", "practice"]) {
-  app.get(`/${page}`, async (c) => {
+var PAGES = [["school", "/school", "school"], ["classic", "/school/classic", "school"], ["practice", "/practice", "practice"]];
+for (const [name, route, current] of PAGES) {
+  app.get(route, async (c) => {
     const user = await currentUser(c);
     if (!user) return c.redirect("/");
-    const a = await asset(`${page}.html`);
+    const a = await asset(`${name}.html`);
     if (!a) return c.text("This page isn't installed yet.", 404);
-    const key = `${page}:${a.etag}`;
+    const key = `${name}:${a.etag}`;
     if (!pageHtml.has(key)) pageHtml.set(key, gunzipSync(a.body).toString("utf8"));
-    return c.html(pageHtml.get(key).replace("<!--FH_NAV-->", fhNav(user, page)), 200, { "Cache-Control": "no-cache" });
+    return c.html(pageHtml.get(key).replace("<!--FH_NAV-->", fhNav(user, current)), 200, { "Cache-Control": "no-cache" });
   });
 }
 app.get("*", async (c) => {

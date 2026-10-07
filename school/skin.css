@@ -1,0 +1,17 @@
+/* Modern skin for the pages that still use the earlier markup (Practice, Classic school).
+   Same palette, calmer type: Inter, sentence case, no wide tracking. Appended after each page's own CSS. */
+:root{--f-display:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;--f-hud:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;--f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif}
+body{font-size:15px!important;font-weight:400!important}
+*{letter-spacing:normal!important}
+[class],button,a,label,span,th,td,p,li,div,h1,h2,h3,h4{text-transform:none!important}
+.hud{font-size:12.5px!important;font-weight:600!important;color:var(--ink2)!important}
+.btn,.tool,.pill,.chip,.tab,.fh-nav a,.bar-title{font-size:13px!important;font-weight:600!important}
+.fh-nav a{font-size:14px!important;font-weight:500!important;padding:8px 13px!important;border-radius:8px}
+.fh-nav a[aria-current]{background:var(--panel2)}
+.fh-nav a[aria-current]::after{left:12px!important;right:12px!important;bottom:-12px!important;border-radius:9px;background:var(--signal)!important}
+.btn,.tool,.sym,.pill,.card,.sim,.qbox,.sec{border-radius:8px}
+.logo{font-family:"Archivo","Arial Black",system-ui,sans-serif!important;text-transform:uppercase!important}
+.by{font-family:var(--f-body)!important;font-style:normal!important;font-weight:600!important;font-size:10px!important}
+h1,h2,h3,.t-title,.q{font-weight:700!important}
+.btn.primary{border-color:var(--signal)!important;background:var(--signal)!important;color:#160a00!important;box-shadow:none!important}
+.xpfloat,.flame,.scan,.glitch{display:none!important}

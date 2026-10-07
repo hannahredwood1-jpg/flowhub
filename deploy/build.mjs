@@ -7,6 +7,7 @@ import { gzipSync } from "node:zlib";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildSchool } from "../school/build.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith("--") ? [...a, [v.slice(2), arr[i + 1]]] : a), []));
@@ -63,33 +64,37 @@ for (const [k, v] of decls) {
 const cssIn = `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n:root{${decls.map(([k, v]) => `--${k}:${v};`).join("")}}\n${keyframes.join("\n")}\n${src}`;
 const css = (await postcss([tailwind({ content: [{ raw: js, extension: "js" }], theme: { extend: { colors, animation, fontFamily: ff } } })]).process(cssIn, { from: undefined })).css;
 
-// 4) Trading School page (self-contained HTML body → full document)
-let schoolSrc = readFileSync(path.join(root, "school/trading-school.html"), "utf8");
+// 4) Trading School (new, built from school/src) + Classic school (the earlier page, re-skinned) 
+const school = await buildSchool(esbuild);
+const skin = (await esbuild.transform(readFileSync(path.join(root, "school/skin.css"), "utf8"), { loader: "css", minify: true })).code;
+let classicSrc = readFileSync(path.join(root, "school/classic.html"), "utf8");
 { // minify the inline script + style for the deployed copy
-  const s0 = schoolSrc.indexOf("<script>") + 8, s1 = schoolSrc.lastIndexOf("</script>");
-  const js = (await esbuild.transform(schoolSrc.slice(s0, s1), { minify: true, target: "es2020", legalComments: "none" })).code;
-  schoolSrc = schoolSrc.slice(0, s0) + js + schoolSrc.slice(s1);
-  const c0 = schoolSrc.indexOf("<style>") + 7, c1 = schoolSrc.indexOf("</style>");
-  const css = (await esbuild.transform(schoolSrc.slice(c0, c1), { loader: "css", minify: true })).code;
-  schoolSrc = schoolSrc.slice(0, c0) + css + schoolSrc.slice(c1);
+  const s0 = classicSrc.indexOf("<script>") + 8, s1 = classicSrc.lastIndexOf("</script>");
+  const js = (await esbuild.transform(classicSrc.slice(s0, s1), { minify: true, target: "es2020", legalComments: "none" })).code;
+  classicSrc = classicSrc.slice(0, s0) + js + classicSrc.slice(s1);
+  const c0 = classicSrc.indexOf("<style>") + 7, c1 = classicSrc.indexOf("</style>");
+  const css = (await esbuild.transform(classicSrc.slice(c0, c1), { loader: "css", minify: true })).code;
+  classicSrc = classicSrc.slice(0, c0) + css + classicSrc.slice(c1);
 }
-const cut = schoolSrc.indexOf('<div class="app">');
-const school = `<!doctype html>
+const cut = classicSrc.indexOf('<div class="app">');
+const fontLink = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">';
+const classic = `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex"><meta name="theme-color" content="#030405">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23030405'/%3E%3Ctext x='16' y='25' font-family='Arial Black,Arial' font-weight='900' font-size='24' text-anchor='middle' fill='%23ff6a00'%3EF%3C/text%3E%3C/svg%3E">
-${schoolSrc.slice(0, cut)}<style>body{margin:0}</style>
+${fontLink}
+${classicSrc.slice(0, cut)}<style>body{margin:0}</style><style>${skin}</style>
 </head><body>
-${schoolSrc.slice(cut)}</body></html>`;
+${classicSrc.slice(cut).replace('<div class="app">', '<div class="app"><div style="margin:0 0 12px;padding:10px 14px;border:1px solid var(--line2);border-radius:8px;background:var(--panel);font-size:13.5px;color:var(--ink2)">This is the <b style="color:var(--ink)">Classic school</b>: the earlier lessons, replays, terminology and ECHO X ORBIT. The new course is the <a href="/school" style="color:var(--ice)">Trading School</a>.</div>')}</body></html>`;
 mkdirSync(path.join(root, "public"), { recursive: true });
 writeFileSync(path.join(root, "public/school.html"), school);
+writeFileSync(path.join(root, "public/classic.html"), classic);
 
 // 5) Assets SQL
 const b64 = (s) => gzipSync(Buffer.from(s), { level: 9 }).toString("base64");
 const row = (p, type, content) => `('${p}', '${type}', '${b64(content)}', now())`;
 writeFileSync(path.join(dist, "assets.sql"),
-  `insert into "AppAsset" (path, "contentType", body, "updatedAt") values\n${row("app.js", "text/javascript; charset=utf-8", js)},\n${row("app.css", "text/css; charset=utf-8", css)},\n${row("school.html", "text/html; charset=utf-8", school)}\n` +
+  `insert into "AppAsset" (path, "contentType", body, "updatedAt") values\n${row("app.js", "text/javascript; charset=utf-8", js)},\n${row("app.css", "text/css; charset=utf-8", css)},\n${row("school.html", "text/html; charset=utf-8", school)},\n${row("classic.html", "text/html; charset=utf-8", classic)}\n` +
   `on conflict (path) do update set "contentType" = excluded."contentType", body = excluded.body, "updatedAt" = now();\n`);
 
 console.log(`server.js ${(serverJs.length / 1024).toFixed(1)}KB (limit 96KB) · app.js ${(js.length / 1024).toFixed(0)}KB · app.css ${(css.length / 1024).toFixed(0)}KB · school ${(school.length / 1024).toFixed(0)}KB · assets.sql ${(readFileSync(path.join(dist, "assets.sql")).length / 1024).toFixed(0)}KB`);
@@ -101,6 +106,7 @@ writeFileSync(path.join(appDir, "server.js"), serverJs.replace(/from ?"zod@3"/g,
 writeFileSync(path.join(appDir, "assets/app.js.gz"), gzipSync(Buffer.from(js), { level: 9 }));
 writeFileSync(path.join(appDir, "assets/app.css.gz"), gzipSync(Buffer.from(css), { level: 9 }));
 writeFileSync(path.join(appDir, "assets/school.html.gz"), gzipSync(Buffer.from(school), { level: 9 }));
+writeFileSync(path.join(appDir, "assets/classic.html.gz"), gzipSync(Buffer.from(classic), { level: 9 }));
 // Practice page (self-contained document; <!--FH_NAV--> is filled in by the server)
 let practice = readFileSync(path.join(root, "practice/practice.html"), "utf8");
 {
@@ -110,6 +116,7 @@ let practice = readFileSync(path.join(root, "practice/practice.html"), "utf8");
   const c0 = practice.indexOf("<style>") + 7, c1 = practice.indexOf("</style>");
   const pcss = (await esbuild.transform(practice.slice(c0, c1), { loader: "css", minify: true })).code;
   practice = practice.slice(0, c0) + pcss + practice.slice(c1);
+  practice = practice.replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/css2\?[^"]*">/, fontLink).replace("</head>", `<style>${skin}</style></head>`);
 }
 writeFileSync(path.join(appDir, "assets/practice.html.gz"), gzipSync(Buffer.from(practice), { level: 9 }));
 console.log(`practice ${(practice.length / 1024).toFixed(0)}KB`);

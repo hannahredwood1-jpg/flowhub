@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,700..900;1,100..125,700..900&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: FLOWHUB top bar → HUD strip (XP, level, streak, today's reps) → one stage that swaps between the home grid and a drill. Single dark theme, same tokens as the app. */
+/* Layout: FLOWHUB top bar → stats strip (reps, accuracy, today's reps) → one stage that swaps between the home grid and a drill. Single dark theme, same tokens as the app. */
 :root{
   color-scheme:dark;
   --void:#030405; --abyss:#07090c; --panel:#0a0d12; --panel2:#0e1219;
@@ -507,12 +507,10 @@ const sideWord = (d) => (d === "long" ? "LONG" : "SHORT");
 
 // ───────────────────────── HUD + home ─────────────────────────
 function renderHud() {
-  const lv = level(), cur = (lv - 1) ** 2 * 100, nxt = lv * lv * 100; const pct = Math.min(100, ((S.xp - cur) / (nxt - cur)) * 100);
   const done = S.daily && S.daily.date === todayKey() ? S.daily.res.length : 0;
-  const week = S.reps.filter((r) => r.t > Date.now() - 7 * 864e5).length;
   $("#hud").innerHTML = `
-    <div class="stat"><span class="hud">Level</span><span class="v">${lv} <small>· ${S.xp.toLocaleString()} XP</small></span><div class="meter"><i style="width:${pct}%"></i></div></div>
-    <div class="stat"><span class="hud">Daily streak</span><span class="v"><span class="flame">▲</span> ${S.streak} <small>days</small></span><span class="hud" style="font-size:8.5px">10 reps a day keeps it alive</span></div>
+    <div class="stat"><span class="hud">Reps completed</span><span class="v">${S.reps.length.toLocaleString()}</span><span class="hud">${S.review.length ? S.review.length + " queued for review" : "nothing queued for review"}</span></div>
+    <div class="stat"><span class="hud">Accuracy · last 50</span><span class="v">${(() => { const l = S.reps.slice(-50); return l.length ? Math.round((l.filter((r) => r.ok).length / l.length) * 100) + "%" : "–"; })()}</span><div class="meter"><i style="width:${(() => { const l = S.reps.slice(-50); return l.length ? Math.round((l.filter((r) => r.ok).length / l.length) * 100) : 0; })()}%"></i></div></div>
     <div class="stat"><span class="hud">Today's reps</span><span class="v">${Math.min(done, 10)} <small>/ 10</small></span><div class="meter sig"><i style="width:${Math.min(100, done * 10)}%"></i></div></div>
     <div class="stat"><span class="hud">Reps this week</span><span class="v">${week}</span><span class="hud" style="font-size:8.5px">${S.review.length} missed reps queued to come back</span></div>`;
 }
@@ -529,7 +527,7 @@ function home() {
     <section class="daily">
       <div>
         <span class="hud" style="color:var(--signal)">Today's 10 reps</span>
-        <div style="font-family:var(--f-display);font-weight:900;font-size:26px;margin-top:4px">${done >= 10 ? "Done for today. Streak extended." : done ? `${done} of 10 done` : "Your daily set is ready"}</div>
+        <div style="font-family:var(--f-display);font-weight:900;font-size:26px;margin-top:4px">${done >= 10 ? "Done for today." : done ? `${done} of 10 done` : "Your daily set is ready"}</div>
         <p>A mix of chart drills, sizing and timing across your models. Reps you missed earlier are mixed back in first.</p>
         <div class="pips">${Array.from({ length: 10 }, (_, i) => `<span class="pip ${daily && i < done ? (daily.res[i] ? "ok" : "miss") : ""}"></span>`).join("")}</div>
       </div>
@@ -556,7 +554,7 @@ function home() {
       <div class="sec-h"><h2>Personal bests</h2></div>
       <div class="sumgrid">
         <div class="sum"><span class="hud">Speed round</span><span class="v">${S.best.speed}</span><span class="hud">correct in 45s</span></div>
-        <div class="sum"><span class="hud">Longest streak</span><span class="v">${Math.max(S.streak, S.best.streak || 0)}</span><span class="hud">days</span></div>
+        <div class="sum"><span class="hud">Reps completed</span><span class="v">${S.reps.length}</span><span class="hud">in total</span></div>
         <div class="sum"><span class="hud">Set the limit</span><span class="v">${S.reps.filter((r) => r.d === "limit" && r.ok).length}</span><span class="hud">levels handled perfectly</span></div>
       </div>
     </section>
@@ -608,7 +606,7 @@ function finishDaily() {
   S.daily.active = false; const ok = S.daily.res.filter(Boolean).length;
   if (S.lastDaily !== todayKey()) { S.streak += 1; S.lastDaily = todayKey(); S.xp += 50; S.best.streak = Math.max(S.best.streak || 0, S.streak); }
   save(); renderHud(); RUN = null;
-  $("#stage").innerHTML = `<div class="qbox pop"><span class="hud" style="color:var(--signal)">Daily reps complete</span><div class="q">${ok} / 10 correct. Streak: <span class="num">${S.streak}</span> days. <span class="xpfloat">+50 XP bonus</span></div><p style="margin:0;color:var(--ink2)">${10 - ok ? `The ${10 - ok} you missed are queued and will come back in a later set.` : "Clean set. Nothing queued for review."}</p><div class="ansrow"><button class="btn primary" id="hm">Back to Practice</button></div></div>`;
+  $("#stage").innerHTML = `<div class="qbox pop"><span class="hud" style="color:var(--signal)">Daily reps complete</span><div class="q">${ok} / 10 correct.</div><p style="margin:0;color:var(--ink2)">${10 - ok ? `The ${10 - ok} you missed are queued and will come back in a later set.` : "Clean set. Nothing queued for review."}</p><div class="ansrow"><button class="btn primary" id="hm">Back to Practice</button></div></div>`;
   $("#hm").onclick = home;
 }
 function frame(title, chips, bodyHtml) {
@@ -676,7 +674,7 @@ function drillMark() {
     ch.lines.push({ p: k.entry, color: css("--ice"), dash: [2, 3], label: "MODEL ENTRY", left: true }, { p: k.stop, color: css("--loss"), dash: [2, 3], label: "MODEL STOP", left: true }, { p: k.target, color: css("--win"), dash: [2, 3], label: "MODEL TARGET", left: true });
     ch.draw();
     const risk = Math.abs(k.entry - k.stop), rew = Math.abs(k.target - k.entry);
-    $("#side").innerHTML = fbBox(ok, ok ? `Clean trade · +${gain} XP` : `Not quite · +${gain} XP`, items, `<dl class="kv"><dt>Risk</dt><dd>${risk.toFixed(2)} pts · $${Math.round(risk * 20)} / NQ</dd><dt>Reward</dt><dd>${rew.toFixed(2)} pts · ${(rew / risk).toFixed(1)}R</dd></dl>`) + `<button class="btn" id="play">▶ Play it out</button>` + nextBtn();
+    $("#side").innerHTML = fbBox(ok, ok ? `Clean trade` : `Not quite`, items, `<dl class="kv"><dt>Risk</dt><dd>${risk.toFixed(2)} pts · $${Math.round(risk * 20)} / NQ</dd><dt>Reward</dt><dd>${rew.toFixed(2)} pts · ${(rew / risk).toFixed(1)}R</dd></dl>`) + `<button class="btn" id="play">▶ Play it out</button>` + nextBtn();
     $("#play").onclick = () => { $("#play").disabled = true; let n = ch.shown; const h = setInterval(() => { n++; ch.shown = Math.min(n, sc.bars.length); ch.slots = Math.max(ch.slots, sc.bars.length + 1); ch.draw(); if (n >= sc.bars.length) { clearInterval(h); $("#play").outerHTML = `<div class="hud" style="color:${k.result >= 0 ? "var(--win)" : "var(--loss)"}">Result: ${pts(k.result)} · ${usd(k.result * 20)} on 1 NQ${k.result < 0 ? " · right trade, losing outcome. It happens." : ""}</div>`; } }, 120); timers.push(h); };
     wireNext();
   }
@@ -731,7 +729,7 @@ function drillReplay() {
       const ok = correct === stops.length; const gain = record(sc.model, "replay", ok, tags, correct * 8 + (ok ? 10 : 0)); if (!ok) missed("replay", sc.model, tags);
       const res = k.noTrade ? "No trade taken. Capital protected." : `${k.result >= 0 ? "The setup worked" : "The setup lost"}: ${pts(k.result)} (${usd(k.result * 20)} on 1 NQ).`;
       const extra = !k.noTrade && sc.model === "po3" && (k.trend === "up") !== long ? " Skipping it was the rule either way: counter-trend." : (!k.noTrade && k.result < 0 ? " Taking it was still correct: good trades lose sometimes. Over many reps the rules win." : "");
-      side(fbBox(ok, `${correct} / ${stops.length} decisions right · +${gain} XP`, [], `<div>${res}${extra}</div>`) + nextBtn());
+      side(fbBox(ok, `${correct} / ${stops.length} decisions right`, [], `<div>${res}${extra}</div>`) + nextBtn());
       $("#foot").innerHTML = `<span class="hud">Session complete</span>`; wireNext();
     });
   }
@@ -771,7 +769,7 @@ function drillLevels() {
     }
     ch.lines.push({ p: hiP, color: css("--win"), dash: [2, 3], label: "REAL HIGH", left: true }, { p: loP, color: css("--win"), dash: [2, 3], label: "REAL LOW", left: true }); ch.draw();
     const ok = items.every((x) => x[0]); const gain = record(asia ? "asia" : "hl", "levels", ok, [...new Set(tags)], ok ? 15 : 4); if (!ok) missed("levels", asia ? "asia" : "hl", tags);
-    $("#side").innerHTML = fbBox(ok, ok ? `Both levels right · +${gain} XP` : `Close, not exact · +${gain} XP`, items, `<div class="hint">${asia ? "The session window decides what counts. A bigger high at 7 PM is not the Asia high." : "Stops sit just past these wicks. That's the fuel the model trades."}</div>`) + nextBtn();
+    $("#side").innerHTML = fbBox(ok, ok ? `Both levels right` : `Close, not exact`, items, `<div class="hint">${asia ? "The session window decides what counts. A bigger high at 7 PM is not the Asia high." : "Stops sit just past these wicks. That's the fuel the model trades."}</div>`) + nextBtn();
     wireNext();
   }
 }
@@ -807,7 +805,7 @@ function drillTicket() {
     const slOk = Math.abs(sl - k.stop) <= 0.25; items.push([slOk, slOk ? `Stop ${fmt(k.stop)}.` : isNaN(sl) ? "No stop entered. Every trade has a stop." : `Stop should be ${fmt(k.stop)}${(long ? sl > k.entry : sl < k.entry) ? ". Yours is on the wrong side of entry, it would trigger instantly" : ""}.`]); if (!slOk) tags.push(isNaN(sl) || (long ? sl > k.entry : sl < k.entry) ? "wrong-side" : "stop-inside");
     const tpOk = Math.abs(tp - k.target) <= 0.25; items.push([tpOk, tpOk ? `Target ${fmt(k.target)}.` : `Take profit should be ${fmt(k.target)} (the signal target).`]); if (!tpOk) tags.push("wrong-target");
     const ok = items.every((x) => x[0]); const gain = record("hl", "ticket", ok, [...new Set(tags)], ok ? 15 : 4); if (!ok) missed("ticket", "hl", tags);
-    $("#side").innerHTML = fbBox(ok, ok ? `Order placed correctly · +${gain} XP` : `Order has mistakes · +${gain} XP`, items) + nextBtn(); wireNext();
+    $("#side").innerHTML = fbBox(ok, ok ? `Order placed correctly` : `Order has mistakes`, items) + nextBtn(); wireNext();
   };
 }
 
@@ -821,7 +819,7 @@ function drillSize() {
     const v = parseInt($("#a").value, 10); if (isNaN(v)) return; const ok = v === ans; const per = stop * PV[inst];
     const tags = ok ? [] : [v > ans ? "oversize" : "missed-setup"]; const gain = record("dl", "size", ok, ok ? [] : ["oversize"].filter(() => v > ans), ok ? 10 : 3); if (!ok) missed("size", "dl", tags);
     let extra = ans === 0 ? ` Even 1 ${inst} risks $${per}, more than $${risk}. ${inst === "NQ" ? `Switch to MNQ: ${Math.floor(risk / (stop * 2))} contracts.` : "Tighten the stop or skip the trade."}` : "";
-    $("#fbk").innerHTML = fbBox(ok, ok ? `Correct · +${gain} XP` : `Answer: ${ans} · +${gain} XP`, [], `<div><span class="num">${stop} pts × $${PV[inst]} = $${per}</span> per ${inst}. <span class="num">$${risk} ÷ $${per} = ${(risk / per).toFixed(2)}</span> → <b>${ans}</b>.${extra}</div>`) + nextBtn(); wireNext(); $("#ck").disabled = true;
+    $("#fbk").innerHTML = fbBox(ok, ok ? `Correct` : `Answer: ${ans}`, [], `<div><span class="num">${stop} pts × $${PV[inst]} = $${per}</span> per ${inst}. <span class="num">$${risk} ÷ $${per} = ${(risk / per).toFixed(2)}</span> → <b>${ans}</b>.${extra}</div>`) + nextBtn(); wireNext(); $("#ck").disabled = true;
   };
   $("#ck").onclick = go; $("#a").onkeydown = (e) => { if (e.key === "Enter") go(); }; $("#a").focus();
 }
@@ -848,7 +846,7 @@ function drillClock() {
   document.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => {
     const ok = (b.dataset.a === "1") === c.a; document.querySelectorAll("[data-a]").forEach((x) => (x.disabled = true)); if (ok) b.classList.add("on");
     const gain = record(c.m, "clock", ok, ok ? [] : ["timing"], ok ? 10 : 3); if (!ok) missed("clock", c.m, ["timing"]);
-    $("#fbk").innerHTML = fbBox(ok, ok ? `Correct · +${gain} XP` : `${c.a ? "Yes" : "No"} · +${gain} XP`, [], `<div>${c.why}</div>`) + nextBtn(); wireNext();
+    $("#fbk").innerHTML = fbBox(ok, ok ? `Correct` : `${c.a ? "Yes" : "No"}`, [], `<div>${c.why}</div>`) + nextBtn(); wireNext();
   }));
 }
 
@@ -883,7 +881,7 @@ function drillSpeed() {
   function end() {
     const best = score > S.best.speed; if (best) S.best.speed = score; const ok = score >= 8 && wrong <= 2;
     const gain = record("hl", "speed", ok, [...missedKinds].map((k) => (k === "fvg" ? "fvg-read" : "flip-read")), score * 3); save();
-    $(".qbox").innerHTML = `<span class="hud" style="color:var(--signal)">Time</span><div class="q">${score} correct, ${wrong} wrong. ${best ? '<span class="xpfloat">New personal best</span>' : ""}</div><div class="hint">+${gain} XP${missedKinds.size ? ` · Watch for: ${[...missedKinds].map((k) => (k === "fvg" ? "reading gaps" : "wick vs. close on flips")).join(", ")}` : ""}</div>${nextBtn("Go again")}`;
+    $(".qbox").innerHTML = `<span class="hud" style="color:var(--signal)">Speed round</span><div class="q">${score} correct, ${wrong} wrong. ${best ? '<span class="xpfloat">New personal best</span>' : ""}</div><div class="hint">${missedKinds.size ? `Watch for: ${[...missedKinds].map((k) => (k === "fvg" ? "reading gaps" : "wick vs. close on flips")).join(", ")}` : ""}</div>${nextBtn("Go again")}`;
     wireNext();
   }
 }
@@ -894,7 +892,7 @@ function drillSpeedQuick() {
   show();
   document.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => {
     if (i >= 3) return; const c = (b.dataset.a === "1") === qs[i].yes; if (c) ok++; $("#last").innerHTML = `<span style="color:${c ? "var(--win)" : "var(--loss)"}">${c ? "✓" : "✗"}</span> ${qs[i].why}`; i++;
-    if (i < 3) show(); else { document.querySelectorAll("[data-a]").forEach((x) => (x.disabled = true)); const all = ok === 3; const gain = record("hl", "speed", all, all ? [] : ["fvg-read"], ok * 4); $("#last").insertAdjacentHTML("afterend", fbBox(all, `${ok} / 3 · +${gain} XP`, []) + nextBtn()); wireNext(); }
+    if (i < 3) show(); else { document.querySelectorAll("[data-a]").forEach((x) => (x.disabled = true)); const all = ok === 3; const gain = record("hl", "speed", all, all ? [] : ["fvg-read"], ok * 4); $("#last").insertAdjacentHTML("afterend", fbBox(all, `${ok} / 3`, []) + nextBtn()); wireNext(); }
   }));
 }
 
@@ -954,7 +952,7 @@ function drillEcho() {
     res.dec = take === k.valid; if (!res.dec) tags.push(k.valid ? "missed-setup" : "draw-invalid");
     const ok = res.cisd && res.rb && res.dec; const gain = record("exo", "echo", ok, [...new Set(tags)], ok ? 20 : 4); if (!ok) missed("echo", "exo", tags);
     const items = [[res.cisd, "CISD"], [res.rb, "Rejection block in the FVG"], [res.dec, `${k.valid ? "Take it" : "Skip it"}: the draw is ${(dp / sp).toFixed(1)}× the stop${k.valid ? " (2× or more)" : ", under 2×"}.`]];
-    $("#side").innerHTML = fbBox(ok, ok ? `Clean read · +${gain} XP` : `Not quite · +${gain} XP`, items) + `<button class="btn" id="play">▶ Play it out</button>` + nextBtn();
+    $("#side").innerHTML = fbBox(ok, ok ? `Clean read` : `Not quite`, items) + `<button class="btn" id="play">▶ Play it out</button>` + nextBtn();
     $("#play").onclick = () => { $("#play").disabled = true; let n = ch.shown; const h = setInterval(() => { n++; ch.shown = Math.min(n, sc.bars.length); ch.draw(); if (n >= sc.bars.length) { clearInterval(h); $("#play").outerHTML = `<div class="hud" style="color:${k.valid ? "var(--win)" : "var(--loss)"}">${k.valid ? "Delivered to the draw." : "Tagged the nearby liquidity and reversed through the stop."}</div>`; } }, 140); timers.push(h); };
     wireNext();
   }
@@ -986,7 +984,7 @@ function drillOrbit() {
     if (step === 3) {
       ch.onTap = null; res.inv = i === k.invI; if (!res.inv) tags.push("inv-read"); ch.marks.push({ i: k.invI, p: L ? k.gap[1] : k.gap[0], shape: "ring", color: css("--lag") }); ch.draw();
       const ok = res.a && res.b && res.z && res.inv; const gain = record("exo", "orbit", ok, [...new Set(tags)], ok ? 20 : 4); if (!ok) missed("orbit", "exo", tags);
-      $("#side").innerHTML = fbBox(ok, ok ? `Clean Orbit · +${gain} XP` : `Not quite · +${gain} XP`, [[res.a && res.b, "Fib anchored on the big swing"], [res.z, "OTE zone"], [res.inv, "Inversion on the leg in"]]) + `<button class="btn" id="play">▶ Play it out</button>` + nextBtn();
+      $("#side").innerHTML = fbBox(ok, ok ? `Clean Orbit` : `Not quite`, [[res.a && res.b, "Fib anchored on the big swing"], [res.z, "OTE zone"], [res.inv, "Inversion on the leg in"]]) + `<button class="btn" id="play">▶ Play it out</button>` + nextBtn();
       $("#play").onclick = () => { $("#play").disabled = true; let n = ch.shown; const h = setInterval(() => { n++; ch.shown = Math.min(n, sc.bars.length); ch.draw(); if (n >= sc.bars.length) { clearInterval(h); $("#play").outerHTML = `<div class="hud" style="color:var(--win)">Delivered past the ${anchor2}: the draw.</div>`; } }, 140); timers.push(h); };
       wireNext();
     }
@@ -1003,7 +1001,7 @@ function drillDraw() {
     const ok = (b.dataset.a === "1") === valid; document.querySelectorAll("[data-a]").forEach((x) => (x.disabled = true)); if (ok) b.classList.add("on");
     const gain = record("exo", "draw", ok, ok ? [] : [valid ? "missed-setup" : "draw-invalid"], ok ? 10 : 3); if (!ok) missed("draw", "exo", [valid ? "missed-setup" : "draw-invalid"]);
     const why = none ? "No draw, no trade. ES agreeing doesn’t change that." : `${dist} ÷ ${stop} = ${(dist / stop).toFixed(2)}×. ${valid ? "At least 2× the stop: valid." : "Under 2× the stop: skip it."}${es ? " ES is a confluence, it doesn’t fix a short draw." : ""}`;
-    $("#fbk").innerHTML = fbBox(ok, ok ? `Correct · +${gain} XP` : `${valid ? "Take it" : "Skip"} · +${gain} XP`, [], `<div>${why}</div>`) + nextBtn(); wireNext();
+    $("#fbk").innerHTML = fbBox(ok, ok ? `Correct` : `${valid ? "Take it" : "Skip"}`, [], `<div>${why}</div>`) + nextBtn(); wireNext();
   }));
 }
 
@@ -1131,7 +1129,7 @@ function drillLimit() {
   function end(msg) {
     const ok = score.checks === 3 && score.dec && score.place !== false && score.be !== false;
     const gain = record("dl", "limit", ok, [...new Set(tags)], score.checks * 3 + (score.dec ? 8 : 0) + (score.place ? 8 : 0) + (score.be ? 6 : 0)); if (!ok) missed("limit", "dl", tags);
-    $("#side").insertAdjacentHTML("beforeend", `<div class="hud" style="color:var(--ink2)">${msg}</div><div class="hud" style="color:var(--signal)">+${gain} XP</div>` + nextBtn()); wireNext();
+    $("#side").insertAdjacentHTML("beforeend", `<div class="hud" style="color:var(--ink2)">${msg}</div>` + nextBtn()); wireNext();
   }
 }
 
