@@ -1289,7 +1289,7 @@ function cleanSchoolState(b) {
 app.get("/api/school", async (c) => {
   const u = c.get("user");
   const [row] = await sql`select state, unlocks from "SchoolProgress" where "userId" = ${u.id}`;
-  return c.json({ state: row ? typeof row.state === "string" ? JSON.parse(row.state) : row.state : null, unlocks: row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username });
+  return c.json({ state: row ? typeof row.state === "string" ? JSON.parse(row.state) : row.state : null, unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username });
 });
 app.put("/api/school", async (c) => {
   const json = JSON.stringify(cleanSchoolState(await c.req.json()));
