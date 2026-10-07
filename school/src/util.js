@@ -15,3 +15,7 @@ const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n
 const hhmm=m=>{m=((Math.round(m)%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
 const ampm=m=>{m=((Math.round(m)%1440)+1440)%1440;let h=Math.floor(m/60);const mm=m%60,ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+String(mm).padStart(2,'0')+' '+ap};
 let toastT;function toast(m){const t=$('#toast');if(!t)return;t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2300)}
+/* Module numbers in older text ("Module 6") are written against the original ids. REFMAP maps them to the current numbering. */
+let REFMAP=null;
+const refx=s=>(REFMAP&&typeof s==='string'&&s.indexOf('Module')>=0)?s.replace(/Modules? \d+(?:\s*(?:–|-|,|and)\s*\d+)*/g,t=>t.replace(/\d+/g,n=>REFMAP[n]||n)):s;
+const refDeep=o=>{if(typeof o==='string')return refx(o);if(Array.isArray(o))return o.map(refDeep);if(o&&typeof o==='object'&&!(o instanceof Function)){for(const k in o)o[k]=refDeep(o[k]);return o}return o};

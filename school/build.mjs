@@ -9,7 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const src = (p) => readFileSync(path.join(here, "src", p), "utf8");
 
 export async function buildSchool(esbuild, { minify = true } = {}) {
-  const parts = ["util.js", "gen.js", "chart.js", "items.js", ...readdirSync(path.join(here, "src/content")).filter((f) => f.endsWith(".js")).sort().map((f) => "content/" + f), "app.js"];
+  const parts = ["util.js", "gen.js", "gen2.js", "chart.js", "items.js", ...readdirSync(path.join(here, "src/content")).filter((f) => f.endsWith(".js")).sort().map((f) => "content/" + f), "app.js"];
   let js = parts.map((p) => `/* ── ${p} ── */\n${src(p)}`).join("\n");
   let css = src("style.css");
   if (minify) {

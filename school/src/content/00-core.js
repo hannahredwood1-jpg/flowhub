@@ -1,15 +1,16 @@
 /* ============================================================
    curriculum core: phases, helpers shared by every module
-   Source: Beginner Trading Curriculum A to Z (modules 1–16) + NY ATM guide + AMD/PO3 guide (modules 17–18)
+   Source: Beginner Trading Curriculum A to Z (m01–m16) + NY ATM guide + AMD/PO3 guide (m17–m18) + the Classic school lessons (m19–m30)
 ============================================================ */
 const PH=[
- {n:'Foundations',d:'Mindset and the chart: the vocabulary everything else uses.'},
+ {n:'Foundations',d:'Mindset, your platform, futures, the chart and your first order.'},
  {n:'Liquidity',d:'Where orders rest, and why price is drawn to them.'},
  {n:'Structure & imbalance',d:'Confirming a sweep, and spotting where price will keep going.'},
  {n:'Context & timing',d:'Cross-checking with a second index, and knowing when to look.'},
- {n:'Business, bias & discipline',d:'Funded accounts, daily bias, risk, and the behaviour that keeps you trading.'},
+ {n:'Bias, risk & discipline',d:'Funded accounts, daily bias, extended levels, trade management, risk, and the behaviour that keeps you trading.'},
  {n:'Synthesis',d:'The full order-flow model, run on real trades.'},
- {n:'Strategy models',d:'Two complete models built from everything above.'}];
+ {n:'Strategy models',d:'Complete models built from everything above, in New York and Asia.'},
+ {n:'ECHO X ORBIT',d:'The FLOWMTD model: two engines, one set of rules.'}];
 const MODS=[];
 const COL={ice:'#8cc4ff',sig:'#ff6a00',bad:'#ff5d73',ok:'#3ee0a1',lag:'#b69cff',gold:'#ffc861'};
 const def=h=>`<div class="callout def"><span class="hud">Definition</span>${h}</div>`;
