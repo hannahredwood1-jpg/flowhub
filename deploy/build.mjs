@@ -108,7 +108,7 @@ writeFileSync(path.join(appDir, "assets/app.css.gz"), gzipSync(Buffer.from(css),
 writeFileSync(path.join(appDir, "assets/school.html.gz"), gzipSync(Buffer.from(school), { level: 9 }));
 writeFileSync(path.join(appDir, "assets/classic.html.gz"), gzipSync(Buffer.from(classic), { level: 9 }));
 // Practice page: the school page in practice mode (same engine, endless generated tasks); <!--FH_NAV--> is filled in by the server
-const practice = school.replace("<title>Trading School · FLOWHUB</title>", "<title>Practice · FLOWHUB</title>").replace("<script>", "<script>window.PRACTICE=1;</script><script>");
+const practice = (await buildSchool(esbuild, { practice: true })).replace("<title>Trading School · FLOWHUB</title>", "<title>Practice · FLOWHUB</title>").replace("<script>", "<script>window.PRACTICE=1;</script><script>");
 writeFileSync(path.join(appDir, "assets/practice.html.gz"), gzipSync(Buffer.from(practice), { level: 9 }));
 console.log(`practice ${(practice.length / 1024).toFixed(0)}KB`);
 writeFileSync(path.join(appDir, "package.json"), JSON.stringify({
