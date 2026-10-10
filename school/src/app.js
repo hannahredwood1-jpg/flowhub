@@ -377,7 +377,7 @@ function initSims(root){$$('.sim',root).forEach(el=>{if(el.dataset.on)return;el.
   inp.addEventListener('input',()=>{wv.textContent=inp.value+'%'});$('[data-run]',el).onclick=run;run()})}
 
 /* ============================================================
-   PLAN CHECK + GRADUATION (certificate and the ECHO X ORBIT bot reward)
+   PLAN CHECK + GRADUATION (certificate and the ExO indicator access)
 ============================================================ */
 async function planCheck(){
   const fb=$('[data-plan-fb]');if(!fb)return;
@@ -386,7 +386,7 @@ async function planCheck(){
     fb.innerHTML=j&&j.plan&&j.plan.done?'<div class="fb ok"><b>Plan found.</b> Your plan card is saved. It shows on your dashboard and feeds your pre-trade checklist.</div>':'<div class="fb no"><b>No plan yet.</b> Finish all 6 steps in Trading Plan, save it, then check again.</div>'}
   catch(e){fb.innerHTML='<div class="fb no"><b>Could not check.</b> Try again in a moment.</div>'}
 }
-const BOOK_MSG='Hi Hannah! I finished the FLOWMTD Trading School and passed the ECHO X ORBIT exam. I\'d like to book a Zoom call to set up the ECHO X ORBIT bot and private indicator.\n\nTradingView username: \nProp firm / account: \nTime zone + best times for a call: ';
+const BOOK_MSG='Hi Hannah! I finished the FLOWMTD Trading School and passed the ECHO X ORBIT exam. I\'d like to book a Zoom call to get set up with the ExO indicator.\n\nTradingView username: \nTime zone + best times for a call: ';
 function drawCertificate(name){
   const W=1600,H=1130,cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');
   c.fillStyle='#030405';c.fillRect(0,0,W,H);c.strokeStyle='#28313e';c.lineWidth=2;c.strokeRect(48,48,W-96,H-96);c.strokeStyle='#ff6a00';c.lineWidth=4;c.beginPath();c.moveTo(48,120);c.lineTo(48,48);c.lineTo(120,48);c.stroke();c.beginPath();c.moveTo(W-48,H-120);c.lineTo(W-48,H-48);c.lineTo(W-120,H-48);c.stroke();
@@ -401,11 +401,12 @@ function drawCertificate(name){
   return cv}
 function gradCard(){
   return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">Trading School complete</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You passed every module, including ECHO X ORBIT.</h2>
-   <p class="muted" style="max-width:62ch">Download your certificate, then read how to claim the ECHO X ORBIT private indicator and bot: set up with you on a one-on-one Zoom call.</p>
+   <p class="muted" style="max-width:62ch">Download your certificate, then read what you have unlocked: access to the ExO indicator, set up with you on a one-on-one Zoom call with Hannah.</p>
    <div class="row" style="align-items:center;margin-top:14px"><input class="in" id="certName" placeholder="Your name for the certificate" maxlength="40" value="${esc(WHO||'')}" style="max-width:300px"><button class="btn primary" id="certBtn">Download certificate</button></div>
-   <h3 class="h" style="font-size:17px;margin:22px 0 6px">Your reward: the ECHO X ORBIT private indicator and bot</h3>
-   <p class="muted" style="max-width:66ch;font-size:14px">The <b>private indicator</b> runs on your own TradingView chart and marks setups as they form. The <b>bot</b> places that same order in your connected accounts with the stop and target attached, then applies <b>your</b> safety limits: daily loss and profit caps, max contracts, sessions, and when to be flat. You start on Paper and move to Live when you are ready. It is yours, not shared.</p>
-   <p style="margin-top:10px;font-size:14px"><b>Have ready for the call:</b></p><ul class="muted" style="font-size:14px;margin:4px 0 0 18px"><li>A TradingView paid plan that supports webhook alerts, and your TradingView username</li><li>A PickMyTrade account</li><li>Your prop firm or broker account ready to connect (you log in yourself: never send a password in Discord)</li><li>Your firm's daily loss limit and max contracts, and its rules on automation</li><li>Zoom installed on a computer</li></ul>
+   <h3 class="h" style="font-size:17px;margin:22px 0 6px">Your reward: access to the ExO indicator</h3>
+   <p class="muted" style="max-width:66ch;font-size:14px">You have earned access to the private <b>ExO (ECHO X ORBIT) indicator</b>. It runs on your own TradingView chart and marks setups as they form: the zones first, then the entry, stop and target the moment a setup is live. It does not predict trades. It shows them when they are real. It is yours, not shared.</p>
+   <p style="margin-top:10px;font-size:14px"><b>You still need to set up a Zoom call with Hannah.</b> On the call she shares the indicator to your TradingView account and fully onboards you.</p>
+   <p style="margin-top:10px;font-size:14px"><b>Have ready for the call:</b></p><ul class="muted" style="font-size:14px;margin:4px 0 0 18px"><li>Your TradingView account (a paid plan is recommended) and your TradingView username: the indicator is shared to it</li><li>Zoom installed, on a computer (not your phone)</li><li>Never send a password in Discord</li></ul>
    <p style="margin-top:12px;font-size:14px"><b>Book it:</b> send Hannah a DM on Discord with the message below.</p><textarea class="in" id="bookMsg" readonly rows="6" style="margin-top:6px">${esc(BOOK_MSG)}</textarea>
    <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a></div></div>`}
 document.addEventListener('click',e=>{
