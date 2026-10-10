@@ -500,13 +500,14 @@ function pracPanel(){
 function initPractice(){
   document.title='Practice · FLOWHUB';$$('main.view').forEach(m=>m.hidden=m.id!=='v-lab');
   $('#crumb').innerHTML='<b>Practice</b><span class="dim">Pick a topic. Every task is a fresh chart and new numbers.</span><a href="/school" class="btn ghost sm" style="margin-left:auto">Trading School →</a>';
-  if(typeof indOpen==='function'){$('#crumb').insertAdjacentHTML('afterbegin','<span class="seg" id="pTabs"><button type="button" data-pt="tasks" class="on">Practice tasks</button><button type="button" data-pt="ind">Indicator Lab</button></span>');
+  if(typeof indOpen==='function'){$('#crumb').insertAdjacentHTML('afterbegin','<span class="seg" id="pTabs"><button type="button" data-pt="tasks" class="on">Practice tasks</button><button type="button" data-pt="ind">Indicator Lab</button>'+(typeof labOpen==='function'?'<button type="button" data-pt="lab">Eval lab</button>':'')+'</span>');
     $('#pTabs').addEventListener('click',e=>{const b=e.target.closest('[data-pt]');if(b)setTab(b.dataset.pt)})}
   setTimeout(pracNext,40);
 }
 function setTab(v){
   PV=v;$$('#pTabs button').forEach(b=>b.classList.toggle('on',b.dataset.pt===v));
   if(v==='ind')return indOpen();
+  if(v==='lab')return labOpen();
   pracPaint();pracPanel();
 }
 

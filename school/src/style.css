@@ -146,7 +146,7 @@ b,strong{font-weight:650}
 .les-b p b,.les-b li b{color:var(--ink)}
 .les-b ul,.les-b ol{padding-left:19px;margin:6px 0;color:var(--ink2)}
 .les-b li{margin:4px 0}
-.les-f{display:flex;gap:10px;justify-content:space-between;align-items:center;padding:12px 20px;border-top:1px solid var(--line)}
+.les-f{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;padding:12px 20px;border-top:1px solid var(--line)}
 .callout{margin:12px 0;padding:11px 14px;border-radius:var(--r);border:1px solid var(--line2);background:var(--panel2);font-size:14px}
 .callout.def{border-left:3px solid var(--ice)}
 .callout.warn{border-left:3px solid var(--loss)}
