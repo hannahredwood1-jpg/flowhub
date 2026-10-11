@@ -14,7 +14,7 @@ test("school summary counts steps, passed modules and exam attempts", () => {
   assert.equal(s.modules.find((x) => x.id === "m05")!.manualUnlock, true);
   assert.equal(s.current, "Module 1");
   assert.equal(s.attempts.length, 1);
-  assert.equal(s.attempts[0].label, "Module 2 exam · Trading Mindset");
+  assert.equal(s.attempts[0].label, "Module 11 exam · Trading Mindset");
 });
 
 test("module list matches the school page content", () => {
