@@ -521,44 +521,4 @@ function setTab(v){
   pracPaint();pracPanel();
 }
 
-/* ============================================================
-   ENTRANCE: the two-hemisphere brain from the home screen assembles, opens down the middle and the view flies into the gap.
-   Click, any key or Skip ends it; reduced-motion users get a quick fade.
-============================================================ */
-function introPlay(){
-  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const o=document.createElement('div');o.id='intro';o.innerHTML='<canvas></canvas><button type="button" class="in-skip">Skip</button>';
-  document.body.appendChild(o);document.documentElement.style.overflow='hidden';
-  const cv=o.querySelector('canvas'),cx=cv.getContext('2d');let W,H,R,ox,oy,raf=0,t0=performance.now(),done=false,nodes=[],edges=[],pulses=[];
-  const ease=x=>x<0?0:x>1?1:x*x*(3-2*x),clamp=x=>Math.max(0,Math.min(1,x));
-  const build=()=>{const d=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';cx.setTransform(d,0,0,d,0,0);
-    const r=mulberry(7);R=Math.min(W*.34,H*.34);ox=W/2;oy=H*.5;nodes=[];
-    for(const sd of [-1,1]){let n=0;while(n<130){const a=r()*6.283,dd=Math.sqrt(r()),ex=Math.cos(a)*dd*R*.62,ey=Math.sin(a)*dd*R*.8,x=sd*R*.5+ex,y=ey-(ey>0?Math.abs(ex)*.18:0);if(Math.abs(x)<R*.045)continue;nodes.push({x,y,sd,ph:r()*6.28,at:r()*.5,z:.4+r()*1.6});n++}}
-    edges=[];const seen=new Set();nodes.forEach((a,i)=>{nodes.map((b,j)=>({j,d:Math.hypot(a.x-b.x,a.y-b.y)})).filter(q=>q.j!==i&&nodes[q.j].sd===a.sd).sort((p,q)=>p.d-q.d).slice(0,4).forEach(q=>{const k=i<q.j?i+'-'+q.j:q.j+'-'+i;if(q.d<R*.3&&!seen.has(k)){seen.add(k);edges.push([i,q.j])}})});
-    pulses=Array.from({length:34},()=>({e:Math.floor(r()*edges.length),o:r(),v:.5+r()*.9}))};
-  build();addEventListener('resize',build);
-  const end=()=>{if(done)return;done=true;cancelAnimationFrame(raf);o.classList.add('out');document.documentElement.style.overflow='';removeEventListener('resize',build);removeEventListener('keydown',end);setTimeout(()=>o.remove(),700)};
-  o.addEventListener('click',end);addEventListener('keydown',end,{once:true});
-  const DUR=reduce?500:4200;
-  const frame=now=>{
-    const T=(now-t0)/DUR;if(T>=1){end();return}
-    const sec=(now-t0)/1000,asm=ease(T/.3),open=ease((T-.3)/.3),fly=ease((T-.52)/.46);
-    cx.fillStyle='#030405';cx.fillRect(0,0,W,H);
-    const k=1+Math.pow(fly,2)*7;cx.save();cx.translate(ox,oy);cx.scale(k,k);
-    const lw=1/k;
-    // the seam: light coming out of the gap as the hemispheres part
-    const gap=open*R*.62;
-    if(open>0){cx.lineWidth=lw;cx.strokeStyle='rgba(140,196,255,'+(.35*open*(1-fly))+')';cx.beginPath();cx.moveTo(0,-R*.9);cx.lineTo(0,R*.9);cx.stroke()}
-    const place=n=>({x:n.x+n.sd*gap,y:n.y,});
-    for(const sd of [-1,1]){cx.save();cx.rotate(sd*open*.1);cx.lineWidth=1.4*lw;cx.strokeStyle='rgba(140,196,255,'+(.16*asm)+')';cx.beginPath();cx.ellipse(sd*(R*.5+gap),0,R*.66,R*.84,sd*.12,0,6.283);cx.stroke();cx.restore()}
-    cx.lineWidth=lw;cx.strokeStyle='rgba(140,196,255,'+(.16*asm)+')';cx.beginPath();
-    for(const [a,b] of edges){const A=nodes[a],B=nodes[b];if(asm<A.at+.2&&asm<1)continue;const pa=place(A),pb=place(B);cx.moveTo(pa.x,pa.y);cx.lineTo(pb.x,pb.y)}cx.stroke();
-    for(const n of nodes){const vis=clamp((asm-n.at)/.5);if(vis<=0)continue;const p=place(n),a=(.35+.35*Math.sin(sec*1.6+n.ph))*vis;cx.fillStyle='rgba(140,196,255,'+a+')';cx.beginPath();cx.arc(p.x,p.y,(1.8+open*n.z)*lw*(fly>0?1+fly*1.5:1),0,6.283);cx.fill()}
-    for(const q of pulses){const e=edges[q.e],A=place(nodes[e[0]]),B=place(nodes[e[1]]),u=(sec*q.v+q.o)%1,x=A.x+(B.x-A.x)*u,y=A.y+(B.y-A.y)*u,rr=2.6*lw*(1+open*.6);cx.fillStyle='rgba(255,106,0,'+(.95*asm)+')';cx.beginPath();cx.arc(x,y,rr,0,6.283);cx.fill()}
-    cx.restore();
-    // bloom as we pass through the gap, then the school behind it
-    const wash=ease((T-.8)/.16);if(wash>0){cx.fillStyle='rgba(3,4,5,'+wash+')';cx.fillRect(0,0,W,H)}
-    o.style.opacity=T>.9?Math.max(0,1-(T-.9)/.1):1;
-    raf=requestAnimationFrame(frame)};
-  raf=requestAnimationFrame(frame)}
-if(window.PRACTICE)initPractice();else{introPlay();route();pull()}
+if(window.PRACTICE)initPractice();else{route();pull()}
