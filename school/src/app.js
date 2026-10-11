@@ -62,7 +62,7 @@ function renderMap(){
   if(OPEN==null)OPEN=cur.id;
   let html='',ph=-1;
   MODS.forEach((m,i)=>{
-    if(m.ph!==ph){if(ph>=0)html+=(ph===6&&pm('m36').p?escCard():'')+'</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
+    if(m.ph!==ph){if(ph>=0)html+=(ph===7&&pm('m36').p?escCard():'')+'</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
     html+=modRow(m,i)});
   html+='</div></section>';
   $('#phases').innerHTML=(pm('m30').p?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">Course complete.</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
@@ -397,13 +397,13 @@ function drawCertificate(name){
   c.fillStyle='#929fb2';c.font='400 26px Inter, sans-serif';c.fillText('This certifies that',W/2,400);
   let fs=96;c.font=`700 ${fs}px Inter, sans-serif`;while(c.measureText(name).width>W-300&&fs>40){fs-=4;c.font=`700 ${fs}px Inter, sans-serif`}c.fillStyle='#e6ebf2';c.fillText(name,W/2,520);
   c.strokeStyle='#ff6a00';c.lineWidth=2;c.beginPath();c.moveTo(W/2-300,560);c.lineTo(W/2+300,560);c.stroke();
-  c.fillStyle='#c9d3e1';c.font='400 30px Inter, sans-serif';c.fillText('has completed the FLOWMTD Trading School and passed every module exam,',W/2,660);c.fillText('including the ESC VLCTY and ECHO X ORBIT models.',W/2,704);
+  c.fillStyle='#c9d3e1';c.font='400 30px Inter, sans-serif';c.fillText('has completed the FLOWMTD Trading School and passed every module exam,',W/2,660);c.fillText('including the INVERTIX, ESC VLCTY and ECHO X ORBIT models.',W/2,704);
   const d=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});let h=7;for(const ch of name+d)h=(h*31+ch.charCodeAt(0))>>>0;
   c.textAlign='left';c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('DATE',150,930);c.fillStyle='#e6ebf2';c.font='500 26px JetBrains Mono, monospace';c.fillText(d,150,968);c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('CERTIFICATE ID',150,1020);c.fillStyle='#e6ebf2';c.font='500 22px JetBrains Mono, monospace';c.fillText('FMTD-'+h.toString(36).toUpperCase().padStart(7,'0'),150,1054);
   c.textAlign='center';c.fillStyle='#66717f';c.font='400 15px Inter, sans-serif';c.fillText('Educational certificate of course completion. Not a trading license, qualification or financial advice.',W/2,H-72);
   return cv}
 function gradCard(){
-  return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">Trading School complete</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You passed every module, including ESC VLCTY and ECHO X ORBIT.</h2>
+  return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">Trading School complete</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You passed every module, including INVERTIX, ESC VLCTY and ECHO X ORBIT.</h2>
    <p class="muted" style="max-width:62ch">Download your certificate, then read what you have unlocked: access to the ExO indicator, set up with you on a one-on-one Zoom call with Hannah.</p>
    <div class="row" style="align-items:center;margin-top:14px"><input class="in" id="certName" placeholder="Your name for the certificate" maxlength="40" value="${esc(WHO||'')}" style="max-width:300px"><button class="btn primary" id="certBtn">Download certificate</button></div>
    <h3 class="h" style="font-size:17px;margin:22px 0 6px">Your reward: access to the ExO indicator</h3>
@@ -469,7 +469,7 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape')$$('dialog[open]').for
 /* ============================================================
    PRACTICE: the same generated charts and tasks as the modules, endless, with instant feedback and no exam
 ============================================================ */
-const PM={esc:['m31','m32','m33','m34','m35','m36','ind'],exo:['m27','m28','m29','m30']};
+const PM={inv:['m43','m44','m45','m46','m47'],esc:['m31','m32','m33','m34','m35','m36','ind'],exo:['m27','m28','m29','m30']};
 let PV='tasks';
 const PR={topic:'mixed',item:null,m:null,st:{},fb:null,checked:false,revealed:false,n:0,ok:0};
 const pracModel=id=>Object.keys(PM).find(k=>PM[k].includes(id));
@@ -492,7 +492,7 @@ function pracPaint(){
 }
 function pracPanel(){
   const it=PR.item,kd=K[it.kind],g=PR.fb,box=$('#lesson');
-  const opts=[['mixed','Mixed: any topic'],...(typeof IND_ESC!=='undefined'?[['ind','Indicator signals (ESC VLCTY)']]:[]),['esc','ESC VLCTY (all lessons)'],['exo','ECHO X ORBIT'],...MODS.map(m=>[m.id,`${m.n}. ${m.t}`])];
+  const opts=[['mixed','Mixed: any topic'],...(typeof IND_ESC!=='undefined'?[['ind','Indicator signals (ESC VLCTY)']]:[]),['inv','INVERTIX (all lessons)'],['esc','ESC VLCTY (all lessons)'],['exo','ECHO X ORBIT'],...MODS.map(m=>[m.id,`${m.n}. ${m.t}`])];
   box.innerHTML=`<div class="les-h"><div class="hud">Practice · no exam, no pass mark</div><div class="h">Practice</div>
    <div style="margin:10px 0 4px"><select id="pTopic" class="in">${opts.map(([v,t])=>`<option value="${v}" ${v===PR.topic?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
    <div class="kv"><span class="chip ok">${PR.ok} right</span><span class="chip">${PR.n} done</span><span class="chip">${esc(it.topic||'Task')}</span></div></div>

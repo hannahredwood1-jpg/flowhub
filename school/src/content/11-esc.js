@@ -34,11 +34,11 @@ const first=r=>{const k=pick(r,[0,1,2]);
   return mcq('First check wins',`${txt} What does the New York half do?`,[ans,...['The 09:44 check takes the trade (a long)','The 09:59 check takes the trade (a long)','No New York trade today','It waits for the strongest check of the day'].filter(x=>x!==ans)].slice(0,4),'The checks run every 15 minutes from 09:44 to 14:44. The first one that qualifies takes the trade and the New York half is then finished for the day. If none qualifies there is no trade.')};
 const gen=[avgU,distU,frac];
 /* ---------- m31 · the idea ---------- */
-quick({id:'m31',o:17.1,ph:6,t:'ESC VLCTY: The Idea',out:'Explain what the anchor and U are, and why price far from the anchor tends to keep going.',
+quick({id:'m31',o:17.1,ph:7,t:'ESC VLCTY: The Idea',out:'Explain what the anchor and U are, and why price far from the anchor tends to keep going.',
  ls:['What ESC VLCTY is','The anchor: the previous 16:00 close','U: the size of a normal day','Everything is a fraction of U','Two halves, one indicator','Longs lead, shorts stay small'],
  task:'Open an NQ 1-minute chart. Mark the 16:00 close from yesterday. Find the last ten daily ranges (high minus low) and average them to get U. Then write down 0.40 U and 0.20 U in points: those are today\'s New York trigger distances.',
  learn:[
-  {t:'What ESC VLCTY is',h:`<p><b>ESC VLCTY</b> is short for <b>Escape Velocity</b>. It is a second trading model, separate from ECHO X ORBIT, and it is built on one simple idea: once price has pulled <b>far enough away from a fixed reference price</b>, it tends to keep going. It has "escaped".</p><p>It is <b>one indicator with two halves</b>: one for the New York session and one for the Asia session into the overnight. Both do the same job, measure how far price has moved from the reference and ride that move, with fixed rules, so there is no discretion about whether a signal is there.</p>`},
+  {t:'What ESC VLCTY is',h:`<p><b>ESC VLCTY</b> is short for <b>Escape Velocity</b>. It is a trading model of its own, separate from INVERTIX and ECHO X ORBIT, and it is built on one simple idea: once price has pulled <b>far enough away from a fixed reference price</b>, it tends to keep going. It has "escaped".</p><p>It is <b>one indicator with two halves</b>: one for the New York session and one for the Asia session into the overnight. Both do the same job, measure how far price has moved from the reference and ride that move, with fixed rules, so there is no discretion about whether a signal is there.</p>`},
   {t:'The anchor',h:`<p>The reference price is the <b>previous 16:00 New York close</b>: the close of the regular trading session. ESC VLCTY calls it the <b>anchor</b>. It is a price every trader in the world agrees on, because it is where the cash session ended.</p>${key('<p>Every distance in ESC VLCTY is measured from the <b>anchor</b>. Gap in Asia = the 18:00 open minus the anchor. Distance in New York = current price minus the anchor.</p>')}`},
   {t:'U: the size of a normal day',h:`<p>A 100-point move means something very different in a quiet week and a wild one. ESC VLCTY solves this with <b>U</b>: the <b>average high-to-low range of the last 10 daily sessions</b>. Today, 1 U is roughly 350 to 400 NQ points, but it changes with the market.</p><p>Because U is recalculated every day, the model measures every move against the <b>current</b> size of a day, not against a fixed number of points.</p>`},
   {t:'Everything is a fraction of U',h:`<p>Triggers, stops and gaps are all written as fractions of U, which is why the plan "automatically gets wider when the market is wild and tighter when it is quiet".</p>${tblx(['What','New York','Asia'],[['Long trigger','price +0.40 U above the anchor','gap +0.04 U or more'],['Short trigger','price 0.20 U below the anchor','gap 0.10 U or more below'],['Long stop','0.13 U','0.22 U'],['Short stop','0.08 U','0.10 U']])}<p>You will learn each of these in the next modules. For now just notice: no fixed points, only fractions of U.</p>`},
@@ -60,7 +60,7 @@ quick({id:'m31',o:17.1,ph:6,t:'ESC VLCTY: The Idea',out:'Explain what the anchor
   ['Does ESC VLCTY ask you to judge each setup by feel?',['No: the rules are fixed and measurable','Yes, every signal','Only in Asia','Only on news days'],'Fixed rules mean no discretion about whether a signal is there.']]),
  examDesc:'The anchor, U, distances as fractions of U, and the two halves.'});
 /* ---------- m32 · New York ---------- */
-quick({id:'m32',o:17.2,ph:6,t:'ESC VLCTY: The New York Half',out:'Say exactly when a New York trade fires, and place its stop and target.',
+quick({id:'m32',o:17.2,ph:7,t:'ESC VLCTY: The New York Half',out:'Say exactly when a New York trade fires, and place its stop and target.',
  ls:['The 21 checks','The long rule','The short rule','Entry: the next open, at market','Stop, target and the time exit','One trade, then done'],
  task:'On tomorrow\'s New York morning, mark the anchor, the +0.40 U line and the −0.20 U line at 09:30. At the close of 09:44, 09:59, 10:14 … write the distance in U. Note which check (if any) would have fired and where the stop and target would sit.',
  learn:[
@@ -87,7 +87,7 @@ quick({id:'m32',o:17.2,ph:6,t:'ESC VLCTY: The New York Half',out:'Say exactly wh
   ['What do you do after a loss?',['Nothing different: no revenge, no doubling, no skipping','Double the next trade','Skip the next signal','Widen the stop'],'The plan has no reaction to a loss.']]),
  examDesc:'The 21 checks, the long and short rules, the levels and the exits.'});
 /* ---------- m33 · Asia ---------- */
-quick({id:'m33',o:17.3,ph:6,t:'ESC VLCTY: The Asia Half',out:'Read the Asia gap and say whether it is a long, a short or no trade.',
+quick({id:'m33',o:17.3,ph:7,t:'ESC VLCTY: The Asia Half',out:'Read the Asia gap and say whether it is a long, a short or no trade.',
  ls:['The gap','The decision at 18:29','Asia longs: full size and half size','Asia shorts','Why the stops are wide','How an Asia trade ends'],
  task:'For the next five evenings, write down the 16:00 close, the 18:00 open and the gap in U. Decide long, short or no trade at 18:29 and note where the stop and target would be. Check what happened by 02:59.',
  learn:[
@@ -114,7 +114,7 @@ quick({id:'m33',o:17.3,ph:6,t:'ESC VLCTY: The Asia Half',out:'Read the Asia gap 
   ['When does an open Asia trade end at the latest?',['At the close of the 02:59 candle','At 09:30','At 16:00','At midnight'],'Flat by 02:59.']]),
  examDesc:'The Asia gap, the decision at 18:29, long, short and half-size rules, and the exit.'});
 /* ---------- m34 · sizing ---------- */
-quick({id:'m34',o:17.4,ph:6,t:'ESC VLCTY: Sizing & Risk Modes',out:'Turn a risk mode and a stop into a number of contracts.',
+quick({id:'m34',o:17.4,ph:7,t:'ESC VLCTY: Sizing & Risk Modes',out:'Turn a risk mode and a stop into a number of contracts.',
  ls:['Contracts come from risk, not feel','MNQ and NQ','Steady, Fast, Sprint, Funded','The daily loss stop','Evaluations: pick a mode and keep it','Funded accounts: stay alive'],
  task:'Write down your account\'s max loss limit. Pick the mode you would use for an evaluation. Work out the full-size dollar risk, then the contracts for a 64-point New York long stop on MNQ and on NQ.',
  learn:[
@@ -141,7 +141,7 @@ quick({id:'m34',o:17.4,ph:6,t:'ESC VLCTY: Sizing & Risk Modes',out:'Turn a risk 
   ['What is the right way to size a short?',['At a quarter of the full risk','At double','At full size','Without a stop'],'Shorts carry the least edge.']]),
  examDesc:'Contracts from risk and stop, MNQ against NQ, the four risk modes and the daily loss stop.'});
 /* ---------- m35 · setup, fills, routine ---------- */
-quick({id:'m35',o:17.5,ph:6,t:'ESC VLCTY: Setup, Fills & Your Routine',out:'Set up the indicator, read what it draws, and run the daily routine.',
+quick({id:'m35',o:17.5,ph:7,t:'ESC VLCTY: Setup, Fills & Your Routine',out:'Set up the indicator, read what it draws, and run the daily routine.',
  ls:['Setting it up in TradingView','Reading the chart','Alerts','Your day, hour by hour','Fills in the real world','Do and don\'t, honest limits'],
  task:'Add ESC VLCTY to a 1-minute NQ or MNQ chart. Set your contract, account size and mode. Create the alert. Then write the day\'s times on a card: 18:29, 09:44 to 14:44, 15:54, 02:59.',
  learn:[
@@ -177,7 +177,7 @@ const WT=[
  ['Asia short','18:29 ET. The gap is −0.19 U from the 16:00 close of 27,631.00 (U = 687 points).','Entry 27,731.50, stop 27,800.16 (68.7 points), target 27,628.51 (103.0 points).','stop','−1.01 R','A quarter-size short that was stopped: small loss, as designed.']];
 const wt=r=>{const w=pick(r,WT);return mcq('Read the trade',`${w[0]}. ${w[1]} ${w[2]} How did it end?`,[`${w[3]==='target'?'Target':'Stop'} · ${w[4]}`,`${w[3]==='target'?'Stop · −1.0 R':'Target · +2.0 R'}`,'Flat at the time exit · about 0 R','Skipped: it never fired'],w[5])};
 const wtSize=numGen('Size the trade',r=>{const w=pick(r,WT),st=parseFloat(w[2].match(/\(([\d.]+) points\)/)[1]),risk=pick(r,[500,375,200]);const n=Math.max(1,Math.floor(risk/(st*2)));return{q:`${w[0]}: the stop is ${st} points. You trade MNQ ($2 a point) and your full-size risk is $${risk}. How many contracts at full size, rounded down (minimum 1)?`,ans:n,unit:'',tol:.01,why:`$${risk} ÷ (${st} × $2) = ${f2(risk/(st*2))}, so ${n} contract${n>1?'s':''}.`}});
-quick({id:'m36',o:17.6,ph:6,t:'ESC VLCTY: Worked Trades & Make the Call',out:'Read real ESC VLCTY trades from anchor to result, and make the call on new ones.',
+quick({id:'m36',o:17.6,ph:7,t:'ESC VLCTY: Worked Trades & Make the Call',out:'Read real ESC VLCTY trades from anchor to result, and make the call on new ones.',
  ls:['A New York long that won','A New York long that lost','A short, kept small','An Asia long that won','An Asia long that lost','What every trade has in common','Get the indicator and ask your questions'],
  task:'Take each of the six worked trades below and rebuild it: anchor, U, distance, entry, stop, target. Then find your own last three signals in the replay and do the same.',
  learn:[
