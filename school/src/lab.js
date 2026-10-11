@@ -84,10 +84,10 @@ function labOv(){
     if(E.k!=null){const dd=(C[E.k].c-E.A)/E.U;ov.push({...rectAt(30,E.k,Math.min(E.A,C[E.k].c),Math.max(E.A,C[E.k].c),`NY ${dd>=0?'+':'−'}${Math.abs(dd).toFixed(2)} U ✓`,COL.ice,{pine:1,pfill:1,pcol:'#9aa0ad'}),tab:'#2a2e39'});
       if(E.en!=null){const k1=E.k+1;ov.push(hlAt(E.en,'ESC entry',COL.ice,k1,{pine:1,pcol:'#2962ff',pdash:1,pleft:1,i1:k1+3}),hlAt(E.stop,'ESC stop',COL.bad,k1,{pine:1,pcol:'#f23645',pdot:1,pleft:1,i1:k1+3}),hlAt(E.tgt,'ESC target',COL.ok,k1,{pine:1,pcol:'#089981',pdot:1,pleft:1,i1:k1+3}))}}}
   if(s.inv&&d.src.inv){const q=d.src.inv,L=q.dir===1;
-    if(i>=q.ti){ov.push({...rectAt(Math.max(0,q.ti-14),Math.min(i,q.ti+40),q.kg.lo,q.kg.hi,q.kg.tf+' FVG',COL.ice,{pine:1,pcol:'#9aa0ad',up:L}),tab:'#2a2e39'})}
-    if(i>=q.fi){ov.push({...tagAt(q.fi,L?C[q.fi].h:C[q.fi].l,'FLIP · NY AM',L?'above':'below',COL.ice),pine:1,bg:'#2a2e39',tc:'#fff',tiny:1})}
-    if(i>=q.en){const tp=k=>q.e+q.dir*q.R*k,i1=Math.min(i,q.en+90),P=(p,t,c,x={})=>hlAt(p,t,COL.ice,q.en,{pine:1,pcol:c,pleft:1,i1,...x});
-      ov.push(P(q.stop,'SL '+fm(q.R,1)+' pts','#d1d4dc'),P(tp(1),'TP1','#9aa0ad'),P(tp(2),'TP2','#9aa0ad'),P(tp(3),'TP3','#9aa0ad'),P(tp(1),'BE STEP 1','#787b86',{pdot:1,pleft:0}),{t:'lab',i:q.en,p:q.e,al:'left',bg:'rgba(120,123,134,.9)',tc:'#fff',lines:[(L?'LONG ':'SHORT ')+fm(q.e)]})}}
+    if(i>=q.ti){ov.push({...rectAt(Math.max(0,q.kg.i0<-100?0:q.kg.i0),Math.min(i,q.ti+45),q.kg.lo,q.kg.hi,q.kg.name,COL.ice,{pine:1,pcol:'#4f8cff',inner:1,pfillc:1})})}
+    if(i>=q.fi){ov.push({...tagAt(q.fi,L?C[q.fi].l:C[q.fi].h,'FLIP · NY AM',L?'below':'above',COL.ice),pine:1,bg:'rgba(93,109,255,.82)',tc:'#fff'})}
+    if(i>=q.en){const tp=k=>q.e+q.dir*q.R*k,i1=Math.min(i,q.en+90),P=(p,c,x={})=>hlAt(p,'',COL.ice,q.en,{pine:1,pcol:c,pleft:1,i1,...x});
+      ov.push(P(q.e,'#5d6dff'),P(q.stop,'#ff5c7a',{pw:2}),P(tp(1),'rgba(31,201,166,.5)',{pdash:1}),P(tp(2),'#1fc9a6',{pw:2}),P(tp(3),'rgba(31,201,166,.5)',{pdash:1}),P(tp(1),'#f0b429',{pdot:1}),P(tp(1.5),'#f0b429',{pdot:1}),{t:'lab',i:q.en,p:q.e,al:'left',bg:'#5d6dff',tc:'#fff',lines:[(L?'LONG ':'SHORT ')+fm(q.e),'SL '+fm(q.stop)+' ('+fm(q.R,1)+' pts)','TP1 '+fm(tp(1))+' · TP2 '+fm(tp(2))+' · TP3 '+fm(tp(3))]})}}
   if(s.pd){const sr=d.src;ov.push(P(sr.p0+sr.pdh/4,'Prior day high','#8cc4ff',{i0:0,dash:1}),P(sr.p0+sr.pdl/4,'Prior day low','#8cc4ff',{i0:0,dash:1}))}
   const p=d.pos;
   if(p){ov.push(hlAt(p.fill,'entry '+fm(p.fill),COL.ice,p.i0,{scale:true,pine:1,pcol:'#9db2bd',pleft:1}),hlAt(p.stop,'stop',COL.bad,p.i0,{scale:true,pine:1,pcol:'#f23645',pdash:1,pleft:1}));
