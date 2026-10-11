@@ -8,8 +8,8 @@ const PH=[
  {n:'Structure & imbalance',d:'Confirming a sweep, and spotting where price will keep going.'},
  {n:'Context & timing',d:'Cross-checking with a second index, and knowing when to look.'},
  {n:'Bias, risk & discipline',d:'Funded accounts, daily bias, extended levels, trade management, risk, and the behaviour that keeps you trading.'},
- {n:'Putting it together',d:'Everything above combined into one repeatable read of the market, run on real trades.'},
  {n:'INVERTIX',d:'The first trading model you learn: a bias, a key level, a flip and a defined entry.'},
+ {n:'Putting it together',d:'Everything above combined into one repeatable read of the market, run on real trades.'},
  {n:'ESC VLCTY',d:'Another trading model: one indicator, New York and Asia, measured from the previous 16:00 close.'},
  {n:'ECHO X ORBIT',d:'The FLOWMTD model: two engines, one set of rules.'}];
 const MODS=[];
