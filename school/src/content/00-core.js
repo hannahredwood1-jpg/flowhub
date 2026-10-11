@@ -3,15 +3,19 @@
    Source: Beginner Trading Curriculum A to Z (m01–m16) + the ESC VLCTY guide (m31–m36) + the Classic school lessons and ECHO X ORBIT (m19–m30)
 ============================================================ */
 const PH=[
- {n:'Foundations',d:'Optional, and open from the start in any order: mindset, your platform, futures, the chart and your first order. The modules after it unlock one at a time.'},
+ {n:'Beginner Basics',d:'Optional, and open from the start in any order: what a market is, how to read a chart, your platform, and what futures and NQ are.'},
+ {n:'Foundations',d:'Your demo account, your first order, when the market is busy, and how to build a daily bias. Unlocks one module at a time.'},
+ {n:'Psychology',d:'One trade per session, the mindset, discipline, and what a full trading day looks like.'},
  {n:'Liquidity',d:'Where orders rest, and why price is drawn to them.'},
- {n:'Structure & imbalance',d:'Confirming a sweep, and spotting where price will keep going.'},
- {n:'Context & timing',d:'Cross-checking with a second index, and knowing when to look.'},
- {n:'Bias, risk & discipline',d:'Funded accounts, daily bias, extended levels, trade management, risk, and the behaviour that keeps you trading.'},
+ {n:'Structure & Imbalance',d:'Confirming a sweep, spotting where price will keep going, and where it gets rejected.'},
+ {n:'Context & Timing',d:'Cross-checking with a second index, and knowing when to look.'},
+ {n:'Prop Firm Risk Management',d:'Funded accounts and their rules, sizing every trade, managing it after entry, and why the maths works.'},
  {n:'INVERTIX',d:'The first trading model you learn: a bias, a key level, a flip and a defined entry.'},
- {n:'Putting it together',d:'Everything above combined into one repeatable read of the market, run on real trades.'},
+ {n:'Putting It Together',d:'Everything above combined into one repeatable read of the market, run on real trades.'},
  {n:'ESC VLCTY',d:'Another trading model: one indicator, New York and Asia, measured from the previous 16:00 close.'},
  {n:'ECHO X ORBIT',d:'The FLOWMTD model: two engines, one set of rules.'}];
+var EXO_PARTS={};
+const ESC_PH=9;
 const MODS=[];
 const COL={ice:'#8cc4ff',sig:'#ff6a00',bad:'#ff5d73',ok:'#3ee0a1',lag:'#b69cff',gold:'#ffc861'};
 const def=h=>`<div class="callout def"><span class="hud">Definition</span>${h}</div>`;

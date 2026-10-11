@@ -2,7 +2,7 @@
 // Trading School progress for coaches: where a member is, exam scores, and manual unlocks.
 import { useState } from "react";
 import { api } from "@/lib/api-client";
-import { SCHOOL_MODULES } from "@/lib/school";
+import { SCHOOL_MODULES, schoolOpen } from "@/lib/school";
 import type { DashboardData } from "@/lib/types";
 import { ErrorLine, Panel, cx } from "./ui";
 
@@ -22,14 +22,14 @@ export function SchoolCard({ data, onChanged }: { data: DashboardData; onChanged
       <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="grid gap-1.5">
           {modules.map((m, i) => {
-            const locked = i > 0 && !modules[i - 1].passed && !m.manualUnlock && !m.passed;
+            const locked = !m.passed && !schoolOpen(modules, i);
             return (
               <div key={m.id} className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 text-sm">
                 <span className="num text-ink-3">{String(m.n).padStart(2, "0")}</span>
                 <span className={cx("truncate", locked && "text-ink-3")}>{m.title}</span>
                 <span className="flex items-center gap-2">
                   <span className={cx("chip !py-0", m.passed ? "text-win" : m.stepsDone ? "text-signal" : "text-ink-3")}>
-                    {m.passed ? `Passed · ${m.best}%` : locked ? "Locked" : `${m.stepsDone}/4 steps${m.attempt > 1 ? ` · attempt ${m.attempt}` : ""}`}
+                    {m.passed ? `Passed · ${m.best}%` : locked ? "Locked" : `${m.stepsDone}/3 steps${m.attempt > 1 ? ` · attempt ${m.attempt}` : ""}`}
                   </span>
                   {!m.passed && (locked || m.manualUnlock) && (
                     <button className={cx("btn !h-7 !px-2 text-xs", m.manualUnlock ? "btn-ghost" : "btn-primary")} disabled={busy === m.id} onClick={() => unlock(m.id, !m.manualUnlock)}>
@@ -41,7 +41,7 @@ export function SchoolCard({ data, onChanged }: { data: DashboardData; onChanged
             );
           })}
           <ErrorLine error={error} />
-          <p className="text-xs text-ink-3">Unlock opens a module without requiring the previous exam.</p>
+          <p className="text-xs text-ink-3">Unlock opens a module without requiring the previous exam. ESC VLCTY only opens this way: unlock it once the trader shows a funded-account certificate.</p>
         </div>
         <div>
           <div className="label mb-1.5">Recent exams</div>
