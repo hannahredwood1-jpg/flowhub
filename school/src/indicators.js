@@ -3,7 +3,7 @@
    Prices in the examples are shifted by a fixed offset and carry no dates, so only the shape and the time of day are real.
    ESC VLCTY examples are drawn on 5-minute candles so a whole session fits; the signal times (09:44, 09:59 ... and 18:29) are all 5-minute closes.
 ============================================================ */
-const IV={ind:'esc',mode:'guide',list:[],i:0,step:0,steps:[]};
+const IV={ind:'inv',mode:'guide',list:[],i:0,step:0,steps:[]};
 const exData=ex=>{if(!ex._C){ex._C=[];for(let i=0;i<ex.b.length;i+=4)ex._C.push({o:ex.p0+ex.b[i]/4,h:ex.p0+ex.b[i+1]/4,l:ex.p0+ex.b[i+2]/4,c:ex.p0+ex.b[i+3]/4})}return ex._C};
 const ESCOL={line:'#9aa0ad',ent:'#2962ff',sl:'#f23645',tp:'#089981'};
 const sgn=d=>(d>=0?'+':'−')+Math.abs(d).toFixed(2);
@@ -63,13 +63,47 @@ function cmSteps(ex){
   return steps;
 }
 
+/* ---------- INVERTIX: key level, the flip, entry, stop and targets (1-minute candles) ---------- */
+const INVC={sl:'#d1d4dc',tp:'#9aa0ad',be:'#787b86'};
+const invSize=(ex,risk=500)=>Math.max(1,Math.floor(risk/(ex.R*2)));
+const invRes=ex=>{const w={target:'TP2 hit',stop:'STOP',be:'STOP at break-even',lock:'STOP at +0.5R',time:'TIME exit'}[ex.how],n=invSize(ex);return `${w} ${ex.rm>=0?'+':''}${ex.rm.toFixed(2)}R ($${ex.rm>=0?'+':'−'}${fm(Math.abs(ex.rm*ex.R*2*n),0)})`};
+const invLevels=(ex,i1)=>{const d=ex.dir,tp=k=>ex.e+d*ex.R*k,P=(p,t,c,x={})=>hlAt(p,t,COL.ice,ex.en,{scale:true,pine:1,pcol:c,pleft:1,i1,...x});
+  return[P(ex.stop,`SL ${fm(ex.R,1)} pts · $${fm(ex.R*2*invSize(ex),0)}`,INVC.sl),P(tp(1),'TP1 · 1R',INVC.tp),P(tp(2),'TP2 · 2R',INVC.tp),P(tp(3),'TP3 · 3R',INVC.tp),P(tp(1),'BE STEP 1 · move the stop to entry',INVC.be,{pdot:1,pleft:0}),P(tp(1.5),'BE STEP 2 · lock +0.5R',INVC.be,{pdot:1,pleft:0})]};
+const invTab=(ex,i,text,above)=>({...tagAt(i,above?(ex.dir===1?ex.b2h:0):0,text,'above',COL.ice),pine:1,bg:'#2a2e39',tc:'#fff',tiny:1});
+function invSteps(ex){
+  const C=exData(ex),d=ex.dir,L=d===1,T=i=>hhmm(ex.hm+i),pr=fm,st=[],n=invSize(ex);
+  const kg=ex.kg,sg=ex.sg,sw=ex.sw;
+  const kbox=()=>({...rectAt(Math.max(0,kg.i0),ex.ti+8,kg.lo,kg.hi,kg.tf+' FVG',COL.ice,{pine:1,pcol:INVC.tp,up:L}),tab:'#2a2e39'});
+  const sbox=(i1)=>({...rectAt(Math.max(0,sg.i0),i1,sg.lo,sg.hi,sg.tf+' gap',COL.ice,{pine:1,pcol:INVC.sl,up:!L})});
+  const swLine=()=>hlAt(sw[1],L?'swing high':'swing low',COL.ice,sw[0],{scale:true,pine:1,pcol:INVC.tp,pdot:1,pleft:1,i1:ex.ti});
+  const flipTab=()=>({...tagAt(ex.fi,L?C[ex.fi].h:C[ex.fi].l,`FLIP ${sg.tf} gap · ${ex.m}`,L?'above':'below',COL.ice),pine:1,bg:'#2a2e39',tc:'#fff',tiny:1});
+  const entryLab=(res)=>({t:'lab',i:ex.en+1,p:ex.e,al:'right',bg:'rgba(120,123,134,.9)',tc:'#fff',lines:[`${L?'LONG':'SHORT'} ${pr(ex.e)}  ·  ${n} MNQ${res?'  ·  '+res:''}`]});
+  const base=[];
+  st.push({upto:Math.max(sw[0]+2,ex.ti-20),focus:sw[0]+2,from:Math.max(-1,sw[0]-30),count:Math.min(120,ex.ti-sw[0]+60),ov:[swLine()],cap:`<b>Step 1 · the bias.</b> INVERTIX first reads which way gaps are being respected on the Daily, 4-hour and 1-hour charts, and you set <b>Today's bias</b> (Bullish, Bearish or Neutral). In this example Today's bias is <b>Neutral</b>, so both directions are allowed and a ${L?'long':'short'} setup can print. Bullish would allow longs only, Bearish shorts only. The ${L?'last swing high':'last swing low'} (dotted line) is where the story starts.`});
+  st.push({upto:ex.ti,focus:ex.ti,from:Math.max(-1,sw[0]-20),count:Math.min(120,ex.ti-sw[0]+60),ov:[swLine(),kbox()],cap:`<b>Step 2 · the key level.</b> At <b>${T(ex.ti)}</b> price runs ${L?'down':'up'} into an <b>unfilled ${L?'bullish':'bearish'} ${kg.tf} fair value gap</b> (${pr(kg.lo)} to ${pr(kg.hi)}). The indicator draws an outline box with its name inside. This is only the start of the setup: it is a place, not the signal. It must happen inside the ${ex.m} window or its pre-range.`});
+  st.push({upto:ex.ti,focus:ex.ti,from:Math.max(-1,sw[0]-20),count:Math.min(120,ex.ti-sw[0]+60),ov:[swLine(),kbox(),sbox(ex.ti)],cap:`<b>Step 3 · the move and the small gap.</b> The <b>move</b> runs from the ${L?'swing high':'swing low'} (${pr(sw[1])}) to the key level. Inside it, price left small ${L?'bearish':'bullish'} 3-minute and 5-minute gaps. The one that matters is the ${L?'<b>highest</b>':'<b>lowest</b>'} one: a ${sg.tf} gap at <b>${pr(sg.lo)} to ${pr(sg.hi)}</b>. The flip is measured against it.`});
+  st.push({upto:ex.fi,focus:ex.fi,from:Math.max(-1,sw[0]-10),count:Math.min(120,ex.fi-sw[0]+40),ov:[swLine(),kbox(),sbox(ex.fi),flipTab(),hlAt(L?sg.hi:sg.lo,L?'close above this to flip':'close below this to flip',COL.ice,sg.i0,{scale:true,pine:1,pcol:INVC.sl,pdot:1,pleft:1})],cap:`<b>Step 4 · the flip.</b> At <b>${T(ex.fi)}</b> a candle <b>closes ${L?'above':'below'}</b> that small gap (${pr(L?sg.hi:sg.lo)}). That is the inversion: the gap has changed role and ${L?'buyers':'sellers'} have taken control. The indicator marks it with a small tab <b>"FLIP ${sg.tf} gap · ${ex.m}"</b>. A wick through the gap would not count.`});
+  st.push({upto:ex.en,focus:ex.en,from:Math.max(-1,ex.fi-25),count:Math.min(120,ex.ex-ex.fi+40),ov:[kbox(),sbox(ex.fi),flipTab(),...invLevels(ex,ex.en+12),entryLab()],cap:`<b>Step 5 · the order.</b> Entry is at the <b>open of the next candle</b>, a market order: <b>${pr(ex.e)}</b>. The <b>stop</b> is at the ${L?'low':'high'} of the move${ex.cap?', pulled in to the <b>60-point maximum</b>':''}: <b>${pr(ex.stop)}</b>, ${fm(ex.R,1)} points away. The targets are <b>TP1 ${pr(ex.e+ex.dir*ex.R)}</b> (1R), <b>TP2 ${pr(ex.e+ex.dir*2*ex.R)}</b> (2R, the default exit) and <b>TP3 ${pr(ex.e+ex.dir*3*ex.R)}</b>. Dotted lines mark the stop-guide steps. With $500 of risk on MNQ that is <b>${n} contract${n>1?'s':''}</b>.`});
+  const why={target:`Price reached TP2 at ${T(ex.ex)} and the trade closed there. ${ex.steps[0]?'On the way it passed +1R, where the guide said to move the stop to break-even.':''}`,stop:`Price traded through the stop at ${T(ex.ex)}. A normal losing trade: the signal was valid and the loss was the planned 1R, a little more with costs.`,be:`Price first reached +1R, so the guide moved the stop to break-even. Then it came back and stopped the trade at about the entry at ${T(ex.ex)}: close to zero, which is the point of the guide.`,lock:`Price reached +1.5R, so the stop moved to +0.5R. It then pulled back and the trade closed with a small profit at ${T(ex.ex)}.`,time:`Neither the stop nor TP2 was hit, so the trade closed on the 180-minute time exit at ${T(ex.ex)}.`}[ex.how];
+  st.push({upto:ex.ex,focus:ex.ex,from:Math.max(-1,ex.fi-25),count:Math.min(130,ex.ex-ex.fi+40),ov:[kbox(),sbox(ex.fi),flipTab(),...invLevels(ex,ex.ex),entryLab(invRes(ex)),{...tagAt(ex.ex,ex.px,ex.how==='target'?'TP2':ex.how==='time'?'TIME':'STOP',ex.how==='target'||ex.rm>=0?'above':'below',COL.ok),pine:1,bg:ex.rm>=0?'#0e5a35':'#6a1b24',tc:'#fff'}],cap:`<b>Step 6 · the result.</b> ${why} Result <b>${invRes(ex)}</b>. The indicator does not print results on the chart: you log them yourself, in R.`});
+  return st}
 function indLoad(){ensureCharts();$('#v-lab').classList.remove('nochart');$$('[data-tf]').forEach(b=>b.hidden=true);$('#chartHost2').hidden=true;$('.chartcol').classList.remove('dual');TB.set('cursor')}
 function indPaint(){
   const ex=IV.list[IV.i],st=IV.steps[IV.step],C=exData(ex);indLoad();CH.size();
-  CH.setData(C.slice(0,st.upto+1),{k:1,t0:ex.hm,stepMin:5,fit:true});CH.marks=[];CH.taps=new Set();CH.ov=st.ov;
-  CH.count=st.count||Math.min(70,C.length+3);CH.focus(st.focus);if(ex.m!=='cm')CH.from=st.from!=null?st.from:Math.max(-1,st.focus-CH.count*.62);$('#chartTf').textContent='5m candles';$('#chartHint').textContent='Drag to pan · scroll to zoom. Prices in these examples are shifted; the shape and times are real.';CH.draw();
+  CH.setData(C.slice(0,st.upto+1),{k:1,t0:ex.hm,stepMin:ex.inv?1:5,fit:true});CH.marks=[];CH.taps=new Set();CH.ov=st.ov;
+  CH.count=st.count||Math.min(70,C.length+3);CH.focus(st.focus);if(ex.m!=='cm')CH.from=st.from!=null?st.from:Math.max(-1,st.focus-CH.count*.62);$('#chartTf').textContent=ex.inv?'1m candles':'5m candles';$('#chartHint').textContent='Drag to pan · scroll to zoom. Prices in these examples are shifted; the shape and times are real.';CH.draw();
 }
 const IND_GUIDE={
+ inv:{t:'INVERTIX',sub:'The first trading model: a bias, a key level, a flip and a defined entry. On TradingView use the 1-minute chart; these examples are 1-minute candles.',items:[
+  ['Outline box with a name inside','The key level price traded into to start the setup, for example "15m FVG": an unfilled gap, a rejection block or a 5-minute CISD zone.'],
+  ['Dotted line "CISD 5m ▲/▼"','A 5-minute CISD zone found on the chart. A solid line with "(used)" is the one a setup is using.'],
+  ['Small tab "FLIP 5m gap · NY AM"','The candle that closed through the small gap inside the move: the flip, and the signal.'],
+  ['Entry tab (one line)','LONG or SHORT, the entry price and the number of contracts for your risk.'],
+  ['Solid light line "SL …"','Your stop, with the points and the dollars at risk. It moves when a stop-guide step is reached.'],
+  ['Lines "TP1 / TP2 / TP3 …"','The targets at 1R, 2R and 3R, with price and dollars. The solid one is the exit (TP2 by default).'],
+  ['Dotted line "BE STEP 1 …"','When price gets here, move your stop (the text says where). Step 1 is break-even at +1R, step 2 locks +0.5R at +1.5R.'],
+  ['Today\'s bias','The first setting. Bullish prints longs only, Bearish shorts only, Neutral both. Changing it redraws the whole chart.'],
+  ['What it does not show','Win or loss results are not printed on the chart. You log them yourself, in R.']]},
  esc:{t:'ESC VLCTY',sub:'One indicator for New York and Asia, measured from the previous 16:00 close. On TradingView use the 1-minute chart. The examples here are drawn on 5-minute candles so a whole session fits.',items:[
   ['16:00 close','A dashed grey line: the previous 16:00 New York close, the anchor everything is measured from.'],
   ['LONG ≥ +0.40 U / SHORT ≤ −0.20 U','Dotted trigger lines for New York, drawn at 09:30. U is the average daily range of the last 10 sessions.'],
@@ -90,17 +124,17 @@ const IND_GUIDE={
   ['Asia / London / New York High and Low','Session extremes from the last 24 hours (8 PM to midnight, 2 to 5 AM, 7 to 10 AM ET). The line disappears once price taps it.'],
   ['True Day Open','The open at midnight New York time. Below it, price is cheap for the day; above it, expensive.'],
   ['HOD / LOD','The live high and low of the current day. Reset every midnight ET.']]}};
-const indSteps=ex=>ex.m==='cm'?cmSteps(ex):escSteps(ex);
-const indTitle=e=>e.m==='cm'?'Confluence Master · 5m':`ESC VLCTY · ${escName(e).sess}${e.k==='none'?' · no trade':' '+(e.dir===1?'long':'short')}`;
+const indSteps=ex=>ex.m==='cm'?cmSteps(ex):ex.inv?invSteps(ex):escSteps(ex);
+const indTitle=e=>e.m==='cm'?'Confluence Master · 5m':e.inv?`INVERTIX · ${e.m} ${e.dir===1?'long':'short'}`:`ESC VLCTY · ${escName(e).sess}${e.k==='none'?' · no trade':' '+(e.dir===1?'long':'short')}`;
 function indPanel(){
   const box=$('#lesson'),g=IND_GUIDE[IV.ind],ex=IV.list[IV.i];
-  const seg=`<div class="seg">${[['esc','ESC VLCTY'],['cm','Confluence Master']].map(([k,t])=>`<button type="button" data-iv="${k}" class="${IV.ind===k?'on':''}">${t}</button>`).join('')}</div>`;
+  const seg=`<div class="seg">${[['inv','INVERTIX'],['esc','ESC VLCTY'],['cm','Confluence Master']].map(([k,t])=>`<button type="button" data-iv="${k}" class="${IV.ind===k?'on':''}">${t}</button>`).join('')}</div>`;
   let body='',foot='';
   if(IV.mode==='guide'){
     body=`<p class="muted">${g.sub}</p><h3>What is on the chart, and what it means</h3><div>${g.items.map(([a,b])=>`<div class="rev"><p><b>${esc(a)}</b></p><p>${esc(b)}</p></div>`).join('')}</div>`;
-    foot=`<button class="btn primary" data-ivgo="list">See real examples →</button>${IV.ind==='esc'?'<button class="btn" data-ivgo="turn">Your turn: read the signal</button>':''}`;
+    foot=`<button class="btn primary" data-ivgo="list">See real examples →</button>${IV.ind!=='cm'?'<button class="btn" data-ivgo="turn">Your turn: read the signal</button>':''}`;
   }else if(IV.mode==='list'){
-    body=`<p class="muted">Real NQ sessions with the indicator's rules applied. Prices are shifted and dates removed. Pick one and step through why it printed, or why it stayed quiet.</p><div class="kv">${IV.list.map((e,i)=>`<button type="button" class="chip" data-ivex="${i}" style="cursor:pointer">${e.m==='cm'?`Day ${i+1}`:`${i+1} · ${escName(e).tag} ${e.k==='none'?'no trade':e.dir===1?'long':'short'}`}</button>`).join('')}</div>`;
+    body=`<p class="muted">Real NQ sessions with the indicator's rules applied. Prices are shifted and dates removed. Pick one and step through why it printed, or why it stayed quiet.</p><div class="kv">${IV.list.map((e,i)=>`<button type="button" class="chip" data-ivex="${i}" style="cursor:pointer">${e.m==='cm'?`Day ${i+1}`:e.inv?`${i+1} · ${e.m} ${e.dir===1?'long':'short'}`:`${i+1} · ${escName(e).tag} ${e.k==='none'?'no trade':e.dir===1?'long':'short'}`}</button>`).join('')}</div>`;
     foot=`<button class="btn" data-ivgo="guide">← Notation guide</button>`;
   }else if(IV.mode==='walk'){
     body=`<div class="hud">Example ${IV.i+1} of ${IV.list.length} · ${indTitle(ex)}</div><div class="cap" style="margin-top:8px">${IV.steps[IV.step].cap}</div><div class="kv" style="margin-top:10px">${IV.steps.map((_,i)=>`<span class="chip ${i===IV.step?'live':i<IV.step?'ok':''}">${i+1}</span>`).join('')}</div>`;
@@ -110,7 +144,7 @@ function indPanel(){
 }
 function indOpen(){
   PV='ind';$('#v-lab').classList.remove('nochart');
-  IV.list=IV.ind==='cm'?(typeof IND_CM!=='undefined'?IND_CM:[]):(typeof IND_ESC!=='undefined'?IND_ESC:[]);
+  IV.list=IV.ind==='cm'?(typeof IND_CM!=='undefined'?IND_CM:[]):IV.ind==='inv'?(typeof IND_INV!=='undefined'?IND_INV:[]):(typeof IND_ESC!=='undefined'?IND_ESC:[]);
   if(IV.mode==='walk'&&!IV.list.length)IV.mode='guide';
   if(IV.mode==='guide'||IV.mode==='list'){indLoad();CH.size();CH.setData([{o:100,h:100,l:100,c:100}],{k:1,t0:540,stepMin:1,fit:true});CH.ov=[];CH.draw()}
   else indPaint();
@@ -125,7 +159,16 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-ivnext]')){if(IV.step<IV.steps.length-1)IV.step++;else{IV.i=(IV.i+1)%IV.list.length;IV.steps=indSteps(IV.list[IV.i]);IV.step=0}indPaint();return indPanel()}
 });
 /* "Your turn" tasks built from the same examples */
+function invItem(r){
+  const ex=pick(r,IND_INV),C=exData(ex),L=ex.dir===1,T=i=>hhmm(ex.hm+i),base={t0:ex.hm,step:1},topic='Indicator · INVERTIX',n=invSize(ex),k=pick(r,['tap','lvl','size','stage']);
+  const kb={...rectAt(Math.max(0,ex.kg.i0),ex.ti+8,ex.kg.lo,ex.kg.hi,ex.kg.tf+' FVG',COL.ice,{pine:1,pcol:INVC.tp,up:L}),tab:'#2a2e39'},sb=rectAt(Math.max(0,ex.sg.i0),ex.fi,ex.sg.lo,ex.sg.hi,ex.sg.tf+' gap',COL.ice,{pine:1,pcol:INVC.sl,up:!L});
+  if(k==='tap')return{...base,kind:'tap',many:false,topic,q:`INVERTIX ${L?'long':'short'} setup (1-minute candles). Price ran ${L?'down':'up'} into the marked ${ex.kg.tf} gap and the small ${L?'bearish':'bullish'} ${ex.sg.tf} gap is marked inside the move. Click the candle that is the FLIP: the first close ${L?'above':'below'} that small gap.`,C:C.slice(0,Math.min(C.length,ex.fi+12)),ov:[kb,sb],want:[ex.fi],why:`The candle at ${T(ex.fi)} is the first to close ${L?'above':'below'} the small gap (${fm(L?ex.sg.hi:ex.sg.lo)}). A wick through it would not count. The entry is the open of the next candle.`};
+  if(k==='lvl'){const tol=Math.max(2,ex.R*.2);return{...base,kind:'level',topic,q:`INVERTIX ${L?'long':'short'} entered at ${fm(ex.e)}. The stop is ${fm(ex.R,1)} points away (the extreme of the move${ex.cap?', capped at 60':''}). Place the STOP and TP2 (2R).`,C:C.slice(0,ex.en+1),ov:[kb,sb,hlAt(ex.e,'entry',COL.ice,ex.en,{scale:true,pine:1,pcol:INVC.sl,pleft:1})],truth:[{p:ex.stop,tol,label:'stop'},{p:ex.e+ex.dir*2*ex.R,tol:Math.max(tol,ex.R*.3),label:'TP2'}],why:`Stop = entry ${L?'−':'+'} ${fm(ex.R,1)} = ${fm(ex.stop)}. TP2 = entry ${L?'+':'−'} 2 × ${fm(ex.R,1)} = ${fm(ex.e+ex.dir*2*ex.R)}.`}}
+  if(k==='size'){const risk=pick(r,[375,500,750,1000]),z=Math.max(1,Math.floor(risk/(ex.R*2)));return{...base,kind:'num',topic,q:`INVERTIX ${L?'long':'short'}: the stop is ${fm(ex.R,1)} points. Your risk is $${risk} on MNQ ($2 a point). How many contracts, rounded down (minimum 1)?`,ans:z,unit:'',tol:.01,why:`$${risk} ÷ (${fm(ex.R,1)} × $2) = ${(risk/(ex.R*2)).toFixed(2)}, rounded down to ${z}${z===1&&risk/(ex.R*2)<1?' (the minimum of 1; the tab warns if it is more than you wanted)':''}.`}}
+  const o=['Key level','The flip','The order','The result'],i=pick(r,[0,1,2]);const txt=[`Price runs ${L?'down':'up'} into an unfilled ${ex.kg.tf} gap inside the ${ex.m} window.`,`A candle closes ${L?'above':'below'} the small ${L?'bearish':'bullish'} gap inside the move.`,`Market entry at the next open, stop at the extreme of the move, targets at 1R, 2R and 3R.`][i];
+  return{...base,kind:'mcq',topic,q:`Which INVERTIX step is this? "${txt}"`,o:[o[i],...o.filter(x=>x!==o[i]).slice(0,3)],why:'Bias, then the key level, then the flip (the signal), then the order. The key level starts the setup; the flip is the signal.'}}
 function indItem(r){
+  if(typeof IND_INV!=='undefined'&&IND_INV.length&&(typeof IND_ESC==='undefined'||r()<.5))return invItem(r);
   const pool=typeof IND_ESC!=='undefined'?IND_ESC:[];if(!pool.length)return null;
   const ex=pick(r,pool),C=exData(ex),n=escName(ex),NY=ex.m==='ny',base={t0:ex.hm,step:5},topic='Indicator · ESC VLCTY',T=i=>escT(ex,i);
   const kinds=ex.k==='none'?['call']:NY?['tap','dist','call','lvl','size']:['dist','call','lvl','size'],k=pick(r,kinds);
