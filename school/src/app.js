@@ -492,7 +492,7 @@ function pracPaint(){
 }
 function pracPanel(){
   const it=PR.item,kd=K[it.kind],g=PR.fb,box=$('#lesson');
-  const opts=[['mixed','Mixed: any topic'],...(typeof IND_ESC!=='undefined'?[['ind','Indicator signals (ESC VLCTY)']]:[]),['inv','INVERTIX (all lessons)'],['esc','ESC VLCTY (all lessons)'],['exo','ECHO X ORBIT'],...MODS.map(m=>[m.id,`${m.n}. ${m.t}`])];
+  const opts=[['mixed','Mixed: any topic'],...(typeof IND_ESC!=='undefined'?[['ind','Indicator signals (INVERTIX · ESC VLCTY)']]:[]),['inv','INVERTIX (all lessons)'],['esc','ESC VLCTY (all lessons)'],['exo','ECHO X ORBIT'],...MODS.map(m=>[m.id,`${m.n}. ${m.t}`])];
   box.innerHTML=`<div class="les-h"><div class="hud">Practice · no exam, no pass mark</div><div class="h">Practice</div>
    <div style="margin:10px 0 4px"><select id="pTopic" class="in">${opts.map(([v,t])=>`<option value="${v}" ${v===PR.topic?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
    <div class="kv"><span class="chip ok">${PR.ok} right</span><span class="chip">${PR.n} done</span><span class="chip">${esc(it.topic||'Task')}</span></div></div>
