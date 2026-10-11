@@ -644,8 +644,8 @@ var tradingPlanInput = z.object({
 });
 
 // src/lib/practice.ts
-var PRACTICE_MODELS = ["esc", "exo"];
-var PRACTICE_MODEL_LABEL = { esc: "ESC VLCTY", exo: "ECHO X ORBIT" };
+var PRACTICE_MODELS = ["inv", "esc", "exo"];
+var PRACTICE_MODEL_LABEL = { inv: "INVERTIX", esc: "ESC VLCTY", exo: "ECHO X ORBIT" };
 var PRACTICE_TAGS = {
   "early-entry": "Enters before the flip closes",
   "traded-range": "Trades while the range is still building",
@@ -735,16 +735,21 @@ var SCHOOL_MODULES = [
   { id: "m15", n: 26, title: "Trading Psychology & Discipline" },
   { id: "m25", n: 27, title: "A Day in the Life & Your Trading Plan" },
   { id: "m16", n: 28, title: "Putting It All Together: The Complete Read" },
-  { id: "m31", n: 29, title: "ESC VLCTY: The Idea" },
-  { id: "m32", n: 30, title: "ESC VLCTY: The New York Half" },
-  { id: "m33", n: 31, title: "ESC VLCTY: The Asia Half" },
-  { id: "m34", n: 32, title: "ESC VLCTY: Sizing & Risk Modes" },
-  { id: "m35", n: 33, title: "ESC VLCTY: Setup, Fills & Your Routine" },
-  { id: "m36", n: 34, title: "ESC VLCTY: Worked Trades & Make the Call" },
-  { id: "m27", n: 35, title: "ECHO X ORBIT: Two Engines & the Shared Rules" },
-  { id: "m28", n: 36, title: "Echo" },
-  { id: "m29", n: 37, title: "Orbit" },
-  { id: "m30", n: 38, title: "ECHO X ORBIT: Make the Call (Final Exam)" }
+  { id: "m43", n: 29, title: "INVERTIX: The Idea and the Four Steps" },
+  { id: "m44", n: 30, title: "INVERTIX: Bias and the Key Level" },
+  { id: "m45", n: 31, title: "INVERTIX: The Flip, the Entry and the Stop" },
+  { id: "m46", n: 32, title: "INVERTIX: Windows, Management and Sizing" },
+  { id: "m47", n: 33, title: "INVERTIX: The Daily Playbook" },
+  { id: "m31", n: 34, title: "ESC VLCTY: The Idea" },
+  { id: "m32", n: 35, title: "ESC VLCTY: The New York Half" },
+  { id: "m33", n: 36, title: "ESC VLCTY: The Asia Half" },
+  { id: "m34", n: 37, title: "ESC VLCTY: Sizing & Risk Modes" },
+  { id: "m35", n: 38, title: "ESC VLCTY: Setup, Fills & Your Routine" },
+  { id: "m36", n: 39, title: "ESC VLCTY: Worked Trades & Make the Call" },
+  { id: "m27", n: 40, title: "ECHO X ORBIT: Two Engines & the Shared Rules" },
+  { id: "m28", n: 41, title: "Echo" },
+  { id: "m29", n: 42, title: "Orbit" },
+  { id: "m30", n: 43, title: "Make the Call: All Three Models (Final Exam)" }
 ];
 var SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id);
 function summarizeSchool(state, unlocks, attempts) {
