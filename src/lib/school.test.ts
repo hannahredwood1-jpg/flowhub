@@ -9,12 +9,12 @@ test("school summary counts steps, passed modules and exam attempts", () => {
     [{ kind: "ex", ref: "m01", score: 23, total: 25, pass: true, createdAt: "2026-10-01T10:00:00Z" }, { kind: "ck", ref: "b1", score: 1, total: 1, pass: true, createdAt: "2026-10-01T10:00:00Z" }]);
   assert.equal(s.passed, 1);
   assert.equal(s.total, SCHOOL_MODULES.length);
-  assert.equal(s.modules[0].best, 92);
-  assert.equal(s.modules[1].stepsDone, 2);
+  assert.equal(s.modules.find((x) => x.id === "m01")!.best, 92);
+  assert.equal(s.modules.find((x) => x.id === "m19")!.stepsDone, 2);
   assert.equal(s.modules.find((x) => x.id === "m05")!.manualUnlock, true);
-  assert.equal(s.current, "Module 2");
+  assert.equal(s.current, "Module 1");
   assert.equal(s.attempts.length, 1);
-  assert.equal(s.attempts[0].label, "Module 1 exam · Trading Mindset");
+  assert.equal(s.attempts[0].label, "Module 2 exam · Trading Mindset");
 });
 
 test("module list matches the school page content", () => {
