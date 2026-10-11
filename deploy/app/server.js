@@ -644,8 +644,8 @@ var tradingPlanInput = z.object({
 });
 
 // src/lib/practice.ts
-var PRACTICE_MODELS = ["hl", "po3", "dl", "asia", "exo"];
-var PRACTICE_MODEL_LABEL = { dl: "Extended Learning", exo: "ECHO X ORBIT", hl: "H/L", po3: "PO3 \xB7 New York", asia: "PO3 \xB7 Asia" };
+var PRACTICE_MODELS = ["esc", "exo"];
+var PRACTICE_MODEL_LABEL = { esc: "ESC VLCTY", exo: "ECHO X ORBIT" };
 var PRACTICE_TAGS = {
   "early-entry": "Enters before the flip closes",
   "traded-range": "Trades while the range is still building",
@@ -723,20 +723,22 @@ var SCHOOL_MODULES = [
   { id: "m11", n: 14, title: "Time Theory & Session Timing" },
   { id: "m12", n: 15, title: "Funded Accounts & Prop Firms" },
   { id: "m13", n: 16, title: "Building Daily Bias" },
-  { id: "m22", n: 17, title: "Extended Learning: Levels & Range Settlement" },
-  { id: "m14", n: 18, title: "Risk Management" },
-  { id: "m23", n: 19, title: "Trade Management & Spot the Mistake" },
-  { id: "m24", n: 20, title: "Why the Math Works" },
-  { id: "m15", n: 21, title: "Trading Psychology & Discipline" },
-  { id: "m25", n: 22, title: "A Day in the Life & Your Trading Plan" },
-  { id: "m16", n: 23, title: "Full Strategy: The Order Flow Model" },
-  { id: "m17", n: 24, title: "Range, Sweep, Reversal (H/L \xB7 NY ATM)" },
-  { id: "m18", n: 25, title: "AMD / PO3: Accumulation, Manipulation, Distribution" },
-  { id: "m26", n: 26, title: "PO3 in Asia (8 PM\u201312 AM)" },
-  { id: "m27", n: 27, title: "ECHO X ORBIT: Two Engines & the Shared Rules" },
-  { id: "m28", n: 28, title: "Echo" },
-  { id: "m29", n: 29, title: "Orbit" },
-  { id: "m30", n: 30, title: "ECHO X ORBIT: Make the Call (Final Exam)" }
+  { id: "m14", n: 17, title: "Risk Management" },
+  { id: "m23", n: 18, title: "Trade Management & Spot the Mistake" },
+  { id: "m24", n: 19, title: "Why the Math Works" },
+  { id: "m15", n: 20, title: "Trading Psychology & Discipline" },
+  { id: "m25", n: 21, title: "A Day in the Life & Your Trading Plan" },
+  { id: "m16", n: 22, title: "Putting It All Together: The Complete Read" },
+  { id: "m31", n: 23, title: "ESC VLCTY: The Idea" },
+  { id: "m32", n: 24, title: "ESC VLCTY: The New York Half" },
+  { id: "m33", n: 25, title: "ESC VLCTY: The Asia Half" },
+  { id: "m34", n: 26, title: "ESC VLCTY: Sizing & Risk Modes" },
+  { id: "m35", n: 27, title: "ESC VLCTY: Setup, Fills & Your Routine" },
+  { id: "m36", n: 28, title: "ESC VLCTY: Worked Trades & Make the Call" },
+  { id: "m27", n: 29, title: "ECHO X ORBIT: Two Engines & the Shared Rules" },
+  { id: "m28", n: 30, title: "Echo" },
+  { id: "m29", n: 31, title: "Orbit" },
+  { id: "m30", n: 32, title: "ECHO X ORBIT: Make the Call (Final Exam)" }
 ];
 var SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id);
 function summarizeSchool(state, unlocks, attempts) {
@@ -1539,7 +1541,7 @@ app.patch("/api/local-accounts/:id", async (c) => {
 app.all("/api/*", () => {
   throw new HttpError(404, "Not found");
 });
-var ASSET_TYPES = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8", "classic.html": "text/html; charset=utf-8", "practice.html": "text/html; charset=utf-8" };
+var ASSET_TYPES = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8", "practice.html": "text/html; charset=utf-8" };
 var assetCache = /* @__PURE__ */ new Map();
 async function asset(path) {
   const hit = assetCache.get(path);
@@ -1593,7 +1595,7 @@ var SHELL = `<!doctype html>
 </body></html>`;
 var pageHtml = /* @__PURE__ */ new Map();
 var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">Home</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-var PAGES = [["school", "/school", "school"], ["classic", "/school/classic", "school"], ["practice", "/practice", "practice"]];
+var PAGES = [["school", "/school", "school"], ["practice", "/practice", "practice"]];
 for (const [name, route, current] of PAGES) {
   app.get(route, async (c) => {
     const user = await currentUser(c);

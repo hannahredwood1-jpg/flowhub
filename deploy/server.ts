@@ -785,7 +785,7 @@ app.patch("/api/local-accounts/:id", async (c) => {
 app.all("/api/*", () => { throw new HttpError(404, "Not found"); });
 
 // ── Static app: gzipped files shipped next to server.js (repo deploys), else the "AppAsset" table ─
-const ASSET_TYPES: Record<string, string> = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8", "classic.html": "text/html; charset=utf-8", "practice.html": "text/html; charset=utf-8" };
+const ASSET_TYPES: Record<string, string> = { "app.js": "text/javascript; charset=utf-8", "app.css": "text/css; charset=utf-8", "school.html": "text/html; charset=utf-8", "practice.html": "text/html; charset=utf-8" };
 const assetCache = new Map<string, { type: string; body: Uint8Array; etag: string }>();
 async function asset(path: string) {
   const hit = assetCache.get(path);
@@ -840,7 +840,7 @@ const fhNav = (user: UserRow, current: "school" | "practice") =>
   `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">Home</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a>` +
   `<a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>` +
   `${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-const PAGES: [asset: string, route: string, current: "school" | "practice"][] = [["school", "/school", "school"], ["classic", "/school/classic", "school"], ["practice", "/practice", "practice"]];
+const PAGES: [asset: string, route: string, current: "school" | "practice"][] = [["school", "/school", "school"], ["practice", "/practice", "practice"]];
 for (const [name, route, current] of PAGES) {
   app.get(route, async (c) => {
     const user = await currentUser(c);

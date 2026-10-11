@@ -189,63 +189,6 @@ function openScn(r,{dir='up'}={}){
   if(dir==='down')out={...out,C:mirrorC(C,P),lo:2*P-(P+R/2)};
   return out;
 }
-/* ---- AMD / PO3 ---- */
-function amdScn(r,{htf='up',brk='against',reveal=true}={}){
-  // htf: higher-timeframe trend. brk: 'against' (manipulation, then distribution with the trend) or 'with' (the break IS distribution)
-  const s=4+r()*3,P=basePrice(r),U=8*s;
-  const ctx=legsBuild(r,P,s,[{d:1,n:4,mag:U},{d:-1,n:3,mag:U*.4},{d:1,n:4,mag:U*.7}]);
-  const C=ctx.C;let p=C[C.length-1].c;const R=5*s,hi=p+R*.4,lo=hi-R,a0=C.length;
-  const ac=rangeC(C,r,s,9,lo,hi,p);p=ac.p;const a1=C.length-1;
-  const m0=C.length;let ext;
-  if(brk==='against'){ // sweep the low, trap sellers, then distribute up
-    for(let k=0;k<3;k++){const o=p,c=lo-(.5+k*.6+r()*.3)*s;C.push(mk(o,Math.min(o+.2*s,hi),c-.25*s*r(),c));p=C[C.length-1].c}
-    ext=p;const m1=C.length-1;
-    for(let k=0;k<6;k++){const o=p,c=o+(1.3+r()*.9)*s;C.push(mk(o,c+.25*s*r(),o-.2*s*r(),c));p=C[C.length-1].c}
-    var man=[m0,m1],dist0=m1+1;
-  } else {            // a genuine break upward: distribution with the trend
-    for(let k=0;k<6;k++){const o=p,c=Math.max(o,hi)+(.9+r()*.9)*s;C.push(mk(o,c+.25*s*r(),o-.2*s*r(),c));p=C[C.length-1].c}
-    var man=null,dist0=m0;
-  }
-  let out={C,acc:{i0:a0,i1:a1,lo,hi},man,dist0,htf,brk,ctxEnd:ctx.C.length-1,s,P,cut:brk==='against'?man[1]+2:dist0+2};
-  if(htf==='down'){const M=P;out={...out,C:mirrorC(C,M),acc:{i0:a0,i1:a1,lo:2*M-hi,hi:2*M-lo}}}
-  return out;
-}
-/* ---- range → sweep → reversal (NY ATM / H-L). 5-minute candles from 07:00 ---- */
-function atmScn(r,{side='low',trigger='ifvg',early=true,sweep=true}={}){
-  const s=5+r()*3,P=basePrice(r),C=[],RH=q4(P+7*s),RL=q4(P-7*s);
-  const rg=rangeC(C,r,s,30,RL,RH,P);                       // 07:00–09:25: the range window (30 candles)
-  const open=C.length;let p=rg.p;
-  const idle=n=>{for(let k=0;k<n;k++){const o=p,c=RL+(7+r()*5)*s*.55+(r()-.5)*s;C.push(mk(o,Math.min(RH-.5*s,Math.max(o,c)+.35*s*r()),Math.max(RL+.6*s,Math.min(o,c)-.35*s*r()),c));p=C[C.length-1].c}};
-  const out={C,RH,RL,range:{i0:0,i1:open-1,iHi:rg.iHi,iLo:rg.iLo},open,side,trigger,early,sweep,s,P,t0:420};
-  if(!sweep){idle(14);out.cut=C.length-1;return side==='low'?out:mirrorATM(out)}
-  idle(early?(trigger==='ifvg'?Math.floor(r()*3):0):8+Math.floor(r()*3));
-  const u=s;
-  const c1=mk(RL+1.4*u,RL+1.5*u,RL+.7*u,RL+.9*u);C.push(c1);                          // swing high before the drop
-  const c2=mk(RL+.8*u,RL+.85*u,RL-.9*u,RL-.8*u);C.push(c2);out.sweepI=C.length-1;       // the sweep: trades through the range low
-  const c3=mk(RL-.7*u,RL+.2*u,RL-1.0*u,RL-.3*u);C.push(c3);out.extreme={p:RL-1.0*u,i:C.length-1};
-  out.swingHigh={p:c1.h,i:C.length-3};
-  if(trigger==='ifvg'){                                                                // bearish FVG left by the drop, then price closes back above it
-    out.zone={lo:q4(c3.h),hi:q4(c1.l),i0:C.length-3,i2:C.length-1,type:'bear'};
-    C.push(mk(RL-.3*u,RL+.95*u,RL-.4*u,RL+.85*u));out.entryI=C.length-1;out.entry=C[out.entryI].c;
-  } else {                                                                             // structure shift: close above the swing high, leaving a bullish FVG
-    const d1=mk(RL-.3*u,RL+.9*u,RL-.4*u,RL+.8*u);C.push(d1);
-    const d2=mk(RL+.7*u,RL+2.2*u,RL+.65*u,RL+2.0*u);C.push(d2);out.mssI=C.length-1;
-    const d3=mk(RL+1.9*u,RL+2.9*u,RL+1.75*u,RL+2.6*u);C.push(d3);
-    out.zone={lo:q4(d1.h),hi:q4(d3.l),i0:C.length-3,i2:C.length-1,type:'bull'};out.entryI=C.length-1;out.entry=q4((out.zone.lo+out.zone.hi)/2);
-  }
-  p=C[C.length-1].c;const tgt=RH-.4*s;
-  for(let k=0;k<7;k++){const o=p,c=Math.min(tgt,o+(tgt-o)*.35+.4*s);C.push(mk(o,Math.min(RH-.1*s,c+.35*s*r()),o-.3*s*r(),c));p=C[C.length-1].c}
-  out.stop=out.extreme.p;out.target=RH;out.cut=C.length-1;
-  out.aplus=(out.entryI-open)<6; // the sweep AND the entry complete inside the first 30 minutes of the window (6 candles)
-  return side==='low'?out:mirrorATM(out);
-}
-function mirrorATM(o){
-  const M=o.P,f=p=>p==null?p:2*M-p,r={...o,C:mirrorC(o.C,M),RH:f(o.RL),RL:f(o.RH),side:'high'};
-  if(o.zone)r.zone={...o.zone,lo:f(o.zone.hi),hi:f(o.zone.lo),type:o.zone.type==='bear'?'bull':'bear'};
-  if(o.extreme)r.extreme={...o.extreme,p:f(o.extreme.p)};if(o.swingHigh)r.swingHigh={...o.swingHigh,p:f(o.swingHigh.p)};
-  if(o.entry!=null)r.entry=f(o.entry);if(o.stop!=null)r.stop=f(o.stop);if(o.target!=null)r.target=f(o.target);
-  return r;
-}
 /* ---- the full order-flow model on one chart: potential → confirmation → continuation → exit (short setup; 'low' side is mirrored) ---- */
 function modelScn(r,{side='high'}={}){
   const s=5+r()*3,P=basePrice(r);

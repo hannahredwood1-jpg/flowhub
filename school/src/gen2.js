@@ -95,39 +95,3 @@ function orbitTry(r,side,rho0,force){
   return out;
 }
 
-/* ---- PLC: a bullish FVG, then a pullback whose swing low sits INSIDE the gap and holds. 1-hour candles from 06:00. short = mirror (PHC) ---- */
-function plcScn(r,{side='long'}={}){
-  const s=4.5+r()*2,P=basePrice(r),{C}=legsBuild(r,P,s,[{d:-1,n:4,mag:3*s}]),L=C[C.length-1],push=c=>C.push(c);
-  const k1=mk(L.c,L.c+1.0*s,L.c-.2*s,L.c+.8*s);push(k1);const k2=mk(k1.c,k1.c+3.0*s,k1.c-.1*s,k1.c+2.8*s);push(k2);const k3=mk(k2.c,k2.c+.8*s,k2.c-.1*s,k2.c+.6*s);push(k3);
-  const gap={lo:k1.h,hi:k3.l,i0:C.length-3,i1:C.length-1};
-  const p1=mk(k3.c,k3.c+.1*s,gap.lo+(gap.hi-gap.lo)*.3,gap.lo+(gap.hi-gap.lo)*.75);push(p1);const plcI=C.length-1,plc=p1.l;
-  let p=p1.c;for(let k=0;k<6;k++){const o=p,c=o+(.7+r()*.6)*s;push(mk(o,c+.2*s*r(),o-.1*s*r(),c));p=C[C.length-1].c}
-  let out={C,t0:360,step:60,s,P,side:'long',gap,plcI,plc};
-  if(side==='short'){const f=x=>2*P-x;out={...out,C:mirrorC(C,P),side:'short',gap:{...gap,lo:f(gap.hi),hi:f(gap.lo)},plc:f(plc)}}
-  return out;
-}
-/* ---- Range Settlement: 08:00–09:25 range, the 9:30 open below RS (dir 'up' = draw up), price is pulled to RS, then fades ---- */
-function rsScn(r,{dir='up'}={}){
-  const s=4.5+r()*2,P=basePrice(r),C=[],RS=q4(P+9*s);let p=rangeC(C,r,s,18,P-3*s,P+3*s,P).p;
-  for(let k=0;k<30&&C[C.length-1].h<RS;k++){const o=p,c=Math.min(RS+.2*s,o+(1+r()*.8)*s);C.push(mk(o,c+.2*s*r(),o-.15*s*r(),c));p=C[C.length-1].c}
-  const fillI=C.findIndex((c,i)=>i>=18&&c.h>=RS);
-  for(let k=0;k<4;k++){const o=p,c=o-(.3+r()*.7)*s;C.push(mk(o,o+.1*s*r(),c-.2*s*r(),c));p=C[C.length-1].c}
-  let out={C,t0:480,s,P,RS,openI:18,fillI,dir:'up'};
-  if(dir==='down'){const f=x=>2*P-x;out={...out,C:mirrorC(C,P),RS:f(RS),dir:'down'}}
-  return out;
-}
-/* ---- Asia PO3 (long): a bullish key-level gap, drift up, a drop into the key level (small bearish gap = IFG), the close back through it, then 1:1. 5-minute candles from 20:00 ---- */
-function asiaScn(r,{side='long'}={}){
-  const s=4.5+r()*2,P=basePrice(r),{C}=legsBuild(r,P,s,[{d:-1,n:3,mag:2.5*s}]),L=C[C.length-1],push=c=>C.push(c);
-  const k1=mk(L.c,L.c+1.0*s,L.c-.2*s,L.c+.8*s);push(k1);const k2=mk(k1.c,k1.c+3.0*s,k1.c-.1*s,k1.c+2.8*s);push(k2);const k3=mk(k2.c,k2.c+.8*s,k2.c-.1*s,k2.c+.6*s);push(k3);
-  const KL={lo:k1.h,hi:k3.l,i0:C.length-3,i1:C.length-1};let p=k3.c;
-  for(let k=0;k<4;k++){const o=p,c=o+.8*s;push(mk(o,c+.15*s,o-.1*s,c));p=C[C.length-1].c}
-  const m1=mk(p,p+.1*s,p-1.1*s,p-1.0*s);push(m1);const m2=mk(m1.c,m1.c+.1*s,m1.c-2.3*s,m1.c-2.2*s);push(m2);const m3=mk(m2.c,m2.c+.1*s,m2.c-.9*s,m2.c-.6*s);push(m3);const lowI=C.length-1;
-  const ifg={lo:m3.h,hi:m1.l,i0:lowI-2,i1:lowI};
-  const x=mk(m3.c,m3.c+.4*s,m3.c-.1*s,m3.c+.3*s);push(x);const inv=mk(x.c,ifg.hi+.7*s,x.c-.05*s,ifg.hi+.5*s);push(inv);const invI=C.length-1;
-  const entry=q4(inv.c),stop=q4(m3.l-.3*s),target=q4(entry+(entry-stop));p=inv.c;
-  for(let k=0;k<20&&C[C.length-1].h<target;k++){const o=p,c=Math.min(target+.3*s,o+(1.2+r()*.5)*s);push(mk(o,c+.2*s*r(),o-.15*s*r(),c));p=C[C.length-1].c}
-  let out={C,t0:1200,s,P,side:'long',KL,lowI,ifg,invI,entry,stop,target,low:m3.l};
-  if(side==='short'){const f=y=>2*P-y;out={...out,C:mirrorC(C,P),side:'short',KL:{...KL,lo:f(KL.hi),hi:f(KL.lo)},ifg:{...ifg,lo:f(ifg.hi),hi:f(ifg.lo)},entry:f(entry),stop:f(stop),target:f(target),low:f(out.low)}}
-  return out;
-}
