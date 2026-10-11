@@ -412,15 +412,14 @@ function gradCard(){
    <p style="margin-top:10px;font-size:14px"><b>Have ready for the call:</b></p><ul class="muted" style="font-size:14px;margin:4px 0 0 18px"><li>Your TradingView account (a paid plan is recommended) and your TradingView username: the indicator is shared to it</li><li>Zoom installed, on a computer (not your phone)</li><li>Never send a password in Discord</li></ul>
    <p style="margin-top:12px;font-size:14px"><b>Book it:</b> send Hannah a DM on Discord with the message below.</p><textarea class="in" id="bookMsg" readonly rows="6" style="margin-top:6px">${esc(BOOK_MSG)}</textarea>
    <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a></div></div>`}
-const IG_HANDLE='';/* Hannah's Instagram username, without the @. While it is empty the card tells people to message Hannah on Instagram without a link. */
 const ESC_MSG='Hi Hannah! I finished the ESC VLCTY section of the FLOWMTD Trading School. I\'d like to book a Zoom call to get access to the ESC VLCTY indicator, and I have a few questions too. My TradingView username is: ';
 function escCard(){
   return `<div class="card" style="padding:20px 22px;margin:14px 0 0;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">ESC VLCTY complete</div><h3 class="h" style="font-size:20px;margin:6px 0 8px">Get the ESC VLCTY indicator</h3>
-   <p class="muted" style="font-size:14px;max-width:62ch">You now know the whole model. To get access to the <b>ESC VLCTY indicator</b> on your own TradingView chart, <b>send Hannah a DM on Instagram${IG_HANDLE?` (<a href="https://ig.me/m/${esc(IG_HANDLE)}" target="_blank" rel="noopener">@${esc(IG_HANDLE)}</a>)`:''}</b> to set up a Zoom call.</p>
+   <p class="muted" style="font-size:14px;max-width:62ch">You now know the whole model. To get access to the <b>ESC VLCTY indicator</b> on your own TradingView chart, <b>send Hannah a DM on Discord</b> to set up a Zoom call.</p>
    <p class="muted" style="font-size:14px;max-width:62ch">The call is also the place to <b>ask any questions you have</b>, about ESC VLCTY, the other models or your own trading.</p>
    <p style="margin-top:10px;font-size:14px"><b>Have ready for the call:</b> your TradingView account and username (the indicator is shared to it), Zoom on a computer, and never send a password in a DM.</p>
    <textarea class="in" id="escMsg" readonly rows="4" style="margin-top:8px">${esc(ESC_MSG)}</textarea>
-   <div class="row" style="margin-top:8px"><button class="btn" id="copyEsc">Copy message</button>${IG_HANDLE?`<a class="btn" href="https://ig.me/m/${esc(IG_HANDLE)}" target="_blank" rel="noopener">Open Instagram</a>`:''}</div></div>`}
+   <div class="row" style="margin-top:8px"><button class="btn" id="copyEsc">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a></div></div>`}
 document.addEventListener('click',e=>{
   if(e.target.closest('#copyEsc')){const b=e.target.closest('#copyEsc');try{navigator.clipboard.writeText(ESC_MSG).then(()=>{b.textContent='Copied'},()=>{b.textContent='Select and copy above'})}catch(x){b.textContent='Select and copy above'}}
   if(e.target.closest('#certBtn')){const n=($('#certName').value||'').trim();if(!n){toast('Type your name for the certificate.');return}
@@ -545,21 +544,19 @@ function introPlay(){
     const T=(now-t0)/DUR;if(T>=1){end();return}
     const sec=(now-t0)/1000,asm=ease(T/.3),open=ease((T-.3)/.3),fly=ease((T-.52)/.46);
     cx.fillStyle='#030405';cx.fillRect(0,0,W,H);
-    const bg=cx.createRadialGradient(ox,oy,0,ox,oy,R*1.8);bg.addColorStop(0,'rgba(140,196,255,'+(.07+.1*open)+')');bg.addColorStop(.6,'rgba(255,106,0,.03)');bg.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=bg;cx.fillRect(0,0,W,H);
-    const k=1+Math.pow(fly,2.2)*26;cx.save();cx.translate(ox,oy);cx.scale(k,k);
+    const k=1+Math.pow(fly,2)*7;cx.save();cx.translate(ox,oy);cx.scale(k,k);
     const lw=1/k;
     // the seam: light coming out of the gap as the hemispheres part
     const gap=open*R*.62;
-    if(open>0){const gw=Math.max(4,gap*1.5),sa=.6*open*(1-fly);cx.save();cx.scale(1,R*1.05/gw);const lg=cx.createRadialGradient(0,0,0,0,0,gw);lg.addColorStop(0,'rgba(255,200,150,'+sa+')');lg.addColorStop(.45,'rgba(255,106,0,'+(sa*.45)+')');lg.addColorStop(1,'rgba(255,106,0,0)');cx.fillStyle=lg;cx.beginPath();cx.arc(0,0,gw,0,6.283);cx.fill();cx.restore()}
+    if(open>0){cx.lineWidth=lw;cx.strokeStyle='rgba(140,196,255,'+(.35*open*(1-fly))+')';cx.beginPath();cx.moveTo(0,-R*.9);cx.lineTo(0,R*.9);cx.stroke()}
     const place=n=>({x:n.x+n.sd*gap,y:n.y,});
     for(const sd of [-1,1]){cx.save();cx.rotate(sd*open*.1);cx.lineWidth=1.4*lw;cx.strokeStyle='rgba(140,196,255,'+(.16*asm)+')';cx.beginPath();cx.ellipse(sd*(R*.5+gap),0,R*.66,R*.84,sd*.12,0,6.283);cx.stroke();cx.restore()}
     cx.lineWidth=lw;cx.strokeStyle='rgba(140,196,255,'+(.16*asm)+')';cx.beginPath();
     for(const [a,b] of edges){const A=nodes[a],B=nodes[b];if(asm<A.at+.2&&asm<1)continue;const pa=place(A),pb=place(B);cx.moveTo(pa.x,pa.y);cx.lineTo(pb.x,pb.y)}cx.stroke();
     for(const n of nodes){const vis=clamp((asm-n.at)/.5);if(vis<=0)continue;const p=place(n),a=(.35+.35*Math.sin(sec*1.6+n.ph))*vis;cx.fillStyle='rgba(140,196,255,'+a+')';cx.beginPath();cx.arc(p.x,p.y,(1.8+open*n.z)*lw*(fly>0?1+fly*1.5:1),0,6.283);cx.fill()}
-    for(const q of pulses){const e=edges[q.e],A=place(nodes[e[0]]),B=place(nodes[e[1]]),u=(sec*q.v+q.o)%1,x=A.x+(B.x-A.x)*u,y=A.y+(B.y-A.y)*u,rr=10*lw*(1+open*1.2),gl=cx.createRadialGradient(x,y,0,x,y,rr);gl.addColorStop(0,'rgba(255,106,0,'+(.95*asm)+')');gl.addColorStop(1,'rgba(255,106,0,0)');cx.fillStyle=gl;cx.beginPath();cx.arc(x,y,rr,0,6.283);cx.fill()}
+    for(const q of pulses){const e=edges[q.e],A=place(nodes[e[0]]),B=place(nodes[e[1]]),u=(sec*q.v+q.o)%1,x=A.x+(B.x-A.x)*u,y=A.y+(B.y-A.y)*u,rr=2.6*lw*(1+open*.6);cx.fillStyle='rgba(255,106,0,'+(.95*asm)+')';cx.beginPath();cx.arc(x,y,rr,0,6.283);cx.fill()}
     cx.restore();
     // bloom as we pass through the gap, then the school behind it
-    if(fly>0){const br=R*(.08+fly*1.6),bl=cx.createRadialGradient(ox,oy,0,ox,oy,br);bl.addColorStop(0,'rgba(255,225,190,'+(.85*Math.min(1,fly*2.2))+')');bl.addColorStop(.5,'rgba(255,106,0,'+(.3*fly)+')');bl.addColorStop(1,'rgba(255,106,0,0)');cx.fillStyle=bl;cx.fillRect(0,0,W,H)}
     const wash=ease((T-.8)/.16);if(wash>0){cx.fillStyle='rgba(3,4,5,'+wash+')';cx.fillRect(0,0,W,H)}
     o.style.opacity=T>.9?Math.max(0,1-(T-.9)/.1):1;
     raf=requestAnimationFrame(frame)};
