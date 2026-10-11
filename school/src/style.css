@@ -54,7 +54,7 @@ b,strong{font-weight:650}
 .stat{min-width:118px;padding:12px 15px}
 .stat b{display:block;font-family:var(--f-mono);font-size:24px;font-weight:500;letter-spacing:-.02em}
 .stat span{font-size:12px;color:var(--ink3)}
-.loop{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:12px}
+.loop{display:grid;grid-template-columns:repeat(3,1fr);margin-bottom:12px}
 .loop>div{padding:15px 18px;border-right:1px solid var(--line)}
 .loop>div:last-child{border:0}
 .loop i{font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--signal)}

@@ -3,14 +3,14 @@
 ============================================================ */
 const LS='fh-school-v2',LSX='fh-school-v2-txt';
 let PROG={m:{}},TXT={},UNLOCKS=[],LIVE=false,WHO='';
-const BLANK=()=>({s:[0,0,0,0],p:0,sc:0,a:1,n:0,at:0});
+const BLANK=()=>({s:[0,0,0],p:0,sc:0,a:1,n:0,at:0});
 const pm=id=>PROG.m[id]||(PROG.m[id]=BLANK());
 try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(j&&j.m)PROG=j}catch(e){}
 try{TXT=JSON.parse(localStorage.getItem(LSX)||'{}')||{}}catch(e){TXT={}}
 const compact=()=>({m:Object.fromEntries(Object.entries(PROG.m).map(([k,v])=>[k,{s:v.s.join(''),p:v.p?1:0,sc:v.sc|0,a:v.a|0,n:v.n|0,at:v.at|0}]))});
 function mergeServer(v2){
   if(!v2||!v2.m)return;
-  for(const [id,s] of Object.entries(v2.m)){const l=pm(id),bits=String(s.s||'0000').split('').map(Number),a=s.a|0||1;
+  for(const [id,s] of Object.entries(v2.m)){const l=pm(id),bits=String(s.s||'000').split('').slice(0,3).map(Number),a=s.a|0||1;
     if(a>l.a){l.a=a;l.s=bits;l.n=Math.max(l.n,s.n|0)}else if(a===l.a){l.s=l.s.map((x,i)=>x||bits[i]||0);l.n=Math.max(l.n,s.n|0)}
     if(s.p&&!l.p){l.p=1;l.sc=s.sc|0;l.at=s.at|0}else if(s.p&&l.p){l.sc=Math.max(l.sc,s.sc|0)}}
   persist(false)}
@@ -24,13 +24,14 @@ async function logAttempt(id,score,total,pass){if(!LIVE)return;try{await fetch('
 
 /* ---------- module helpers ---------- */
 const modIdx=id=>MODS.findIndex(m=>m.id===id);
-const FIRST_CORE=MODS.findIndex(m=>m.ph>0);
-/* Foundations (phase 1) are open from the start and optional. Everything after them unlocks one module at a time, starting with the first core module. */
-const modUnlocked=i=>MODS[i].ph===0||i===FIRST_CORE||pm(MODS[i-1].id).p||UNLOCKS.includes(MODS[i].id)||UNLOCKS.includes('all');
+const FIRST_CORE=MODS.findIndex(m=>m.ph>0),ESC_FIRST='m31';
+/* Beginner Basics (phase 1) are open from the start and optional. Everything after them unlocks one module at a time, starting with the first Foundations module.
+   ESC VLCTY never opens by passing the exam before it: it needs a manual unlock from Hannah once the trader shows a funded-account certificate. ECHO X ORBIT and the final exam follow it. */
+const modUnlocked=i=>{const m=MODS[i];if(UNLOCKS.includes(m.id)||UNLOCKS.includes('all')||m.ph===0||i===FIRST_CORE)return true;if(m.id===ESC_FIRST)return false;return !!pm(MODS[i-1].id).p};
 const modStatus=i=>pm(MODS[i].id).p?'done':modUnlocked(i)?'active':'locked';
 const stepsDone=m=>pm(m.id).s.filter(Boolean).length;
 const currentIdx=()=>{const i=MODS.findIndex((m,k)=>!pm(m.id).p&&modUnlocked(k));return i<0?MODS.length-1:i};
-const STEPS=['Learn','See it','Mark it','Explain','Exam'],STEP_KEYS=['learn','see','mark','explain','ready'];
+const STEPS=['Learn','See it','Mark it','Exam'],STEP_KEYS=['learn','see','mark','ready'];
 const PASS=.8;
 const passNeeded=n=>Math.ceil(n*PASS-1e-9);
 
@@ -62,24 +63,24 @@ function renderMap(){
   if(OPEN==null)OPEN=cur.id;
   let html='',ph=-1;
   MODS.forEach((m,i)=>{
-    if(m.ph!==ph){if(ph>=0)html+=(ph===7&&pm('m36').p?escCard():'')+'</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
+    if(m.ph!==ph){if(ph>=0)html+=(ph===ESC_PH&&pm('m36').p?escCard():'')+'</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
     html+=modRow(m,i)});
   html+='</div></section>';
   $('#phases').innerHTML=(pm('m30').p?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">Course complete.</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
   $('#aside').innerHTML=`<div class="card next-card"><div class="hud">${finished?'All modules passed':'Up next'}</div><div class="h">${cur.n}. ${cur.t}</div>
-    <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':`Step <b>${Math.min(stepsDone(cur)+1,5)}</b> of 5: ${STEPS[Math.min(stepsDone(cur),4)]}`}</p>
-    <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:stepsDone(cur)/5*100}%"></i></div>
+    <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':`Step <b>${Math.min(stepsDone(cur)+1,4)}</b> of 4: ${STEPS[Math.min(stepsDone(cur),3)]}`}</p>
+    <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:stepsDone(cur)/4*100}%"></i></div>
     <a class="btn primary" href="#/${cur.id}">${finished?'Review lessons':stepsDone(cur)?'Continue':'Start'} →</a></div>
-  <div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>Your own written explanation submitted</li><li>An exam of ${PASS*100}% or better on a set you've never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>
+  <div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of ${PASS*100}% or better on a set you've never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>
   <div class="card"><h3 class="h">Practice, not real money</h3><p class="muted" style="font-size:13.5px">Nothing in the school uses real money. Before real or funded capital, the strategy gets proven on a demo account, in your journal, with your own numbers.</p></div>`;
 }
 function modRow(m,i){
   const st=modStatus(i),P=PH[m.ph],open=OPEN===m.id,p=pm(m.id);let chip;
   if(st==='done')chip=`<span class="chip ok">✓ Passed · ${p.sc}%</span>`;
-  else if(st==='active')chip=`<span class="chip live">${p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/4 steps${m.ph===0?' · optional':''}</span>`;
+  else if(st==='active')chip=`<span class="chip live">${p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/3 steps${m.ph===0?' · optional':''}</span>`;
   else chip=`<span class="chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Locked</span>`;
   const prev=MODS[i-1]?MODS[i-1].t:'';let act;
-  if(st==='locked')act=`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
+  if(st==='locked')act=m.id===ESC_FIRST?`<div class="pcheck"><b>Unlocked by Hannah.</b> ESC VLCTY opens once you have proven a funded account. Send your funded-account certificate to Hannah on Discord and she will open this phase for you.</div>`:`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
   else act=`<a class="btn primary" href="#/${m.id}">${st==='done'?'Review lesson':stepsDone(m)?'Continue lesson':'Start lesson'} →</a>${p.a>1&&st!=='done'?`<span class="chip bad">Attempt ${p.a}: new exam set</span>`:''}`;
   const hist=p.n?`<div style="grid-column:1/-1"><span class="hud">Exam attempts: ${p.n}</span></div>`:'';
   return `<article class="mod ${st}" data-id="${m.id}"><button class="mod-h" data-tog="${m.id}" aria-expanded="${open}">
@@ -87,7 +88,7 @@ function modRow(m,i){
     <span class="mod-m">${m.flag?`<span class="chip">${m.flag}</span>`:''}${chip}</span></button>
     <div class="mod-b" ${open?'':'hidden'}>
       <div><h4 class="hud">What you'll learn</h4><ul>${m.ls.map(x=>`<li>${x}</li>`).join('')}</ul></div>
-      <div><h4 class="hud">Practice on your own chart</h4><p>${m.task}</p><h4 class="hud" style="margin-top:14px">Then prove it</h4><p>A written explanation, then an exam with fresh charts and numbers each attempt. ${PASS*100}% to pass.</p></div>
+      <div><h4 class="hud">Practice on your own chart</h4><p>${m.task}</p><h4 class="hud" style="margin-top:14px">Then prove it</h4><p>An exam with fresh charts and numbers each attempt. ${PASS*100}% to pass.</p></div>
       ${hist}<div class="act">${act}</div></div></article>`;
 }
 $('#v-map').addEventListener('click',e=>{const b=e.target.closest('[data-tog]');if(!b)return;OPEN=OPEN===b.dataset.tog?null:b.dataset.tog;renderMap()});
@@ -96,7 +97,7 @@ $('#v-map').addEventListener('click',e=>{const b=e.target.closest('[data-tog]');
    LESSON WORKSPACE
 ============================================================ */
 let LAB=null,CH=null,CH2=null,TB=null;
-const firstOpenStep=m=>{const s=pm(m.id).s,i=s.findIndex(x=>!x);return i<0?4:i};
+const firstOpenStep=m=>{const s=pm(m.id).s,i=s.findIndex(x=>!x);return i<0?3:i};
 function newLab(m,step){const t=TXT[m.id]||{};return{m,step,see:0,recall:null,dn:0,dd:0,drill:null,t:t.t||['',''],sub:!!t.sub,ticks:t.ticks||{},tf:1,sc:null}}
 const storeTxt=()=>{TXT[LAB.m.id]={t:LAB.t,sub:LAB.sub,ticks:LAB.ticks};saveTxt()};
 function ensureCharts(){
@@ -143,7 +144,7 @@ function paintChart(refit){
 }
 const seeSteps=(m,sc)=>{if(!m._see)m._see=m.see(sc).map(s=>({...s,cap:refx(s.cap),html:refx(s.html)}));return m._see};
 
-function stepper(){const m=LAB.m,s=pm(m.id).s;return `<div class="steps">${STEPS.map((x,i)=>`<button type="button" data-step="${i}" class="${LAB.step===i?'on':''} ${i<4&&s[i]?'done':''}"><i></i>${x}</button>`).join('')}</div>`}
+function stepper(){const m=LAB.m,s=pm(m.id).s;return `<div class="steps">${STEPS.map((x,i)=>`<button type="button" data-step="${i}" class="${LAB.step===i?'on':''} ${i<3&&s[i]?'done':''}"><i></i>${x}</button>`).join('')}</div>`}
 function renderLesson(){
   const L=LAB,m=L.m,p=pm(m.id);let body='',foot='';
   const learnDone=p.s[0];
@@ -164,22 +165,13 @@ function renderLesson(){
   if(L.step===2){
     if(!L.drill&&L.dd<3)newDrill();
     body=`<div id="markBody"></div>`;
-    foot=`<button class="btn" data-prev>← Back</button><button class="btn primary" data-next ${p.s[2]?'':'disabled'}>Explain it →</button>`;
+    foot=`<button class="btn" data-prev>← Back</button><button class="btn primary" data-next ${p.s[2]?'':'disabled'}>Exam checklist →</button>`;
   }
   if(L.step===3){
-    const ex=m.explain,ok=L.t.every(t=>words(t)>=20),need=Math.ceil(ex.ideas.length*.75),tk=Object.values(L.ticks).filter(Boolean).length;
-    body=`<h3>Say it in your own words</h3><p>Write what you'd tell someone who has never seen a chart. No copied definitions. At least 20 words each.</p>
-    ${ex.prompts.map((q,i)=>`<p><b>${i+1}. ${q}</b></p><textarea id="t${i}" rows="4" placeholder="…" ${L.sub?'disabled':''}>${esc(L.t[i]||'')}</textarea><div class="wc" data-wc="${i}">${words(L.t[i]||'')} words</div>`).join('')}
-    ${L.sub?`<div class="callout key"><span class="hud">Check yourself</span><p>Tick the ideas your answers <b>actually contained</b>. Be honest, this is for you. Fewer than ${need} ticks means a re-read of <b>Learn</b> before the exam.</p>
-      ${ex.ideas.map((t,k)=>`<label class="chk"><input type="checkbox" data-tick="${k}" ${L.ticks[k]?'checked':''}><span>${t}</span></label>`).join('')}
-      <p class="num" style="font-size:12px">${tk} / ${ex.ideas.length} ticked (${need} needed)</p></div>`:`<button class="btn primary" data-sub ${ok?'':'disabled'}>Submit my explanation</button>`}
-    <div class="callout def"><span class="hud">Then, on your own chart</span><p>${m.task}</p></div>`;
-    foot=`<button class="btn" data-prev>← Back</button><button class="btn primary" data-next ${p.s[3]?'':'disabled'}>Exam checklist →</button>`;
-  }
-  if(L.step===4){
-    const items=[['Learn: lesson read',p.s[0]],['See it: worked example complete',p.s[1]],['Mark it: chart tasks done correctly',p.s[2]],['Explain it: written answers submitted and self-checked',p.s[3]]],all=items.every(x=>x[1]),n=examSize(m);
+    const items=[['Learn: lesson read',p.s[0]],['See it: worked example complete',p.s[1]],['Mark it: chart tasks done correctly',p.s[2]]],all=items.every(x=>x[1]),n=examSize(m);
     body=`<h3>Ready for the exam?</h3><ul class="req">${items.map(([t,o])=>`<li class="${o?'ok':''}"><span class="tick">${o?'✓':''}</span>${t}</li>`).join('')}</ul>
     <div class="callout key"><span class="hud">Exam format</span><p><b>${n} questions</b> · <b>${PASS*100}% to pass</b> (${passNeeded(n)} of ${n})</p><p>${m.examDesc||'A mix of concept questions and chart tasks, with fresh charts and numbers every attempt.'}</p></div>
+    ${m.id==='m30'&&m.explain?`<div class="callout def"><span class="hud">Explain it</span><p>Before the final exam, say it in your own words. Write as much or as little as you like: there is no word minimum and nothing here is graded.</p>${m.explain.prompts.map((q,i)=>`<p><b>${i+1}. ${q}</b></p><textarea id="t${i}" rows="4" placeholder="…">${esc(L.t[i]||'')}</textarea>`).join('')}</div>`:''}
     <p class="muted">There are no hints and no feedback until you submit. If you don't pass, <b>this module restarts</b>: the lessons re-open and the exam changes.</p>
     ${p.a>1?`<div class="fb no"><b>Attempt ${p.a}.</b> The practice tasks and the exam are a fresh set.</div>`:''}
     ${p.p?`<div class="fb ok"><b>Passed · ${p.sc}%.</b> You can review the lessons any time.</div>`:''}`;
@@ -237,7 +229,7 @@ $('#lesson').addEventListener('click',e=>{
   const L=LAB,t=e.target;let b;if(!L)return;const m=L.m,p=pm(m.id);
   if((b=t.closest('[data-step]')))return go(+b.dataset.step);
   if((b=t.closest('[data-rc]'))){L.recall=+b.dataset.rc;return renderLesson()}
-  if(t.closest('[data-next]')){if(L.step===0)complete(0,'Lesson read');if(L.step===3&&!p.s[3])return;return go(L.step+1)}
+  if(t.closest('[data-next]')){if(L.step===0)complete(0,'Lesson read');return go(L.step+1)}
   if(t.closest('[data-prev]'))return go(L.step-1);
   if(t.closest('[data-seep]')){L.see--;renderLesson();return paintChart(false)}
   if(t.closest('[data-seen]')){const n=seeSteps(m,scenarioOf(m)).length;if(L.see<n-1){L.see++;renderLesson();return paintChart(false)}complete(1,'Worked example complete');return go(2)}
@@ -249,12 +241,10 @@ $('#lesson').addEventListener('click',e=>{
   if(t.closest('[data-hint]')){L.drill.hint=true;return updateMarkPanel()}
   if(t.closest('[data-skip]')){newDrill();paintChart(true);return updateMarkPanel()}
   if(t.closest('[data-more]')){newDrill();paintChart(true);return updateMarkPanel()}
-  if(t.closest('[data-sub]')){L.sub=true;storeTxt();return renderLesson()}
-  if((b=t.closest('[data-tick]'))){L.ticks[b.dataset.tick]=b.checked;storeTxt();const need=Math.ceil(m.explain.ideas.length*.75);if(Object.values(L.ticks).filter(Boolean).length>=need){complete(3,'Explanation complete')}else{p.s[3]=0;persist()}return renderLesson()}
   if(t.closest('[data-exam]'))return nav(`/${m.id}/exam`);
   if(t.closest('[data-plan-check]'))return planCheck();
 });
-$('#lesson').addEventListener('input',e=>{const L=LAB;if(!L)return;const id=e.target.id;if(id==='t0'||id==='t1'){const i=+id[1];L.t[i]=e.target.value;storeTxt();$$('[data-wc]').forEach(w=>w.textContent=words(L.t[+w.dataset.wc]||'')+' words');const sb=$('[data-sub]');if(sb)sb.disabled=!L.t.every(t=>words(t)>=20)}});
+$('#lesson').addEventListener('input',e=>{const L=LAB;if(!L)return;const id=e.target.id;if(id==='t0'||id==='t1'){L.t[+id[1]]=e.target.value;storeTxt()}});
 
 /* ============================================================
    EXAM
@@ -285,7 +275,7 @@ function examIntro(){
     <p class="muted" style="margin:12px 0 18px;max-width:56ch">This tests whether you can do it, not whether you remember it. ${m.examDesc||'Concept questions and chart tasks, with fresh charts and numbers every attempt.'}</p>
     ${p.a>1?`<div class="fb no" style="max-width:56ch"><b>New set.</b> After your last attempt this module restarted. These questions, charts and numbers are different from the ones you saw.</div>`:''}
     <button class="btn primary" id="startEx" ${ready&&!p.p?'':'disabled'}>Begin exam →</button>
-    ${p.p?'<p class="dim" style="margin-top:10px;font-size:13.5px">You already passed this module.</p>':ready?'':`<p class="dim" style="margin-top:10px;font-size:13.5px">Finish all four lesson steps first (${stepsDone(m)}/4 done). <a href="#/${m.id}" style="color:var(--ice)">Back to the lesson</a></p>`}
+    ${p.p?'<p class="dim" style="margin-top:10px;font-size:13.5px">You already passed this module.</p>':ready?'':`<p class="dim" style="margin-top:10px;font-size:13.5px">Finish all three lesson steps first (${stepsDone(m)}/3 done). <a href="#/${m.id}" style="color:var(--ice)">Back to the lesson</a></p>`}
   </div><div class="card"><div class="hud" style="margin-bottom:6px">Before you start</div><ol class="rules">
     <li><span><b>${n} questions.</b></span></li>
     <li><span><b>${PASS*100}% to pass</b>, so ${passNeeded(n)} of ${n}.</span></li>
@@ -337,7 +327,7 @@ function finishExam(){
   const topics={};X.items.forEach((it,i)=>{const t=topics[it.topic||'General']||(topics[it.topic||'General']={c:0,n:0});t.n++;if(res[i])t.c++});X.topics=topics;
   p.n++;p.at=Date.now();
   if(pass){p.p=1;p.sc=Math.round(score/total*100)}
-  else{p.a++;p.s=[0,0,0,0];delete TXT[m.id];saveTxt();m._sc=null;m._see=null}
+  else{p.a++;p.s=[0,0,0];delete TXT[m.id];saveTxt();m._sc=null;m._see=null}
   persist();logAttempt(m.id,score,total,pass);examResult();window.scrollTo(0,0);
 }
 function examResult(){

@@ -21,8 +21,9 @@ test("module list matches the school page content", () => {
   const dir = new URL("../../school/src/content/", import.meta.url);
   const src = readdirSync(dir).filter((f) => f.endsWith(".js")).map((f) => readFileSync(new URL(f, dir), "utf8")).join("\n");
   const clean = (t: string) => t.replace(/\\'/g, "'");
+  const RETIRED = ["m08", "m09", "m40"]; // merged into other modules, or folded into a lesson
   const found = [...[...src.matchAll(/(?:MODS\.push|quick)\(\{id:'(m\d+)',[^]*?\bt:'((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], clean(m[2])]), ...[...src.matchAll(/common\('(m\d+)',\d+,\d+,'((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], clean(m[2])])];
-  assert.deepEqual([...found].sort(), SCHOOL_MODULES.map((m) => [m.id, m.title]).sort());
+  assert.deepEqual([...found].filter((f) => !RETIRED.includes(f[0])).sort(), SCHOOL_MODULES.map((m) => [m.id, m.title]).sort());
 });
 
 test("trading plan validates and drives the checklist", () => {

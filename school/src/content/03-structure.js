@@ -80,7 +80,7 @@ const disQ=r=>{const v=pick(r,['wick','close','none']),k=r()<.5?'bull':'bear',P=
   const O=['The FVG is disrespected: candle 4 closed through it','The FVG is respected: only a wick went through','There was never an FVG: the wicks of candles 1 and 3 overlap'],ans=v==='none'?2:closed?0:1;
   return{kind:'mcq',topic:'Respected or disrespected',q:'The shaded zone is the range between candle 1 and candle 3. Candle 4 then trades into it. What is the correct read?',o:[O[ans],...[0,1,2].filter(x=>x!==ans).map(x=>O[x])],C,ov:[...numTags(C),rectAt(0,3,zone.lo,zone.hi,'zone',COL.sig,{dash:true})],table:dataTable(C),
    why:v==='none'?'Candle 1 and 3\'s wicks overlap, so there was no gap to disrespect in the first place.':closed?'Candle 4 closed beyond the far side of the gap. A close through is what makes it disrespected.':'Candle 4 only poked through with a wick and closed back. By the close rule the FVG stands.'}};
-MODS.push({id:'m06',ph:2,chart:true,t:'Fair Value Gaps',out:'Spot, mark and judge an imbalance: respected or disrespected.',
+MODS.push({id:'m06',ph:2,chart:true,t:'Fair Value Gaps & Inverse Fair Value Gaps',out:'Spot, mark and judge an imbalance: respected or disrespected.',
  ls:['The idea: an imbalance in price','Anatomy of the three candles','Why price returns and moves through it','What is NOT a fair value gap','When a gap is disrespected','Where it fits: continuation confluence'],
  task:'Mark 5 bullish and 5 bearish fair value gaps on a chart. Then find 2 examples of a gap getting disrespected (a candle closing through it).',
  ex:()=>fvgScn(rr(7),['bull','decoy','bear']),

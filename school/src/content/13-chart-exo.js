@@ -62,6 +62,7 @@ const orbitSee=o=>{const L=o.side==='long',C=o.C;return[
 const patch=(id,ex,see,sum,chartDrills,examGen,descr)=>{const m=MODS.find(x=>x.id===id),old=m.drills;
   Object.assign(m,{chart:true,ex,see:sc=>see(sc).map(s=>s),sum,drills:[...chartDrills,...old],exam:{bank:3,gen:examGen},examDesc:descr});
   delete m.steps};
+EXO_PARTS={eLvl,eFvgBox,eTapSweep,eTapCisd,eRect,eTapRb,eLevels,eValid,echoSee,xt};
 const nC=5;
 patch('m28',()=>echoScn(rr(401),{side:'long'}),echoSee,e=>({ov:[eLvl(e),eFvgBox(e,e.rbI+1)]}),[eTapSweep,eTapCisd,eRect,eTapRb,eLevels,eValid],[[0,1],[1,1],[2,1],[3,1],[4,1],[5,2],[6,1]],'Finding the sweep, CISD, FVG and rejection block on generated charts, placing the stop and the draw, and valid-or-not calls.');
 patch('m29',()=>orbitScn(rr(411),{side:'long'}),orbitSee,o=>({ov:[oBand(o)]}),[oTapSwing,oFib,oInv,oGap,oLevels,oShallow],[[0,1],[1,1],[2,1],[3,1],[4,1],[5,2],[6,1]],'Finding the swing and the inversion on generated charts, placing the OTE edges, the stop and the draw, and judging a pullback that has not reached the zone.');
