@@ -24,7 +24,9 @@ async function logAttempt(id,score,total,pass){if(!LIVE)return;try{await fetch('
 
 /* ---------- module helpers ---------- */
 const modIdx=id=>MODS.findIndex(m=>m.id===id);
-const modUnlocked=i=>i===0||pm(MODS[i-1].id).p||UNLOCKS.includes(MODS[i].id)||UNLOCKS.includes('all');
+const FIRST_CORE=MODS.findIndex(m=>m.ph>0);
+/* Foundations (phase 1) are open from the start and optional. Everything after them unlocks one module at a time, starting with the first core module. */
+const modUnlocked=i=>MODS[i].ph===0||i===FIRST_CORE||pm(MODS[i-1].id).p||UNLOCKS.includes(MODS[i].id)||UNLOCKS.includes('all');
 const modStatus=i=>pm(MODS[i].id).p?'done':modUnlocked(i)?'active':'locked';
 const stepsDone=m=>pm(m.id).s.filter(Boolean).length;
 const currentIdx=()=>{const i=MODS.findIndex((m,k)=>!pm(m.id).p&&modUnlocked(k));return i<0?MODS.length-1:i};
@@ -60,7 +62,7 @@ function renderMap(){
   if(OPEN==null)OPEN=cur.id;
   let html='',ph=-1;
   MODS.forEach((m,i)=>{
-    if(m.ph!==ph){if(ph>=0)html+='</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
+    if(m.ph!==ph){if(ph>=0)html+=(ph===6&&pm('m36').p?escCard():'')+'</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
     html+=modRow(m,i)});
   html+='</div></section>';
   $('#phases').innerHTML=(pm('m30').p?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">Course complete.</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
@@ -74,7 +76,7 @@ function renderMap(){
 function modRow(m,i){
   const st=modStatus(i),P=PH[m.ph],open=OPEN===m.id,p=pm(m.id);let chip;
   if(st==='done')chip=`<span class="chip ok">✓ Passed · ${p.sc}%</span>`;
-  else if(st==='active')chip=`<span class="chip live">${p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/4 steps</span>`;
+  else if(st==='active')chip=`<span class="chip live">${p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/4 steps${m.ph===0?' · optional':''}</span>`;
   else chip=`<span class="chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Locked</span>`;
   const prev=MODS[i-1]?MODS[i-1].t:'';let act;
   if(st==='locked')act=`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
@@ -355,6 +357,7 @@ function examResult(){
     `<div class="reset"><div class="hud" style="color:var(--loss)">Module restarted</div><h3 class="h" style="font-size:20px;margin:6px 0">Back to the lesson</h3><p class="muted" style="font-size:14px">Under ${PASS*100}% means a re-learn, not a re-roll. The lessons have re-opened, the practice tasks are new, and the exam will be a <b>different set</b>: different charts, numbers and questions.</p>
      <button class="btn primary" id="restartBtn" style="margin-top:12px;white-space:normal;text-align:left">Restart Module ${m.n} · attempt ${pm(m.id).a}</button></div>`}
    </aside></div>`;
+  const aside=$('#exBody aside');if(aside&&pass&&m.id==='m36')aside.insertAdjacentHTML('beforeend',escCard());
   const r=$('#restartBtn');if(r)r.onclick=()=>{X=null;nav(`/${m.id}/learn`)};
 }
 
@@ -409,7 +412,17 @@ function gradCard(){
    <p style="margin-top:10px;font-size:14px"><b>Have ready for the call:</b></p><ul class="muted" style="font-size:14px;margin:4px 0 0 18px"><li>Your TradingView account (a paid plan is recommended) and your TradingView username: the indicator is shared to it</li><li>Zoom installed, on a computer (not your phone)</li><li>Never send a password in Discord</li></ul>
    <p style="margin-top:12px;font-size:14px"><b>Book it:</b> send Hannah a DM on Discord with the message below.</p><textarea class="in" id="bookMsg" readonly rows="6" style="margin-top:6px">${esc(BOOK_MSG)}</textarea>
    <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a></div></div>`}
+const IG_HANDLE='';/* Hannah's Instagram username, without the @. While it is empty the card tells people to message Hannah on Instagram without a link. */
+const ESC_MSG='Hi Hannah! I finished the ESC VLCTY section of the FLOWMTD Trading School. I\'d like to book a Zoom call to get access to the ESC VLCTY indicator, and I have a few questions too. My TradingView username is: ';
+function escCard(){
+  return `<div class="card" style="padding:20px 22px;margin:14px 0 0;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">ESC VLCTY complete</div><h3 class="h" style="font-size:20px;margin:6px 0 8px">Get the ESC VLCTY indicator</h3>
+   <p class="muted" style="font-size:14px;max-width:62ch">You now know the whole model. To get access to the <b>ESC VLCTY indicator</b> on your own TradingView chart, <b>send Hannah a DM on Instagram${IG_HANDLE?` (<a href="https://ig.me/m/${esc(IG_HANDLE)}" target="_blank" rel="noopener">@${esc(IG_HANDLE)}</a>)`:''}</b> to set up a Zoom call.</p>
+   <p class="muted" style="font-size:14px;max-width:62ch">The call is also the place to <b>ask any questions you have</b>, about ESC VLCTY, the other models or your own trading.</p>
+   <p style="margin-top:10px;font-size:14px"><b>Have ready for the call:</b> your TradingView account and username (the indicator is shared to it), Zoom on a computer, and never send a password in a DM.</p>
+   <textarea class="in" id="escMsg" readonly rows="4" style="margin-top:8px">${esc(ESC_MSG)}</textarea>
+   <div class="row" style="margin-top:8px"><button class="btn" id="copyEsc">Copy message</button>${IG_HANDLE?`<a class="btn" href="https://ig.me/m/${esc(IG_HANDLE)}" target="_blank" rel="noopener">Open Instagram</a>`:''}</div></div>`}
 document.addEventListener('click',e=>{
+  if(e.target.closest('#copyEsc')){const b=e.target.closest('#copyEsc');try{navigator.clipboard.writeText(ESC_MSG).then(()=>{b.textContent='Copied'},()=>{b.textContent='Select and copy above'})}catch(x){b.textContent='Select and copy above'}}
   if(e.target.closest('#certBtn')){const n=($('#certName').value||'').trim();if(!n){toast('Type your name for the certificate.');return}
     const run=()=>{const a=document.createElement('a');a.download='FLOWMTD-certificate-'+n.replace(/[^a-z0-9]+/gi,'-')+'.png';a.href=drawCertificate(n).toDataURL('image/png');document.body.append(a);a.click();a.remove()};
     (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(run)}
@@ -510,37 +523,45 @@ function setTab(v){
 }
 
 /* ============================================================
-   ENTRANCE: a short canvas animation when the school opens. A line of candles builds, drifts around the anchor, then escapes
-   through the trigger line and the wordmark resolves. Click, any key or Skip ends it; reduced-motion users get a quick fade.
+   ENTRANCE: the two-hemisphere brain from the home screen assembles, opens down the middle and the view flies into the gap.
+   Click, any key or Skip ends it; reduced-motion users get a quick fade.
 ============================================================ */
 function introPlay(){
   const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const o=document.createElement('div');o.id='intro';o.innerHTML='<canvas></canvas><div class="in-tx"><div class="in-k">FLOWHUB</div><div class="in-t">TRADING SCHOOL</div><div class="in-s">Measure it. Size it. Take it.</div></div><button type="button" class="in-skip">Skip</button>';
+  const o=document.createElement('div');o.id='intro';o.innerHTML='<canvas></canvas><button type="button" class="in-skip">Skip</button>';
   document.body.appendChild(o);document.documentElement.style.overflow='hidden';
-  const cv=o.querySelector('canvas'),cx=cv.getContext('2d');let W,H,raf=0,t0=performance.now(),done=false;
-  const rnd=mulberry(20261011),N=46,C=[];let p=0;
-  for(let i=0;i<N;i++){const dr=i<22?(rnd()-.5)*1.1:(i<26?-.6+(rnd()-.5)*.6:1.55+rnd()*.5),o2=p;p+=dr;const c=p,h=Math.max(o2,c)+rnd()*.9,l=Math.min(o2,c)-rnd()*.9;C.push({o:o2,c,h,l})}
-  const lo=Math.min(...C.map(c=>c.l)),hi=Math.max(...C.map(c=>c.h));
-  const size=()=>{const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';cx.setTransform(d,0,0,d,0,0)};size();addEventListener('resize',size);
-  const end=()=>{if(done)return;done=true;cancelAnimationFrame(raf);o.classList.add('out');document.documentElement.style.overflow='';removeEventListener('resize',size);removeEventListener('keydown',end);setTimeout(()=>o.remove(),700)};
+  const cv=o.querySelector('canvas'),cx=cv.getContext('2d');let W,H,R,ox,oy,raf=0,t0=performance.now(),done=false,nodes=[],edges=[],pulses=[];
+  const ease=x=>x<0?0:x>1?1:x*x*(3-2*x),clamp=x=>Math.max(0,Math.min(1,x));
+  const build=()=>{const d=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';cx.setTransform(d,0,0,d,0,0);
+    const r=mulberry(7);R=Math.min(W*.34,H*.34);ox=W/2;oy=H*.5;nodes=[];
+    for(const sd of [-1,1]){let n=0;while(n<130){const a=r()*6.283,dd=Math.sqrt(r()),ex=Math.cos(a)*dd*R*.62,ey=Math.sin(a)*dd*R*.8,x=sd*R*.5+ex,y=ey-(ey>0?Math.abs(ex)*.18:0);if(Math.abs(x)<R*.045)continue;nodes.push({x,y,sd,ph:r()*6.28,at:r()*.5,z:.4+r()*1.6});n++}}
+    edges=[];const seen=new Set();nodes.forEach((a,i)=>{nodes.map((b,j)=>({j,d:Math.hypot(a.x-b.x,a.y-b.y)})).filter(q=>q.j!==i&&nodes[q.j].sd===a.sd).sort((p,q)=>p.d-q.d).slice(0,4).forEach(q=>{const k=i<q.j?i+'-'+q.j:q.j+'-'+i;if(q.d<R*.3&&!seen.has(k)){seen.add(k);edges.push([i,q.j])}})});
+    pulses=Array.from({length:34},()=>({e:Math.floor(r()*edges.length),o:r(),v:.5+r()*.9}))};
+  build();addEventListener('resize',build);
+  const end=()=>{if(done)return;done=true;cancelAnimationFrame(raf);o.classList.add('out');document.documentElement.style.overflow='';removeEventListener('resize',build);removeEventListener('keydown',end);setTimeout(()=>o.remove(),700)};
   o.addEventListener('click',end);addEventListener('keydown',end,{once:true});
-  const DUR=reduce?500:3300;
+  const DUR=reduce?500:4200;
   const frame=now=>{
-    const t=(now-t0)/DUR;if(t>=1.0){end();return}
-    const g=cx.createRadialGradient(W*.5,H*.55,0,W*.5,H*.55,Math.max(W,H)*.7);g.addColorStop(0,'#0b0f16');g.addColorStop(1,'#030405');cx.fillStyle=g;cx.fillRect(0,0,W,H);
-    const x0=W*.12,x1=W*.88,y0=H*.72,y1=H*.26,sx=i=>x0+(x1-x0)*i/(N-1),sy=v=>y0-(v-lo)/(hi-lo)*(y0-y1);
-    const grow=Math.min(1,t/.62),n=Math.floor(grow*N),ay=sy(C[0].o),ty=sy(C[0].o+(hi-lo)*.4);
-    cx.lineWidth=1;cx.setLineDash([6,6]);cx.strokeStyle='rgba(154,160,173,.35)';cx.beginPath();cx.moveTo(x0,ay);cx.lineTo(x1,ay);cx.stroke();
-    cx.setLineDash([2,5]);cx.strokeStyle='rgba(154,160,173,.2)';cx.beginPath();cx.moveTo(x0,ty);cx.lineTo(x1,ty);cx.stroke();cx.setLineDash([]);
-    cx.font='11px "JetBrains Mono",monospace';cx.fillStyle='rgba(154,160,173,.5)';cx.fillText('16:00 close',x0,ay-8);cx.fillText('trigger',x0,ty-8);
-    const cw=Math.max(3,(x1-x0)/N*.55);
-    for(let i=0;i<n;i++){const c=C[i],up=c.c>=c.o,esc=i>=26,col=esc?'#ff6a00':(up?'#e6ebf2':'#3d7bff'),x=sx(i);
-      cx.strokeStyle=col;cx.fillStyle=col;if(esc){cx.shadowColor='#ff6a00';cx.shadowBlur=14}else cx.shadowBlur=0;
-      cx.beginPath();cx.moveTo(x,sy(c.h));cx.lineTo(x,sy(c.l));cx.stroke();const a=sy(Math.max(c.o,c.c)),b=sy(Math.min(c.o,c.c));cx.fillRect(x-cw/2,a,cw,Math.max(1.5,b-a))}
-    cx.shadowBlur=0;
-    if(n>26){const k=Math.min(1,(grow*N-26)/(N-26));cx.strokeStyle='rgba(255,106,0,'+(.15+.35*k)+')';cx.lineWidth=2;cx.beginPath();cx.moveTo(sx(26),sy(C[26].c));for(let i=27;i<n;i++)cx.lineTo(sx(i),sy(C[i].c));cx.stroke()}
-    const tx=o.querySelector('.in-tx'),s=Math.max(0,Math.min(1,(t-.5)/.28)),f=t>.86?Math.max(0,1-(t-.86)/.14):1;tx.style.opacity=s*f;tx.style.transform='translateY('+((1-s)*14)+'px)';
-    o.style.opacity=t>.9?Math.max(0,1-(t-.9)/.1):1;
+    const T=(now-t0)/DUR;if(T>=1){end();return}
+    const sec=(now-t0)/1000,asm=ease(T/.3),open=ease((T-.3)/.3),fly=ease((T-.52)/.46);
+    cx.fillStyle='#030405';cx.fillRect(0,0,W,H);
+    const bg=cx.createRadialGradient(ox,oy,0,ox,oy,R*1.8);bg.addColorStop(0,'rgba(140,196,255,'+(.07+.1*open)+')');bg.addColorStop(.6,'rgba(255,106,0,.03)');bg.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+    const k=1+Math.pow(fly,2.2)*26;cx.save();cx.translate(ox,oy);cx.scale(k,k);
+    const lw=1/k;
+    // the seam: light coming out of the gap as the hemispheres part
+    const gap=open*R*.62;
+    if(open>0){const gw=Math.max(4,gap*1.5),sa=.6*open*(1-fly);cx.save();cx.scale(1,R*1.05/gw);const lg=cx.createRadialGradient(0,0,0,0,0,gw);lg.addColorStop(0,'rgba(255,200,150,'+sa+')');lg.addColorStop(.45,'rgba(255,106,0,'+(sa*.45)+')');lg.addColorStop(1,'rgba(255,106,0,0)');cx.fillStyle=lg;cx.beginPath();cx.arc(0,0,gw,0,6.283);cx.fill();cx.restore()}
+    const place=n=>({x:n.x+n.sd*gap,y:n.y,});
+    for(const sd of [-1,1]){cx.save();cx.rotate(sd*open*.1);cx.lineWidth=1.4*lw;cx.strokeStyle='rgba(140,196,255,'+(.16*asm)+')';cx.beginPath();cx.ellipse(sd*(R*.5+gap),0,R*.66,R*.84,sd*.12,0,6.283);cx.stroke();cx.restore()}
+    cx.lineWidth=lw;cx.strokeStyle='rgba(140,196,255,'+(.16*asm)+')';cx.beginPath();
+    for(const [a,b] of edges){const A=nodes[a],B=nodes[b];if(asm<A.at+.2&&asm<1)continue;const pa=place(A),pb=place(B);cx.moveTo(pa.x,pa.y);cx.lineTo(pb.x,pb.y)}cx.stroke();
+    for(const n of nodes){const vis=clamp((asm-n.at)/.5);if(vis<=0)continue;const p=place(n),a=(.35+.35*Math.sin(sec*1.6+n.ph))*vis;cx.fillStyle='rgba(140,196,255,'+a+')';cx.beginPath();cx.arc(p.x,p.y,(1.8+open*n.z)*lw*(fly>0?1+fly*1.5:1),0,6.283);cx.fill()}
+    for(const q of pulses){const e=edges[q.e],A=place(nodes[e[0]]),B=place(nodes[e[1]]),u=(sec*q.v+q.o)%1,x=A.x+(B.x-A.x)*u,y=A.y+(B.y-A.y)*u,rr=10*lw*(1+open*1.2),gl=cx.createRadialGradient(x,y,0,x,y,rr);gl.addColorStop(0,'rgba(255,106,0,'+(.95*asm)+')');gl.addColorStop(1,'rgba(255,106,0,0)');cx.fillStyle=gl;cx.beginPath();cx.arc(x,y,rr,0,6.283);cx.fill()}
+    cx.restore();
+    // bloom as we pass through the gap, then the school behind it
+    if(fly>0){const br=R*(.08+fly*1.6),bl=cx.createRadialGradient(ox,oy,0,ox,oy,br);bl.addColorStop(0,'rgba(255,225,190,'+(.85*Math.min(1,fly*2.2))+')');bl.addColorStop(.5,'rgba(255,106,0,'+(.3*fly)+')');bl.addColorStop(1,'rgba(255,106,0,0)');cx.fillStyle=bl;cx.fillRect(0,0,W,H)}
+    const wash=ease((T-.8)/.16);if(wash>0){cx.fillStyle='rgba(3,4,5,'+wash+')';cx.fillRect(0,0,W,H)}
+    o.style.opacity=T>.9?Math.max(0,1-(T-.9)/.1):1;
     raf=requestAnimationFrame(frame)};
   raf=requestAnimationFrame(frame)}
 if(window.PRACTICE)initPractice();else{introPlay();route();pull()}

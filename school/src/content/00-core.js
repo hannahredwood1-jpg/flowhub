@@ -3,7 +3,7 @@
    Source: Beginner Trading Curriculum A to Z (m01–m16) + the ESC VLCTY guide (m31–m36) + the Classic school lessons and ECHO X ORBIT (m19–m30)
 ============================================================ */
 const PH=[
- {n:'Foundations',d:'Mindset, your platform, futures, the chart and your first order.'},
+ {n:'Foundations',d:'Optional, and open from the start in any order: mindset, your platform, futures, the chart and your first order. The modules after it unlock one at a time.'},
  {n:'Liquidity',d:'Where orders rest, and why price is drawn to them.'},
  {n:'Structure & imbalance',d:'Confirming a sweep, and spotting where price will keep going.'},
  {n:'Context & timing',d:'Cross-checking with a second index, and knowing when to look.'},
