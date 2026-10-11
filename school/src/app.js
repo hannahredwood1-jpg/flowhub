@@ -429,8 +429,6 @@ const GEX={
  RB:()=>{const e=echoScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:e,upto:e.rbI+3,ov:[rectAt(e.fvg.i0,e.rbI+2,e.fvg.lo,e.fvg.hi,'FVG',COL.lag,{dash:true}),tagAt(e.rbI,e.C[e.rbI].l,'rejection block','below',COL.sig)],cap:'A wick that goes into the gap and is rejected out of it.'}},
  OTE:()=>{const o=orbitScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:o,upto:o.gap.i1+2,ov:[rectAt(o.aI,o.gap.i1+2,Math.min(o.fib(.62),o.fib(.79)),Math.max(o.fib(.62),o.fib(.79)),'OTE 0.62–0.79',COL.sig,{dash:true})],cap:'The deep part of a pullback: 0.62 to 0.79 of the swing.'}},
  IFVG:()=>{const o=orbitScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:o,upto:o.invI+3,ov:[rectAt(o.gap.i0,o.invI,o.gap.lo,o.gap.hi,'gap',COL.lag,{dash:true}),tagAt(o.invI,o.C[o.invI].c,'inverted','above',COL.sig)],cap:'A candle closes back through the gap: it now acts the other way.'}},
- PLC:()=>{const p=plcScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:p,upto:p.plcI+4,ov:[rectAt(p.gap.i0,p.plcI+3,p.gap.lo,p.gap.hi,'bullish FVG',COL.lag,{dash:true}),tagAt(p.plcI,p.C[p.plcI].l,'PLC','below',COL.sig)],cap:'A swing low formed inside a bullish gap that held.'}},
- RS:()=>{const r=rsScn(rr(Math.floor(Math.random()*1e9)),{});return{sc:r,upto:r.fillI+3,ov:[hlAt(r.RS,'Range Settlement',COL.lag,0,{scale:true}),{t:'vline',i:r.openI,col:COL.ice,text:'9:30 open'}],cap:'Open below RS at 9:30 and the AM draw is up toward it.'}},
 };
 let GCH=null;
 function openGloss(q=''){
@@ -459,7 +457,7 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape')$$('dialog[open]').for
 /* ============================================================
    PRACTICE: the same generated charts and tasks as the modules, endless, with instant feedback and no exam
 ============================================================ */
-const PM={hl:['m17'],po3:['m18'],dl:['m22'],asia:['m26'],exo:['m27','m28','m29','m30']};
+const PM={esc:['m31','m32','m33','m34','m35','m36','ind'],exo:['m27','m28','m29','m30']};
 let PV='tasks';
 const PR={topic:'mixed',item:null,m:null,st:{},fb:null,checked:false,revealed:false,n:0,ok:0};
 const pracModel=id=>Object.keys(PM).find(k=>PM[k].includes(id));
@@ -482,7 +480,7 @@ function pracPaint(){
 }
 function pracPanel(){
   const it=PR.item,kd=K[it.kind],g=PR.fb,box=$('#lesson');
-  const opts=[['mixed','Mixed: any topic'],...(typeof IND_PO3!=='undefined'?[['ind','Indicator signals (NYFLOW / ASIAFLOW)']]:[]),['hl','H/L (NY ATM)'],['po3','PO3 · New York'],['dl','Extended Learning'],['asia','PO3 · Asia'],['exo','ECHO X ORBIT'],...MODS.map(m=>[m.id,`${m.n}. ${m.t}`])];
+  const opts=[['mixed','Mixed: any topic'],...(typeof IND_ESC!=='undefined'?[['ind','Indicator signals (ESC VLCTY)']]:[]),['esc','ESC VLCTY (all lessons)'],['exo','ECHO X ORBIT'],...MODS.map(m=>[m.id,`${m.n}. ${m.t}`])];
   box.innerHTML=`<div class="les-h"><div class="hud">Practice · no exam, no pass mark</div><div class="h">Practice</div>
    <div style="margin:10px 0 4px"><select id="pTopic" class="in">${opts.map(([v,t])=>`<option value="${v}" ${v===PR.topic?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
    <div class="kv"><span class="chip ok">${PR.ok} right</span><span class="chip">${PR.n} done</span><span class="chip">${esc(it.topic||'Task')}</span></div></div>
@@ -511,4 +509,38 @@ function setTab(v){
   pracPaint();pracPanel();
 }
 
-if(window.PRACTICE)initPractice();else{route();pull()}
+/* ============================================================
+   ENTRANCE: a short canvas animation when the school opens. A line of candles builds, drifts around the anchor, then escapes
+   through the trigger line and the wordmark resolves. Click, any key or Skip ends it; reduced-motion users get a quick fade.
+============================================================ */
+function introPlay(){
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const o=document.createElement('div');o.id='intro';o.innerHTML='<canvas></canvas><div class="in-tx"><div class="in-k">FLOWHUB</div><div class="in-t">TRADING SCHOOL</div><div class="in-s">Measure it. Size it. Take it.</div></div><button type="button" class="in-skip">Skip</button>';
+  document.body.appendChild(o);document.documentElement.style.overflow='hidden';
+  const cv=o.querySelector('canvas'),cx=cv.getContext('2d');let W,H,raf=0,t0=performance.now(),done=false;
+  const rnd=mulberry(20261011),N=46,C=[];let p=0;
+  for(let i=0;i<N;i++){const dr=i<22?(rnd()-.5)*1.1:(i<26?-.6+(rnd()-.5)*.6:1.55+rnd()*.5),o2=p;p+=dr;const c=p,h=Math.max(o2,c)+rnd()*.9,l=Math.min(o2,c)-rnd()*.9;C.push({o:o2,c,h,l})}
+  const lo=Math.min(...C.map(c=>c.l)),hi=Math.max(...C.map(c=>c.h));
+  const size=()=>{const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';cx.setTransform(d,0,0,d,0,0)};size();addEventListener('resize',size);
+  const end=()=>{if(done)return;done=true;cancelAnimationFrame(raf);o.classList.add('out');document.documentElement.style.overflow='';removeEventListener('resize',size);removeEventListener('keydown',end);setTimeout(()=>o.remove(),700)};
+  o.addEventListener('click',end);addEventListener('keydown',end,{once:true});
+  const DUR=reduce?500:3300;
+  const frame=now=>{
+    const t=(now-t0)/DUR;if(t>=1.0){end();return}
+    const g=cx.createRadialGradient(W*.5,H*.55,0,W*.5,H*.55,Math.max(W,H)*.7);g.addColorStop(0,'#0b0f16');g.addColorStop(1,'#030405');cx.fillStyle=g;cx.fillRect(0,0,W,H);
+    const x0=W*.12,x1=W*.88,y0=H*.72,y1=H*.26,sx=i=>x0+(x1-x0)*i/(N-1),sy=v=>y0-(v-lo)/(hi-lo)*(y0-y1);
+    const grow=Math.min(1,t/.62),n=Math.floor(grow*N),ay=sy(C[0].o),ty=sy(C[0].o+(hi-lo)*.4);
+    cx.lineWidth=1;cx.setLineDash([6,6]);cx.strokeStyle='rgba(154,160,173,.35)';cx.beginPath();cx.moveTo(x0,ay);cx.lineTo(x1,ay);cx.stroke();
+    cx.setLineDash([2,5]);cx.strokeStyle='rgba(154,160,173,.2)';cx.beginPath();cx.moveTo(x0,ty);cx.lineTo(x1,ty);cx.stroke();cx.setLineDash([]);
+    cx.font='11px "JetBrains Mono",monospace';cx.fillStyle='rgba(154,160,173,.5)';cx.fillText('16:00 close',x0,ay-8);cx.fillText('trigger',x0,ty-8);
+    const cw=Math.max(3,(x1-x0)/N*.55);
+    for(let i=0;i<n;i++){const c=C[i],up=c.c>=c.o,esc=i>=26,col=esc?'#ff6a00':(up?'#e6ebf2':'#3d7bff'),x=sx(i);
+      cx.strokeStyle=col;cx.fillStyle=col;if(esc){cx.shadowColor='#ff6a00';cx.shadowBlur=14}else cx.shadowBlur=0;
+      cx.beginPath();cx.moveTo(x,sy(c.h));cx.lineTo(x,sy(c.l));cx.stroke();const a=sy(Math.max(c.o,c.c)),b=sy(Math.min(c.o,c.c));cx.fillRect(x-cw/2,a,cw,Math.max(1.5,b-a))}
+    cx.shadowBlur=0;
+    if(n>26){const k=Math.min(1,(grow*N-26)/(N-26));cx.strokeStyle='rgba(255,106,0,'+(.15+.35*k)+')';cx.lineWidth=2;cx.beginPath();cx.moveTo(sx(26),sy(C[26].c));for(let i=27;i<n;i++)cx.lineTo(sx(i),sy(C[i].c));cx.stroke()}
+    const tx=o.querySelector('.in-tx'),s=Math.max(0,Math.min(1,(t-.5)/.28)),f=t>.86?Math.max(0,1-(t-.86)/.14):1;tx.style.opacity=s*f;tx.style.transform='translateY('+((1-s)*14)+'px)';
+    o.style.opacity=t>.9?Math.max(0,1-(t-.9)/.1):1;
+    raf=requestAnimationFrame(frame)};
+  raf=requestAnimationFrame(frame)}
+if(window.PRACTICE)initPractice();else{introPlay();route();pull()}

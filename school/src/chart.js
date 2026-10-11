@@ -96,7 +96,7 @@ class Chart{
         if(o.text){cx.font='600 11px "Inter",sans-serif';cx.fillStyle=o.col;cx.textAlign='left';cx.fillText(o.text,x+5,PT+ph-9);cx.font='11px "JetBrains Mono",monospace'}}
       if(o.t==='rect'||o.t==='box'){
         const x0=X(ci(o.i0))-bw/2,x1=o.ext?pw:X(ci(o.i1))+bw/2,y0=Y(o.hi),y1=Y(o.lo);
-        if(o.t==='rect'&&o.pine){cx.strokeStyle='#e6e9f0';cx.lineWidth=1;cx.setLineDash([]);cx.strokeRect(x0+.5,y0+.5,x1-x0,y1-y0);if(o.mid){const ym=Math.round((y0+y1)/2)+.5;cx.setLineDash([5,4]);cx.beginPath();cx.moveTo(x0,ym);cx.lineTo(x1,ym);cx.stroke();cx.setLineDash([])}}
+        if(o.t==='rect'&&o.pine){if(o.pfill){cx.fillStyle='rgba(120,123,134,.12)';cx.fillRect(x0,y0,x1-x0,y1-y0)}cx.strokeStyle=o.pcol||'#e6e9f0';cx.lineWidth=1;cx.setLineDash([]);cx.strokeRect(x0+.5,y0+.5,x1-x0,y1-y0);if(o.mid){const ym=Math.round((y0+y1)/2)+.5;cx.setLineDash([5,4]);cx.beginPath();cx.moveTo(x0,ym);cx.lineTo(x1,ym);cx.stroke();cx.setLineDash([])}}
         else if(o.t==='rect'){cx.fillStyle=rgba(o.col,.17);cx.fillRect(x0,y0,x1-x0,y1-y0);cx.strokeStyle=rgba(o.col,.85);cx.lineWidth=1;cx.setLineDash(o.dash?[5,4]:[]);cx.strokeRect(x0+.5,y0+.5,x1-x0,y1-y0);cx.setLineDash([])}
         else{cx.strokeStyle=rgba(o.col,.8);cx.lineWidth=1.2;cx.setLineDash([3,3]);cx.strokeRect(x0+.5,y0+.5,x1-x0,y1-y0);cx.setLineDash([])}}}
     const cw=Math.max(1,Math.min(bw*.66,22));
@@ -106,12 +106,14 @@ class Chart{
       const y0=Y(Math.max(c.o,c.c)),y1=Y(Math.min(c.o,c.c));cx.fillRect(x-cw/2,y0,cw,Math.max(1,y1-y0))}
     cx.textBaseline='middle';
     for(const o of this.ov){
-      if(o.t==='hl'){const y=Math.round(Y(o.p))+.5,x0=o.i0==null?0:X(ci(o.i0))-bw/2,x1=o.i1==null?pw:X(ci(o.i1))+bw/2;cx.strokeStyle=o.pine?(o.pcol||'#e6e9f0'):o.col;cx.lineWidth=o.pine?(o.pw||1):1.2;cx.setLineDash(o.pine?(o.pdash?[6,4]:[]):o.dash===false?[]:[6,4]);cx.beginPath();cx.moveTo(x0,y);cx.lineTo(x1,y);cx.stroke();cx.setLineDash([]);
+      if(o.t==='hl'){const y=Math.round(Y(o.p))+.5,x0=o.i0==null?0:X(ci(o.i0))-bw/2,x1=o.i1==null?pw:X(ci(o.i1))+bw/2;cx.strokeStyle=o.pine?(o.pcol||'#e6e9f0'):o.col;cx.lineWidth=o.pine?(o.pw||1):1.2;cx.setLineDash(o.pine?(o.pdot?[2,3]:o.pdash?[6,4]:[]):o.dash===false?[]:[6,4]);cx.beginPath();cx.moveTo(x0,y);cx.lineTo(x1,y);cx.stroke();cx.setLineDash([]);
         if(o.text&&o.pine){cx.font='11px "Inter",sans-serif';cx.fillStyle=o.pcol||'#fff';cx.textAlign=o.pleft?'left':'right';cx.fillText(o.text,o.pleft?Math.max(8,x0+6):pw-8,y-8);cx.font='11px "JetBrains Mono",monospace'}
         else if(o.text)this.tag(cx,o.text,o.tagLeft?Math.max(8,x0+6):pw-8,y-11,o.col,o.tagLeft?'left':'right')}
       if(o.t==='tag'&&o.pine){const tx=X(ci(o.i)),ty=Y(o.p)+(o.pos==='above'?-13:13);cx.font=(o.tiny?'10px':'11px')+' "Inter",sans-serif';const w=cx.measureText(o.text).width+12;cx.fillStyle=o.bg;cx.beginPath();cx.roundRect(tx-w/2,ty-9,w,18,3);cx.fill();cx.fillStyle=o.tc||'#fff';cx.textAlign='center';cx.fillText(o.text,tx,ty+.5);cx.font='11px "JetBrains Mono",monospace'}
       else if(o.t==='tag')this.tag(cx,o.text,X(ci(o.i)),Y(o.p)+(o.pos==='above'?-12:12),o.col||ink,'center');
-      if(o.t==='rect'&&o.text&&o.pine){const x1=X(ci(o.i1))+bw/2,up=o.up!==false,ty=up?Y(o.hi)-10:Y(o.lo)+10;cx.font='11px "Inter",sans-serif';const w=cx.measureText(o.text).width+12;cx.fillStyle='rgba(255,255,255,.16)';cx.beginPath();cx.roundRect(x1-w,ty-9,w,18,3);cx.fill();cx.fillStyle=o.col;cx.textAlign='left';cx.fillText(o.text,x1-w+6,ty+.5);cx.font='11px "JetBrains Mono",monospace'}
+      if(o.t==='lab'){const ls=o.lines,x=X(ci(o.i)),y=Y(o.p);cx.font=(o.tiny?'10px':'11px')+' "Inter",sans-serif';const w=Math.max(...ls.map(t=>cx.measureText(t).width))+14,h=ls.length*15+6,x0=o.al==='left'?x-w-6:x+6;cx.fillStyle=o.bg;cx.beginPath();cx.roundRect(x0,y-h/2,w,h,3);cx.fill();cx.fillStyle=o.tc||'#fff';cx.textAlign='left';ls.forEach((t,k)=>cx.fillText(t,x0+7,y-h/2+3+7.5+k*15));cx.font='11px "JetBrains Mono",monospace'}
+      if(o.t==='rect'&&o.text&&o.pine&&o.tab){const x1=X(ci(o.i1))+bw/2,ty=(Y(o.hi)+Y(o.lo))/2;cx.font='11px "Inter",sans-serif';const w=cx.measureText(o.text).width+12;cx.fillStyle=o.tab;cx.beginPath();cx.roundRect(x1+4,ty-9,w,18,3);cx.fill();cx.fillStyle='#fff';cx.textAlign='left';cx.fillText(o.text,x1+10,ty+.5);cx.font='11px "JetBrains Mono",monospace'}
+      else if(o.t==='rect'&&o.text&&o.pine){const x1=X(ci(o.i1))+bw/2,up=o.up!==false,ty=up?Y(o.hi)-10:Y(o.lo)+10;cx.font='11px "Inter",sans-serif';const w=cx.measureText(o.text).width+12;cx.fillStyle='rgba(255,255,255,.16)';cx.beginPath();cx.roundRect(x1-w,ty-9,w,18,3);cx.fill();cx.fillStyle=o.col;cx.textAlign='left';cx.fillText(o.text,x1-w+6,ty+.5);cx.font='11px "JetBrains Mono",monospace'}
       else if(o.t==='rect'&&o.text)this.tag(cx,o.text,Math.max(70,X(ci(o.i0))+bw*1.5),Y(o.hi)-12,o.col,'left')}
     // tapped candles
     for(const i of this.taps){if(i<0||i>=this.C.length)continue;const c=this.C[i],x=X(i),y=Y(c.h)-10;cx.strokeStyle='#8cc4ff';cx.fillStyle='rgba(140,196,255,.18)';cx.lineWidth=1.5;cx.beginPath();cx.arc(x,y,6,0,7);cx.fill();cx.stroke();

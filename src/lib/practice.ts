@@ -1,8 +1,8 @@
 // Practice tab scoring, shared by the server (coach summary) and the dashboard card.
 // Tiers match the Practice page: accuracy over a model's last 40 reps, plus a minimum rep count.
-export const PRACTICE_MODELS = ["hl", "po3", "dl", "asia", "exo"] as const;
+export const PRACTICE_MODELS = ["esc", "exo"] as const;
 export type PracticeModel = (typeof PRACTICE_MODELS)[number];
-export const PRACTICE_MODEL_LABEL: Record<PracticeModel, string> = { dl: "Extended Learning", exo: "ECHO X ORBIT", hl: "H/L", po3: "PO3 · New York", asia: "PO3 · Asia" };
+export const PRACTICE_MODEL_LABEL: Record<PracticeModel, string> = { esc: "ESC VLCTY", exo: "ECHO X ORBIT" };
 export type PracticeTier = "none" | "bronze" | "silver" | "gold" | "elite";
 export const PRACTICE_TAGS: Record<string, string> = {
   "early-entry": "Enters before the flip closes",

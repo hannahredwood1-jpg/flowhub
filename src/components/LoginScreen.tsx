@@ -163,7 +163,7 @@ function Reticle({ linking }: { linking: boolean }) {
 const BOOT = [
   ["flow engine", "online"],
   ["prop firm catalog", "90 accounts"],
-  ["ASIAFLOW · NYFLOW models", "loaded"],
+  ["ECHO x ORBIT · ESC VLCTY indicators", "loaded"],
   ["discord uplink", "standing by"],
 ] as const;
 

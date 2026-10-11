@@ -1,6 +1,6 @@
 /* ============================================================
    curriculum core: phases, helpers shared by every module
-   Source: Beginner Trading Curriculum A to Z (m01–m16) + NY ATM guide + AMD/PO3 guide (m17–m18) + the Classic school lessons (m19–m30)
+   Source: Beginner Trading Curriculum A to Z (m01–m16) + the ESC VLCTY guide (m31–m36) + the Classic school lessons and ECHO X ORBIT (m19–m30)
 ============================================================ */
 const PH=[
  {n:'Foundations',d:'Mindset, your platform, futures, the chart and your first order.'},
@@ -8,8 +8,8 @@ const PH=[
  {n:'Structure & imbalance',d:'Confirming a sweep, and spotting where price will keep going.'},
  {n:'Context & timing',d:'Cross-checking with a second index, and knowing when to look.'},
  {n:'Bias, risk & discipline',d:'Funded accounts, daily bias, extended levels, trade management, risk, and the behaviour that keeps you trading.'},
- {n:'Synthesis',d:'The full order-flow model, run on real trades.'},
- {n:'Strategy models',d:'Complete models built from everything above, in New York and Asia.'},
+ {n:'Putting it together',d:'Everything above combined into one repeatable read of the market, run on real trades.'},
+ {n:'ESC VLCTY',d:'Another trading model: one indicator, New York and Asia, measured from the previous 16:00 close.'},
  {n:'ECHO X ORBIT',d:'The FLOWMTD model: two engines, one set of rules.'}];
 const MODS=[];
 const COL={ice:'#8cc4ff',sig:'#ff6a00',bad:'#ff5d73',ok:'#3ee0a1',lag:'#b69cff',gold:'#ffc861'};
