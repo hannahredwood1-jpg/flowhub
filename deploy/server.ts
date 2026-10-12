@@ -21,7 +21,7 @@ import { todayET, type CatalogFirm, type DashboardData, type PersonDTO, type Pro
 import type { Instrument } from "../src/lib/planner";
 import { PRACTICE_MODELS, summarizePractice } from "../src/lib/practice";
 import { SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
-import type { TradingPlanDTO } from "../src/lib/tradingPlan";
+import { cleanPlanModels, type TradingPlanDTO } from "../src/lib/tradingPlan";
 
 // ─────────────────────────────────────────────────────────────
 // Config
@@ -192,7 +192,7 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
     sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${traderId}`,
   ]);
   const jsonOf = <T,>(v: unknown): T => (typeof v === "string" ? JSON.parse(v) : v) as T;
-  const strategies = ((rm?.strategies ?? []) as StrategyKey[]).filter((k) => !RETIRED_STRATEGIES.includes(k)); // A3IA retired
+  const strategies = ((rm?.strategies ?? []) as StrategyKey[]).filter((k) => !RETIRED_STRATEGIES.includes(k)); // retired NYFLOW / ASIAFLOW setups
   return buildDashboard({
     viewer: person(viewer),
     trader: person(trader as UserRow),
@@ -221,7 +221,7 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
       createdAt: new Date(f.createdAt).toISOString(), readAt: f.readAt ? new Date(f.readAt).toISOString() : null,
     })),
     school: sp || attempts.length ? summarizeSchool(sp ? jsonOf<SchoolState>(sp.state) : null, sp?.unlocks ?? [], attempts as SchoolAttemptRow[]) : null,
-    tradingPlan: tp ? { ...jsonOf<TradingPlanDTO>(tp.plan), done: true, updatedAt: new Date(tp.updatedAt).toISOString() } : null,
+    tradingPlan: tp ? { ...jsonOf<TradingPlanDTO>(tp.plan), models: cleanPlanModels(jsonOf<TradingPlanDTO>(tp.plan).models as string[]), done: true, updatedAt: new Date(tp.updatedAt).toISOString() } : null,
     practice: summarizePractice(practiceRows as { model: string; drill: string; ok: boolean; tags: string[]; createdAt: Date }[]),
     projection: pj
       ? { ...((typeof pj.config === "string" ? JSON.parse(pj.config) : pj.config) as Omit<ProjectionDTO, "name" | "updatedAt">), name: pj.name, updatedAt: new Date(pj.updatedAt).toISOString() }
@@ -654,7 +654,7 @@ app.post("/api/school/attempt", async (c) => {
 // Trading plan (Trading Plan → Build your plan)
 app.get("/api/plan", async (c) => {
   const [row] = await sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${c.get("user").id}`;
-  const plan = row ? { ...(typeof row.plan === "string" ? JSON.parse(row.plan) : row.plan), done: true, updatedAt: new Date(row.updatedAt).toISOString() } : null;
+  const plan = row ? { ...(typeof row.plan === "string" ? JSON.parse(row.plan) : row.plan), models: cleanPlanModels((typeof row.plan === "string" ? JSON.parse(row.plan) : row.plan).models), done: true, updatedAt: new Date(row.updatedAt).toISOString() } : null;
   return c.json({ plan });
 });
 app.put("/api/plan", async (c) => {
