@@ -75,7 +75,7 @@ enum FeedbackKind {
 
 enum StrategyMode {
   DAILY_LEVELS // only taking the daily levels
-  INDICATORS   // AsiaFlow / NYFlow setups
+  INDICATORS   // INVERTIX / ESC VLCTY (ECHO X ORBIT is DAILY_LEVELS)
 }
 
 enum Instrument {
@@ -200,7 +200,7 @@ model Roadmap {
   // Strategy — members pick FLOWMTD setups; win rates are fixed in src/lib/strategies.ts
   strategyMode        StrategyMode @default(INDICATORS)
   multiSession        Boolean    @default(false)      // trades both Asia and NY
-  strategies          String[]                        // StrategyKey[] e.g. ["NYFLOW_HL", "NYFLOW_PO3"]
+  strategies          String[]                        // StrategyKey[] e.g. ["INVERTIX", "ESC_VLCTY"]
   avgRR               Decimal    @db.Decimal(6, 2)    // average reward per 1R risked on winners
   tradesPerDay        Decimal    @db.Decimal(4, 1)
   primaryInstrument   Instrument @default(NQ)

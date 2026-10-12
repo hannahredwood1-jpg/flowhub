@@ -352,24 +352,22 @@ function memberRiskSummary(paces) {
 
 // src/lib/strategies.ts
 var STRATEGIES = {
-  DAILY_LEVELS: { key: "DAILY_LEVELS", indicator: "ECHO X ORBIT", name: "ECHO X ORBIT", winRate: 0.94, session: null },
-  ASIAFLOW_PO3: { key: "ASIAFLOW_PO3", indicator: "ASIAFLOW", name: "PO3", winRate: 0.7, session: "ASIA" },
-  // A3IA is retired: kept only so old roadmaps and journal rows still resolve. Not selectable.
-  ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "ASIAFLOW", name: "A3IA", winRate: 0.81, session: "ASIA" },
-  NYFLOW_PO3: { key: "NYFLOW_PO3", indicator: "NYFLOW", name: "PO3", winRate: 0.745, session: "NY" },
-  NYFLOW_HL: { key: "NYFLOW_HL", indicator: "NYFLOW", name: "H/L", winRate: 0.84, session: "NY" }
+  DAILY_LEVELS: { key: "DAILY_LEVELS", indicator: "ECHO X ORBIT", name: "ECHO X ORBIT", winRate: 0.94, sessions: [] },
+  // Planner win rates come from each model's own guide: INVERTIX 3.1 (nearest-gap target, 30-point minimum stop) and ESC VLCTY (combined NY + Asia legs).
+  INVERTIX: { key: "INVERTIX", indicator: "INVERTIX", name: "INVERTIX", winRate: 0.65, sessions: ["ASIA", "NY"] },
+  ESC_VLCTY: { key: "ESC_VLCTY", indicator: "ESC VLCTY", name: "ESC VLCTY", winRate: 0.47, sessions: ["NY", "ASIA"] },
+  ASIAFLOW_PO3: { key: "ASIAFLOW_PO3", indicator: "ASIAFLOW", name: "PO3", winRate: 0.7, sessions: ["ASIA"] },
+  ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "ASIAFLOW", name: "A3IA", winRate: 0.81, sessions: ["ASIA"] },
+  NYFLOW_PO3: { key: "NYFLOW_PO3", indicator: "NYFLOW", name: "PO3", winRate: 0.745, sessions: ["NY"] },
+  NYFLOW_HL: { key: "NYFLOW_HL", indicator: "NYFLOW", name: "H/L", winRate: 0.84, sessions: ["NY"] }
 };
 var STRATEGY_KEYS = Object.keys(STRATEGIES);
-var RETIRED_STRATEGIES = ["ASIAFLOW_A3IA"];
+var RETIRED_STRATEGIES = ["ASIAFLOW_PO3", "ASIAFLOW_A3IA", "NYFLOW_PO3", "NYFLOW_HL"];
 var SELECTABLE_STRATEGY_KEYS = STRATEGY_KEYS.filter((k) => !RETIRED_STRATEGIES.includes(k));
-var strategyLabel = (k) => k === "DAILY_LEVELS" ? "ECHO X ORBIT" : `${STRATEGIES[k].indicator} \xB7 ${STRATEGIES[k].name}`;
+var strategyLabel = (k) => RETIRED_STRATEGIES.includes(k) ? `${STRATEGIES[k].indicator} \xB7 ${STRATEGIES[k].name}` : STRATEGIES[k].name;
 function normalizeSelection(sel) {
   if (sel.mode === "DAILY_LEVELS") return { mode: "DAILY_LEVELS", multiSession: false, strategies: ["DAILY_LEVELS"] };
-  let picks = [...new Set(sel.strategies)].filter((k) => k !== "DAILY_LEVELS" && STRATEGIES[k] && !RETIRED_STRATEGIES.includes(k));
-  if (!sel.multiSession && picks.length) {
-    const session = STRATEGIES[picks[0]].session;
-    picks = picks.filter((k) => STRATEGIES[k].session === session);
-  }
+  const picks = [...new Set(sel.strategies)].filter((k) => k !== "DAILY_LEVELS" && STRATEGIES[k] && !RETIRED_STRATEGIES.includes(k));
   return { mode: "INDICATORS", multiSession: sel.multiSession, strategies: picks };
 }
 function blendedWinRate(sel) {
@@ -527,6 +525,11 @@ function todayET(d = /* @__PURE__ */ new Date()) {
 
 // src/lib/tradingPlan.ts
 var PLAN_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
+var PLAN_MODELS = { ECHO_X_ORBIT: "ECHO X ORBIT (Discord calls)", INVERTIX: "INVERTIX", ESC_VLCTY: "ESC VLCTY" };
+function cleanPlanModels(models) {
+  const ok = (models ?? []).filter((m) => m in PLAN_MODELS);
+  return ok.length ? ok : ["ECHO_X_ORBIT"];
+}
 
 // src/lib/validators.ts
 var isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD");
@@ -620,7 +623,7 @@ var tradingPlanInput = z.object({
     end: planTime,
     windows: z.record(z.enum(["ASIA", "LONDON", "NY"]), z.object({ start: planTime, end: planTime })).optional()
   }),
-  models: z.array(z.enum(["ECHO_X_ORBIT", "NYFLOW_HL", "NYFLOW_PO3", "ASIAFLOW_PO3"])).min(1, "Pick at least one model").max(4),
+  models: z.array(z.enum(["ECHO_X_ORBIT", "INVERTIX", "ESC_VLCTY"])).min(1, "Pick at least one model").max(3),
   entries: z.object({
     entry: z.enum(["limit", "confirmation", "both"]),
     stopPts: z.coerce.number().min(1).max(200),
@@ -1001,7 +1004,7 @@ async function loadDashboard(viewer, traderId) {
       readAt: f.readAt ? new Date(f.readAt).toISOString() : null
     })),
     school: sp || attempts.length ? summarizeSchool(sp ? jsonOf(sp.state) : null, sp?.unlocks ?? [], attempts) : null,
-    tradingPlan: tp ? { ...jsonOf(tp.plan), done: true, updatedAt: new Date(tp.updatedAt).toISOString() } : null,
+    tradingPlan: tp ? { ...jsonOf(tp.plan), models: cleanPlanModels(jsonOf(tp.plan).models), done: true, updatedAt: new Date(tp.updatedAt).toISOString() } : null,
     practice: summarizePractice(practiceRows),
     projection: pj ? { ...typeof pj.config === "string" ? JSON.parse(pj.config) : pj.config, name: pj.name, updatedAt: new Date(pj.updatedAt).toISOString() } : null
   });
@@ -1429,7 +1432,7 @@ app.post("/api/school/attempt", async (c) => {
 });
 app.get("/api/plan", async (c) => {
   const [row] = await sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${c.get("user").id}`;
-  const plan = row ? { ...typeof row.plan === "string" ? JSON.parse(row.plan) : row.plan, done: true, updatedAt: new Date(row.updatedAt).toISOString() } : null;
+  const plan = row ? { ...typeof row.plan === "string" ? JSON.parse(row.plan) : row.plan, models: cleanPlanModels((typeof row.plan === "string" ? JSON.parse(row.plan) : row.plan).models), done: true, updatedAt: new Date(row.updatedAt).toISOString() } : null;
   return c.json({ plan });
 });
 app.put("/api/plan", async (c) => {
