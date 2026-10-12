@@ -56,16 +56,14 @@ Money is `Decimal(12,2)`. Catalog rule amounts are whole dollars.
 
 Members pick what they trade instead of typing a win rate:
 
-| Strategy | Session | Win rate |
+| Strategy | Sessions | Win rate |
 |---|---|---|
-| Daily levels (only) | — | 92% |
-| AsiaFlow · PO3 | Asia | 70% |
-| AsiaFlow · A3IA | Asia | 81% |
-| NYFlow · PO3 | New York | 74.5% |
-| NYFlow · H/L | New York | 84% |
+| ECHO X ORBIT (only) | — | 94% |
+| INVERTIX | Asia, New York | 65% |
+| ESC VLCTY | New York, Asia | 47% |
 
-- **Only my daily levels** uses 92% and ignores the indicators.
-- **FLOW indicators** lets members pick any setups. With **multiple sessions** off, only one indicator's setups can be picked. With it on, Asia and NY can be combined.
+- **ECHO X ORBIT** uses its fixed rate and ignores the indicators.
+- **INVERTIX · ESC VLCTY** lets members pick either or both. The old NYFLOW / ASIAFLOW setups are retired: they are dropped from old roadmaps and plans, and old journal rows keep their labels.
 - The plan's win rate is the average of the chosen setups. The journal's Strategy field uses the same names, and the income card shows each setup's actual win rate against its fixed rate.
 
 

@@ -60,21 +60,21 @@ const NOTES = [
 type RM = Omit<RoadmapDTO, "winRate">;
 type Profile = { id: string; name: string; role: PersonDTO["role"]; roadmap: RM; accounts: { tpl: string; stage: Stage; qty?: number; nick?: string; daysAgo: number; bias: number; days: number }[] };
 const profiles: Profile[] = [
-  { id: "u-coach", name: "Coach Nova", role: "COACH", roadmap: { monthlyIncomeGoal: 8000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_PO3", "NYFLOW_HL", "NYFLOW_PO3"], avgRR: 1.4, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 18 },
+  { id: "u-coach", name: "Coach Nova", role: "COACH", roadmap: { monthlyIncomeGoal: 8000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["INVERTIX", "ESC_VLCTY"], avgRR: 1.4, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 18 },
     accounts: [
       { tpl: "my-funded-futures--rapid-intraday--50k", stage: "EVALUATION", daysAgo: 7, bias: 0.05, days: 6 },
       { tpl: "lucid-trading--lucidflex--50k", stage: "FUNDED", qty: 3, daysAgo: 30, bias: 0.0, days: 16 },
       { tpl: "topstep--trading-combine--100k", stage: "EVALUATION", daysAgo: 4, bias: -0.1, days: 3 },
     ] },
-  { id: "u-1", name: "vortex_nq", role: "MEMBER", roadmap: { monthlyIncomeGoal: 4000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: false, strategies: ["NYFLOW_PO3"], avgRR: 1.5, tradesPerDay: 2, primaryInstrument: "MNQ", avgStopPoints: 20 },
+  { id: "u-1", name: "vortex_nq", role: "MEMBER", roadmap: { monthlyIncomeGoal: 4000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: false, strategies: ["INVERTIX", "ESC_VLCTY"], avgRR: 1.5, tradesPerDay: 2, primaryInstrument: "MNQ", avgStopPoints: 20 },
     accounts: [{ tpl: "apex-trader-funding--intraday-trailing--50k", stage: "EVALUATION", daysAgo: 9, bias: -0.35, days: 7 }] },
   { id: "u-2", name: "lunaticks", role: "MEMBER", roadmap: { monthlyIncomeGoal: 3000, tradingDaysPerWeek: 4, strategyMode: "DAILY_LEVELS", multiSession: false, strategies: ["DAILY_LEVELS"], avgRR: 1, tradesPerDay: 2, primaryInstrument: "MNQ", avgStopPoints: 15 },
     accounts: [{ tpl: "lucid-trading--lucidflex--25k", stage: "EVALUATION", daysAgo: 6, bias: 0.02, days: 4 }, { tpl: "tradeify--select--50k", stage: "EVALUATION", daysAgo: 12, bias: -0.05, days: 8 }] },
-  { id: "u-3", name: "Deon K", role: "MEMBER", roadmap: { monthlyIncomeGoal: 10000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_PO3", "NYFLOW_HL"], avgRR: 1.3, tradesPerDay: 3, primaryInstrument: "NQ", avgStopPoints: 12 },
+  { id: "u-3", name: "Deon K", role: "MEMBER", roadmap: { monthlyIncomeGoal: 10000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["INVERTIX", "ESC_VLCTY"], avgRR: 1.3, tradesPerDay: 3, primaryInstrument: "NQ", avgStopPoints: 12 },
     accounts: [{ tpl: "my-funded-futures--rapid-intraday--150k", stage: "FUNDED", qty: 2, daysAgo: 25, bias: 0.04, days: 14 }, { tpl: "alpha-futures--standard--100k", stage: "EVALUATION", daysAgo: 10, bias: -0.2, days: 6 }] },
   { id: "u-4", name: "priya.trades", role: "MEMBER", roadmap: { monthlyIncomeGoal: 2500, tradingDaysPerWeek: 5, strategyMode: "DAILY_LEVELS", multiSession: false, strategies: ["DAILY_LEVELS"], avgRR: 1.2, tradesPerDay: 1, primaryInstrument: "MES", avgStopPoints: 6 },
     accounts: [{ tpl: "take-profit-trader--test-pro-pro--50k", stage: "EVALUATION", daysAgo: 14, bias: -0.08, days: 9 }] },
-  { id: "u-5", name: "ghostfills", role: "MEMBER", roadmap: { monthlyIncomeGoal: 6000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: false, strategies: ["NYFLOW_HL", "NYFLOW_PO3"], avgRR: 1.5, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 25 },
+  { id: "u-5", name: "ghostfills", role: "MEMBER", roadmap: { monthlyIncomeGoal: 6000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: false, strategies: ["INVERTIX", "ESC_VLCTY"], avgRR: 1.5, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 25 },
     accounts: [{ tpl: "bulenox--qualification-option-2-eod--50k", stage: "EVALUATION", daysAgo: 20, bias: -0.355, days: 5 }] },
 ];
 
@@ -123,7 +123,7 @@ db.get("u-1")!.school = summarizeSchool({ v2: { m: {
   m04: { s: "1111", p: 1, sc: 83, a: 1, n: 1 }, m05: { s: "1110", a: 1, n: 0 } } } }, [],
   [{ kind: "ex", ref: "m04", score: 10, total: 12, pass: true, createdAt: new Date(Date.now() - 864e5).toISOString() }, { kind: "ex", ref: "m03", score: 10, total: 10, pass: true, createdAt: new Date(Date.now() - 2 * 864e5).toISOString() }, { kind: "ex", ref: "m03", score: 6, total: 10, pass: false, createdAt: new Date(Date.now() - 3 * 864e5).toISOString() }]);
 db.get("u-1")!.practice = summarizePractice(Array.from({ length: 60 }, (_, i) => ({ model: ["hl", "po3", "dl", "exo"][i % 4], drill: ["mark", "replay", "limit", "echo"][i % 4], ok: (i * 7) % 10 > 3, tags: (i * 7) % 10 > 3 ? [] : [["early-entry", "cisd-read", "limit-no-lrl"][i % 3]], createdAt: new Date(Date.now() - (60 - i) * 36e5).toISOString() })));
-db.get("u-1")!.tradingPlan = { schedule: { days: ["Mon", "Tue", "Wed", "Thu"], sessions: ["NY"], start: "09:30", end: "11:00" }, models: ["ECHO_X_ORBIT", "NYFLOW_HL"], entries: { entry: "both", stopPts: 15, targetPts: 40, beAt1R: true, partials: false }, risk: { instrument: "MNQ", contracts: 3, maxLossesPerDay: 2, maxTradesPerDay: 3, dailyProfitStop: 400, noNews: true }, numbers: { monthlyGoal: 2500, tradingDays: 16 }, rules: ["No trades after a 2R win"], done: true, updatedAt: new Date().toISOString() };
+db.get("u-1")!.tradingPlan = { schedule: { days: ["Mon", "Tue", "Wed", "Thu"], sessions: ["NY"], start: "09:30", end: "11:00" }, models: ["ECHO_X_ORBIT", "INVERTIX"], entries: { entry: "both", stopPts: 15, targetPts: 40, beAt1R: true, partials: false }, risk: { instrument: "MNQ", contracts: 3, maxLossesPerDay: 2, maxTradesPerDay: 3, dailyProfitStop: 400, noNews: true }, numbers: { monthlyGoal: 2500, tradingDays: 16 }, rules: ["No trades after a 2R win"], done: true, updatedAt: new Date().toISOString() };
 const coach = db.get("u-coach")!.trader;
 const addFeedback = (traderId: string, f: Omit<FeedbackDTO, "id" | "coach" | "createdAt" | "readAt">, read = false) =>
   db.get(traderId)!.feedback.unshift({ ...f, id: `f${uid++}`, coach: { name: coach.name, avatarUrl: coach.avatarUrl }, createdAt: new Date().toISOString(), readAt: read ? new Date().toISOString() : null });

@@ -5,7 +5,7 @@ import { rowToTemplate, type CatalogRow } from "./catalog";
 import type { Strategy } from "./planner";
 import { buildDayPlan, expectedIncome, planAccount, simulateProjection, type ProjectionRow } from "./projection";
 
-// NYFLOW H/L (84%) at 1.5R, 3 trades a day, 20-pt NQ stop
+// a 84% win-rate setup at 1.5R, 3 trades a day, 20-pt NQ stop
 const strat: Strategy = { winRate: 0.84, avgRR: 1.5, tradesPerDay: 3, instrument: "NQ", avgStopPoints: 20, tradingDaysPerWeek: 5 };
 const tpl = (id: string) => {
   const t = (rows as CatalogRow[]).map(rowToTemplate).find((x) => x.id === id);
