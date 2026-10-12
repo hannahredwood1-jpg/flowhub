@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api-client";
 import { Instruments, type RoadmapDTO } from "@/lib/types";
-import { INDICATORS, SELECTABLE_STRATEGY_KEYS, STRATEGIES, blendedWinRate, normalizeSelection, type StrategyKey, type StrategyMode } from "@/lib/strategies";
+import { INDICATORS, SELECTABLE_STRATEGY_KEYS, normalizeSelection, type StrategyKey, type StrategyMode } from "@/lib/strategies";
 import { ErrorLine, Field, Modal, cx } from "./ui";
 
 export function RoadmapModal({ open, onClose, roadmap, onSaved }: { open: boolean; onClose: () => void; roadmap: RoadmapDTO | null; onSaved: () => Promise<void> }) {
@@ -16,17 +16,16 @@ export function RoadmapModal({ open, onClose, roadmap, onSaved }: { open: boolea
   });
   const [mode, setMode] = useState<StrategyMode>(roadmap?.strategyMode ?? "INDICATORS");
   const multiSession = true; // sessions come from the models you pick
-  const [picks, setPicks] = useState<StrategyKey[]>(roadmap?.strategies.filter((k) => SELECTABLE_STRATEGY_KEYS.includes(k) && k !== "DAILY_LEVELS") ?? ["INVERTIX"]);
+  const [picks, setPicks] = useState<StrategyKey[]>(() => { const own = (roadmap?.strategies ?? []).filter((k) => SELECTABLE_STRATEGY_KEYS.includes(k) && k !== "DAILY_LEVELS"); return own.length ? own : ["INVERTIX"]; }); // INVERTIX is preselected
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const set = (key: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [key]: e.target.value });
 
   const sel = normalizeSelection({ mode, multiSession, strategies: picks });
-  const winRate = blendedWinRate(sel);
-  const edge = winRate * Number(f.avgRR) - (1 - winRate);
 
   const toggle = (k: StrategyKey) => {
-    setPicks(picks.includes(k) ? picks.filter((x) => x !== k) : [...picks, k]);
+    if (mode === "DAILY_LEVELS") { setMode("INDICATORS"); return setPicks([k]); }
+    setPicks(picks.includes(k) ? (picks.length > 1 ? picks.filter((x) => x !== k) : picks) : [...picks, k]);
   };
 
   async function submit(e: React.FormEvent) {
@@ -48,40 +47,17 @@ export function RoadmapModal({ open, onClose, roadmap, onSaved }: { open: boolea
           <Field label="Days you trade per week" htmlFor="rm-days"><input id="rm-days" type="number" min={1} max={7} className="field num" value={f.tradingDaysPerWeek} onChange={set("tradingDaysPerWeek")} /></Field>
         </div>
 
-        {/* Strategy picker */}
+        {/* Strategy picker: three separate models. ECHO X ORBIT stands alone; INVERTIX and ESC VLCTY are separate indicators that can be combined. */}
         <fieldset className="grid gap-3">
           <legend className="label mb-3 !text-ice">What are you trading?</legend>
-          <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Strategy mode">
-            <ModeCard on={mode === "DAILY_LEVELS"} onClick={() => setMode("DAILY_LEVELS")} title="ECHO X ORBIT" sub={`${pctTxt(STRATEGIES.DAILY_LEVELS.winRate)} win rate · the Discord calls`} />
-            <ModeCard on={mode === "INDICATORS"} onClick={() => setMode("INDICATORS")} title="INVERTIX · ESC VLCTY" sub="INVERTIX and/or ESC VLCTY" />
+          <div className="grid gap-2 sm:grid-cols-3">
+            <ModeCard on={mode === "DAILY_LEVELS"} onClick={() => { setMode("DAILY_LEVELS"); }} title="ECHO X ORBIT" sub="The Discord calls" />
+            {INDICATORS.map((ind) => {
+              const k = ind.strategies[0];
+              return <ModeCard key={ind.name} on={mode === "INDICATORS" && picks.includes(k)} onClick={() => toggle(k)} title={ind.name} sub={ind.sessions} />;
+            })}
           </div>
-
-          {mode === "INDICATORS" && (
-            <div className="grid gap-3 border border-line bg-abyss/60 p-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                {INDICATORS.map((ind) => {
-                  const active = ind.strategies.some((k) => sel.strategies.includes(k));
-                  return (
-                    <div key={ind.name} className={cx("border p-3 transition-colors", active ? "border-ice-dim" : "border-line")}>
-                      <div className="flex items-baseline justify-between">
-                        <span className="font-display text-base font-extrabold">{ind.name}</span>
-                        <span className="label">{ind.sessions}</span>
-                      </div>
-                      <div className="mt-2 grid gap-1.5">
-                        {ind.strategies.map((k) => (
-                          <label key={k} className="flex cursor-pointer items-center gap-2.5 text-sm">
-                            <input id={`rm-${k}`} type="checkbox" className="h-4 w-4 accent-[var(--color-ice)]" checked={sel.strategies.includes(k)} onChange={() => toggle(k)} />
-                            <span className="flex-1">{STRATEGIES[k].name}</span>
-                            <span className="num text-xs text-ink-2">{pctTxt(STRATEGIES[k].winRate)}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {mode === "INDICATORS" && <p className="text-xs text-ink-3">INVERTIX and ESC VLCTY are separate indicators: pick one, or both to count both in your plan.</p>}
         </fieldset>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -91,16 +67,7 @@ export function RoadmapModal({ open, onClose, roadmap, onSaved }: { open: boolea
             <select id="rm-inst" className="field" value={f.primaryInstrument} onChange={set("primaryInstrument")}>{Instruments.map((i) => <option key={i}>{i}</option>)}</select>
           </Field>
           <Field label="Typical stop (points)" htmlFor="rm-stop"><input id="rm-stop" type="number" min={0.25} step={0.25} className="field num" value={f.avgStopPoints} onChange={set("avgStopPoints")} /></Field>
-          <div className="grid content-end">
-            <div className="label">Plan win rate</div>
-            <div className="num mt-1 text-xl text-ice">{pctTxt(winRate)}</div>
-          </div>
-          <div className="grid content-end">
-            <div className="label">Edge per trade</div>
-            <div className={`num mt-1 text-xl ${edge > 0 ? "text-win" : "text-loss"}`}>{edge.toFixed(2)}R</div>
-          </div>
         </div>
-        {mode === "INDICATORS" && sel.strategies.length > 1 && <p className="-mt-2 text-xs text-ink-3">Plan win rate is the average of the setups you picked.</p>}
 
         <ErrorLine error={error} />
         <div className="flex justify-end gap-2">
@@ -112,7 +79,6 @@ export function RoadmapModal({ open, onClose, roadmap, onSaved }: { open: boolea
   );
 }
 
-const pctTxt = (n: number) => `${+(n * 100).toFixed(1)}%`;
 
 function ModeCard({ on, onClick, title, sub }: { on: boolean; onClick: () => void; title: string; sub: string }) {
   return (

@@ -112,7 +112,7 @@ export function ProjectionsPage({ data, catalog, onSaved }: { data: DashboardDat
           <h1 className="mt-1 font-display text-[clamp(22px,3vw,30px)] font-bold leading-none">Plan your accounts</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink-2">
             Pick the accounts you run or plan to buy. FLOWHUB projects what they can pay you month by month, then turns it into a daily plan. It uses your setups
-            ({roadmap.strategies.map(strategyLabel).join(", ")} · {pct(roadmap.winRate, 1)} win rate), {roadmap.avgRR}R, {roadmap.tradesPerDay} trades a day.{" "}
+            ({roadmap.strategies.map(strategyLabel).join(", ")}), {roadmap.avgRR}R, {roadmap.tradesPerDay} trades a day.{" "}
             <button className="text-ice underline-offset-2 hover:underline" onClick={() => setEditRoadmap(true)}>Change strategy</button>
           </p>
         </div>

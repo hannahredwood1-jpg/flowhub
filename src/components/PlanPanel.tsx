@@ -299,28 +299,26 @@ function StrategyCheck({ data }: { data: DashboardData }) {
     <div className="grid gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="label">Strategy check · your logged trades</span>
-        <span className="text-xs text-ink-3">{sessions} · plan win rate <span className="num text-ink-2">{pct(rm.winRate, 1)}</span></span>
+        <span className="text-xs text-ink-3">{sessions}</span>
       </div>
       <div className="grid gap-1.5">
         {data.strategyStats.map((s) => {
           const inPlan = rm.strategies.includes(s.key);
-          const off = s.actual != null && s.trades >= 10 && s.actual < s.expected - 0.1;
           return (
             <div key={s.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 text-sm">
               <span className={cx("truncate", inPlan ? "text-ink" : "text-ink-3")}>{s.label}{!inPlan && <span className="text-xs"> · not in plan</span>}</span>
               <span className="num text-xs">
-                <span className={off ? "text-loss" : s.actual != null && s.actual >= s.expected ? "text-win" : "text-ink-2"}>{s.actual != null ? pct(s.actual) : "—"}</span>
-                <span className="text-ink-3"> / {pct(s.expected, s.expected * 100 % 1 ? 1 : 0)} · {s.trades}</span>
+                <span className="text-ink-2">{s.actual != null ? pct(s.actual) : "—"}</span>
+                <span className="text-ink-3"> · {s.trades} trade{s.trades === 1 ? "" : "s"}</span>
               </span>
               <div className="relative col-span-2 h-1 bg-line">
-                {s.actual != null && <div className={cx("h-full", off ? "bg-loss" : "bg-ice-dim")} style={{ width: `${s.actual * 100}%` }} />}
-                <div className="absolute -top-0.5 h-2 w-px bg-ink-2" style={{ left: `${s.expected * 100}%` }} title="Expected win rate" />
+                {s.actual != null && <div className="h-full bg-ice-dim" style={{ width: `${s.actual * 100}%` }} />}
               </div>
             </div>
           );
         })}
       </div>
-      <p className="text-xs text-ink-3">Actual win rate / expected · trades. Log each trade under its strategy so this stays accurate.</p>
+      <p className="text-xs text-ink-3">Your win rate by strategy · trades. Log each trade under its strategy so this stays accurate.</p>
     </div>
   );
 }
