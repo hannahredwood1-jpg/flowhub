@@ -1,6 +1,6 @@
 // FLOWHUB browser app for the Railway deployment. Same components as the Next.js app, talking to deploy/server.ts.
 import { createRoot } from "react-dom/client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../src/lib/api-client";
 import type { CatalogFirm, CoachDirectoryRow, DashboardData } from "../src/lib/types";
 import { todayET } from "../src/lib/types";
@@ -10,6 +10,7 @@ import { HomeScreen } from "../src/components/HomeScreen";
 import { MemberDashboard } from "../src/components/MemberDashboard";
 import { CoachPortal } from "../src/components/CoachPortal";
 import { TradingPlanPage } from "../src/components/TradingPlan";
+import { startUsageTracker } from "../src/lib/usageTracker";
 
 const NOTICES: Record<string, string> = {
   "denied-guild": "You're not in the FLOWMTD Discord server. Join it with the invite link from your coach, then connect again.",
@@ -57,6 +58,16 @@ function App() {
   useEffect(() => {
     if (staff && view === "coach" && !directory) api.members("", "drawdown").then(setDirectory, () => setDirectory([]));
   }, [staff, view, directory]);
+
+  // time on each dashboard page, for the coach portal's activity panel
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const signedIn = state.kind === "app";
+  useEffect(() => {
+    if (!signedIn) return;
+    const names: Record<string, string> = { home: "Home", dashboard: "Dashboard", plan: "Trading Plan", coach: "Coach portal" };
+    return startUsageTracker(() => names[viewRef.current] ?? "Dashboard");
+  }, [signedIn]);
 
   if (state.kind === "loading") return <div id="boot">FLOWHUB // SYNCING</div>;
   if (state.kind === "error") return <div id="boot">{state.message}</div>;
