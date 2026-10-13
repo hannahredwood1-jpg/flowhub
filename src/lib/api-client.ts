@@ -1,6 +1,9 @@
 // Browser → API client. All authorization happens server-side; this is just typed fetch.
 import type { CatalogFirm, CoachDirectoryRow, DashboardData } from "./types";
 
+export type UsageRow = { id: string; name: string; role: string; lastSeen: string | null; lastLogin: string | null; sessions7: number; minutes7: number };
+export type UsageDetail = { days: number; sessions: { startedAt: string; lastSeenAt: string; minutes: number }[]; sections: { area: string; section: string; minutes: number; lastDay: string }[] };
+
 export type LogEntry = { kind: "checklist" | "review"; day: string; data: Record<string, unknown> };
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -39,6 +42,8 @@ export const api = {
   // Coach / Admin
   members: (q: string, sort: string) => call<CoachDirectoryRow[]>(`/api/coach/members?q=${encodeURIComponent(q)}&sort=${sort}`),
   member: (userId: string) => call<DashboardData>(`/api/coach/members/${userId}`),
+  usageOverview: () => call<UsageRow[]>("/api/coach/usage"),
+  usageDetail: (userId: string, days = 30) => call<UsageDetail>(`/api/coach/usage/${userId}?days=${days}`),
   schoolUnlock: (userId: string, level: string, on: boolean) => call(`/api/coach/members/${userId}/unlock`, send("POST", { level, on })),
   giveFeedback: (data: unknown) => call<{ id: string }>("/api/coach/feedback", send("POST", data)),
 };

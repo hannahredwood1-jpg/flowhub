@@ -1373,8 +1373,8 @@ function cleanSchoolState(b) {
     const m = {};
     for (const [k, v] of Object.entries(o.v2.m && typeof o.v2.m === "object" ? o.v2.m : {}).slice(0, 40)) {
       if (!SCHOOL_MODULE_SET.has(k) || !v || typeof v !== "object") continue;
-      const s = String(v.s ?? "0000");
-      m[k] = { s: /^[01]{4}$/.test(s) ? s : "0000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+      const s = String(v.s ?? "000");
+      m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
     }
     out.v2 = { m };
   }
@@ -1459,6 +1459,47 @@ app.post("/api/feedback/:id/read", async (c) => {
   const r = await sql`update "CoachFeedback" set "readAt" = now() where id = ${c.req.param("id")} and "traderId" = ${c.get("user").id} returning id`;
   if (!r.length) throw new HttpError(404, "Not found");
   return c.json({ ok: true });
+});
+var USAGE_AREAS = /* @__PURE__ */ new Set(["dashboard", "school", "practice"]);
+app.post("/api/usage", async (c) => {
+  const b = await c.req.json().catch(() => ({}));
+  if (!b.sid || !/^[A-Za-z0-9-]{8,48}$/.test(b.sid) || !b.area || !USAGE_AREAS.has(b.area)) throw new HttpError(400, "Bad usage ping");
+  const section = String(b.section ?? "").replace(/[\u0000-\u001f]/g, "").trim().slice(0, 80) || "Other";
+  const secs = clampInt(b.secs, 0, 120);
+  const uid = c.get("user").id;
+  await sql`insert into "UsageSession" (id, "userId", seconds) values (${b.sid}, ${uid}, ${secs})
+            on conflict (id) do update set "lastSeenAt" = now(), seconds = "UsageSession".seconds + ${secs} where "UsageSession"."userId" = ${uid}`;
+  if (secs > 0)
+    await sql`insert into "UsageDaily" ("userId", day, area, section, seconds) values (${uid}, (now() at time zone 'America/New_York')::date, ${b.area}, ${section}, ${secs})
+              on conflict ("userId", day, area, section) do update set seconds = "UsageDaily".seconds + ${secs}, "updatedAt" = now()`;
+  return c.json({ ok: true });
+});
+app.get("/api/coach/usage", async (c) => {
+  staffOnly(c);
+  const rows = await sql`
+    select u.id, coalesce(u."globalName", u.username) as name, u.role, u."lastLoginAt",
+           max(s."lastSeenAt") as "lastSeen",
+           count(s.id) filter (where s."startedAt" > now() - interval '7 days')::int as sessions7,
+           coalesce(sum(s.seconds) filter (where s."startedAt" > now() - interval '7 days'), 0)::int as secs7
+    from "User" u left join "UsageSession" s on s."userId" = u.id
+    where u."isGuildMember" or exists (select 1 from "UsageSession" x where x."userId" = u.id)
+    group by u.id order by max(s."lastSeenAt") desc nulls last, u.username limit 500`;
+  const iso = (v) => v ? new Date(v).toISOString() : null;
+  return c.json(rows.map((r) => ({ id: r.id, name: r.name, role: r.role, lastSeen: iso(r.lastSeen), lastLogin: iso(r.lastLoginAt), sessions7: r.sessions7, minutes7: Math.round(Number(r.secs7) / 60) })));
+});
+app.get("/api/coach/usage/:id", async (c) => {
+  staffOnly(c);
+  const id = c.req.param("id"), days = clampInt(c.req.query("days") ?? 30, 1, 120);
+  const [sessions, sections] = await Promise.all([
+    sql`select "startedAt", "lastSeenAt", seconds from "UsageSession" where "userId" = ${id} order by "startedAt" desc limit 25`,
+    sql`select area, section, sum(seconds)::int as seconds, max(day) as "lastDay" from "UsageDaily" where "userId" = ${id} and day > (now() at time zone 'America/New_York')::date - ${days}::int group by area, section order by sum(seconds) desc limit 200`
+  ]);
+  const iso = (v) => new Date(v).toISOString();
+  return c.json({
+    days,
+    sessions: sessions.map((s) => ({ startedAt: iso(s.startedAt), lastSeenAt: iso(s.lastSeenAt), minutes: Math.round(Number(s.seconds) / 60) })),
+    sections: sections.map((s) => ({ area: s.area, section: s.section, minutes: Math.round(Number(s.seconds) / 60 * 10) / 10, lastDay: String(s.lastDay).slice(0, 10) }))
+  });
 });
 app.get("/api/coach/members", async (c) => {
   staffOnly(c);
