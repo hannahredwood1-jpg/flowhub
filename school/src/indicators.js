@@ -121,9 +121,32 @@ function invSteps(ex){
 function indLoad(){ensureCharts();$('#v-lab').classList.remove('nochart');$$('[data-tf]').forEach(b=>b.hidden=true);$('#chartHost2').hidden=true;$('.chartcol').classList.remove('dual');TB.set('cursor')}
 function indPaint(){
   const ex=IV.list[IV.i],st=IV.steps[IV.step],C=exData(ex);indLoad();CH.size();
-  CH.setData(C.slice(0,st.upto+1),{k:1,t0:ex.hm,stepMin:ex.inv?1:5,fit:true});CH.marks=[];CH.taps=new Set();CH.ov=st.ov;
-  CH.count=st.count||Math.min(70,C.length+3);CH.focus(st.focus);if(ex.m!=='cm')CH.from=st.from!=null?st.from:Math.max(-1,st.focus-CH.count*.62);$('#chartTf').textContent=ex.inv?'1m candles':'5m candles';$('#chartHint').textContent='Drag to pan · scroll to zoom. Prices in these examples are shifted; the shape and times are real.';CH.draw();
+  CH.setData(C.slice(0,st.upto+1),{k:1,t0:ex.hm,stepMin:(ex.inv||ex.sn)?1:5,fit:true});CH.marks=[];CH.taps=new Set();CH.ov=st.ov;
+  CH.count=st.count||Math.min(70,C.length+3);CH.focus(st.focus);if(ex.m!=='cm')CH.from=st.from!=null?st.from:Math.max(-1,st.focus-CH.count*.62);$('#chartTf').textContent=(ex.inv||ex.sn)?'1m candles':'5m candles';$('#chartHint').textContent='Drag to pan · scroll to zoom. Prices in these examples are shifted; the shape and times are real.';CH.draw();
 }
+/* ---------- EVAL SNIPER 2.0: buy stop and sell stop a set distance from the current price, take-profit lines for both, and the 08:28 to 08:30 timer (1-minute candles, jobs-report mornings) ---------- */
+const SNC={st:'#6b7280',tp:'#9aa1af'};
+const SN_DIST=30,SN_USD=1500,SN_PTS=75;
+const snLine=(ex,p,col,i1,x2={})=>hlAt(p,'',COL.ice,ex.k0,{scale:true,pine:1,pcol:col,pleft:1,i1,pw:1,...x2});
+const snLab=(ex,p,t,c,i=ex.k0+4)=>({t:'lab',i,p,al:'left',bg:'#070a10',tc:c,tiny:1,lines:[t]});
+const snLevels=(ex,i1,tpToo)=>{const b=ex.X+SN_DIST,s=ex.X-SN_DIST,out=[snLine(ex,b,SNC.st,i1,{pdot:1}),snLine(ex,s,SNC.st,i1,{pdot:1}),snLab(ex,b,`Buy Stop (${fm(b)})`,SNC.st,i1+1),snLab(ex,s,`Sell Stop (${fm(s)})`,SNC.st,i1+1)];
+  if(tpToo){out.push(snLine(ex,b+SN_PTS,SNC.tp,i1,{pdash:1}),snLine(ex,s-SN_PTS,SNC.tp,i1,{pdash:1}),snLab(ex,b+SN_PTS,`Buy TP (${fm(b+SN_PTS)}) · +$${fm(SN_USD,0)} · ${SN_PTS} pts`,SNC.tp,i1+1),snLab(ex,s-SN_PTS,`Sell TP (${fm(s-SN_PTS)}) · +$${fm(SN_USD,0)} · ${SN_PTS} pts`,SNC.tp,i1+1))}
+  return out};
+const snWin=()=>({t:'band',i0:13,i1:15,col:COL.lag,a:.08,text:'08:28–08:30 · "2 minute war"'});
+function snSteps(ex){
+  const C=exData(ex),T=i=>hhmm(ex.hm+i),pr=fm,st=[],b=ex.X+SN_DIST,s=ex.X-SN_DIST,view=(a,c)=>({from:Math.max(-1,a),count:Math.max(40,Math.min(70,c-a+8))});
+  const end=ex.xi!=null?ex.xi:Math.min(C.length-1,ex.ei!=null?ex.ei+8:ex.k0+25);
+  st.push({upto:ex.k0,focus:ex.k0,...view(0,ex.k0+16),ov:[snWin(),...snLevels(ex,ex.k0+3,false)],cap:`<b>Before the news.</b> Eval Sniper draws two lines from the <b>current price</b> (${pr(ex.X)} at ${T(ex.k0)}): a <b>Buy Stop</b> ${SN_DIST} points above (${pr(b)}) and a <b>Sell Stop</b> ${SN_DIST} points below (${pr(s)}). The distance is the first setting (Distance, in points). The lines are redrawn from the latest candle, so they follow price until the news. During the news window (08:28 to 08:30 New York time by default) a countdown timer shows at the top of the chart: the default text is "2 minute war".`});
+  st.push({upto:ex.k0,focus:ex.k0,...view(0,ex.k0+16),ov:[snWin(),...snLevels(ex,ex.k0+3,true)],cap:`<b>The profit target.</b> The dashed <b>Buy TP</b> and <b>Sell TP</b> lines show where to put your take-profit for each stop order. Choose the target in <b>dollars</b> or <b>points</b>. With the defaults, $${fm(SN_USD,0)} on 1 NQ ($20 a point) is <b>${SN_PTS} points</b>, so Buy TP is ${pr(b)} + ${SN_PTS} = <b>${pr(b+SN_PTS)}</b> and Sell TP is ${pr(s)} − ${SN_PTS} = <b>${pr(s-SN_PTS)}</b>. The dollar target is split over your contracts: 5 MNQ ($2 a point) and $1,500 would be 150 points. TradingView cannot let a script's line be dragged, so the lines show the exact price to type or drag your take-profit to on the order tool.`});
+  st.push({upto:ex.k0+1,focus:ex.k0+1,...view(0,ex.k0+16),ov:[snWin(),...snLevels(ex,ex.k0+3,true)],cap:`<b>The news candle.</b> At 08:30 the report comes out and the 1-minute candle can be 50 points or more. Your orders were placed before it, from the last price you saw. The indicator does not place orders: you place a buy stop and a sell stop yourself, at the lines, and set each take-profit at its TP line.`});
+  const ev=ex.side==='buy'||ex.side==='sell',L=ex.side==='buy',ent=L?b:s,tp=L?b+SN_PTS:s-SN_PTS;
+  const trig=ev?[snLevels(ex,ex.ei+6,true),{...tagAt(ex.ei,L?C[ex.ei].h:C[ex.ei].l,L?'buy stop filled':'sell stop filled',L?'above':'below',COL.ice),pine:1,bg:'rgba(75,82,96,.8)',tc:'#fff',tiny:1}].flat():snLevels(ex,ex.k0+3,true);
+  const capTrig=ev?`<b>One stop fills.</b> At <b>${T(ex.ei)}</b> price trades ${L?'up through':'down through'} the ${L?'Buy':'Sell'} Stop at <b>${pr(ent)}</b>, so that order is filled. Place the two stops as a pair where one cancels the other (OCO), so the other stop is removed when this one fills. In a fast candle a stop order can fill beyond the line: expect slippage.`:ex.side==='both'?`<b>Both stops get touched.</b> In the ${T(ex.ei)} candle price runs ${SN_DIST} points ${'both ways'}: it reaches the Buy Stop (${pr(b)}) and the Sell Stop (${pr(s)}) within the same candle. This is the risk of a news candle that whips both ways: the indicator draws the lines, it cannot tell you which side will be right.`:`<b>Nothing fills.</b> Price stayed between the two stops for the next 35 minutes: neither the Buy Stop (${pr(b)}) nor the Sell Stop (${pr(s)}) was touched. No trade, and the orders are cancelled.`;
+  st.push({upto:ev||ex.side==='both'?ex.ei:Math.min(C.length-1,ex.k0+30),focus:ev||ex.side==='both'?ex.ei:ex.k0+20,...view(0,(ev?ex.ei:ex.k0)+16),ov:[snWin(),...trig],cap:capTrig});
+  if(ev){const why={tp:`Price kept going and traded through the ${L?'Buy':'Sell'} TP at <b>${pr(tp)}</b> at <b>${T(ex.xi)}</b>: the take-profit was reached.`,rev:`Price reversed and traded back through the opposite stop level (${pr(L?s:b)}) at <b>${T(ex.xi)}</b>, ${2*SN_DIST} points from the entry, before reaching the TP. A move like this is why the size and the stop matter.`,open:`Neither the TP (${pr(tp)}) nor the opposite stop level (${pr(L?s:b)}) was reached in the next 35 minutes.`}[ex.res];
+    st.push({upto:end,focus:end,...view(0,end+6),ov:[snWin(),...snLevels(ex,end,true)],cap:`<b>What happened next.</b> ${why} Eval Sniper itself prints no win or loss: it only draws the lines, and you manage the order.`})}
+  st.push({upto:Math.min(C.length-1,end),focus:Math.min(C.length-1,end),...view(0,end+6),ov:[snWin(),...snLevels(ex,end,true)],cap:`<b>What to remember.</b> The lines and the timer exist only on the <b>last candle</b> of the chart and move with it, so set your orders inside the window, from the lines you see. Check the news time and your prop firm's news rule first: some firms block orders or trades around the release. A stop order at the news can slip, so size for the stop you would really take.`});
+  return st}
 const IND_GUIDE={
  inv:{t:'INVERTIX',sub:'The first trading model, the IFVG model: a narrative, a sponsor, PO3, a flip and a defined entry. On TradingView use the 1-minute chart; these examples are 1-minute candles.',items:[
   ['Outline box with a name inside','The sponsor price traded into to start the setup, for example "15m FVG": an unfilled gap from 15 minutes up, a rejection block or a 5-minute CISD zone.'],
@@ -135,6 +158,13 @@ const IND_GUIDE={
   ['Dotted line "STEP 1 …"','The moment price touches it, move your real stop to the price written there. Step 1 is break-even at +1R, step 2 is +0.5R at +1.5R. If it sits on the target, its text is added to the target label.'],
   ['Today\'s bias','The first setting. Bullish prints longs only, Bearish shorts only, Neutral both. Changing it redraws the whole chart.'],
   ['What it does not show','Win or loss results are not printed on the chart. You log them yourself, in R.']]},
+ sn:{t:'Eval Sniper',sub:'News-candle stop orders for jobs-report and CPI mornings. On TradingView use the 1-minute chart. The examples here are first-Friday (jobs report) mornings, 08:15 to 09:05 New York time.',items:[
+  ['Buy Stop (price)','A dotted line a set distance above the current price (30 points by default). Place a buy stop order at it.'],
+  ['Sell Stop (price)','A dotted line the same distance below the current price. Place a sell stop order at it. The two lines follow the latest candle.'],
+  ['Buy TP / Sell TP','Dashed take-profit lines for each stop order. The label shows the price, the dollars and the points. Choose the target in dollars or points; the dollars are split over your contracts.'],
+  ['The countdown timer','Shown at the top of the chart inside the news window (08:28 to 08:30 New York time by default), counting down to the end. The default text is "2 minute war".'],
+  ['Distance and contract','Distance (points) sets how far the stops sit from price. Contract (NQ $20 or MNQ $2 a point) and Number of contracts turn a dollar target into points.'],
+  ['What it does not do','It does not place orders or manage them, and it prints no results. It draws the levels and the timer for the last candle only.']]},
  esc:{t:'ESC VLCTY',sub:'One indicator for New York and Asia, measured from the previous 16:00 close. On TradingView use the 1-minute chart. The examples here are drawn on 5-minute candles so a whole session fits.',items:[
   ['16:00 close','A dashed grey line: the previous 16:00 New York close, the anchor everything is measured from.'],
   ['LONG ≥ +0.40 U / SHORT ≤ −0.20 U','Dotted trigger lines for New York, drawn at 09:30. U is the average daily range of the last 10 sessions.'],
@@ -155,17 +185,17 @@ const IND_GUIDE={
   ['Asia / London / New York High and Low','Session extremes from the last 24 hours (8 PM to midnight, 2 to 5 AM, 7 to 10 AM ET). The line disappears once price taps it.'],
   ['True Day Open','The open at midnight New York time. Below it, price is cheap for the day; above it, expensive.'],
   ['HOD / LOD','The live high and low of the current day. Reset every midnight ET.']]}};
-const indSteps=ex=>ex.m==='cm'?cmSteps(ex):ex.inv?invSteps(ex):escSteps(ex);
-const indTitle=e=>e.m==='cm'?'Confluence Master · 5m':e.inv?`INVERTIX · ${e.m} ${e.dir===1?'long':'short'}`:`ESC VLCTY · ${escName(e).sess}${e.k==='none'?' · no trade':' '+(e.dir===1?'long':'short')}`;
+const indSteps=ex=>ex.sn?snSteps(ex):ex.m==='cm'?cmSteps(ex):ex.inv?invSteps(ex):escSteps(ex);
+const indTitle=e=>e.sn?'Eval Sniper · jobs report morning':e.m==='cm'?'Confluence Master · 5m':e.inv?`INVERTIX · ${e.m} ${e.dir===1?'long':'short'}`:`ESC VLCTY · ${escName(e).sess}${e.k==='none'?' · no trade':' '+(e.dir===1?'long':'short')}`;
 function indPanel(){
   const box=$('#lesson'),g=IND_GUIDE[IV.ind],ex=IV.list[IV.i];
-  const seg=`<div class="seg">${[['inv','INVERTIX'],['esc','ESC VLCTY'],['cm','Confluence Master']].map(([k,t])=>`<button type="button" data-iv="${k}" class="${IV.ind===k?'on':''}">${t}</button>`).join('')}</div>`;
+  const seg=`<div class="seg">${[['inv','INVERTIX'],['esc','ESC VLCTY'],['sn','Eval Sniper'],['cm','Confluence Master']].map(([k,t])=>`<button type="button" data-iv="${k}" class="${IV.ind===k?'on':''}">${t}</button>`).join('')}</div>`;
   let body='',foot='';
   if(IV.mode==='guide'){
     body=`<p class="muted">${g.sub}</p><h3>What is on the chart, and what it means</h3><div>${g.items.map(([a,b])=>`<div class="rev"><p><b>${esc(a)}</b></p><p>${esc(b)}</p></div>`).join('')}</div>`;
     foot=`<button class="btn primary" data-ivgo="list">See real examples →</button>${IV.ind!=='cm'?'<button class="btn" data-ivgo="turn">Your turn: read the signal</button>':''}`;
   }else if(IV.mode==='list'){
-    body=`<p class="muted">Real NQ sessions with the indicator's rules applied. Prices are shifted and dates removed. Pick one and step through why it printed, or why it stayed quiet.</p><div class="kv">${IV.list.map((e,i)=>`<button type="button" class="chip" data-ivex="${i}" style="cursor:pointer">${e.m==='cm'?`Day ${i+1}`:e.inv?`${i+1} · ${e.m} ${e.dir===1?'long':'short'}`:`${i+1} · ${escName(e).tag} ${e.k==='none'?'no trade':e.dir===1?'long':'short'}`}</button>`).join('')}</div>`;
+    body=`<p class="muted">Real NQ sessions with the indicator's rules applied. Prices are shifted and dates removed. Pick one and step through why it printed, or why it stayed quiet.</p><div class="kv">${IV.list.map((e,i)=>`<button type="button" class="chip" data-ivex="${i}" style="cursor:pointer">${e.sn?`${i+1} · ${e.side==='buy'||e.side==='sell'?e.side+' stop filled':e.side==='both'?'both stops touched':'no fill'}`:e.m==='cm'?`Day ${i+1}`:e.inv?`${i+1} · ${e.m} ${e.dir===1?'long':'short'}`:`${i+1} · ${escName(e).tag} ${e.k==='none'?'no trade':e.dir===1?'long':'short'}`}</button>`).join('')}</div>`;
     foot=`<button class="btn" data-ivgo="guide">← Notation guide</button>`;
   }else if(IV.mode==='walk'){
     body=`<div class="hud">Example ${IV.i+1} of ${IV.list.length} · ${indTitle(ex)}</div><div class="cap" style="margin-top:8px">${IV.steps[IV.step].cap}</div><div class="kv" style="margin-top:10px">${IV.steps.map((_,i)=>`<span class="chip ${i===IV.step?'live':i<IV.step?'ok':''}">${i+1}</span>`).join('')}</div>`;
@@ -175,7 +205,7 @@ function indPanel(){
 }
 function indOpen(){
   PV='ind';$('#v-lab').classList.remove('nochart');
-  IV.list=IV.ind==='cm'?(typeof IND_CM!=='undefined'?IND_CM:[]):IV.ind==='inv'?(typeof IND_INV!=='undefined'?IND_INV:[]):(typeof IND_ESC!=='undefined'?IND_ESC:[]);
+  IV.list=IV.ind==='sn'?(typeof IND_SNIPER!=='undefined'?IND_SNIPER:[]):IV.ind==='cm'?(typeof IND_CM!=='undefined'?IND_CM:[]):IV.ind==='inv'?(typeof IND_INV!=='undefined'?IND_INV:[]):(typeof IND_ESC!=='undefined'?IND_ESC:[]);
   if(IV.mode==='walk'&&!IV.list.length)IV.mode='guide';
   if(IV.mode==='guide'||IV.mode==='list'){indLoad();CH.size();CH.setData([{o:100,h:100,l:100,c:100}],{k:1,t0:540,stepMin:1,fit:true});CH.ov=[];CH.draw()}
   else indPaint();
@@ -199,7 +229,16 @@ function invItem(r){
   if(k==='size'){const risk=pick(r,[375,500,750,1000]),z=Math.max(1,Math.floor(risk/(ex.R*2)));return{...base,kind:'num',topic,q:`INVERTIX ${L?'long':'short'}: the stop is ${fm(ex.R,1)} points. Your risk is $${risk} on MNQ ($2 a point). How many contracts, rounded down (minimum 1)?`,ans:z,unit:'',tol:.01,why:`$${risk} ÷ (${fm(ex.R,1)} × $2) = ${(risk/(ex.R*2)).toFixed(2)}, rounded down to ${z}${z===1&&risk/(ex.R*2)<1?' (the minimum of 1; the tab warns if it is more than you wanted)':''}.`}}
   const o=['The sponsor','The flip','The order','The result'],i=pick(r,[0,1,2]);const txt=[`Price runs ${L?'down':'up'} into an unfilled ${ex.kg.name}.`,`A strong candle closes ${L?'above':'below'} the highest-timeframe small ${L?'bearish':'bullish'} gap inside the leg.`,`Market entry at the next open, stop one point beyond the leg's extreme, target the nearest unfilled gap.`][i];
   return{...base,kind:'mcq',topic,q:`Which INVERTIX step is this? "${txt}"`,o:[o[i],...o.filter(x=>x!==o[i]).slice(0,3)],why:'Narrative, then the sponsor, then PO3 and the flip (the signal), then the order. The sponsor starts the setup; the flip is the signal.'}}
+function snItem(r){
+  const ex=pick(r,IND_SNIPER),C=exData(ex),base={t0:ex.hm,step:1},topic='Indicator · Eval Sniper',b=ex.X+SN_DIST,sl=ex.X-SN_DIST,k=pick(r,['lvl','tp','price','tap']);
+  if(k==='lvl')return{...base,kind:'level',topic,q:`Eval Sniper with the default distance of ${SN_DIST} points. The last candle before the news closed at ${fm(ex.X)}. Place the BUY STOP and the SELL STOP.`,C:C.slice(0,ex.k0+1),ov:[snWin()],truth:[{p:b,tol:2,label:'buy stop'},{p:sl,tol:2,label:'sell stop'}],why:`Buy Stop = ${fm(ex.X)} + ${SN_DIST} = ${fm(b)}. Sell Stop = ${fm(ex.X)} − ${SN_DIST} = ${fm(sl)}.`};
+  if(k==='tp'){const q=pick(r,[['NQ',20,1,1500],['NQ',20,2,1000],['MNQ',2,5,1500],['MNQ',2,10,1000],['NQ',20,1,1000],['MNQ',2,20,2000]]),pts=q[3]/(q[1]*q[2]);
+    return{kind:'num',topic,q:`Eval Sniper's profit target is set to $${fm(q[3],0)} with ${q[2]} ${q[0]} ($${q[1]} a point per contract). How many points is the take-profit from each stop?`,ans:pts,unit:'pts',tol:.01,why:`$${fm(q[3],0)} ÷ ($${q[1]} × ${q[2]}) = ${pts} points. The dollar target is split over your contracts.`}}
+  if(k==='price'){const buy=r()<.5,pts=SN_PTS;return{...base,kind:'num',topic,q:`The last candle before the news closed at ${fm(ex.X)}. With a ${SN_DIST}-point distance and a ${pts}-point target, what price is the ${buy?'Buy':'Sell'} TP?`,ans:buy?b+pts:sl-pts,unit:'',tol:.3,why:buy?`Buy Stop ${fm(b)} + ${pts} = ${fm(b+pts)}.`:`Sell Stop ${fm(sl)} − ${pts} = ${fm(sl-pts)}.`}}
+  if(ex.ei!=null&&(ex.side==='buy'||ex.side==='sell')){const L=ex.side==='buy';return{...base,kind:'tap',many:false,topic,q:`The orders were placed from the last candle before the news (the lines are drawn). Click the first candle that fills a stop order.`,C:C.slice(0,Math.min(C.length,ex.ei+6)),ov:[snWin(),...snLevels(ex,ex.ei+5,false)],want:[ex.ei],why:`The candle at ${hhmm(ex.hm+ex.ei)} is the first to trade ${L?'up through the Buy Stop':'down through the Sell Stop'} (${fm(L?b:sl)}).`}}
+  return{kind:'mcq',topic,q:'When does Eval Sniper show its countdown timer, by default?',o:['Inside the news window, 08:28 to 08:30 New York time','All day','Only after an order fills','At the market open'],why:'The timer appears only inside the news window and counts down to its end. You can change the window in the settings.'}}
 function indItem(r){
+  if(typeof IND_SNIPER!=='undefined'&&IND_SNIPER.length&&r()<.25)return snItem(r);
   if(typeof IND_INV!=='undefined'&&IND_INV.length&&(typeof IND_ESC==='undefined'||r()<.5))return invItem(r);
   const pool=typeof IND_ESC!=='undefined'?IND_ESC:[];if(!pool.length)return null;
   const ex=pick(r,pool),C=exData(ex),n=escName(ex),NY=ex.m==='ny',base={t0:ex.hm,step:5},topic='Indicator · ESC VLCTY',T=i=>escT(ex,i);
