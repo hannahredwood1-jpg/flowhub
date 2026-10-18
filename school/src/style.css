@@ -293,3 +293,5 @@ dialog p{color:var(--ink2);margin:4px 0}
 .env-art .env-flap{position:absolute;left:-1px;right:-1px;top:-1px;height:46px;background:linear-gradient(180deg,#171e28,#0f141b);clip-path:polygon(0 0,100% 0,50% 100%);border-bottom:1px solid var(--line)}
 .env-art .env-seal{position:absolute;left:50%;top:30px;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff9a4d,#ff6a00 55%,#a63f00);box-shadow:0 0 0 3px rgba(255,106,0,.18),0 4px 10px rgba(0,0,0,.5)}
 @media(max-width:620px){.envelope{grid-template-columns:1fr}}
+/* the vault */
+.vault-pill{border-color:rgba(255,106,0,.45);color:#ffb27a}

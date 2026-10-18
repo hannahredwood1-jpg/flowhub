@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api, type UsageDetail, type UsageRow } from "@/lib/api-client";
 import { ErrorLine, Panel, cx } from "./ui";
 
-const AREA: Record<string, string> = { dashboard: "Dashboard", school: "Trading School", practice: "Practice & labs" };
+const AREA: Record<string, string> = { dashboard: "Dashboard", school: "Trading School", practice: "Practice & labs", vault: "The Vault" };
 const mins = (m: number) => (m < 1 ? "<1 min" : m < 60 ? `${Math.round(m)} min` : `${Math.floor(m / 60)} h ${Math.round(m % 60)} min`);
 const ago = (iso: string | null) => {
   if (!iso) return "Never";

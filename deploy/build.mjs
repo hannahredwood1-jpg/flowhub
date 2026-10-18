@@ -89,6 +89,12 @@ writeFileSync(path.join(appDir, "assets/school.html.gz"), gzipSync(Buffer.from(s
 const practice = (await buildSchool(esbuild, { practice: true })).replace("<title>Trading School · FLOWHUB</title>", "<title>Practice · FLOWHUB</title>").replace("<script>", "<script>window.PRACTICE=1;</script><script>");
 writeFileSync(path.join(appDir, "assets/practice.html.gz"), gzipSync(Buffer.from(practice), { level: 9 }));
 console.log(`practice ${(practice.length / 1024).toFixed(0)}KB`);
+// The ECHO X ORBIT vault: private files, read by the server only for approved members (never listed in the public asset table).
+const vaultHtml = await buildSchool(esbuild, { vault: true });
+writeFileSync(path.join(appDir, "assets/vault.html.gz"), gzipSync(Buffer.from(vaultHtml), { level: 9 }));
+const orderflow = (await esbuild.transform(readFileSync(path.join(root, "school/src/vault/orderflow-pack.js"), "utf8"), { minify: true, target: "es2020", legalComments: "none" })).code;
+writeFileSync(path.join(appDir, "assets/vault-orderflow.js.gz"), gzipSync(Buffer.from(orderflow), { level: 9 }));
+console.log(`vault ${(vaultHtml.length / 1024).toFixed(0)}KB · orderflow pack ${(orderflow.length / 1024).toFixed(0)}KB`);
 writeFileSync(path.join(appDir, "package.json"), JSON.stringify({
   name: "flowhub", private: true, type: "module",
   scripts: { start: "bun server.js" },

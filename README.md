@@ -136,3 +136,11 @@ The live site runs from `deploy/` so it can be updated without GitHub:
   - After launch, only roles listed in `DISCORD_MEMBER_ROLE_IDS` (Premium and Mentorship) can sign in.
   - On every boot the server logs the server's role names and IDs (`FLOWHUB roles: …`), so Developer Mode isn't needed.
 - **Discord redirect URL:** `https://<your domain>/auth/callback`
+
+## The ECHO X ORBIT vault
+
+ECHO X ORBIT is not part of the Trading School. It lives in its own page, `/vault`, built from `school/src/vault/*.js` into `deploy/app/assets/vault.html.gz` (private: the server reads that file only for approved members, it is never in the public asset table).
+
+- **Access:** a mentorship member (a Discord role named like "mentor", or one in `DISCORD_MENTORSHIP_ROLE_IDS`, or "Mark as mentorship" in the coach portal) plus a one-time code. Coaches generate the code in Coach Portal → *ECHO X ORBIT vault · access*; it is shown once and only its hash is kept (`VaultAccess`, migration `0010_vault.sql`). The member enters it at the vault door; it works once, only for them, and can be revoked.
+- **Orderflow room:** the last phase of the vault. The map shows its four titles sealed. The lessons are in `school/src/vault/orderflow-pack.js` → `vault-orderflow.js.gz`, sent only to a member whose `orderflow` flag an **admin** has switched on. Nobody has it yet.
+- **After the school:** passing the last module earns the INVERTIX certificate of understanding and a "sealed envelope" card that points to the vault door.

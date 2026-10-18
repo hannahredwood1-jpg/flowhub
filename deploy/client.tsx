@@ -81,7 +81,7 @@ function App() {
     <AppShell viewer={state.data.viewer} active={active} links={{ home: "#home", dashboard: "#dashboard", plan: "#plan", school: "/school", practice: "/practice", coach: "#coach" }} signOutHref="/auth/logout">
       {active === "coach"
         ? directory
-          ? <CoachPortal key="c" initial={directory} today={todayET()} />
+          ? <CoachPortal key="c" initial={directory} today={todayET()} isAdmin={state.data.viewer.role === "ADMIN"} />
           : <div id="boot">LOADING ROSTER…</div>
         : active === "plan"
           ? <TradingPlanPage key="p" data={state.data} catalog={state.catalog} onSaved={reload} />

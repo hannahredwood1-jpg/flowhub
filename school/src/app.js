@@ -1,7 +1,7 @@
 /* ============================================================
    progress: saved in this browser and synced to your FLOWHUB account
 ============================================================ */
-const LS='fh-school-v2',LSX='fh-school-v2-txt';
+const LS=window.VAULT?'fh-vault-v1':'fh-school-v2',LSX=window.VAULT?'fh-vault-v1-txt':'fh-school-v2-txt';
 let PROG={m:{}},TXT={},UNLOCKS=[],LIVE=false,WHO='';
 const BLANK=()=>({s:[0,0,0],p:0,sc:0,a:1,n:0,at:0});
 const pm=id=>PROG.m[id]||(PROG.m[id]=BLANK());
@@ -18,15 +18,16 @@ function persist(sync=true){try{localStorage.setItem(LS,JSON.stringify(PROG))}ca
 function saveTxt(){try{localStorage.setItem(LSX,JSON.stringify(TXT))}catch(e){}}
 let syncT=null;
 const syncSoon=()=>{clearTimeout(syncT);syncT=setTimeout(push,900)};
-async function push(){if(!LIVE)return;try{await fetch('/api/school',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({v2:compact()})})}catch(e){}}
-async function pull(){try{const r=await fetch('/api/school',{headers:{Accept:'application/json'}});if(!r.ok)return;const j=await r.json();LIVE=true;WHO=j.name||'';UNLOCKS=j.unlocks||[];mergeServer(j.state&&j.state.v2);const w=$('#who');if(w)w.textContent=WHO;if(PENDING){const h=PENDING;PENDING=null;location.hash=h}else render()}catch(e){}}
-async function logAttempt(id,score,total,pass){if(!LIVE)return;try{await fetch('/api/school/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'ex',ref:id,score,total,pass})})}catch(e){}}
+const API=window.VAULT?'/api/vault/progress':'/api/school';
+async function push(){if(!LIVE)return;try{await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({v2:compact()})})}catch(e){}}
+async function pull(){try{const r=await fetch(API,{headers:{Accept:'application/json'}});if(!r.ok)return;const j=await r.json();LIVE=true;if(window.VAULT&&j.orderflow&&!window.OF_OK){await new Promise(ok=>{const sc=document.createElement('script');sc.src='/api/vault/orderflow.js';sc.onload=sc.onerror=ok;document.head.append(sc)})}WHO=j.name||'';UNLOCKS=j.unlocks||[];mergeServer(j.state&&j.state.v2);const w=$('#who');if(w)w.textContent=WHO;if(PENDING){const h=PENDING;PENDING=null;location.hash=h}else render()}catch(e){}}
+async function logAttempt(id,score,total,pass){if(!LIVE||window.VAULT)return;try{await fetch('/api/school/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'ex',ref:id,score,total,pass})})}catch(e){}}
 
 /* ---------- module helpers ---------- */
 const modIdx=id=>MODS.findIndex(m=>m.id===id);
 const FIRST_CORE=MODS.findIndex(m=>!PH[m.ph].open);
 /* Beginner Basics (phase 1) are open from the start and optional. Everything after them unlocks one module at a time, starting with the first Foundations module. */
-const modUnlocked=i=>{const m=MODS[i];if(UNLOCKS.includes(m.id)||UNLOCKS.includes('all')||PH[m.ph].open||i===FIRST_CORE)return true;return !!pm(MODS[i-1].id).p};
+const modUnlocked=i=>{const m=MODS[i];if(m.sealed&&!window.OF_OK)return false;if(UNLOCKS.includes(m.id)||UNLOCKS.includes('all')||PH[m.ph].open||i===FIRST_CORE)return true;return !!pm(MODS[i-1].id).p};
 const modStatus=i=>pm(MODS[i].id).p?'done':modUnlocked(i)?'active':'locked';
 const stepsDone=m=>pm(m.id).s.filter(Boolean).length;
 const currentIdx=()=>{const i=MODS.findIndex((m,k)=>!pm(m.id).p&&modUnlocked(k));return i<0?MODS.length-1:i};
@@ -65,7 +66,7 @@ function renderMap(){
     if(m.ph!==ph){if(ph>=0)html+='</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
     html+=modRow(m,i)});
   html+='</div></section>';
-  $('#phases').innerHTML=(pm('m16').p?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">Course complete.</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
+  $('#phases').innerHTML=(pm('m16').p?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">${window.VAULT?'Vault complete.':'Course complete.'}</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
   $('#aside').innerHTML=`<div class="card next-card"><div class="hud">${finished?'All modules passed':'Up next'}</div><div class="h">${cur.n}. ${cur.t}</div>
     <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':`Step <b>${Math.min(stepsDone(cur)+1,4)}</b> of 4: ${STEPS[Math.min(stepsDone(cur),3)]}`}</p>
     <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:stepsDone(cur)/4*100}%"></i></div>
@@ -77,9 +78,9 @@ function modRow(m,i){
   const st=modStatus(i),P=PH[m.ph],open=OPEN===m.id,p=pm(m.id);let chip;
   if(st==='done')chip=`<span class="chip ok">✓ Passed · ${p.sc}%</span>`;
   else if(st==='active')chip=`<span class="chip live">${p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/3 steps${PH[m.ph].open?' · optional':''}</span>`;
-  else chip=`<span class="chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Locked</span>`;
+  else chip=`<span class="chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${m.sealed&&!window.OF_OK?'Sealed':'Locked'}</span>`;
   const prev=MODS[i-1]?MODS[i-1].t:'';let act;
-  if(st==='locked')act=`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
+  if(st==='locked')act=m.sealed&&!window.OF_OK?`<div class="pcheck"><b>Sealed.</b> This room opens only when Hannah approves you for it. Nothing in it is shown until then.</div>`:`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
   else act=`<a class="btn primary" href="#/${m.id}">${st==='done'?'Review lesson':stepsDone(m)?'Continue lesson':'Start lesson'} →</a>${p.a>1&&st!=='done'?`<span class="chip bad">Attempt ${p.a}: new exam set</span>`:''}`;
   const hist=p.n?`<div style="grid-column:1/-1"><span class="hud">Exam attempts: ${p.n}</span></div>`:'';
   return `<article class="mod ${st}" data-id="${m.id}"><button class="mod-h" data-tog="${m.id}" aria-expanded="${open}">
@@ -132,7 +133,7 @@ function paintChart(refit){
     CH.fit();if(cs.length>1)CH2.fit();
     if(L.drill.revealed&&kind.reveal)kind.reveal(CH,it);
   } else {
-    const cs=chartsOf(use);const ld=(c,j)=>{const ch=j?CH2:CH;ch.setData(c.C,{k,t0:c.t0??use.t0,stepMin:c.step??use.step,labels:c.labels??use.labels,sym:c.sym,tf:c.tf??use.tf,fit:refit!==false});ch.marks=[];ch.taps=new Set();ch.ov=[]};
+    const cs=chartsOf(use);const ld=(c,j)=>{const ch=j?CH2:CH,CC=(stp&&stp.upto!=null&&!j)?c.C.slice(0,stp.upto+1):c.C;ch.setData(CC,{k,t0:c.t0??use.t0,stepMin:c.step??use.step,labels:c.labels??use.labels,sym:c.sym,tf:c.tf??use.tf,fit:refit!==false});ch.marks=[];ch.taps=new Set();ch.ov=[]};
     cs.forEach(ld);
     if(stp){CH.ov=stp.ov||[];if(two)CH2.ov=stp.ov2||[];if(stp.focus!=null&&k===1)CH.focus(stp.focus)}
     else if(L.step>=3&&m.sum){const o=m.sum(sc);CH.ov=o.ov||[];if(two)CH2.ov=o.ov2||[]}

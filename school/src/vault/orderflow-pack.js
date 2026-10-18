@@ -1,0 +1,94 @@
+/* ============================================================
+   Orderflow concepts for the vault. Sent only to members approved for the Orderflow room.
+   Concepts only: how flow is read, and how it could sit beside the ECHO X ORBIT checklist. More is coming.
+============================================================ */
+(()=>{
+const {tblx,key,warn,def,mcq,BANKS,rc,drillBank,pick}=window.OFLIB;
+const fill=(id,c)=>{const m=MODS.find(x=>x.id===id);if(!m)return;
+  const g=r=>{const b=pick(r,c.bank);return{...b,o:[...b.o]}};
+  Object.assign(m,{sealed:false,learn:c.learn,recall:c.recall,steps:c.steps,task:c.task,examDesc:c.examDesc,bank:c.bank,
+    see:()=>c.steps.map(([cap,html])=>({cap,html:html||''})),drills:[g,g],exam:{bank:Math.min(6,c.bank.length-3),gen:[[0,2]]}});
+  if(m.recall&&!m.recall.order)m.recall.order=shuf(m.recall.o.map((_,k)=>k))};
+const bankOf=rows=>BANKS('Orderflow',rows);
+fill('o01',{task:'Open a footprint or volume-at-price view of any liquid futures chart, if you have one. Find one candle and say, in your own words, where buyers were aggressive and where sellers were.',
+ examDesc:'What orderflow is, aggressive and passive orders, and why flow can back up a sweep.',
+ learn:[
+  {t:'Price shows where, flow shows how',h:`<p>A normal candle tells you <b>where</b> price went. <b>Orderflow</b> shows <b>how</b> it got there: who was pushing, who was absorbing, and how much traded at each price. It does not predict. It adds a second view of the same moment.</p>`},
+  {t:'Aggressive and passive orders',h:tblx(['Side','What it is'],[['Aggressive (initiative)','A market order that takes the price on the other side. It moves price'],['Passive (responsive)','A resting limit order that waits to be hit. It absorbs the aggressor']])+`<p>Every trade is an aggressive order meeting a passive one. A move is strong when aggression keeps winning, and it stalls when passive orders soak it up.</p>`},
+  {t:'Bid, ask and the footprint',h:`<p>The <b>bid</b> is where buyers wait; the <b>ask</b> is where sellers wait. A <b>footprint</b> chart splits each candle into prices and shows how much traded at the bid and how much at the ask at every level. It is a candle with the inside visible.</p>`},
+  {t:'Why flow backs up a sweep',h:`<p>A sweep takes the resting orders beyond a level. Price confirms the turn (a candle closes back through the start of the run). Orderflow can show <b>why</b> it turned: the aggressive push into the level ran out, and the other side was waiting there and took it. The price shape and the flow are the same sweep read twice.</p>`+key('<p>The CISD tells you the push was overturned. Orderflow can tell you who overturned it.</p>')}],
+ recall:rc('Confirmation: CISD and the Inverted Gap','What does a CISD tell you?',['The push into the level has been overturned','The trade is over','The stop was hit','The news is out'],'That is the price view. Orderflow adds who did it.'),
+ steps:[['<b>Two views of one moment.</b>',tblx(['View','Shows'],[['Candle','Where price went'],['Footprint','How much traded at each price, by aggressor']])],['<b>Aggressive and passive.</b>',tblx(['Order','Role'],[['Market order','Aggressive: moves price'],['Resting limit order','Passive: absorbs']])]],
+ bank:bankOf([
+  ['What does a normal candle show?',['Where price went','Who was aggressive','The size of every order','The news'],'Orderflow adds how.'],
+  ['What is an aggressive order?',['A market order that takes the price on the other side','A resting limit order','A stop order that never fills','A news order'],'It moves price.'],
+  ['What is a passive order?',['A resting limit order that waits to be hit','A market order','A stop-loss','A news alert'],'It absorbs the aggressor.'],
+  ['The bid is where…',['Buyers wait','Sellers wait','The stop sits','The target sits'],'The ask is where sellers wait.'],
+  ['What does a footprint chart show?',['How much traded at the bid and the ask at every price in each candle','Only the close','Only the volume bars','The news calendar'],'A candle with the inside visible.'],
+  ['A strong move is one where…',['Aggression keeps winning','Passive orders soak it up','Volume is low','Nothing trades'],'It stalls when passive orders absorb.'],
+  ['How can orderflow relate to a sweep?',['It can show why the push ran out and who took the other side','It predicts the next candle','It replaces the stop','It removes the need for confirmation'],'The same sweep read twice.'],
+  ['What does a CISD tell you?',['The push into the level has been overturned','Who overturned it','The target','The news'],'Orderflow can tell you who.'],
+  ['Does orderflow predict?',['No: it adds a second view of the same moment','Yes, always','Only on Fridays','Only at the open'],'It is context, not a crystal ball.'],
+  ['What happens when passive orders soak up aggression?',['The move stalls','The move accelerates','Nothing changes','The stop moves'],'That is absorption.']])});
+fill('o02',{task:'On a replay of a swept high or low, describe in two sentences what you would expect the flow to look like at the extreme if the sweep is going to turn, and what you would expect if it is going to keep running.',
+ examDesc:'The stop run, absorption, exhaustion and trapped traders.',
+ learn:[
+  {t:'The stop run',h:`<p>When a level is swept, many of the orders that fire are <b>stops</b>: they are market orders from traders who were wrong. That burst of aggression is the stop run. Its size says little by itself. What matters is what happens to the flow <b>right after</b> it.</p>`},
+  {t:'Absorption',h:def('<p><b>Absorption</b> is heavy aggressive trading at a price where price <b>does not move</b> any further. A lot of orders hit, and the passive side takes them all.</p>')+`<p>At a swept extreme, absorption suggests someone was waiting there with size. It is one of the reasons the reaction can be fast.</p>`},
+  {t:'Exhaustion and trapped traders',h:`<p><b>Exhaustion</b> is when aggressive trading dries up at the extreme: the push has no more fuel. <b>Trapped traders</b> are those who chased the breakout beyond the level and now sit on the wrong side. Their exits add fuel to the reversal.</p>`},
+  {t:'Initiative and responsive flow',h:tblx(['Flow','Meaning'],[['Initiative','Trading that starts a move away from where price has been accepted'],['Responsive','Trading that pushes back toward where price has been accepted']])+`<p>A sweep that turns is often initiative flow running into responsive flow at the level.</p>`}],
+ recall:rc('Orderflow and Why It Confirms a Sweep','What is a passive order?',['A resting limit order that waits to be hit','A market order','A stop-loss','A news alert'],'Passive orders absorb the aggressor.'),
+ steps:[['<b>At a swept extreme.</b>',tblx(['You may see','It suggests'],[['A burst of aggression, then it fades','Exhaustion: the push ran out of fuel'],['Heavy trading, price not moving','Absorption: someone took the other side'],['Chasers beyond the level','Trapped traders: fuel for the reversal']])]],
+ bank:bankOf([
+  ['What are many of the orders that fire on a sweep?',['Stops: market orders from traders who were wrong','Limit orders only','News orders','Nothing fires'],'That burst is the stop run.'],
+  ['What is absorption?',['Heavy aggressive trading where price does not move further','A gap','A new high','A news candle'],'The passive side takes it all.'],
+  ['What does absorption at a swept extreme suggest?',['Someone was waiting there with size','The move will always continue','Nothing','The level is invalid'],'One reason the reaction can be fast.'],
+  ['What is exhaustion?',['Aggressive trading dries up at the extreme','A big candle','A gap fill','A news release'],'The push has no more fuel.'],
+  ['Who are trapped traders?',['Traders who chased beyond the level and now sit on the wrong side','Traders who took profit','Market makers only','Nobody'],'Their exits add fuel to a reversal.'],
+  ['What is initiative flow?',['Trading that starts a move away from accepted price','Trading that pushes back toward accepted price','A resting order','A news order'],'Responsive is the opposite.'],
+  ['What is responsive flow?',['Trading that pushes back toward accepted price','Trading that starts a breakout','A stop order','A gap'],'It meets the initiative flow.'],
+  ['A sweep that turns is often…',['Initiative flow running into responsive flow at the level','Only passive orders','Only market orders','Random'],'Both sides showing up.'],
+  ['What matters most about the stop run?',['What happens to the flow right after it','How loud it is','The time of day','The colour of the candle'],'The size says little by itself.'],
+  ['Does one footprint reading make a trade?',['No: it is context to read beside the price confirmation','Yes','Only in Strict mode','Only at 9:30'],'Flow supports. It does not replace the rules.']])});
+fill('o03',{task:'On any footprint or delta chart you have access to, find a candle where delta and the candle colour disagree, and write what you think it was telling you.',
+ examDesc:'Delta, cumulative delta and divergence, imbalances and volume at price.',
+ learn:[
+  {t:'Delta',h:def('<p><b>Delta</b> is the volume that traded at the ask (aggressive buying) minus the volume that traded at the bid (aggressive selling), for a candle or a price. Positive delta means buyers were more aggressive; negative means sellers were.</p>')},
+  {t:'Cumulative delta and divergence',h:`<p><b>Cumulative delta</b> adds delta up over time. A <b>divergence</b> is when price makes a new extreme but cumulative delta does not follow it: the push is getting less aggressive support. At a swept level this can show the sweep was thin on real aggression.</p>`},
+  {t:'Imbalances and stacks',h:`<p>An <b>imbalance</b> is a price where one side traded much more than the other. A <b>stack</b> is several imbalances in a row. A stack in your direction after the confirmation can show that the new side is in control. It is a reading, not a rule.</p>`},
+  {t:'Volume at price',h:`<p>A <b>point of control</b> is the price where the most volume traded. A <b>low-volume area</b> is a price where little traded, which price tends to move through quickly. They give context for where the target and the stop sit.</p>`}],
+ recall:rc('What Orderflow Is and Why It Confirms a Sweep','What does a footprint chart show?',['How much traded at the bid and the ask at every price in each candle','Only the close','Only the volume bars','The news calendar'],'A candle with the inside visible.'),
+ steps:[['<b>The vocabulary.</b>',tblx(['Term','Meaning'],[['Delta','Ask volume minus bid volume'],['Cumulative delta','Delta added up over time'],['Divergence','Price makes a new extreme, delta does not'],['Imbalance','One side traded much more than the other at a price'],['Point of control','The price with the most volume']])]],
+ bank:bankOf([
+  ['What is delta?',['Volume at the ask minus volume at the bid','The candle range','The spread','The target distance'],'Positive means more aggressive buying.'],
+  ['Positive delta means…',['Buyers were more aggressive','Sellers were more aggressive','Nothing traded','The candle is green'],'Delta is about aggression, not colour.'],
+  ['What is cumulative delta?',['Delta added up over time','The sum of the candle ranges','The total volume','The stop distance'],'It shows the trend in aggression.'],
+  ['What is a divergence?',['Price makes a new extreme but cumulative delta does not follow','Two candles of the same colour','A gap','A news candle'],'Less aggressive support behind the push.'],
+  ['What can a divergence at a swept level suggest?',['The sweep was thin on real aggression','The level is invalid','The move will certainly continue','Nothing'],'A reading, not a rule.'],
+  ['What is an imbalance?',['A price where one side traded much more than the other','A gap','A new high','A stop'],'A row of them is a stack.'],
+  ['What is a stack?',['Several imbalances in a row','Two orders','A pile of stops','A gap fill'],'A stack in your direction after the confirmation can show control.'],
+  ['What is a point of control?',['The price where the most volume traded','The highest price','The open','The stop'],'It gives context.'],
+  ['What tends to happen in a low-volume area?',['Price moves through it quickly','Price stops','The level is invalid','Nothing'],'Little traded there.'],
+  ['Can delta and candle colour disagree?',['Yes: a green candle can have negative delta','No','Only on Fridays','Only in Asia'],'That disagreement is information.']])});
+fill('o04',{task:'Write your own orderflow look for ECHO X ORBIT in three lines: one thing you would want to see that supports a setup, one thing that would make you skip, and what you will never let it change.',
+ examDesc:'How orderflow can sit beside the ECHO X ORBIT checklist and what it never overrides.',
+ learn:[
+  {t:'A fourth look, not a new rule',h:`<p>The ECHO X ORBIT checklist is price-based: the level, the sweep, the close through the CISD line, the three checks, the alignment. Orderflow is a <b>fourth look</b> you can add beside it. It is more to come: this room will grow.</p>`},
+  {t:'What supports the setup',h:`<ul><li>At the swept extreme, heavy aggressive trading that does not move price (absorption).</li><li>The aggressive push fading just before the sweep candle ends (exhaustion).</li><li>Delta turning toward your direction on the confirming candle.</li><li>A stack of imbalances in your direction after the close through the line.</li></ul>`},
+  {t:'What makes you skip',h:`<ul><li>Aggression keeps pushing <b>through</b> the level with no sign of it being absorbed.</li><li>The confirming candle closes through the line on thin, one-sided flow that does not change.</li><li>The flow looks the same before and after the confirmation: nothing turned, only the price shape.</li></ul>`},
+  {t:'What orderflow never overrides',h:key('<p>Orderflow can make you <b>skip</b> a setup. It never changes the stop, the break-even step, the target, or the one-position rule. The plan still runs itself once you are in.</p>','The rule')}],
+ recall:rc('Entry, Stop, Target and Break-even','Which may you NOT change?',['Moving the stop to break-even at +0.25R','Which setups you take','Your dollar risk','Standing aside around news'],'The plan runs itself once you are in.'),
+ steps:[['<b>Beside the checklist.</b>',tblx(['Price checklist','Orderflow look'],[['Level swept','Was the push into it aggressive, and did it run out?'],['Close through the CISD line','Did delta turn on that candle?'],['Alignment','Was the other side visibly waiting there?'],['Stop, break-even, target','Never changed by flow']])]],
+ bank:bankOf([
+  ['What is the orderflow look in ECHO X ORBIT?',['A fourth look beside the price checklist','A replacement for the checklist','A new stop rule','A news filter'],'More is coming.'],
+  ['Which supports a setup?',['Absorption at the swept extreme','Aggression pushing through with no response','No flow at all','A news release'],'Someone was waiting there.'],
+  ['Which supports a setup?',['Delta turning toward your direction on the confirming candle','Delta unchanged','Delta against you','Nothing'],'The flow changed with the price.'],
+  ['Which makes you skip?',['Aggression keeps pushing through the level with no absorption','A stack in your direction','Exhaustion at the extreme','Delta turning'],'Nothing turned.'],
+  ['Can orderflow change your stop?',['No: it never overrides the stop','Yes, always','Only on Fridays','Only in Asia'],'The stop is one point beyond the sweep extreme.'],
+  ['Can orderflow make you skip a setup?',['Yes','No','Only in Strict mode','Never'],'It can make you skip. It cannot make you widen.'],
+  ['Can orderflow move the break-even step?',['No: +0.25R stays','Yes','Only on news days','Only on replay'],'The plan runs itself once you are in.'],
+  ['What does a stack in your direction after the close through the line suggest?',['The new side may be in control: a reading, not a rule','A guaranteed win','A skip','A wider stop'],'It supports. It does not decide.'],
+  ['The flow looks the same before and after the confirmation. What does that suggest?',['Nothing turned, only the price shape','A great setup','A guaranteed win','A bigger target'],'A reason to be careful.'],
+  ['Is the orderflow room finished?',['No: more is coming','Yes','It is replaced by the checklist','It is optional forever'],'This room will grow.']])});
+window.OF_OK=true;
+})();

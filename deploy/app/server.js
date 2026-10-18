@@ -6,7 +6,7 @@ import { sign, verify } from "hono/jwt";
 import { ZodError } from "zod";
 import { SQL } from "bun";
 import { gunzipSync } from "node:zlib";
-import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash as createHash2, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 
 // src/lib/planner.ts
 var POINT_VALUE = {
@@ -353,16 +353,17 @@ function memberRiskSummary(paces) {
 // src/lib/strategies.ts
 var STRATEGIES = {
   DAILY_LEVELS: { key: "DAILY_LEVELS", indicator: "ECHO X ORBIT", name: "ECHO X ORBIT", winRate: 0.94, sessions: [] },
-  // Planner win rates come from each model's own guide: INVERTIX 3.1 (nearest-gap target, 30-point minimum stop) and ESC VLCTY (combined NY + Asia legs).
+  // Planner win rates (used for the maths only, never shown).
   INVERTIX: { key: "INVERTIX", indicator: "INVERTIX", name: "INVERTIX", winRate: 0.65, sessions: ["ASIA", "NY"] },
   ESC_VLCTY: { key: "ESC_VLCTY", indicator: "ESC VLCTY", name: "ESC VLCTY", winRate: 0.47, sessions: ["NY", "ASIA"] },
+  // retired
   ASIAFLOW_PO3: { key: "ASIAFLOW_PO3", indicator: "ASIAFLOW", name: "PO3", winRate: 0.7, sessions: ["ASIA"] },
   ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "ASIAFLOW", name: "A3IA", winRate: 0.81, sessions: ["ASIA"] },
   NYFLOW_PO3: { key: "NYFLOW_PO3", indicator: "NYFLOW", name: "PO3", winRate: 0.745, sessions: ["NY"] },
   NYFLOW_HL: { key: "NYFLOW_HL", indicator: "NYFLOW", name: "H/L", winRate: 0.84, sessions: ["NY"] }
 };
 var STRATEGY_KEYS = Object.keys(STRATEGIES);
-var RETIRED_STRATEGIES = ["ASIAFLOW_PO3", "ASIAFLOW_A3IA", "NYFLOW_PO3", "NYFLOW_HL"];
+var RETIRED_STRATEGIES = ["ESC_VLCTY", "ASIAFLOW_PO3", "ASIAFLOW_A3IA", "NYFLOW_PO3", "NYFLOW_HL"];
 var SELECTABLE_STRATEGY_KEYS = STRATEGY_KEYS.filter((k) => !RETIRED_STRATEGIES.includes(k));
 var strategyLabel = (k) => RETIRED_STRATEGIES.includes(k) ? `${STRATEGIES[k].indicator} \xB7 ${STRATEGIES[k].name}` : STRATEGIES[k].name;
 function normalizeSelection(sel) {
@@ -525,7 +526,7 @@ function todayET(d = /* @__PURE__ */ new Date()) {
 
 // src/lib/tradingPlan.ts
 var PLAN_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
-var PLAN_MODELS = { ECHO_X_ORBIT: "ECHO X ORBIT (Discord calls)", INVERTIX: "INVERTIX", ESC_VLCTY: "ESC VLCTY" };
+var PLAN_MODELS = { ECHO_X_ORBIT: "ECHO X ORBIT (Discord calls)", INVERTIX: "INVERTIX" };
 function cleanPlanModels(models) {
   const ok = (models ?? []).filter((m) => m in PLAN_MODELS);
   return ok.length ? ok : ["ECHO_X_ORBIT"];
@@ -623,7 +624,7 @@ var tradingPlanInput = z.object({
     end: planTime,
     windows: z.record(z.enum(["ASIA", "LONDON", "NY"]), z.object({ start: planTime, end: planTime })).optional()
   }),
-  models: z.array(z.enum(["ECHO_X_ORBIT", "INVERTIX", "ESC_VLCTY"])).min(1, "Pick at least one model").max(3),
+  models: z.array(z.enum(["ECHO_X_ORBIT", "INVERTIX"])).min(1, "Pick at least one model").max(2),
   entries: z.object({
     entry: z.enum(["limit", "confirmation", "both"]),
     stopPts: z.coerce.number().min(1).max(200),
@@ -647,8 +648,8 @@ var tradingPlanInput = z.object({
 });
 
 // src/lib/practice.ts
-var PRACTICE_MODELS = ["inv", "esc", "exo"];
-var PRACTICE_MODEL_LABEL = { inv: "INVERTIX", esc: "ESC VLCTY", exo: "ECHO X ORBIT" };
+var PRACTICE_MODELS = ["inv", "exo"];
+var PRACTICE_MODEL_LABEL = { inv: "INVERTIX", exo: "ECHO X ORBIT" };
 var PRACTICE_TAGS = {
   "early-entry": "Enters before the flip closes",
   "traded-range": "Trades while the range is still building",
@@ -741,23 +742,12 @@ var SCHOOL_MODULES = [
   { id: "m45", n: 29, title: "INVERTIX: The Flip, Entry and Stop" },
   { id: "m46", n: 30, title: "INVERTIX: Targets, Windows and Size" },
   { id: "m47", n: 31, title: "INVERTIX: The Daily Playbook" },
-  { id: "m16", n: 32, title: "Putting It All Together: The Complete Read" },
-  { id: "m31", n: 33, title: "ESC VLCTY: The Idea" },
-  { id: "m32", n: 34, title: "ESC VLCTY: The New York Half" },
-  { id: "m33", n: 35, title: "ESC VLCTY: The Asia Half" },
-  { id: "m34", n: 36, title: "ESC VLCTY: Sizing & Risk Modes" },
-  { id: "m35", n: 37, title: "ESC VLCTY: Setup, Fills & Your Routine" },
-  { id: "m36", n: 38, title: "ESC VLCTY: Worked Trades & Make the Call" },
-  { id: "m27", n: 39, title: "ECHO X ORBIT: Two Engines & the Shared Rules" },
-  { id: "m28", n: 40, title: "Echo" },
-  { id: "m29", n: 41, title: "Orbit" },
-  { id: "m30", n: 42, title: "Make the Call: All Three Models (Final Exam)" }
+  { id: "m16", n: 32, title: "Putting It All Together: The Complete Read" }
 ];
 var SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id);
 var SCHOOL_FIRST_CORE = 5;
-var SCHOOL_ESC_FIRST = "m31";
 function schoolOpen(modules, i) {
-  return modules[i].manualUnlock || i <= SCHOOL_FIRST_CORE || modules[i].id !== SCHOOL_ESC_FIRST && modules[i - 1].passed;
+  return modules[i].manualUnlock || i <= SCHOOL_FIRST_CORE || modules[i - 1].passed;
 }
 function summarizeSchool(state, unlocks, attempts) {
   const m = state?.v2?.m ?? {};
@@ -796,6 +786,40 @@ function summarizeSchool(state, unlocks, attempts) {
   };
 }
 
+// src/lib/vault.ts
+import { createHash } from "node:crypto";
+var VAULT_MODULES = [
+  { id: "x01", title: "The Idea: Sweep, Reaction, Reclaim" },
+  { id: "x02", title: "Levels and the Sweep" },
+  { id: "x03", title: "Confirmation: CISD and the Inverted Gap" },
+  { id: "x04", title: "The Three Checks" },
+  { id: "x05", title: "Alignment: Gaps and Rejection Blocks" },
+  { id: "x06", title: "Entry, Stop, Target and Break-even" },
+  { id: "x07", title: "The Scenario Playbook" },
+  { id: "x08", title: "Discretion, Risk and the Log" },
+  { id: "x09", title: "Make the Call: ECHO X ORBIT" },
+  { id: "o01", title: "What Orderflow Is and Why It Confirms a Sweep" },
+  { id: "o02", title: "Reading the Tape Around a Sweep" },
+  { id: "o03", title: "Delta, Volume and Imbalance" },
+  { id: "o04", title: "Orderflow and the ECHO X ORBIT Checklist" }
+];
+var VAULT_MODULE_IDS = VAULT_MODULES.map((m) => m.id);
+var ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+function makeCode(bytes) {
+  const s = Array.from(bytes.slice(0, 10), (b) => ALPHABET[b % 32]).join("");
+  return `FH-${s.slice(0, 5)}-${s.slice(5, 10)}`;
+}
+function normalizeCode(input) {
+  const s = String(input ?? "").toUpperCase().replace(/[^0-9A-Z]/g, "");
+  const body = s.startsWith("FH") ? s.slice(2) : s;
+  return body.replace(/O/g, "0").replace(/[IL]/g, "1");
+}
+var hashCode = (code, pepper) => createHash("sha256").update(pepper + ":" + normalizeCode(code)).digest("hex");
+function vaultPassed(state) {
+  const m = state?.v2?.m ?? {};
+  return VAULT_MODULE_IDS.filter((id) => m[id]?.p === 1).length;
+}
+
 // deploy/server.ts
 var env = Bun.env;
 var ids = (s) => (s ?? "").split(",").map((x) => x.trim()).filter(Boolean);
@@ -808,6 +832,8 @@ var CFG = {
   coachRoles: ids(env.DISCORD_COACH_ROLE_IDS),
   memberRoles: ids(env.DISCORD_MEMBER_ROLE_IDS),
   // roles allowed in once launched (empty = whole server)
+  mentorshipRoles: ids(env.DISCORD_MENTORSHIP_ROLE_IDS),
+  // roles that count as mentorship for the ECHO X ORBIT vault (a role whose name contains "mentor" also counts)
   launched: (env.FLOWHUB_LAUNCHED ?? "").toLowerCase() === "true",
   // false = staff only
   botToken: env.DISCORD_BOT_TOKEN ?? "",
@@ -883,8 +909,12 @@ async function toLookup(res) {
   return { status: "error" };
 }
 var lookupUser = (token) => dfetch(`${DISCORD}/users/@me/guilds/${CFG.guildId}/member`, { headers: { Authorization: `Bearer ${token}` } }).then(toLookup);
+var ROLE_NAMES = /* @__PURE__ */ new Map();
 if (CFG.botToken && CFG.guildId)
-  fetch(`${DISCORD}/guilds/${CFG.guildId}/roles`, { headers: { Authorization: `Bot ${CFG.botToken}` } }).then((r) => r.ok ? r.json() : r.text().then((t) => Promise.reject(`${r.status} ${t}`))).then((roles) => console.log("FLOWHUB roles:", roles.map((x) => `${x.name}=${x.id}`).join(" | "))).catch((e) => console.error("FLOWHUB roles lookup failed", e));
+  fetch(`${DISCORD}/guilds/${CFG.guildId}/roles`, { headers: { Authorization: `Bot ${CFG.botToken}` } }).then((r) => r.ok ? r.json() : r.text().then((t) => Promise.reject(`${r.status} ${t}`))).then((roles) => {
+    for (const x of roles) ROLE_NAMES.set(x.id, x.name);
+    console.log("FLOWHUB roles:", roles.map((x) => `${x.name}=${x.id}`).join(" | "));
+  }).catch((e) => console.error("FLOWHUB roles lookup failed", e));
 var lookupBot = (discordId) => dfetch(`${DISCORD}/guilds/${CFG.guildId}/members/${discordId}`, { headers: { Authorization: `Bot ${CFG.botToken}` } }).then(toLookup);
 async function oauthToken(body) {
   const res = await fetch(`${DISCORD}/oauth2/token`, {
@@ -1149,7 +1179,7 @@ app.post("/auth/local", async (c) => {
   setCookie(c, "fh_session", jwt, { ...cookieOpts, maxAge: SESSION_DAYS * 86400 });
   return c.json({ ok: true });
 });
-var sha = (t) => createHash("sha256").update(t).digest("hex");
+var sha = (t) => createHash2("sha256").update(t).digest("hex");
 var mailFrom = () => process.env.MAIL_FROM || "FLOWHUB <no-reply@flowmtd.com>";
 async function sendMail(to, subject, html) {
   const key = process.env.RESEND_API_KEY;
@@ -1460,7 +1490,7 @@ app.post("/api/feedback/:id/read", async (c) => {
   if (!r.length) throw new HttpError(404, "Not found");
   return c.json({ ok: true });
 });
-var USAGE_AREAS = /* @__PURE__ */ new Set(["dashboard", "school", "practice"]);
+var USAGE_AREAS = /* @__PURE__ */ new Set(["dashboard", "school", "practice", "vault"]);
 app.post("/api/usage", async (c) => {
   const b = await c.req.json().catch(() => ({}));
   if (!b.sid || !/^[A-Za-z0-9-]{8,48}$/.test(b.sid) || !b.area || !USAGE_AREAS.has(b.area)) throw new HttpError(400, "Bad usage ping");
@@ -1501,6 +1531,117 @@ app.get("/api/coach/usage/:id", async (c) => {
     sections: sections.map((s) => ({ area: s.area, section: s.section, minutes: Math.round(Number(s.seconds) / 60 * 10) / 10, lastDay: String(s.lastDay).slice(0, 10) }))
   });
 });
+var rolesOf = (u) => {
+  const gr = u.guildRoleIds;
+  return Array.isArray(gr) ? gr.map(String) : typeof gr === "string" ? gr.replace(/[{}"]/g, "").split(",").filter(Boolean) : [];
+};
+var hasMentorRole = (u) => rolesOf(u).some((id) => CFG.mentorshipRoles.includes(id) || /mentor/i.test(ROLE_NAMES.get(id) ?? ""));
+async function vaultAccess(u) {
+  if (isStaff(u)) return { level: "open", orderflow: u.role === "ADMIN", row: null };
+  const [row] = await sql`select * from "VaultAccess" where "userId" = ${u.id}`;
+  if (!row || row.revokedAt || !(hasMentorRole(u) || row.mentorshipOverride)) return { level: "none", orderflow: false, row: row ?? null };
+  if (!row.redeemedAt) return { level: "code", orderflow: false, row };
+  return { level: "open", orderflow: !!row.orderflow, row };
+}
+var readPrivate = async (name) => {
+  const f = Bun.file(`${import.meta.dir}/assets/${name}`);
+  return await f.exists() ? new Uint8Array(await f.arrayBuffer()) : null;
+};
+var vaultHtml = null;
+var tries = /* @__PURE__ */ new Map();
+var LOCK_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>The Vault \xB7 FLOWHUB</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 38%,#0f141b 0,#05070a 58%,#020304 100%);color:#e6ebf2;font:15px/1.5 Inter,system-ui,sans-serif;overflow:hidden}
+a{color:#8cc4ff}.back{position:fixed;top:18px;left:20px;font-size:13px;text-decoration:none;color:#929fb2}
+.wrap{text-align:center;padding:24px;max-width:460px}
+.door{position:relative;width:224px;height:224px;margin:0 auto 26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#232b36,#10151c 60%,#0a0d12);box-shadow:0 0 0 2px #28313e,0 0 0 10px #0b0f14,0 0 0 11px #28313e,0 24px 60px rgba(0,0,0,.7);transition:transform 1.1s cubic-bezier(.6,0,.2,1),opacity .9s}
+.door:before{content:"";position:absolute;inset:22px;border-radius:50%;border:2px dashed #2f3a48}
+.door:after{content:"";position:absolute;inset:60px;border-radius:50%;background:#0a0d12;box-shadow:inset 0 0 0 2px #28313e}
+.bolts i{position:absolute;width:10px;height:10px;border-radius:50%;background:#394555;left:107px;top:7px;transform-origin:5px 105px}
+.dial{position:absolute;z-index:2;inset:74px;border-radius:50%;border:2px solid #ff6a00;transition:transform 1.1s cubic-bezier(.6,0,.2,1)}
+.dial:before{content:"";position:absolute;left:50%;top:-8px;width:3px;height:16px;margin-left:-1.5px;background:#ff6a00}
+.open .dial{transform:rotate(720deg)}.open .door{transform:scale(1.6);opacity:0}
+h1{font:900 26px Archivo,Arial Black,sans-serif;letter-spacing:.02em;margin:0 0 8px}p{color:#929fb2;margin:0 0 20px}
+form{display:flex;gap:8px;justify-content:center}input{width:210px;background:#0a0d12;border:1px solid #28313e;color:#e6ebf2;border-radius:3px;padding:11px 12px;font:500 16px "JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase;text-align:center}
+input:focus{outline:2px solid #ff6a00;outline-offset:1px}button{background:#ff6a00;color:#fff;border:0;border-radius:3px;padding:11px 18px;font:600 14px Inter,sans-serif;cursor:pointer}button:disabled{opacity:.5}
+.msg{min-height:22px;margin-top:14px;font-size:14px;color:#ff5d73}.fine{margin-top:26px;font-size:12.5px;color:#66717f}
+</style></head><body><a class="back" href="/">\u2190 FLOWHUB home</a>
+<div class="wrap" id="w"><div class="door" aria-hidden="true"><span class="bolts"><i style="transform:rotate(0)"></i><i style="transform:rotate(45deg)"></i><i style="transform:rotate(90deg)"></i><i style="transform:rotate(135deg)"></i><i style="transform:rotate(180deg)"></i><i style="transform:rotate(225deg)"></i><i style="transform:rotate(270deg)"></i><i style="transform:rotate(315deg)"></i></span><div class="dial"></div></div>
+<h1>ECHO X ORBIT</h1><p>The vault is by invitation: mentorship members only. Enter the code Hannah gave you.</p>
+<form id="f"><input id="c" placeholder="FH-XXXXX-XXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16" aria-label="Vault code"><button id="b" type="submit">Open</button></form>
+<div class="msg" id="m" role="status"></div><p class="fine">No code yet? If you are in mentorship, send Hannah a message on Discord. Everything in the vault stays inside it.</p></div>
+<script>
+const f=document.getElementById('f'),c=document.getElementById('c'),m=document.getElementById('m'),b=document.getElementById('b'),w=document.getElementById('w');
+f.addEventListener('submit',async e=>{e.preventDefault();m.textContent='';b.disabled=true;
+ try{const r=await fetch('/api/vault/redeem',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({code:c.value})}),j=await r.json().catch(()=>({}));
+  if(r.ok){w.classList.add('open');m.style.color='#3ee0a1';m.textContent='Opening\u2026';setTimeout(()=>location.reload(),1250)}else{m.textContent=j.error||'That code did not work.';b.disabled=false}}
+ catch(x){m.textContent='Could not reach FLOWHUB. Try again.';b.disabled=false}});
+</script></body></html>`;
+app.get("/vault", async (c) => {
+  const user = await currentUser(c);
+  if (!user) return c.redirect("/");
+  const acc = await vaultAccess(user);
+  if (acc.level !== "open") return c.html(LOCK_PAGE, 200, { "Cache-Control": "no-store" });
+  const gz = await readPrivate("vault.html.gz");
+  if (!gz) return c.text("The vault is not installed yet.", 404);
+  const etag = String(Bun.hash(gz));
+  if (!vaultHtml || vaultHtml.etag !== etag) vaultHtml = { etag, html: gunzipSync(gz).toString("utf8") };
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a></nav>`;
+  return c.html(vaultHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+});
+app.post("/api/vault/redeem", async (c) => {
+  const u = c.get("user");
+  const now = Date.now(), t = tries.get(u.id);
+  if (t && t.reset > now && t.n >= 8) throw new HttpError(429, "Too many tries. Wait a few minutes and try again.");
+  const bump = () => tries.set(u.id, t && t.reset > now ? { n: t.n + 1, reset: t.reset } : { n: 1, reset: now + 10 * 60 * 1e3 });
+  const b = await c.req.json().catch(() => ({}));
+  const acc = await vaultAccess(u);
+  const bad = () => {
+    bump();
+    return new HttpError(400, "That code did not work.");
+  };
+  if (acc.level === "open") return c.json({ ok: true });
+  if (acc.level !== "code" || !acc.row || !b.code) throw bad();
+  const want = Buffer.from(acc.row.codeHash, "hex"), got = Buffer.from(hashCode(b.code, CFG.sessionSecret), "hex");
+  if (want.length !== got.length || !timingSafeEqual(want, got)) throw bad();
+  await sql`update "VaultAccess" set "redeemedAt" = now(), "updatedAt" = now() where "userId" = ${u.id}`;
+  await audit(u.id, "VAULT_OPEN", u.id);
+  tries.delete(u.id);
+  return c.json({ ok: true });
+});
+app.get("/api/vault/status", async (c) => {
+  const acc = await vaultAccess(c.get("user"));
+  return c.json({ status: acc.level === "open" ? "open" : acc.level === "code" ? "code" : "restricted" });
+});
+app.get("/api/vault/progress", async (c) => {
+  const u = c.get("user"), acc = await vaultAccess(u);
+  if (acc.level !== "open") throw new HttpError(403, "Not open");
+  const [row] = acc.row ? await sql`select state from "VaultAccess" where "userId" = ${u.id}` : [];
+  const state = row?.state ? typeof row.state === "string" ? JSON.parse(row.state) : row.state : null;
+  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, orderflow: acc.orderflow });
+});
+app.put("/api/vault/progress", async (c) => {
+  const u = c.get("user"), acc = await vaultAccess(u);
+  if (acc.level !== "open") throw new HttpError(403, "Not open");
+  if (!acc.row) return c.json({ ok: true });
+  const set = new Set(VAULT_MODULE_IDS), o = await c.req.json().catch(() => ({}));
+  const m = {};
+  for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
+    if (!set.has(k) || !v || typeof v !== "object") continue;
+    const s = String(v.s ?? "000");
+    m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+  }
+  await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
+  return c.json({ ok: true });
+});
+app.get("/api/vault/orderflow.js", async (c) => {
+  const acc = await vaultAccess(c.get("user"));
+  if (acc.level !== "open" || !acc.orderflow) return c.text("", 403);
+  const gz = await readPrivate("vault-orderflow.js.gz");
+  if (!gz) return c.text("", 404);
+  return c.body(gz, 200, { "Content-Type": "text/javascript; charset=utf-8", "Content-Encoding": "gzip", "Cache-Control": "no-store" });
+});
 app.get("/api/coach/members", async (c) => {
   staffOnly(c);
   const q = (c.req.query("q") ?? "").slice(0, 50);
@@ -1529,6 +1670,58 @@ app.post("/api/coach/members/:id/unlock", async (c) => {
               on conflict ("userId") do update set unlocks = array(select distinct unnest("SchoolProgress".unlocks || ${pgArray([b.level])}::text[])), "updatedAt" = now()`;
   else await sql`update "SchoolProgress" set unlocks = array_remove(unlocks, ${b.level}), "updatedAt" = now() where "userId" = ${id}`;
   await audit(c.get("user").id, b.on ? "SCHOOL_UNLOCK" : "SCHOOL_RELOCK", id, { level: b.level });
+  return c.json({ ok: true });
+});
+app.get("/api/coach/vault", async (c) => {
+  staffOnly(c);
+  const rows = await sql`select u.id, coalesce(u."globalName", u.username) as name, u.role, u."guildRoleIds", v."codeHint", v."issuedAt", v."redeemedAt", v."revokedAt", v."mentorshipOverride", v.orderflow, v.state
+    from "User" u left join "VaultAccess" v on v."userId" = u.id
+    where u."isGuildMember" or v."userId" is not null order by (v."userId" is null), v."issuedAt" desc nulls last, u.username limit 500`;
+  const iso = (v) => v ? new Date(v).toISOString() : null;
+  return c.json(rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    role: r.role,
+    mentorship: hasMentorRole(r),
+    override: !!r.mentorshipOverride,
+    code: r.issuedAt ? r.revokedAt ? "revoked" : r.redeemedAt ? "opened" : "issued" : "none",
+    hint: r.codeHint ?? null,
+    issuedAt: iso(r.issuedAt),
+    redeemedAt: iso(r.redeemedAt),
+    orderflow: !!r.orderflow,
+    passed: vaultPassed(r.state ? typeof r.state === "string" ? JSON.parse(r.state) : r.state : null)
+  })));
+});
+app.post("/api/coach/vault/:id/code", async (c) => {
+  staffOnly(c);
+  const id = c.req.param("id"), b = await c.req.json().catch(() => ({}));
+  const [t] = await sql`select id, "guildRoleIds" from "User" where id = ${id}`;
+  if (!t) throw new HttpError(404, "Not found");
+  const role = hasMentorRole(t), override = !role && b.mentorship === true;
+  if (!role && !override) throw new HttpError(400, 'This member does not have the mentorship role. Tick "Mark as mentorship" to confirm they are in mentorship.');
+  const code = makeCode(randomBytes(10));
+  await sql`insert into "VaultAccess" ("userId", "codeHash", "codeHint", "issuedBy", "mentorshipOverride")
+            values (${id}, ${hashCode(code, CFG.sessionSecret)}, ${code.slice(-3)}, ${c.get("user").id}, ${override})
+            on conflict ("userId") do update set "codeHash" = excluded."codeHash", "codeHint" = excluded."codeHint", "issuedBy" = excluded."issuedBy", "issuedAt" = now(),
+              "redeemedAt" = null, "revokedAt" = null, "mentorshipOverride" = "VaultAccess"."mentorshipOverride" or excluded."mentorshipOverride", "updatedAt" = now()`;
+  await audit(c.get("user").id, "VAULT_CODE", id);
+  return c.json({ code });
+});
+app.post("/api/coach/vault/:id/revoke", async (c) => {
+  staffOnly(c);
+  const r = await sql`update "VaultAccess" set "revokedAt" = now(), "updatedAt" = now() where "userId" = ${c.req.param("id")} returning "userId"`;
+  if (!r.length) throw new HttpError(404, "Not found");
+  await audit(c.get("user").id, "VAULT_REVOKE", c.req.param("id"));
+  return c.json({ ok: true });
+});
+app.post("/api/coach/vault/:id/orderflow", async (c) => {
+  staffOnly(c);
+  if (c.get("user").role !== "ADMIN") throw new HttpError(403, "Only an admin can open the Orderflow room");
+  const b = await c.req.json().catch(() => ({}));
+  if (typeof b.on !== "boolean") throw new HttpError(400, "Bad request");
+  const r = await sql`update "VaultAccess" set orderflow = ${b.on}, "updatedAt" = now() where "userId" = ${c.req.param("id")} returning "userId"`;
+  if (!r.length) throw new HttpError(404, "Issue a vault code first");
+  await audit(c.get("user").id, b.on ? "ORDERFLOW_OPEN" : "ORDERFLOW_CLOSE", c.req.param("id"));
   return c.json({ ok: true });
 });
 app.post("/api/coach/feedback", async (c) => {
