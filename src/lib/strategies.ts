@@ -2,18 +2,18 @@
 // To change a number, edit it here; every plan recalculates on next load.
 
 export type Session = "ASIA" | "NY";
-export type StrategyKey = "DAILY_LEVELS" | "INVERTIX" | "ESC_VLCTY" | LegacyStrategyKey;
+export type StrategyKey = "DAILY_LEVELS" | "INVERTIX" | LegacyStrategyKey;
 /** Retired setups of the old NYFLOW / ASIAFLOW indicators: kept only so old roadmaps and journal rows still resolve. Not selectable. */
-export type LegacyStrategyKey = "ASIAFLOW_PO3" | "ASIAFLOW_A3IA" | "NYFLOW_PO3" | "NYFLOW_HL";
+export type LegacyStrategyKey = "ESC_VLCTY" | "ASIAFLOW_PO3" | "ASIAFLOW_A3IA" | "NYFLOW_PO3" | "NYFLOW_HL";
 export type StrategyMode = "DAILY_LEVELS" | "INDICATORS";
 
 export type Strategy = { key: StrategyKey; indicator: string; name: string; winRate: number; sessions: Session[] };
 
 export const STRATEGIES: Record<StrategyKey, Strategy> = {
   DAILY_LEVELS:  { key: "DAILY_LEVELS",  indicator: "ECHO X ORBIT", name: "ECHO X ORBIT", winRate: 0.94,  sessions: [] },
-  // Planner win rates come from each model's own guide: INVERTIX 3.1 (nearest-gap target, 30-point minimum stop) and ESC VLCTY (combined NY + Asia legs).
+  // Planner win rates (used for the maths only, never shown).
   INVERTIX:      { key: "INVERTIX",      indicator: "INVERTIX",     name: "INVERTIX",     winRate: 0.65,  sessions: ["ASIA", "NY"] },
-  ESC_VLCTY:     { key: "ESC_VLCTY",     indicator: "ESC VLCTY",    name: "ESC VLCTY",    winRate: 0.47,  sessions: ["NY", "ASIA"] },
+  ESC_VLCTY:     { key: "ESC_VLCTY",     indicator: "ESC VLCTY",    name: "ESC VLCTY",    winRate: 0.47,  sessions: ["NY", "ASIA"] }, // retired
   ASIAFLOW_PO3:  { key: "ASIAFLOW_PO3",  indicator: "ASIAFLOW",     name: "PO3",          winRate: 0.70,  sessions: ["ASIA"] },
   ASIAFLOW_A3IA: { key: "ASIAFLOW_A3IA", indicator: "ASIAFLOW",     name: "A3IA",         winRate: 0.81,  sessions: ["ASIA"] },
   NYFLOW_PO3:    { key: "NYFLOW_PO3",    indicator: "NYFLOW",       name: "PO3",          winRate: 0.745, sessions: ["NY"] },
@@ -23,11 +23,10 @@ export const STRATEGIES: Record<StrategyKey, Strategy> = {
 /** The indicator models a member can pick in "indicators" mode (ECHO X ORBIT is its own mode). */
 export const INDICATORS: { name: string; sessions: string; strategies: StrategyKey[] }[] = [
   { name: "INVERTIX", sessions: "Asia · New York", strategies: ["INVERTIX"] },
-  { name: "ESC VLCTY", sessions: "New York · Asia", strategies: ["ESC_VLCTY"] },
 ];
 
 export const STRATEGY_KEYS = Object.keys(STRATEGIES) as StrategyKey[];
-export const RETIRED_STRATEGIES: StrategyKey[] = ["ASIAFLOW_PO3", "ASIAFLOW_A3IA", "NYFLOW_PO3", "NYFLOW_HL"];
+export const RETIRED_STRATEGIES: StrategyKey[] = ["ESC_VLCTY", "ASIAFLOW_PO3", "ASIAFLOW_A3IA", "NYFLOW_PO3", "NYFLOW_HL"];
 export const SELECTABLE_STRATEGY_KEYS = STRATEGY_KEYS.filter((k) => !RETIRED_STRATEGIES.includes(k));
 export const strategyLabel = (k: StrategyKey) => (RETIRED_STRATEGIES.includes(k) ? `${STRATEGIES[k].indicator} · ${STRATEGIES[k].name}` : STRATEGIES[k].name);
 

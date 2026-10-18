@@ -60,10 +60,9 @@ Members pick what they trade instead of typing a win rate:
 |---|---|---|
 | ECHO X ORBIT (only) | — | 94% |
 | INVERTIX | Asia, New York | 65% |
-| ESC VLCTY | New York, Asia | 47% |
 
 - **ECHO X ORBIT** uses its fixed rate and ignores the indicators.
-- **INVERTIX · ESC VLCTY** lets members pick either or both. The old NYFLOW / ASIAFLOW setups are retired: they are dropped from old roadmaps and plans, and old journal rows keep their labels.
+- **INVERTIX** is the indicator setup members pick in "indicators" mode. ESC VLCTY and the old NYFLOW / ASIAFLOW setups are retired: they are dropped from old roadmaps and plans, and old journal rows keep their labels.
 - The plan's win rate is the average of the chosen setups. The journal's Strategy field uses the same names, and the income card shows each setup's actual win rate against its fixed rate.
 
 

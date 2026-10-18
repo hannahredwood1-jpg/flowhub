@@ -60,21 +60,21 @@ const NOTES = [
 type RM = Omit<RoadmapDTO, "winRate">;
 type Profile = { id: string; name: string; role: PersonDTO["role"]; roadmap: RM; accounts: { tpl: string; stage: Stage; qty?: number; nick?: string; daysAgo: number; bias: number; days: number }[] };
 const profiles: Profile[] = [
-  { id: "u-coach", name: "Coach Nova", role: "COACH", roadmap: { monthlyIncomeGoal: 8000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["INVERTIX", "ESC_VLCTY"], avgRR: 1.4, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 18 },
+  { id: "u-coach", name: "Coach Nova", role: "COACH", roadmap: { monthlyIncomeGoal: 8000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["INVERTIX"], avgRR: 1.4, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 18 },
     accounts: [
       { tpl: "my-funded-futures--rapid-intraday--50k", stage: "EVALUATION", daysAgo: 7, bias: 0.05, days: 6 },
       { tpl: "lucid-trading--lucidflex--50k", stage: "FUNDED", qty: 3, daysAgo: 30, bias: 0.0, days: 16 },
       { tpl: "topstep--trading-combine--100k", stage: "EVALUATION", daysAgo: 4, bias: -0.1, days: 3 },
     ] },
-  { id: "u-1", name: "vortex_nq", role: "MEMBER", roadmap: { monthlyIncomeGoal: 4000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: false, strategies: ["INVERTIX", "ESC_VLCTY"], avgRR: 1.5, tradesPerDay: 2, primaryInstrument: "MNQ", avgStopPoints: 20 },
+  { id: "u-1", name: "vortex_nq", role: "MEMBER", roadmap: { monthlyIncomeGoal: 4000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: false, strategies: ["INVERTIX"], avgRR: 1.5, tradesPerDay: 2, primaryInstrument: "MNQ", avgStopPoints: 20 },
     accounts: [{ tpl: "apex-trader-funding--intraday-trailing--50k", stage: "EVALUATION", daysAgo: 9, bias: -0.35, days: 7 }] },
   { id: "u-2", name: "lunaticks", role: "MEMBER", roadmap: { monthlyIncomeGoal: 3000, tradingDaysPerWeek: 4, strategyMode: "DAILY_LEVELS", multiSession: false, strategies: ["DAILY_LEVELS"], avgRR: 1, tradesPerDay: 2, primaryInstrument: "MNQ", avgStopPoints: 15 },
     accounts: [{ tpl: "lucid-trading--lucidflex--25k", stage: "EVALUATION", daysAgo: 6, bias: 0.02, days: 4 }, { tpl: "tradeify--select--50k", stage: "EVALUATION", daysAgo: 12, bias: -0.05, days: 8 }] },
-  { id: "u-3", name: "Deon K", role: "MEMBER", roadmap: { monthlyIncomeGoal: 10000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["INVERTIX", "ESC_VLCTY"], avgRR: 1.3, tradesPerDay: 3, primaryInstrument: "NQ", avgStopPoints: 12 },
+  { id: "u-3", name: "Deon K", role: "MEMBER", roadmap: { monthlyIncomeGoal: 10000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: true, strategies: ["INVERTIX"], avgRR: 1.3, tradesPerDay: 3, primaryInstrument: "NQ", avgStopPoints: 12 },
     accounts: [{ tpl: "my-funded-futures--rapid-intraday--150k", stage: "FUNDED", qty: 2, daysAgo: 25, bias: 0.04, days: 14 }, { tpl: "alpha-futures--standard--100k", stage: "EVALUATION", daysAgo: 10, bias: -0.2, days: 6 }] },
   { id: "u-4", name: "priya.trades", role: "MEMBER", roadmap: { monthlyIncomeGoal: 2500, tradingDaysPerWeek: 5, strategyMode: "DAILY_LEVELS", multiSession: false, strategies: ["DAILY_LEVELS"], avgRR: 1.2, tradesPerDay: 1, primaryInstrument: "MES", avgStopPoints: 6 },
     accounts: [{ tpl: "take-profit-trader--test-pro-pro--50k", stage: "EVALUATION", daysAgo: 14, bias: -0.08, days: 9 }] },
-  { id: "u-5", name: "ghostfills", role: "MEMBER", roadmap: { monthlyIncomeGoal: 6000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: false, strategies: ["INVERTIX", "ESC_VLCTY"], avgRR: 1.5, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 25 },
+  { id: "u-5", name: "ghostfills", role: "MEMBER", roadmap: { monthlyIncomeGoal: 6000, tradingDaysPerWeek: 5, strategyMode: "INDICATORS", multiSession: false, strategies: ["INVERTIX"], avgRR: 1.5, tradesPerDay: 3, primaryInstrument: "MNQ", avgStopPoints: 25 },
     accounts: [{ tpl: "bulenox--qualification-option-2-eod--50k", stage: "EVALUATION", daysAgo: 20, bias: -0.355, days: 5 }] },
 ];
 

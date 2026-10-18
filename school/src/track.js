@@ -9,7 +9,7 @@ let act=Date.now(),at=Date.now(),buf={};
 const section=()=>{try{
   if(window.PRACTICE){const pv=typeof PV!=='undefined'?PV:'tasks';
     if(pv==='lab')return 'Eval lab';
-    if(pv==='ind')return 'Indicator Lab · '+({inv:'INVERTIX',esc:'ESC VLCTY',sn:'Eval Sniper',cm:'Confluence Master'}[IV.ind]||'');
+    if(pv==='ind')return 'Indicator Lab · '+({inv:'INVERTIX',sn:'Eval Sniper',cm:'Confluence Master'}[IV.ind]||'');
     return 'Practice tasks'}
   if(typeof VIEW==='undefined')return 'Trading School';
   if(VIEW==='map')return 'Course map';

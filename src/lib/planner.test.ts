@@ -170,9 +170,9 @@ test("strategies: fixed win rates and selection rules", () => {
   const near = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
   near(blendedWinRate({ mode: "DAILY_LEVELS", multiSession: true, strategies: ["INVERTIX"] }), 0.94); // ECHO X ORBIT
   near(blendedWinRate({ mode: "INDICATORS", multiSession: true, strategies: ["INVERTIX"] }), 0.65);
-  near(blendedWinRate({ mode: "INDICATORS", multiSession: true, strategies: ["INVERTIX", "ESC_VLCTY"] }), (0.65 + 0.47) / 2);
+  near(blendedWinRate({ mode: "INDICATORS", multiSession: true, strategies: ["INVERTIX"] }), 0.65);
   // the old NYFLOW / ASIAFLOW setups are retired: dropped from a selection
-  assert.deepEqual(normalizeSelection({ mode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_PO3", "NYFLOW_HL", "ESC_VLCTY"] }).strategies, ["ESC_VLCTY"]);
-  assert.deepEqual(sessionsOf({ mode: "INDICATORS", multiSession: true, strategies: ["INVERTIX", "ESC_VLCTY"] }), ["ASIA", "NY"]);
+  assert.deepEqual(normalizeSelection({ mode: "INDICATORS", multiSession: true, strategies: ["ASIAFLOW_PO3", "NYFLOW_HL", "ESC_VLCTY", "INVERTIX"] }).strategies, ["INVERTIX"]);
+  assert.deepEqual(sessionsOf({ mode: "INDICATORS", multiSession: true, strategies: ["INVERTIX"] }), ["ASIA", "NY"]);
   assert.deepEqual(normalizeSelection({ mode: "DAILY_LEVELS", multiSession: true, strategies: [] }).strategies, ["DAILY_LEVELS"]);
 });

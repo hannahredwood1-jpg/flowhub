@@ -4,9 +4,9 @@
 export const PLAN_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri"] as const; // Sunday = the Asia open
 export const PLAN_SESSIONS = { ASIA: "Asia · 8 PM–12 AM", LONDON: "London · 12–6 AM", NY: "New York · 9:30 AM–4 PM" } as const;
 export const SESSION_RANGE: Record<"ASIA" | "LONDON" | "NY", { start: string; end: string }> = { ASIA: { start: "20:00", end: "23:59" }, LONDON: { start: "00:00", end: "06:00" }, NY: { start: "09:30", end: "16:00" } };
-export const PLAN_MODELS = { ECHO_X_ORBIT: "ECHO X ORBIT (Discord calls)", INVERTIX: "INVERTIX", ESC_VLCTY: "ESC VLCTY" } as const;
+export const PLAN_MODELS = { ECHO_X_ORBIT: "ECHO X ORBIT (Discord calls)", INVERTIX: "INVERTIX" } as const;
 /** Models from plans saved before NYFLOW / ASIAFLOW were retired: dropped when a plan is read. */
-export const RETIRED_PLAN_MODELS = ["NYFLOW_HL", "NYFLOW_PO3", "ASIAFLOW_PO3"];
+export const RETIRED_PLAN_MODELS = ["ESC_VLCTY", "NYFLOW_HL", "NYFLOW_PO3", "ASIAFLOW_PO3"];
 export function cleanPlanModels(models: string[]): PlanModel[] {
   const ok = (models ?? []).filter((m): m is PlanModel => m in PLAN_MODELS);
   return ok.length ? ok : ["ECHO_X_ORBIT"];
