@@ -1,7 +1,7 @@
 /* ============================================================
    progress: saved in this browser and synced to your FLOWHUB account
 ============================================================ */
-const LS='fh-school-v2',LSX='fh-school-v2-txt';
+const LS=window.VAULT?'fh-vault-v1':'fh-school-v2',LSX=window.VAULT?'fh-vault-v1-txt':'fh-school-v2-txt';
 let PROG={m:{}},TXT={},UNLOCKS=[],LIVE=false,WHO='';
 const BLANK=()=>({s:[0,0,0],p:0,sc:0,a:1,n:0,at:0});
 const pm=id=>PROG.m[id]||(PROG.m[id]=BLANK());
@@ -18,16 +18,16 @@ function persist(sync=true){try{localStorage.setItem(LS,JSON.stringify(PROG))}ca
 function saveTxt(){try{localStorage.setItem(LSX,JSON.stringify(TXT))}catch(e){}}
 let syncT=null;
 const syncSoon=()=>{clearTimeout(syncT);syncT=setTimeout(push,900)};
-async function push(){if(!LIVE)return;try{await fetch('/api/school',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({v2:compact()})})}catch(e){}}
-async function pull(){try{const r=await fetch('/api/school',{headers:{Accept:'application/json'}});if(!r.ok)return;const j=await r.json();LIVE=true;WHO=j.name||'';UNLOCKS=j.unlocks||[];mergeServer(j.state&&j.state.v2);const w=$('#who');if(w)w.textContent=WHO;if(PENDING){const h=PENDING;PENDING=null;location.hash=h}else render()}catch(e){}}
-async function logAttempt(id,score,total,pass){if(!LIVE)return;try{await fetch('/api/school/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'ex',ref:id,score,total,pass})})}catch(e){}}
+const API=window.VAULT?'/api/vault/progress':'/api/school';
+async function push(){if(!LIVE)return;try{await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({v2:compact()})})}catch(e){}}
+async function pull(){try{const r=await fetch(API,{headers:{Accept:'application/json'}});if(!r.ok)return;const j=await r.json();LIVE=true;if(window.VAULT&&j.orderflow&&!window.OF_OK){await new Promise(ok=>{const sc=document.createElement('script');sc.src='/api/vault/orderflow.js';sc.onload=sc.onerror=ok;document.head.append(sc)})}WHO=j.name||'';UNLOCKS=j.unlocks||[];mergeServer(j.state&&j.state.v2);const w=$('#who');if(w)w.textContent=WHO;if(PENDING){const h=PENDING;PENDING=null;location.hash=h}else render()}catch(e){}}
+async function logAttempt(id,score,total,pass){if(!LIVE||window.VAULT)return;try{await fetch('/api/school/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'ex',ref:id,score,total,pass})})}catch(e){}}
 
 /* ---------- module helpers ---------- */
 const modIdx=id=>MODS.findIndex(m=>m.id===id);
-const FIRST_CORE=MODS.findIndex(m=>m.ph>0),ESC_FIRST='m31';
-/* Beginner Basics (phase 1) are open from the start and optional. Everything after them unlocks one module at a time, starting with the first Foundations module.
-   ESC VLCTY never opens by passing the exam before it: it needs a manual unlock from Hannah once the trader shows a funded-account certificate. ECHO X ORBIT and the final exam follow it. */
-const modUnlocked=i=>{const m=MODS[i];if(UNLOCKS.includes(m.id)||UNLOCKS.includes('all')||m.ph===0||i===FIRST_CORE)return true;if(m.id===ESC_FIRST)return false;return !!pm(MODS[i-1].id).p};
+const FIRST_CORE=MODS.findIndex(m=>!PH[m.ph].open);
+/* Beginner Basics (phase 1) are open from the start and optional. Everything after them unlocks one module at a time, starting with the first Foundations module. */
+const modUnlocked=i=>{const m=MODS[i];if(m.sealed&&!window.OF_OK)return false;if(UNLOCKS.includes(m.id)||UNLOCKS.includes('all')||PH[m.ph].open||i===FIRST_CORE)return true;return !!pm(MODS[i-1].id).p};
 const modStatus=i=>pm(MODS[i].id).p?'done':modUnlocked(i)?'active':'locked';
 const stepsDone=m=>pm(m.id).s.filter(Boolean).length;
 const currentIdx=()=>{const i=MODS.findIndex((m,k)=>!pm(m.id).p&&modUnlocked(k));return i<0?MODS.length-1:i};
@@ -63,10 +63,10 @@ function renderMap(){
   if(OPEN==null)OPEN=cur.id;
   let html='',ph=-1;
   MODS.forEach((m,i)=>{
-    if(m.ph!==ph){if(ph>=0)html+=(ph===ESC_PH&&pm('m36').p?escCard():'')+'</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
+    if(m.ph!==ph){if(ph>=0)html+='</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
     html+=modRow(m,i)});
   html+='</div></section>';
-  $('#phases').innerHTML=(pm('m30').p?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">Course complete.</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
+  $('#phases').innerHTML=(pm('m16').p?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">${window.VAULT?'Vault complete.':'Course complete.'}</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
   $('#aside').innerHTML=`<div class="card next-card"><div class="hud">${finished?'All modules passed':'Up next'}</div><div class="h">${cur.n}. ${cur.t}</div>
     <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':`Step <b>${Math.min(stepsDone(cur)+1,4)}</b> of 4: ${STEPS[Math.min(stepsDone(cur),3)]}`}</p>
     <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:stepsDone(cur)/4*100}%"></i></div>
@@ -77,10 +77,10 @@ function renderMap(){
 function modRow(m,i){
   const st=modStatus(i),P=PH[m.ph],open=OPEN===m.id,p=pm(m.id);let chip;
   if(st==='done')chip=`<span class="chip ok">✓ Passed · ${p.sc}%</span>`;
-  else if(st==='active')chip=`<span class="chip live">${p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/3 steps${m.ph===0?' · optional':''}</span>`;
-  else chip=`<span class="chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Locked</span>`;
+  else if(st==='active')chip=`<span class="chip live">${p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/3 steps${PH[m.ph].open?' · optional':''}</span>`;
+  else chip=`<span class="chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${m.sealed&&!window.OF_OK?'Sealed':'Locked'}</span>`;
   const prev=MODS[i-1]?MODS[i-1].t:'';let act;
-  if(st==='locked')act=m.id===ESC_FIRST?`<div class="pcheck"><b>Unlocked by Hannah.</b> ESC VLCTY opens once you have proven a funded account. Send your funded-account certificate to Hannah on Discord and she will open this phase for you.</div>`:`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
+  if(st==='locked')act=m.sealed&&!window.OF_OK?`<div class="pcheck"><b>Sealed.</b> This room opens only when Hannah approves you for it. Nothing in it is shown until then.</div>`:`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
   else act=`<a class="btn primary" href="#/${m.id}">${st==='done'?'Review lesson':stepsDone(m)?'Continue lesson':'Start lesson'} →</a>${p.a>1&&st!=='done'?`<span class="chip bad">Attempt ${p.a}: new exam set</span>`:''}`;
   const hist=p.n?`<div style="grid-column:1/-1"><span class="hud">Exam attempts: ${p.n}</span></div>`:'';
   return `<article class="mod ${st}" data-id="${m.id}"><button class="mod-h" data-tog="${m.id}" aria-expanded="${open}">
@@ -133,7 +133,7 @@ function paintChart(refit){
     CH.fit();if(cs.length>1)CH2.fit();
     if(L.drill.revealed&&kind.reveal)kind.reveal(CH,it);
   } else {
-    const cs=chartsOf(use);const ld=(c,j)=>{const ch=j?CH2:CH;ch.setData(c.C,{k,t0:c.t0??use.t0,stepMin:c.step??use.step,labels:c.labels??use.labels,sym:c.sym,tf:c.tf??use.tf,fit:refit!==false});ch.marks=[];ch.taps=new Set();ch.ov=[]};
+    const cs=chartsOf(use);const ld=(c,j)=>{const ch=j?CH2:CH,CC=(stp&&stp.upto!=null&&!j)?c.C.slice(0,stp.upto+1):c.C;ch.setData(CC,{k,t0:c.t0??use.t0,stepMin:c.step??use.step,labels:c.labels??use.labels,sym:c.sym,tf:c.tf??use.tf,fit:refit!==false});ch.marks=[];ch.taps=new Set();ch.ov=[]};
     cs.forEach(ld);
     if(stp){CH.ov=stp.ov||[];if(two)CH2.ov=stp.ov2||[];if(stp.focus!=null&&k===1)CH.focus(stp.focus)}
     else if(L.step>=3&&m.sum){const o=m.sum(sc);CH.ov=o.ov||[];if(two)CH2.ov=o.ov2||[]}
@@ -171,7 +171,7 @@ function renderLesson(){
     const items=[['Learn: lesson read',p.s[0]],['See it: worked example complete',p.s[1]],['Mark it: chart tasks done correctly',p.s[2]]],all=items.every(x=>x[1]),n=examSize(m);
     body=`<h3>Ready for the exam?</h3><ul class="req">${items.map(([t,o])=>`<li class="${o?'ok':''}"><span class="tick">${o?'✓':''}</span>${t}</li>`).join('')}</ul>
     <div class="callout key"><span class="hud">Exam format</span><p><b>${n} questions</b> · <b>${PASS*100}% to pass</b> (${passNeeded(n)} of ${n})</p><p>${m.examDesc||'A mix of concept questions and chart tasks, with fresh charts and numbers every attempt.'}</p></div>
-    ${m.id==='m30'&&m.explain?`<div class="callout def"><span class="hud">Explain it</span><p>Before the final exam, say it in your own words. Write as much or as little as you like: there is no word minimum and nothing here is graded.</p>${m.explain.prompts.map((q,i)=>`<p><b>${i+1}. ${q}</b></p><textarea id="t${i}" rows="4" placeholder="…">${esc(L.t[i]||'')}</textarea>`).join('')}</div>`:''}
+    ${m.id==='m16'&&m.explain?`<div class="callout def"><span class="hud">Explain it</span><p>Before the final exam, say it in your own words. Write as much or as little as you like: there is no word minimum and nothing here is graded.</p>${m.explain.prompts.map((q,i)=>`<p><b>${i+1}. ${q}</b></p><textarea id="t${i}" rows="4" placeholder="…">${esc(L.t[i]||'')}</textarea>`).join('')}</div>`:''}
     <p class="muted">There are no hints and no feedback until you submit. If you don't pass, <b>this module restarts</b>: the lessons re-open and the exam changes.</p>
     ${p.a>1?`<div class="fb no"><b>Attempt ${p.a}.</b> The practice tasks and the exam are a fresh set.</div>`:''}
     ${p.p?`<div class="fb ok"><b>Passed · ${p.sc}%.</b> You can review the lessons any time.</div>`:''}`;
@@ -347,8 +347,7 @@ function examResult(){
     `<div class="reset"><div class="hud" style="color:var(--loss)">Module restarted</div><h3 class="h" style="font-size:20px;margin:6px 0">Back to the lesson</h3><p class="muted" style="font-size:14px">Under ${PASS*100}% means a re-learn, not a re-roll. The lessons have re-opened, the practice tasks are new, and the exam will be a <b>different set</b>: different charts, numbers and questions.</p>
      <button class="btn primary" id="restartBtn" style="margin-top:12px;white-space:normal;text-align:left">Restart Module ${m.n} · attempt ${pm(m.id).a}</button></div>`}
    </aside></div>`;
-  const aside=$('#exBody aside');if(aside&&pass&&m.id==='m36')aside.insertAdjacentHTML('beforeend',escCard());
-  const r=$('#restartBtn');if(r)r.onclick=()=>{X=null;nav(`/${m.id}/learn`)};
+    const r=$('#restartBtn');if(r)r.onclick=()=>{X=null;nav(`/${m.id}/learn`)};
 }
 
 
@@ -379,39 +378,30 @@ async function planCheck(){
     fb.innerHTML=j&&j.plan&&j.plan.done?'<div class="fb ok"><b>Plan found.</b> Your plan card is saved. It shows on your dashboard and feeds your pre-trade checklist.</div>':'<div class="fb no"><b>No plan yet.</b> Finish all 6 steps in Trading Plan, save it, then check again.</div>'}
   catch(e){fb.innerHTML='<div class="fb no"><b>Could not check.</b> Try again in a moment.</div>'}
 }
-const BOOK_MSG='Hi Hannah! I finished the FLOWMTD Trading School and passed the ECHO X ORBIT exam. I\'d like to book a Zoom call to get set up with the ExO indicator.\n\nTradingView username: \nTime zone + best times for a call: ';
+const BOOK_MSG='Hi Hannah! I finished the FLOWMTD Trading School and earned my INVERTIX certificate. I\'m a mentorship member and I\'d like a code for the ECHO X ORBIT vault.\n\nMy name: ';
 function drawCertificate(name){
   const W=1600,H=1130,cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');
   c.fillStyle='#030405';c.fillRect(0,0,W,H);c.strokeStyle='#28313e';c.lineWidth=2;c.strokeRect(48,48,W-96,H-96);c.strokeStyle='#ff6a00';c.lineWidth=4;c.beginPath();c.moveTo(48,120);c.lineTo(48,48);c.lineTo(120,48);c.stroke();c.beginPath();c.moveTo(W-48,H-120);c.lineTo(W-48,H-48);c.lineTo(W-120,H-48);c.stroke();
-  c.textAlign='center';c.fillStyle='#e6ebf2';c.font='900 46px Archivo, Arial Black, sans-serif';c.fillText('FLOWHUB',W/2,170);c.fillStyle='#ff6a00';c.font='600 20px Inter, sans-serif';c.fillText('Certificate of completion',W/2,215);
+  c.textAlign='center';c.fillStyle='#e6ebf2';c.font='900 46px Archivo, Arial Black, sans-serif';c.fillText('FLOWHUB',W/2,170);c.fillStyle='#ff6a00';c.font='600 20px Inter, sans-serif';c.fillText('Certificate of understanding · INVERTIX',W/2,215);
   c.fillStyle='#929fb2';c.font='400 26px Inter, sans-serif';c.fillText('This certifies that',W/2,400);
   let fs=96;c.font=`700 ${fs}px Inter, sans-serif`;while(c.measureText(name).width>W-300&&fs>40){fs-=4;c.font=`700 ${fs}px Inter, sans-serif`}c.fillStyle='#e6ebf2';c.fillText(name,W/2,520);
   c.strokeStyle='#ff6a00';c.lineWidth=2;c.beginPath();c.moveTo(W/2-300,560);c.lineTo(W/2+300,560);c.stroke();
-  c.fillStyle='#c9d3e1';c.font='400 30px Inter, sans-serif';c.fillText('has completed the FLOWMTD Trading School and passed every module exam,',W/2,660);c.fillText('including the INVERTIX, ESC VLCTY and ECHO X ORBIT models.',W/2,704);
+  c.fillStyle='#c9d3e1';c.font='400 30px Inter, sans-serif';c.fillText('has completed the FLOWMTD Trading School, passed every module exam,',W/2,660);c.fillText('and demonstrated an understanding of the INVERTIX model.',W/2,704);
   const d=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});let h=7;for(const ch of name+d)h=(h*31+ch.charCodeAt(0))>>>0;
   c.textAlign='left';c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('DATE',150,930);c.fillStyle='#e6ebf2';c.font='500 26px JetBrains Mono, monospace';c.fillText(d,150,968);c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('CERTIFICATE ID',150,1020);c.fillStyle='#e6ebf2';c.font='500 22px JetBrains Mono, monospace';c.fillText('FMTD-'+h.toString(36).toUpperCase().padStart(7,'0'),150,1054);
   c.textAlign='center';c.fillStyle='#66717f';c.font='400 15px Inter, sans-serif';c.fillText('Educational certificate of course completion. Not a trading license, qualification or financial advice.',W/2,H-72);
   return cv}
 function gradCard(){
-  return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">Trading School complete</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You passed every module, including INVERTIX, ESC VLCTY and ECHO X ORBIT.</h2>
-   <p class="muted" style="max-width:62ch">Download your certificate, then read what you have unlocked: access to the ExO indicator, set up with you on a one-on-one Zoom call with Hannah.</p>
+  return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">Trading School complete</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You passed every module. Your INVERTIX certificate is ready.</h2>
+   <p class="muted" style="max-width:62ch">A certificate of understanding: you learned the INVERTIX model from the key level to the daily playbook, and proved it on every exam.</p>
    <div class="row" style="align-items:center;margin-top:14px"><input class="in" id="certName" placeholder="Your name for the certificate" maxlength="40" value="${esc(WHO||'')}" style="max-width:300px"><button class="btn primary" id="certBtn">Download certificate</button></div>
-   <h3 class="h" style="font-size:17px;margin:22px 0 6px">Your reward: access to the ExO indicator</h3>
-   <p class="muted" style="max-width:66ch;font-size:14px">You have earned access to the private <b>ExO (ECHO X ORBIT) indicator</b>. It runs on your own TradingView chart and marks setups as they form: the zones first, then the entry, stop and target the moment a setup is live. It does not predict trades. It shows them when they are real. It is yours, not shared.</p>
-   <p style="margin-top:10px;font-size:14px"><b>You still need to set up a Zoom call with Hannah.</b> On the call she shares the indicator to your TradingView account and fully onboards you.</p>
-   <p style="margin-top:10px;font-size:14px"><b>Have ready for the call:</b></p><ul class="muted" style="font-size:14px;margin:4px 0 0 18px"><li>Your TradingView account (a paid plan is recommended) and your TradingView username: the indicator is shared to it</li><li>Zoom installed, on a computer (not your phone)</li><li>Never send a password in Discord</li></ul>
-   <p style="margin-top:12px;font-size:14px"><b>Book it:</b> send Hannah a DM on Discord with the message below.</p><textarea class="in" id="bookMsg" readonly rows="6" style="margin-top:6px">${esc(BOOK_MSG)}</textarea>
-   <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a></div></div>`}
-const ESC_MSG='Hi Hannah! I finished the ESC VLCTY section of the FLOWMTD Trading School. I\'d like to book a Zoom call to get access to the ESC VLCTY indicator, and I have a few questions too. My TradingView username is: ';
-function escCard(){
-  return `<div class="card" style="padding:20px 22px;margin:14px 0 0;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">ESC VLCTY complete</div><h3 class="h" style="font-size:20px;margin:6px 0 8px">Get the ESC VLCTY indicator</h3>
-   <p class="muted" style="font-size:14px;max-width:62ch">You now know the whole model. To get access to the <b>ESC VLCTY indicator</b> on your own TradingView chart, <b>send Hannah a DM on Discord</b> to set up a Zoom call.</p>
-   <p class="muted" style="font-size:14px;max-width:62ch">The call is also the place to <b>ask any questions you have</b>, about ESC VLCTY, the other models or your own trading.</p>
-   <p style="margin-top:10px;font-size:14px"><b>Have ready for the call:</b> your TradingView account and username (the indicator is shared to it), Zoom on a computer, and never send a password in a DM.</p>
-   <textarea class="in" id="escMsg" readonly rows="4" style="margin-top:8px">${esc(ESC_MSG)}</textarea>
-   <div class="row" style="margin-top:8px"><button class="btn" id="copyEsc">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a></div></div>`}
+   <div class="envelope"><div class="env-art" aria-hidden="true"><i class="env-flap"></i><i class="env-seal"></i></div>
+    <div><div class="hud">A sealed envelope</div><h3 class="h" style="font-size:19px;margin:4px 0 6px">The next level is not in the school.</h3>
+    <p class="muted" style="font-size:14px;max-width:60ch">There is a vault, a separate place outside this course, with its own door. It is by invitation: <b>mentorship members only</b>, opened with a code from Hannah. Nothing in the school leads to it, and nothing inside it is shown to anyone without the code.</p>
+    <p style="margin-top:10px;font-size:14px"><b>If you are in mentorship:</b> send Hannah a DM on Discord with the message below, then enter your code at the vault door.</p>
+    <textarea class="in" id="bookMsg" readonly rows="4" style="margin-top:6px">${esc(BOOK_MSG)}</textarea>
+    <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a><a class="btn primary" href="/vault">Go to the vault door →</a></div></div></div></div>`}
 document.addEventListener('click',e=>{
-  if(e.target.closest('#copyEsc')){const b=e.target.closest('#copyEsc');try{navigator.clipboard.writeText(ESC_MSG).then(()=>{b.textContent='Copied'},()=>{b.textContent='Select and copy above'})}catch(x){b.textContent='Select and copy above'}}
   if(e.target.closest('#certBtn')){const n=($('#certName').value||'').trim();if(!n){toast('Type your name for the certificate.');return}
     const run=()=>{const a=document.createElement('a');a.download='FLOWMTD-certificate-'+n.replace(/[^a-z0-9]+/gi,'-')+'.png';a.href=drawCertificate(n).toDataURL('image/png');document.body.append(a);a.click();a.remove()};
     (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(run)}
@@ -459,7 +449,7 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape')$$('dialog[open]').for
 /* ============================================================
    PRACTICE: the same generated charts and tasks as the modules, endless, with instant feedback and no exam
 ============================================================ */
-const PM={inv:['m43','m44','m45','m46','m47'],esc:['m31','m32','m33','m34','m35','m36','ind'],exo:['m27','m28','m29','m30']};
+const PM={inv:['m43','m44','m45','m46','m47']};
 let PV='tasks';
 const PR={topic:'mixed',item:null,m:null,st:{},fb:null,checked:false,revealed:false,n:0,ok:0};
 const pracModel=id=>Object.keys(PM).find(k=>PM[k].includes(id));
@@ -482,7 +472,7 @@ function pracPaint(){
 }
 function pracPanel(){
   const it=PR.item,kd=K[it.kind],g=PR.fb,box=$('#lesson');
-  const opts=[['mixed','Mixed: any topic'],...(typeof IND_ESC!=='undefined'?[['ind','Indicator signals (INVERTIX · ESC VLCTY · Eval Sniper)']]:[]),['inv','INVERTIX (all lessons)'],['esc','ESC VLCTY (all lessons)'],['exo','ECHO X ORBIT'],...MODS.map(m=>[m.id,`${m.n}. ${m.t}`])];
+  const opts=[['mixed','Mixed: any topic'],...(typeof IND_INV!=='undefined'?[['ind','Indicator signals (INVERTIX · Eval Sniper)']]:[]),['inv','INVERTIX (all lessons)'],...MODS.map(m=>[m.id,`${m.n}. ${m.t}`])];
   box.innerHTML=`<div class="les-h"><div class="hud">Practice · no exam, no pass mark</div><div class="h">Practice</div>
    <div style="margin:10px 0 4px"><select id="pTopic" class="in">${opts.map(([v,t])=>`<option value="${v}" ${v===PR.topic?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
    <div class="kv"><span class="chip ok">${PR.ok} right</span><span class="chip">${PR.n} done</span><span class="chip">${esc(it.topic||'Task')}</span></div></div>

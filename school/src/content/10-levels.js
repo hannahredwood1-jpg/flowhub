@@ -1,14 +1,6 @@
 /* ============================================================
    Classic school lessons in the new format: the maths, a day and your plan, and the trade-management drills.
 ============================================================ */
-const BANKS=(topic,rows)=>rows.map(([q,o,why])=>mcq(topic,q,o,why));
-const drillBank=bank=>r=>{const b=pick(r,bank);return{...b,o:[...b.o]}};
-const numGen=(topic,f)=>r=>({kind:'num',topic,...f(r)});
-const quick=(c)=>MODS.push({chart:false,examDesc:c.examDesc,...c,
-  see:()=>c.steps.map(([cap,html])=>({cap,html:html||''})),
-  drills:[...c.gens,drillBank(c.bank),drillBank(c.bank)],
-  exam:{bank:c.eb||Math.min(6,c.bank.length-3),gen:[...c.gens.map((_,i)=>[i,c.gens.length>2?1:2]),[c.gens.length,2]]}});
-
 /* ---------- 24 · Why the math works ---------- */
 (()=>{
 const be=numGen('Break-even',r=>{const [s,t]=pick(r,[[15,40],[10,30],[20,40],[12,36]]),v=Math.round(s/(s+t)*1000)/10;return{q:`With a ${s}-point stop and a ${t}-point target, what win rate (in %, one decimal) breaks even?`,ans:v,unit:'%',tol:.06,why:`Break-even win rate = risk ÷ (risk + reward) = ${s} ÷ ${s+t} = ${v}%.`}});

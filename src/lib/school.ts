@@ -34,16 +34,6 @@ export const SCHOOL_MODULES = [
   { id: "m46", n: 30, title: "INVERTIX: Targets, Windows and Size" },
   { id: "m47", n: 31, title: "INVERTIX: The Daily Playbook" },
   { id: "m16", n: 32, title: "Putting It All Together: The Complete Read" },
-  { id: "m31", n: 33, title: "ESC VLCTY: The Idea" },
-  { id: "m32", n: 34, title: "ESC VLCTY: The New York Half" },
-  { id: "m33", n: 35, title: "ESC VLCTY: The Asia Half" },
-  { id: "m34", n: 36, title: "ESC VLCTY: Sizing & Risk Modes" },
-  { id: "m35", n: 37, title: "ESC VLCTY: Setup, Fills & Your Routine" },
-  { id: "m36", n: 38, title: "ESC VLCTY: Worked Trades & Make the Call" },
-  { id: "m27", n: 39, title: "ECHO X ORBIT: Two Engines & the Shared Rules" },
-  { id: "m28", n: 40, title: "Echo" },
-  { id: "m29", n: 41, title: "Orbit" },
-  { id: "m30", n: 42, title: "Make the Call: All Three Models (Final Exam)" },
 ] as const;
 export const SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id) as string[];
 
@@ -63,12 +53,11 @@ export type SchoolSummary = {
   attempts: { label: string; pct: number; pass: boolean; at: string }[];
 };
 
-/** Beginner Basics (the first five) are always open, and so is the first Foundations module. After that each module opens when the one before it is passed,
- *  except ESC VLCTY, which only a manual unlock from a coach opens (the trader shows a funded-account certificate). */
+/** Beginner Basics (the first five) are always open, and so is the first Foundations module. After that each module opens when the one before it is passed
+ *  (or a coach unlocks it). */
 export const SCHOOL_FIRST_CORE = 5;
-export const SCHOOL_ESC_FIRST = "m31";
 export function schoolOpen(modules: { id: string; passed: boolean; manualUnlock: boolean }[], i: number): boolean {
-  return modules[i].manualUnlock || i <= SCHOOL_FIRST_CORE || (modules[i].id !== SCHOOL_ESC_FIRST && modules[i - 1].passed);
+  return modules[i].manualUnlock || i <= SCHOOL_FIRST_CORE || modules[i - 1].passed;
 }
 
 export function summarizeSchool(state: SchoolState | null, unlocks: string[], attempts: SchoolAttemptRow[]): SchoolSummary {

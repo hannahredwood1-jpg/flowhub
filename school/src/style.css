@@ -287,3 +287,11 @@ dialog p{color:var(--ink2);margin:4px 0}
 .simgrid{display:grid;grid-template-columns:repeat(20,1fr);gap:2px;margin-bottom:8px}.simgrid i{font:600 10px var(--f-mono);font-style:normal;text-align:center;padding:2px 0;border-radius:3px}.simgrid i.sw{color:var(--win);background:color-mix(in srgb,var(--win) 12%,transparent)}.simgrid i.sl{color:var(--loss);background:color-mix(in srgb,var(--loss) 12%,transparent)}
 
 .rp{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:8px 0;background:var(--panel2)}.rp.ok{border-color:color-mix(in srgb,var(--win) 50%,var(--line))}.rp.no{border-color:color-mix(in srgb,var(--loss) 50%,var(--line))}
+/* sealed envelope on the finish card */
+.envelope{display:grid;grid-template-columns:120px minmax(0,1fr);gap:20px;margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
+.env-art{position:relative;width:120px;height:84px;margin-top:6px;border:1px solid var(--line-2,#28313e);background:linear-gradient(160deg,#10151c,#0a0d12);border-radius:3px}
+.env-art .env-flap{position:absolute;left:-1px;right:-1px;top:-1px;height:46px;background:linear-gradient(180deg,#171e28,#0f141b);clip-path:polygon(0 0,100% 0,50% 100%);border-bottom:1px solid var(--line)}
+.env-art .env-seal{position:absolute;left:50%;top:30px;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff9a4d,#ff6a00 55%,#a63f00);box-shadow:0 0 0 3px rgba(255,106,0,.18),0 4px 10px rgba(0,0,0,.5)}
+@media(max-width:620px){.envelope{grid-template-columns:1fr}}
+/* the vault */
+.vault-pill{border-color:rgba(255,106,0,.45);color:#ffb27a}

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PersonDTO } from "@/lib/types";
 import { Logo } from "./AppShell";
 
@@ -108,6 +108,8 @@ const ITEMS: { href: string; n: string; t: string; d: string }[] = [
 export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: PersonDTO; signOutHref?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useBrain(ref);
+  const [vault, setVault] = useState<"open" | "code" | "restricted">("restricted");
+  useEffect(() => { fetch("/api/vault/status", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.status) setVault(j.status); }).catch(() => {}); }, []);
   const first = (viewer.name || "").split(/\s+/)[0] || "trader";
   return (
     <main className="relative min-h-dvh overflow-hidden bg-void">
@@ -130,6 +132,18 @@ export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: P
             </a>
           ))}
         </nav>
+        {vault === "restricted" ? (
+          <div className="mb-8 flex items-center gap-4 border border-line bg-panel/50 p-4 opacity-70 backdrop-blur" aria-label="The vault: restricted">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0 text-ink-3"><rect x="5" y="11" width="14" height="9" rx="1.5" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+            <span><span className="block text-[15px] font-semibold text-ink-2">The Vault · ECHO X ORBIT</span><span className="block text-[13px] text-ink-3">Restricted. By invitation, for mentorship members.</span></span>
+          </div>
+        ) : (
+          <a href="/vault" className="group relative mb-8 flex items-center gap-4 border border-signal/60 bg-panel/80 p-4 shadow-[0_0_32px_rgba(255,106,0,0.12)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:bg-panel-2">
+            <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border border-signal/70"><span className="h-5 w-5 rounded-full border border-signal/80" /><span className="absolute h-2 w-[2px] -translate-y-3 bg-signal" /></span>
+            <span className="flex-1"><span className="block text-[17px] font-semibold text-ink">The Vault · ECHO X ORBIT</span><span className="block text-[13px] text-ink-2">{vault === "open" ? "You are in. Step inside." : "Your code is waiting. Open the door."}</span></span>
+            <span aria-hidden="true" className="text-ink-3 transition-all group-hover:translate-x-1 group-hover:text-signal">→</span>
+          </a>
+        )}
       </div>
     </main>
   );

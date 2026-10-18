@@ -111,7 +111,7 @@ export const tradingPlanInput = z.object({
     start: planTime, end: planTime,
     windows: z.record(z.enum(["ASIA", "LONDON", "NY"]), z.object({ start: planTime, end: planTime })).optional(),
   }),
-  models: z.array(z.enum(["ECHO_X_ORBIT", "INVERTIX", "ESC_VLCTY"])).min(1, "Pick at least one model").max(3),
+  models: z.array(z.enum(["ECHO_X_ORBIT", "INVERTIX"])).min(1, "Pick at least one model").max(2),
   entries: z.object({
     entry: z.enum(["limit", "confirmation", "both"]),
     stopPts: z.coerce.number().min(1).max(200),

@@ -47,17 +47,16 @@ export function RoadmapModal({ open, onClose, roadmap, onSaved }: { open: boolea
           <Field label="Days you trade per week" htmlFor="rm-days"><input id="rm-days" type="number" min={1} max={7} className="field num" value={f.tradingDaysPerWeek} onChange={set("tradingDaysPerWeek")} /></Field>
         </div>
 
-        {/* Strategy picker: three separate models. ECHO X ORBIT stands alone; INVERTIX and ESC VLCTY are separate indicators that can be combined. */}
+        {/* Strategy picker: ECHO X ORBIT (the vault model) and INVERTIX. */}
         <fieldset className="grid gap-3">
           <legend className="label mb-3 !text-ice">What are you trading?</legend>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2">
             <ModeCard on={mode === "DAILY_LEVELS"} onClick={() => { setMode("DAILY_LEVELS"); }} title="ECHO X ORBIT" sub="The Discord calls" />
             {INDICATORS.map((ind) => {
               const k = ind.strategies[0];
               return <ModeCard key={ind.name} on={mode === "INDICATORS" && picks.includes(k)} onClick={() => toggle(k)} title={ind.name} sub={ind.sessions} />;
             })}
           </div>
-          {mode === "INDICATORS" && <p className="text-xs text-ink-3">INVERTIX and ESC VLCTY are separate indicators: pick one, or both to count both in your plan.</p>}
         </fieldset>
 
         <div className="grid gap-4 sm:grid-cols-3">

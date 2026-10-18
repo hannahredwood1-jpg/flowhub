@@ -41,7 +41,7 @@ export function SchoolCard({ data, onChanged }: { data: DashboardData; onChanged
             );
           })}
           <ErrorLine error={error} />
-          <p className="text-xs text-ink-3">Unlock opens a module without requiring the previous exam. ESC VLCTY only opens this way: unlock it once the trader shows a funded-account certificate.</p>
+          <p className="text-xs text-ink-3">Unlock opens a module without requiring the previous exam.</p>
         </div>
         <div>
           <div className="label mb-1.5">Recent exams</div>

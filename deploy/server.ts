@@ -22,6 +22,7 @@ import type { Instrument } from "../src/lib/planner";
 import { PRACTICE_MODELS, summarizePractice } from "../src/lib/practice";
 import { SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
 import { cleanPlanModels, type TradingPlanDTO } from "../src/lib/tradingPlan";
+import { VAULT_MODULE_IDS, hashCode, makeCode, vaultPassed } from "../src/lib/vault";
 
 // ─────────────────────────────────────────────────────────────
 // Config
@@ -36,6 +37,7 @@ const CFG = {
   adminRoles: ids(env.DISCORD_ADMIN_ROLE_IDS),
   coachRoles: ids(env.DISCORD_COACH_ROLE_IDS),
   memberRoles: ids(env.DISCORD_MEMBER_ROLE_IDS), // roles allowed in once launched (empty = whole server)
+  mentorshipRoles: ids(env.DISCORD_MENTORSHIP_ROLE_IDS), // roles that count as mentorship for the ECHO X ORBIT vault (a role whose name contains "mentor" also counts)
   launched: (env.FLOWHUB_LAUNCHED ?? "").toLowerCase() === "true", // false = staff only
   botToken: env.DISCORD_BOT_TOKEN ?? "",
   sessionSecret: env.SESSION_SECRET ?? "",
@@ -124,11 +126,12 @@ async function toLookup(res: Response): Promise<Lookup> {
   return { status: "error" };
 }
 const lookupUser = (token: string) => dfetch(`${DISCORD}/users/@me/guilds/${CFG.guildId}/member`, { headers: { Authorization: `Bearer ${token}` } }).then(toLookup);
+const ROLE_NAMES = new Map<string, string>();
 // Log the server's role names → IDs on boot so the operator can map roles without Developer Mode.
 if (CFG.botToken && CFG.guildId)
   fetch(`${DISCORD}/guilds/${CFG.guildId}/roles`, { headers: { Authorization: `Bot ${CFG.botToken}` } })
     .then((r) => (r.ok ? r.json() : r.text().then((t) => Promise.reject(`${r.status} ${t}`))))
-    .then((roles: { id: string; name: string }[]) => console.log("FLOWHUB roles:", roles.map((x) => `${x.name}=${x.id}`).join(" | ")))
+    .then((roles: { id: string; name: string }[]) => { for (const x of roles) ROLE_NAMES.set(x.id, x.name); console.log("FLOWHUB roles:", roles.map((x) => `${x.name}=${x.id}`).join(" | ")); })
     .catch((e) => console.error("FLOWHUB roles lookup failed", e));
 const lookupBot = (discordId: string) => dfetch(`${DISCORD}/guilds/${CFG.guildId}/members/${discordId}`, { headers: { Authorization: `Bot ${CFG.botToken}` } }).then(toLookup);
 
@@ -687,7 +690,7 @@ app.post("/api/feedback/:id/read", async (c) => {
 });
 
 // Usage tracking: the dashboard, school and practice pages send a small heartbeat (seconds spent in a section); coaches read it back.
-const USAGE_AREAS = new Set(["dashboard", "school", "practice"]);
+const USAGE_AREAS = new Set(["dashboard", "school", "practice", "vault"]);
 app.post("/api/usage", async (c) => {
   const b = (await c.req.json().catch(() => ({}))) as { sid?: string; area?: string; section?: string; secs?: number };
   if (!b.sid || !/^[A-Za-z0-9-]{8,48}$/.test(b.sid) || !b.area || !USAGE_AREAS.has(b.area)) throw new HttpError(400, "Bad usage ping");
@@ -729,6 +732,123 @@ app.get("/api/coach/usage/:id", async (c) => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────
+// The ECHO X ORBIT vault: its own page, served only to members Hannah approved (mentorship role + a code she issued).
+// The lessons never reach the browser of anyone else: they are not in the school page, the practice page or any public asset.
+// ─────────────────────────────────────────────────────────────
+const rolesOf = (u: { guildRoleIds?: unknown }): string[] => {
+  const gr = u.guildRoleIds;
+  return Array.isArray(gr) ? gr.map(String) : typeof gr === "string" ? gr.replace(/[{}"]/g, "").split(",").filter(Boolean) : [];
+};
+const hasMentorRole = (u: { guildRoleIds?: unknown }) => rolesOf(u).some((id) => CFG.mentorshipRoles.includes(id) || /mentor/i.test(ROLE_NAMES.get(id) ?? ""));
+type VaultRow = { userId: string; codeHash: string; codeHint: string; redeemedAt: Date | null; revokedAt: Date | null; mentorshipOverride: boolean; orderflow: boolean };
+type VaultAccess = { level: "open" | "code" | "none"; orderflow: boolean; row: VaultRow | null };
+async function vaultAccess(u: UserRow): Promise<VaultAccess> {
+  if (isStaff(u)) return { level: "open", orderflow: u.role === "ADMIN", row: null }; // staff can look around; only an admin sees the sealed room
+  const [row] = (await sql`select * from "VaultAccess" where "userId" = ${u.id}`) as VaultRow[];
+  if (!row || row.revokedAt || !(hasMentorRole(u) || row.mentorshipOverride)) return { level: "none", orderflow: false, row: row ?? null };
+  if (!row.redeemedAt) return { level: "code", orderflow: false, row };
+  return { level: "open", orderflow: !!row.orderflow, row };
+}
+const readPrivate = async (name: string) => {
+  const f = Bun.file(`${import.meta.dir}/assets/${name}`);
+  return (await f.exists()) ? new Uint8Array(await f.arrayBuffer()) : null;
+};
+let vaultHtml: { etag: string; html: string } | null = null;
+const tries = new Map<string, { n: number; reset: number }>();
+const LOCK_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>The Vault · FLOWHUB</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 38%,#0f141b 0,#05070a 58%,#020304 100%);color:#e6ebf2;font:15px/1.5 Inter,system-ui,sans-serif;overflow:hidden}
+a{color:#8cc4ff}.back{position:fixed;top:18px;left:20px;font-size:13px;text-decoration:none;color:#929fb2}
+.wrap{text-align:center;padding:24px;max-width:460px}
+.door{position:relative;width:224px;height:224px;margin:0 auto 26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#232b36,#10151c 60%,#0a0d12);box-shadow:0 0 0 2px #28313e,0 0 0 10px #0b0f14,0 0 0 11px #28313e,0 24px 60px rgba(0,0,0,.7);transition:transform 1.1s cubic-bezier(.6,0,.2,1),opacity .9s}
+.door:before{content:"";position:absolute;inset:22px;border-radius:50%;border:2px dashed #2f3a48}
+.door:after{content:"";position:absolute;inset:60px;border-radius:50%;background:#0a0d12;box-shadow:inset 0 0 0 2px #28313e}
+.bolts i{position:absolute;width:10px;height:10px;border-radius:50%;background:#394555;left:107px;top:7px;transform-origin:5px 105px}
+.dial{position:absolute;z-index:2;inset:74px;border-radius:50%;border:2px solid #ff6a00;transition:transform 1.1s cubic-bezier(.6,0,.2,1)}
+.dial:before{content:"";position:absolute;left:50%;top:-8px;width:3px;height:16px;margin-left:-1.5px;background:#ff6a00}
+.open .dial{transform:rotate(720deg)}.open .door{transform:scale(1.6);opacity:0}
+h1{font:900 26px Archivo,Arial Black,sans-serif;letter-spacing:.02em;margin:0 0 8px}p{color:#929fb2;margin:0 0 20px}
+form{display:flex;gap:8px;justify-content:center}input{width:210px;background:#0a0d12;border:1px solid #28313e;color:#e6ebf2;border-radius:3px;padding:11px 12px;font:500 16px "JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase;text-align:center}
+input:focus{outline:2px solid #ff6a00;outline-offset:1px}button{background:#ff6a00;color:#fff;border:0;border-radius:3px;padding:11px 18px;font:600 14px Inter,sans-serif;cursor:pointer}button:disabled{opacity:.5}
+.msg{min-height:22px;margin-top:14px;font-size:14px;color:#ff5d73}.fine{margin-top:26px;font-size:12.5px;color:#66717f}
+</style></head><body><a class="back" href="/">← FLOWHUB home</a>
+<div class="wrap" id="w"><div class="door" aria-hidden="true"><span class="bolts"><i style="transform:rotate(0)"></i><i style="transform:rotate(45deg)"></i><i style="transform:rotate(90deg)"></i><i style="transform:rotate(135deg)"></i><i style="transform:rotate(180deg)"></i><i style="transform:rotate(225deg)"></i><i style="transform:rotate(270deg)"></i><i style="transform:rotate(315deg)"></i></span><div class="dial"></div></div>
+<h1>ECHO X ORBIT</h1><p>The vault is by invitation: mentorship members only. Enter the code Hannah gave you.</p>
+<form id="f"><input id="c" placeholder="FH-XXXXX-XXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16" aria-label="Vault code"><button id="b" type="submit">Open</button></form>
+<div class="msg" id="m" role="status"></div><p class="fine">No code yet? If you are in mentorship, send Hannah a message on Discord. Everything in the vault stays inside it.</p></div>
+<script>
+const f=document.getElementById('f'),c=document.getElementById('c'),m=document.getElementById('m'),b=document.getElementById('b'),w=document.getElementById('w');
+f.addEventListener('submit',async e=>{e.preventDefault();m.textContent='';b.disabled=true;
+ try{const r=await fetch('/api/vault/redeem',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({code:c.value})}),j=await r.json().catch(()=>({}));
+  if(r.ok){w.classList.add('open');m.style.color='#3ee0a1';m.textContent='Opening…';setTimeout(()=>location.reload(),1250)}else{m.textContent=j.error||'That code did not work.';b.disabled=false}}
+ catch(x){m.textContent='Could not reach FLOWHUB. Try again.';b.disabled=false}});
+</script></body></html>`;
+app.get("/vault", async (c) => {
+  const user = await currentUser(c);
+  if (!user) return c.redirect("/");
+  const acc = await vaultAccess(user);
+  if (acc.level !== "open") return c.html(LOCK_PAGE, 200, { "Cache-Control": "no-store" });
+  const gz = await readPrivate("vault.html.gz");
+  if (!gz) return c.text("The vault is not installed yet.", 404);
+  const etag = String(Bun.hash(gz));
+  if (!vaultHtml || vaultHtml.etag !== etag) vaultHtml = { etag, html: gunzipSync(gz).toString("utf8") };
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">← FLOWHUB home</a><a href="/school">Trading School</a></nav>`;
+  return c.html(vaultHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+});
+app.post("/api/vault/redeem", async (c) => {
+  const u = c.get("user");
+  const now = Date.now(), t = tries.get(u.id);
+  if (t && t.reset > now && t.n >= 8) throw new HttpError(429, "Too many tries. Wait a few minutes and try again.");
+  const bump = () => tries.set(u.id, t && t.reset > now ? { n: t.n + 1, reset: t.reset } : { n: 1, reset: now + 10 * 60 * 1000 });
+  const b = (await c.req.json().catch(() => ({}))) as { code?: string };
+  const acc = await vaultAccess(u);
+  const bad = () => { bump(); return new HttpError(400, "That code did not work."); };
+  if (acc.level === "open") return c.json({ ok: true });
+  if (acc.level !== "code" || !acc.row || !b.code) throw bad();
+  const want = Buffer.from(acc.row.codeHash, "hex"), got = Buffer.from(hashCode(b.code, CFG.sessionSecret), "hex");
+  if (want.length !== got.length || !timingSafeEqual(want, got)) throw bad();
+  await sql`update "VaultAccess" set "redeemedAt" = now(), "updatedAt" = now() where "userId" = ${u.id}`;
+  await audit(u.id, "VAULT_OPEN", u.id);
+  tries.delete(u.id);
+  return c.json({ ok: true });
+});
+// what the home screen shows: the open door, the code door (a code was issued), or a dim "restricted" tile
+app.get("/api/vault/status", async (c) => {
+  const acc = await vaultAccess(c.get("user"));
+  return c.json({ status: acc.level === "open" ? "open" : acc.level === "code" ? "code" : "restricted" });
+});
+app.get("/api/vault/progress", async (c) => {
+  const u = c.get("user"), acc = await vaultAccess(u);
+  if (acc.level !== "open") throw new HttpError(403, "Not open");
+  const [row] = acc.row ? await sql`select state from "VaultAccess" where "userId" = ${u.id}` : [];
+  const state = row?.state ? (typeof row.state === "string" ? JSON.parse(row.state) : row.state) : null;
+  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, orderflow: acc.orderflow });
+});
+app.put("/api/vault/progress", async (c) => {
+  const u = c.get("user"), acc = await vaultAccess(u);
+  if (acc.level !== "open") throw new HttpError(403, "Not open");
+  if (!acc.row) return c.json({ ok: true }); // staff preview: nothing is saved
+  const set = new Set(VAULT_MODULE_IDS), o = (await c.req.json().catch(() => ({}))) as { v2?: { m?: Record<string, Record<string, unknown>> } };
+  const m: Record<string, ModuleProgress> = {};
+  for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
+    if (!set.has(k) || !v || typeof v !== "object") continue;
+    const s = String(v.s ?? "000");
+    m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+  }
+  await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
+  return c.json({ ok: true });
+});
+// the sealed Orderflow room's lessons: sent only to a member with the separate orderflow approval
+app.get("/api/vault/orderflow.js", async (c) => {
+  const acc = await vaultAccess(c.get("user"));
+  if (acc.level !== "open" || !acc.orderflow) return c.text("", 403);
+  const gz = await readPrivate("vault-orderflow.js.gz");
+  if (!gz) return c.text("", 404);
+  return c.body(gz as unknown as ArrayBuffer, 200, { "Content-Type": "text/javascript; charset=utf-8", "Content-Encoding": "gzip", "Cache-Control": "no-store" });
+});
+
 // Coach / Admin
 app.get("/api/coach/members", async (c) => {
   staffOnly(c);
@@ -758,6 +878,51 @@ app.post("/api/coach/members/:id/unlock", async (c) => {
               on conflict ("userId") do update set unlocks = array(select distinct unnest("SchoolProgress".unlocks || ${pgArray([b.level])}::text[])), "updatedAt" = now()`;
   else await sql`update "SchoolProgress" set unlocks = array_remove(unlocks, ${b.level}), "updatedAt" = now() where "userId" = ${id}`;
   await audit(c.get("user").id, b.on ? "SCHOOL_UNLOCK" : "SCHOOL_RELOCK", id, { level: b.level });
+  return c.json({ ok: true });
+});
+// Vault access, from the coach portal
+app.get("/api/coach/vault", async (c) => {
+  staffOnly(c);
+  const rows = await sql`select u.id, coalesce(u."globalName", u.username) as name, u.role, u."guildRoleIds", v."codeHint", v."issuedAt", v."redeemedAt", v."revokedAt", v."mentorshipOverride", v.orderflow, v.state
+    from "User" u left join "VaultAccess" v on v."userId" = u.id
+    where u."isGuildMember" or v."userId" is not null order by (v."userId" is null), v."issuedAt" desc nulls last, u.username limit 500`;
+  const iso = (v: unknown) => (v ? new Date(v as string).toISOString() : null);
+  return c.json(rows.map((r: Record<string, unknown>) => ({
+    id: r.id, name: r.name, role: r.role, mentorship: hasMentorRole(r as { guildRoleIds?: unknown }), override: !!r.mentorshipOverride,
+    code: r.issuedAt ? (r.revokedAt ? "revoked" : r.redeemedAt ? "opened" : "issued") : "none", hint: r.codeHint ?? null, issuedAt: iso(r.issuedAt), redeemedAt: iso(r.redeemedAt),
+    orderflow: !!r.orderflow, passed: vaultPassed(r.state ? (typeof r.state === "string" ? JSON.parse(r.state) : r.state) : null),
+  })));
+});
+app.post("/api/coach/vault/:id/code", async (c) => {
+  staffOnly(c);
+  const id = c.req.param("id"), b = (await c.req.json().catch(() => ({}))) as { mentorship?: boolean };
+  const [t] = await sql`select id, "guildRoleIds" from "User" where id = ${id}`;
+  if (!t) throw new HttpError(404, "Not found");
+  const role = hasMentorRole(t as { guildRoleIds?: unknown }), override = !role && b.mentorship === true;
+  if (!role && !override) throw new HttpError(400, "This member does not have the mentorship role. Tick \"Mark as mentorship\" to confirm they are in mentorship.");
+  const code = makeCode(randomBytes(10));
+  await sql`insert into "VaultAccess" ("userId", "codeHash", "codeHint", "issuedBy", "mentorshipOverride")
+            values (${id}, ${hashCode(code, CFG.sessionSecret)}, ${code.slice(-3)}, ${c.get("user").id}, ${override})
+            on conflict ("userId") do update set "codeHash" = excluded."codeHash", "codeHint" = excluded."codeHint", "issuedBy" = excluded."issuedBy", "issuedAt" = now(),
+              "redeemedAt" = null, "revokedAt" = null, "mentorshipOverride" = "VaultAccess"."mentorshipOverride" or excluded."mentorshipOverride", "updatedAt" = now()`;
+  await audit(c.get("user").id, "VAULT_CODE", id);
+  return c.json({ code }); // shown once: only the hash is kept
+});
+app.post("/api/coach/vault/:id/revoke", async (c) => {
+  staffOnly(c);
+  const r = await sql`update "VaultAccess" set "revokedAt" = now(), "updatedAt" = now() where "userId" = ${c.req.param("id")} returning "userId"`;
+  if (!r.length) throw new HttpError(404, "Not found");
+  await audit(c.get("user").id, "VAULT_REVOKE", c.req.param("id"));
+  return c.json({ ok: true });
+});
+app.post("/api/coach/vault/:id/orderflow", async (c) => {
+  staffOnly(c);
+  if (c.get("user").role !== "ADMIN") throw new HttpError(403, "Only an admin can open the Orderflow room");
+  const b = (await c.req.json().catch(() => ({}))) as { on?: boolean };
+  if (typeof b.on !== "boolean") throw new HttpError(400, "Bad request");
+  const r = await sql`update "VaultAccess" set orderflow = ${b.on}, "updatedAt" = now() where "userId" = ${c.req.param("id")} returning "userId"`;
+  if (!r.length) throw new HttpError(404, "Issue a vault code first");
+  await audit(c.get("user").id, b.on ? "ORDERFLOW_OPEN" : "ORDERFLOW_CLOSE", c.req.param("id"));
   return c.json({ ok: true });
 });
 app.post("/api/coach/feedback", async (c) => {
