@@ -12,7 +12,7 @@ import { sign, verify } from "hono/jwt";
 import { ZodError } from "zod";
 import { SQL } from "bun";
 import { gunzipSync } from "node:zlib";
-import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 
 import { buildDashboard, buildDirectoryRow, sortDirectory, type DirectorySort, type RawAccount } from "../src/lib/viewmodel";
 import { RETIRED_STRATEGIES, blendedWinRate, type StrategyKey } from "../src/lib/strategies";
@@ -20,7 +20,8 @@ import { accountInput, accountPatch, feedbackInput, journalInput, journalPatch, 
 import { todayET, type CatalogFirm, type DashboardData, type PersonDTO, type ProjectionDTO, type RulesDTO } from "../src/lib/types";
 import type { Instrument } from "../src/lib/planner";
 import { PRACTICE_MODELS, summarizePractice } from "../src/lib/practice";
-import { SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
+import { clampPace, expectedPassed, nudgeGapDays, paceStatus, PACE_MAX_NUDGES } from "../src/lib/schoolPace";
+import { SCHOOL_MODULES, SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
 import { cleanPlanModels, type TradingPlanDTO } from "../src/lib/tradingPlan";
 import { VAULT_MODULE_IDS, hashCode, makeCode, vaultPassed } from "../src/lib/vault";
 
@@ -626,8 +627,16 @@ function cleanSchoolState(b: unknown): SchoolState {
 }
 app.get("/api/school", async (c) => {
   const u = c.get("user");
-  const [row] = await sql`select state, unlocks from "SchoolProgress" where "userId" = ${u.id}`;
-  return c.json({ state: row ? (typeof row.state === "string" ? JSON.parse(row.state) : row.state) : null, unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username });
+  const [[row], [pace], [acct]] = await Promise.all([
+    sql`select state, unlocks from "SchoolProgress" where "userId" = ${u.id}`,
+    sql`select "perWeek", preset, baseline, "startedAt", emails from "SchoolPace" where "userId" = ${u.id}`,
+    sql`select email from "LocalAccount" where "userId" = ${u.id} and email is not null and not disabled`,
+  ]);
+  return c.json({
+    state: row ? (typeof row.state === "string" ? JSON.parse(row.state) : row.state) : null, unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username,
+    pace: pace ? { perWeek: Number(pace.perWeek), preset: pace.preset, baseline: pace.baseline, startedAt: new Date(pace.startedAt).toISOString(), emails: pace.emails } : null,
+    hasEmail: !!acct,
+  });
 });
 app.put("/api/school", async (c) => {
   const clean = cleanSchoolState(await c.req.json());
@@ -653,6 +662,99 @@ app.post("/api/school/attempt", async (c) => {
   await sql`insert into "SchoolAttempt" (id, "userId", kind, ref, score, total, pass) values (${randomUUID()}, ${c.get("user").id}, ${b.kind}, ${b.ref}, ${score}, ${total}, ${b.pass})`;
   return c.json({ ok: true });
 });
+
+// ── Trading School pace: chosen modules a week, on/behind status, reminder emails ──
+const passedIn = (state: unknown): number => {
+  const st = state ? (typeof state === "string" ? JSON.parse(state) : state) as SchoolState : null;
+  return Object.entries(st?.v2?.m ?? {}).filter(([k, v]) => SCHOOL_MODULE_SET.has(k) && (v as { p?: number })?.p === 1).length;
+};
+const paceOut = (p: Record<string, unknown>) => ({ perWeek: Number(p.perWeek), preset: p.preset ?? null, baseline: p.baseline as number, startedAt: new Date(p.startedAt as string).toISOString(), emails: !!p.emails });
+app.put("/api/school/pace", async (c) => {
+  const u = c.get("user"), b = (await c.req.json().catch(() => ({}))) as { perWeek?: unknown; preset?: unknown; emails?: unknown };
+  const [old] = await sql`select "perWeek" from "SchoolPace" where "userId" = ${u.id}`;
+  if (b.perWeek == null && !old) throw new HttpError(400, "Pick a pace");
+  const perWeek = b.perWeek == null ? Number(old.perWeek) : clampPace(b.perWeek);
+  const preset = typeof b.preset === "string" && /^[a-z]{3,10}$/.test(b.preset) ? b.preset : "custom";
+  const emails = b.emails !== false;
+  const [sp] = await sql`select state from "SchoolProgress" where "userId" = ${u.id}`;
+  const baseline = passedIn(sp?.state);
+  const [row] = !old || Number(old.perWeek) !== perWeek
+    ? await sql`insert into "SchoolPace" ("userId", "perWeek", preset, baseline, emails) values (${u.id}, ${perWeek}, ${preset}, ${baseline}, ${emails})
+        on conflict ("userId") do update set "perWeek" = excluded."perWeek", preset = excluded.preset, baseline = excluded.baseline, "startedAt" = now(), "setAt" = now(), changes = "SchoolPace".changes + 1, emails = excluded.emails, "nudgeStreak" = 0
+        returning "perWeek", preset, baseline, "startedAt", emails`
+    : await sql`update "SchoolPace" set emails = ${emails} where "userId" = ${u.id} returning "perWeek", preset, baseline, "startedAt", emails`;
+  return c.json({ pace: paceOut(row) });
+});
+const unsubSig = (id: string) => createHmac("sha256", CFG.sessionSecret).update("pace-unsub:" + id).digest("hex").slice(0, 32);
+app.get("/unsub/pace", async (c) => {
+  const id = c.req.query("u") ?? "", t = c.req.query("t") ?? "";
+  if (!id || t !== unsubSig(id)) return c.html(pageShell("<h1>That link did not work</h1><p>You can turn reminders off any time from “Your pace” inside the Trading School.</p>"), 400);
+  await sql`update "SchoolPace" set emails = false where "userId" = ${id}`;
+  return c.html(pageShell("<h1>Reminders are off</h1><p>You will not get pace reminder emails any more. You can turn them back on from “Your pace” in the Trading School.</p><p><a href=\"/school\" style=\"color:#8cc4ff\">Back to the school</a></p>"));
+});
+app.get("/api/coach/pace", async (c) => {
+  staffOnly(c);
+  const total = SCHOOL_MODULES.length, now = new Date();
+  const rows = await sql`select u.id, coalesce(u."globalName", u.username) as name, p."perWeek", p.preset, p.baseline, p."startedAt", p."setAt", p.changes, p.emails, p."lastNudgeAt", p."nudgeCount",
+      sp.state, sp."updatedAt" as active, (a.email is not null and not a.disabled) as "hasEmail"
+    from "SchoolPace" p join "User" u on u.id = p."userId" left join "SchoolProgress" sp on sp."userId" = u.id left join "LocalAccount" a on a."userId" = u.id order by p."setAt" desc limit 500`;
+  const [{ n: unset }] = await sql`select count(*)::int as n from "SchoolProgress" sp join "User" u on u.id = sp."userId" where u."isGuildMember" and not exists (select 1 from "SchoolPace" p where p."userId" = sp."userId")`;
+  const out = rows.map((r: Record<string, any>) => {
+    const passed = passedIn(r.state), perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
+    const left = total - passed, fin = passed >= total ? null : new Date(now.getTime() + (left / perWeek) * 7 * 86400_000).toISOString();
+    const act = r.active ? new Date(r.active).toISOString() : null;
+    return { id: r.id, name: r.name, perWeek, preset: r.preset, passed, total, expected: exp, status: paceStatus(passed, exp, total), finish: fin, lastActive: act, setAt: new Date(r.setAt).toISOString(), changes: r.changes,
+      emails: !!r.emails, hasEmail: !!r.hasEmail, nudges: r.nudgeCount, lastNudgeAt: r.lastNudgeAt ? new Date(r.lastNudgeAt).toISOString() : null };
+  });
+  return c.json({ rows: out, unset });
+});
+app.post("/api/coach/pace/:id", async (c) => {
+  staffOnly(c);
+  const id = c.req.param("id"), b = (await c.req.json().catch(() => ({}))) as { perWeek?: unknown; reset?: boolean };
+  if (b.reset) { await sql`delete from "SchoolPace" where "userId" = ${id}`; return c.json({ ok: true }); }
+  const perWeek = clampPace(b.perWeek), [sp] = await sql`select state from "SchoolProgress" where "userId" = ${id}`;
+  const [row] = await sql`update "SchoolPace" set "perWeek" = ${perWeek}, preset = 'custom', baseline = ${passedIn(sp?.state)}, "startedAt" = now(), "setAt" = now(), changes = changes + 1, "nudgeStreak" = 0 where "userId" = ${id} returning "userId"`;
+  if (!row) throw new HttpError(404, "This member has not set a pace yet");
+  return c.json({ ok: true });
+});
+
+// Reminder emails: a short nudge when someone has gone quiet for about one study gap at their pace and is not ahead of it.
+const NUDGE_FROM_UTC = 14, NUDGE_TO_UTC = 23; // 10am to 7pm Eastern
+const firstName = (n: string) => (n.trim().split(/\s+/)[0] || "there").replace(/[<>&"]/g, "");
+const nudgeHtml = (name: string, passed: number, total: number, next: { n: number; title: string }, behind: boolean, perWeek: number, unsub: string) =>
+  `<div style="font-family:Arial,sans-serif;background:#030405;color:#e6ebf2;padding:32px"><div style="max-width:480px;margin:auto"><div style="font-weight:900;font-size:22px;letter-spacing:.02em"><span style="color:#ff6a00">F</span>LOWHUB</div><h2 style="margin:24px 0 8px">Next up, ${firstName(name)}: Module ${next.n}</h2><p style="color:#929fb2;line-height:1.6;margin:0 0 6px"><b style="color:#e6ebf2">${next.title.replace(/[<>&"]/g, "")}</b></p><p style="color:#929fb2;line-height:1.6">You have passed ${passed} of ${total} modules.${behind ? ` You set a pace of ${perWeek} a week, and one short session gets you back on it.` : " One short session keeps your streak going."}</p><p style="margin:24px 0"><a href="${baseUrl()}/school" style="background:#ff6a00;color:#160a00;font-weight:700;padding:12px 20px;text-decoration:none;border-radius:8px">Continue the school</a></p><p style="color:#66717f;font-size:12px">Too many emails? <a href="${unsub}" style="color:#8cc4ff">Turn reminders off</a>. You can change your pace any time inside the school.</p></div></div>`;
+async function runPaceNudges(now = new Date()): Promise<number> {
+  const h = now.getUTCHours();
+  if (h < NUDGE_FROM_UTC || h >= NUDGE_TO_UTC || !process.env.RESEND_API_KEY) return 0;
+  const rows = await sql`select p."userId", p."perWeek", p.baseline, p."startedAt", p."lastNudgeAt", p."nudgeStreak", u."globalName" as name, a.email, sp.state, sp."updatedAt" as active
+    from "SchoolPace" p join "User" u on u.id = p."userId" join "LocalAccount" a on a."userId" = p."userId" and a.email is not null and not a.disabled and (a."expiresAt" is null or a."expiresAt" > now())
+    left join "SchoolProgress" sp on sp."userId" = p."userId" where p.emails and u.role = 'MEMBER'::"Role" limit 1000`;
+  const total = SCHOOL_MODULES.length;
+  let sent = 0;
+  for (const r of rows as Record<string, any>[]) {
+    const passed = passedIn(r.state);
+    if (passed >= total) continue;
+    const perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
+    if (paceStatus(passed, exp, total) === "ahead") continue;
+    const act = r.active ? new Date(r.active) : null, last = r.lastNudgeAt ? new Date(r.lastNudgeAt) : null;
+    const streak = act && last && act > last ? 0 : r.nudgeStreak;           // they came back since the last email
+    if (streak >= PACE_MAX_NUDGES) continue;
+    const quietSince = Math.max(new Date(r.startedAt).getTime(), act?.getTime() ?? 0, last?.getTime() ?? 0);
+    if (now.getTime() - quietSince < nudgeGapDays(perWeek) * 86400_000) continue;
+    const [claim] = await sql`update "SchoolPace" set "lastNudgeAt" = now(), "nudgeCount" = "nudgeCount" + 1, "nudgeStreak" = ${streak + 1}
+      where "userId" = ${r.userId} and ("lastNudgeAt" is null or "lastNudgeAt" < now() - interval '20 hours') returning "userId"`;
+    if (!claim) continue;
+    const st = r.state ? (typeof r.state === "string" ? JSON.parse(r.state) : r.state) as SchoolState : null;
+    const nextDef = SCHOOL_MODULES.find((d) => (st?.v2?.m?.[d.id] as { p?: number } | undefined)?.p !== 1) ?? SCHOOL_MODULES[0];
+    const behind = paceStatus(passed, exp, total) === "behind";
+    const unsub = `${baseUrl()}/unsub/pace?u=${encodeURIComponent(r.userId)}&t=${unsubSig(r.userId)}`;
+    const ok = await sendMail(r.email, `Next up in the Trading School: ${nextDef.title}`, nudgeHtml(r.name ?? "", passed, total, { n: nextDef.n, title: nextDef.title }, behind, perWeek, unsub));
+    if (ok) sent++; else await sql`update "SchoolPace" set "nudgeCount" = greatest("nudgeCount" - 1, 0), "nudgeStreak" = ${streak}, "lastNudgeAt" = ${last} where "userId" = ${r.userId}`;
+  }
+  return sent;
+}
+setTimeout(() => runPaceNudges().catch((e) => console.error("pace nudges", e)), 120_000);
+setInterval(() => runPaceNudges().catch((e) => console.error("pace nudges", e)), 3600_000);
 
 // Trading plan (Trading Plan → Build your plan)
 app.get("/api/plan", async (c) => {

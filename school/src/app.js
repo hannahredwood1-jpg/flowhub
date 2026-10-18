@@ -20,7 +20,7 @@ let syncT=null;
 const syncSoon=()=>{clearTimeout(syncT);syncT=setTimeout(push,900)};
 const API=window.VAULT?'/api/vault/progress':'/api/school';
 async function push(){if(!LIVE)return;try{await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({v2:compact()})})}catch(e){}}
-async function pull(){try{const r=await fetch(API,{headers:{Accept:'application/json'}});if(!r.ok)return;const j=await r.json();LIVE=true;if(window.VAULT&&j.orderflow&&!window.OF_OK){await new Promise(ok=>{const sc=document.createElement('script');sc.src='/api/vault/orderflow.js';sc.onload=sc.onerror=ok;document.head.append(sc)})}WHO=j.name||'';UNLOCKS=j.unlocks||[];mergeServer(j.state&&j.state.v2);const w=$('#who');if(w)w.textContent=WHO;if(PENDING){const h=PENDING;PENDING=null;location.hash=h}else render()}catch(e){}}
+async function pull(){try{const r=await fetch(API,{headers:{Accept:'application/json'}});if(!r.ok)return;const j=await r.json();LIVE=true;if(window.VAULT&&j.orderflow&&!window.OF_OK){await new Promise(ok=>{const sc=document.createElement('script');sc.src='/api/vault/orderflow.js';sc.onload=sc.onerror=ok;document.head.append(sc)})}WHO=j.name||'';UNLOCKS=j.unlocks||[];mergeServer(j.state&&j.state.v2);paceAfterPull(j);const w=$('#who');if(w)w.textContent=WHO;if(PENDING){const h=PENDING;PENDING=null;location.hash=h}else render()}catch(e){}}
 async function logAttempt(id,score,total,pass){if(!LIVE||window.VAULT)return;try{await fetch('/api/school/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'ex',ref:id,score,total,pass})})}catch(e){}}
 
 /* ---------- module helpers ---------- */
@@ -71,7 +71,7 @@ function renderMap(){
     <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':`Step <b>${Math.min(stepsDone(cur)+1,4)}</b> of 4: ${STEPS[Math.min(stepsDone(cur),3)]}`}</p>
     <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:stepsDone(cur)/4*100}%"></i></div>
     <a class="btn primary" href="#/${cur.id}">${finished?'Review lessons':stepsDone(cur)?'Continue':'Start'} →</a></div>
-  <div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of ${PASS*100}% or better on a set you've never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>
+  ${paceCard()}<div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of ${PASS*100}% or better on a set you've never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>
   <div class="card"><h3 class="h">Practice, not real money</h3><p class="muted" style="font-size:13.5px">Nothing in the school uses real money. Before real or funded capital, the strategy gets proven on a demo account, in your journal, with your own numbers.</p></div>`;
 }
 function modRow(m,i){

@@ -295,3 +295,44 @@ dialog p{color:var(--ink2);margin:4px 0}
 @media(max-width:620px){.envelope{grid-template-columns:1fr}}
 /* the vault */
 .vault-pill{border-color:rgba(255,106,0,.45);color:#ffb27a}
+/* set your pace */
+.pace-card .chip{margin-left:8px}
+.pace-ov{position:fixed;inset:0;z-index:90;overflow:auto;background:radial-gradient(1200px 600px at 50% -10%,rgba(255,106,0,.13),transparent 60%),radial-gradient(900px 500px at 10% 110%,rgba(140,196,255,.10),transparent 60%),#030405;opacity:0;transition:opacity .45s;display:grid;place-items:start center}
+.pace-ov.on{opacity:1}
+.pace-in{width:min(980px,100%);padding:clamp(22px,5vw,48px) 20px 40px}
+.pace-k{color:var(--signal)!important;letter-spacing:.14em;text-transform:uppercase;font-size:11.5px!important}
+.pace-h{font-size:clamp(28px,5vw,46px);margin:8px 0 10px;opacity:0;transform:translateY(12px);transition:.7s .15s}
+.pace-p{max-width:620px;color:var(--ink2);opacity:0;transform:translateY(12px);transition:.7s .35s}
+.pace-hero .pace-k{opacity:0;transition:.7s}
+.pace-ov.on .pace-h,.pace-ov.on .pace-p,.pace-ov.on .pace-hero .pace-k{opacity:1;transform:none}
+.pace-p b{color:var(--ink)}
+.pace-svg{display:block;width:100%;height:auto;max-height:236px;margin:10px 0 6px;overflow:visible}
+.pp-ghost{fill:none;stroke:#1d2530;stroke-width:3;stroke-linecap:round;stroke-dasharray:2 9}
+.pp-draw{fill:none;stroke:url(#pg);stroke-width:3.4;stroke-linecap:round}
+.pn circle{animation:pnPop .5s var(--d,0s) both;fill:#0a0d12;stroke:var(--ice);stroke-width:1.6;transform-box:fill-box;transform-origin:center}
+.pn text{fill:var(--ink);font:600 10px var(--f-mono);text-anchor:middle}
+.pn{opacity:0;animation:pnIn .5s var(--d,0s) forwards}
+.pace-ov.still .pn{animation:none;opacity:1}
+@keyframes pnIn{from{opacity:0}to{opacity:1}}@keyframes pnPop{from{transform:scale(.3)}to{transform:scale(1)}}
+.pflag text{fill:var(--ice);font:600 12px var(--f-body)}
+.pseal circle{fill:radial-gradient(#ff9a4d,#ff6a00);fill:#ff6a00;stroke:#ffd0a8;stroke-width:2;filter:drop-shadow(0 0 10px rgba(255,106,0,.7));animation:sealPulse 2.6s ease-in-out infinite}
+.pseal-t{fill:#ffb27a;font:600 12px var(--f-body)}
+@keyframes sealPulse{50%{filter:drop-shadow(0 0 18px rgba(255,106,0,.95))}}
+.pace-card2{max-width:760px;margin:6px auto 0;background:rgba(10,13,18,.86);border:1px solid var(--line2);border-radius:14px;padding:20px;backdrop-filter:blur(6px);transform:translateY(40px);opacity:0;transition:.8s 1.9s cubic-bezier(.2,.8,.2,1)}
+.pace-ov.on .pace-card2,.pace-ov:not(.first) .pace-card2{transform:none;opacity:1}
+.pace-ov:not(.first) .pace-card2{transition-delay:.25s}
+.pace-pre{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pre{display:grid;gap:3px;text-align:left;padding:13px 14px;border:1px solid var(--line2);border-radius:10px;background:var(--panel2);transition:.18s}
+.pre b{font-size:16px}.pre span{font-size:12.5px;color:var(--ink2)}.pre i{font-style:normal;font:500 12px var(--f-mono);color:var(--ice);margin-top:4px}
+.pre:hover{border-color:var(--ink3);transform:translateY(-1px)}
+.pre.sel{border-color:var(--signal);background:rgba(255,106,0,.09);box-shadow:0 0 0 1px var(--signal) inset}
+.pace-slide{margin:16px 0 4px}.pace-slide label{display:block;font-size:13.5px;color:var(--ink2);margin-bottom:8px}.pace-slide b{color:var(--ink);font-family:var(--f-mono)}
+.pace-slide input{width:100%;accent-color:var(--signal)}
+.pace-out{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.pace-date{font:800 clamp(22px,4vw,30px)/1.1 var(--f-body);letter-spacing:-.02em;margin-top:2px}
+.pace-wk{text-align:right}.pace-wk b{font:600 clamp(30px,5vw,42px)/1 var(--f-mono);color:var(--signal)}.pace-wk span{display:block;font-size:12px;color:var(--ink3)}
+.pace-note{margin-top:6px;font-size:13px;color:var(--ink3)}
+.pace-mail{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13.5px;color:var(--ink2)}.pace-mail input{accent-color:var(--signal)}
+.pace-act{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+@media(max-width:620px){.pace-pre{grid-template-columns:1fr}.pace-svg{margin-top:4px}.pseal-t{font-size:15px}.pflag text{font-size:15px}}
+@media(prefers-reduced-motion:reduce){.pace-ov,.pace-h,.pace-p,.pace-card2,.pace-hero .pace-k{transition:none}.pseal circle{animation:none}.pace-card2{transform:none;opacity:1}}
