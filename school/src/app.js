@@ -74,6 +74,7 @@ function renderMap(){
     <a class="btn primary" href="#/${cur.id}">${finished?'Review lessons':stepsDone(cur)?'Continue':'Start'} →</a></div>
   ${gexCard()}${paceCard()}<div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of ${PASS*100}% or better on a set you've never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>
   <div class="card"><h3 class="h">Practice, not real money</h3><p class="muted" style="font-size:13.5px">Nothing in the school uses real money. Before real or funded capital, the strategy gets proven on a demo account, in your journal, with your own numbers.</p></div>`;
+  paceMaybeFirst();
 }
 function modRow(m,i){
   const st=modStatus(i),P=PH[m.ph],open=OPEN===m.id,p=pm(m.id);let chip;

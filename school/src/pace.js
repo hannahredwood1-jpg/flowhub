@@ -81,9 +81,10 @@ function openPace(mode){
     catch(e){b.disabled=false;toast('Could not save your pace. Try again.')}};
   paint();
 }
-function paceAfterPull(j){
-  if(!paceOn())return;PACE=j.pace||null;PACE_EMAIL=!!j.hasEmail;PACE_READY=true;
+function paceAfterPull(j){if(!paceOn())return;PACE=j.pace||null;PACE_EMAIL=!!j.hasEmail;PACE_READY=true}
+/* The welcome only shows on the course map (called from renderMap), never on the GEX levels page or inside a lesson. */
+function paceMaybeFirst(){
+  if(!paceOn()||!PACE_READY||PACE||PACE_OV)return;
   let skipped=false;try{skipped=sessionStorage.getItem('fh-pace-skip')==='1'}catch(e){}
-  if(!PACE&&!skipped)openPace('first')}
-
+  if(!skipped)openPace('first')}
 function gexCard(){return gexOn()?`<div class="card pace-card"><div class="hud">Every morning</div><div class="h" style="font-size:17px;margin:4px 0 6px">Daily GEX levels</div><p class="muted" style="font-size:13.5px">Today's call wall, put wall and gamma flip for NQ, with a one-click copy for the indicator.</p><a class="btn sm" href="#/gex" style="margin-top:10px">Open today's levels →</a></div>`:''}
