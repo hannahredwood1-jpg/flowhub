@@ -4,7 +4,7 @@
 ============================================================ */
 let GX=null,GEX_MODE='all',GEX_LOADING=false;
 const gexOn=()=>!window.VAULT&&!window.PRACTICE;
-const FLOWGEX_URL='https://www.tradingview.com/script/jD4HhcIk-FLOWGEX/';
+const FLOWGEX_URL='https://www.tradingview.com/script/HMDYxbPq-FLOWGEX/';
 async function gexLoad(){
   GEX_LOADING=true;
   try{const r=await fetch('/api/gex/latest',{headers:{Accept:'application/json'}});GX=r.ok?await r.json():{error:true}}catch(e){GX={error:true}}
