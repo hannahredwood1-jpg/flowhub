@@ -132,7 +132,7 @@ function GexTab() {
         {cur && L ? (
           <>
             <span className="grid flex-1 grid-cols-4 gap-3 sm:max-w-md">{cell("Call wall", L.callWall, "text-win")}{cell("Gamma flip", L.flip, "text-signal")}{cell("Put wall", L.putWall, "text-loss")}{cell("NDX", cur.levels.spot, "text-ice")}</span>
-            <span className="ml-auto flex items-center gap-2"><button type="button" onClick={copy} className="btn !h-8 !px-3 text-xs">{copied ? "Copied" : "Copy for indicator"}</button><a href="/school#/gex" className="text-ink-3 transition hover:text-signal" aria-label="Open the Daily GEX Levels page">→</a></span>
+            <span className="ml-auto flex items-center gap-2"><button type="button" onClick={copy} className="btn !h-8 !px-3 text-xs">{copied ? "Copied" : "Copy for indicator"}</button><a href="https://www.tradingview.com/script/jD4HhcIk-FLOWGEX/" target="_blank" rel="noopener noreferrer" className="text-xs text-ink-2 underline-offset-2 hover:text-signal hover:underline">Get FLOWGEX ↗</a><a href="/school#/gex" className="text-ink-3 transition hover:text-signal" aria-label="Open the Daily GEX Levels page">→</a></span>
           </>
         ) : g !== undefined ? (
           <a href="/school#/gex" className="ml-auto text-[13px] text-ink-3 hover:text-signal">{g === null ? "Open the levels page →" : "First levels arrive at 8:30 AM ET →"}</a>
