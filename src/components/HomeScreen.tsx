@@ -105,6 +105,43 @@ const ITEMS: { href: string; n: string; t: string; d: string }[] = [
   { href: "/practice", n: "04", t: "Practice", d: "Endless generated charts with instant feedback." },
 ];
 
+type GexTabData = { current: { day: string; levels: { spot: number; export: string; all: { callWall: number | null; flip: number | null; putWall: number | null; regime: "positive" | "negative" | null } } } | null; today: string };
+const num = (v: number | null | undefined) => (v ? v.toLocaleString("en-US") : "–");
+const dayLabel = (d: string) => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
+/** A small strip on the home screen: today's NQ gamma levels, with a one-click copy for the indicator. */
+function GexTab() {
+  const [g, setG] = useState<GexTabData | null | undefined>(undefined);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => { fetch("/api/gex/latest", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then(setG).catch(() => setG(null)); }, []);
+  const cur = g?.current, L = cur?.levels.all, stale = !!cur && cur.day !== g?.today;
+  const copy = async () => {
+    if (!cur) return;
+    try { await navigator.clipboard.writeText(cur.levels.export); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* the school page has a select-to-copy fallback */ }
+  };
+  const cell = (label: string, v: number | null | undefined, tone: string) => (
+    <span className="block min-w-0"><span className="block text-[11px] text-ink-3">{label}</span><span className={`num block text-[18px] font-semibold ${tone}`}>{num(v)}</span></span>
+  );
+  return (
+    <div className="mb-4 border border-line-2 bg-panel/80 p-3 backdrop-blur" aria-label="Daily GEX levels">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <a href="/school#/gex" className="group flex items-center gap-2 pr-1">
+          <span className="grid h-8 w-8 shrink-0 place-items-center border border-line-2 font-mono text-[10px] text-ice transition-colors group-hover:border-signal group-hover:text-signal">GEX</span>
+          <span><span className="block text-[15px] font-semibold text-ink">Daily GEX Levels</span><span className="block text-[11px] text-ink-3">{g === undefined ? "Loading…" : cur ? (stale ? `Not updated today · from ${dayLabel(cur.day)}` : `NQ · ${L?.regime === "negative" ? "negative" : "positive"} gamma`) : "Updated 8:30 AM ET, weekdays"}</span></span>
+        </a>
+        {cur && L ? (
+          <>
+            <span className="grid flex-1 grid-cols-4 gap-3 sm:max-w-md">{cell("Call wall", L.callWall, "text-win")}{cell("Gamma flip", L.flip, "text-signal")}{cell("Put wall", L.putWall, "text-loss")}{cell("NDX", cur.levels.spot, "text-ice")}</span>
+            <span className="ml-auto flex items-center gap-2"><button type="button" onClick={copy} className="btn !h-8 !px-3 text-xs">{copied ? "Copied" : "Copy for indicator"}</button><a href="/school#/gex" className="text-ink-3 transition hover:text-signal" aria-label="Open the Daily GEX Levels page">→</a></span>
+          </>
+        ) : g !== undefined ? (
+          <a href="/school#/gex" className="ml-auto text-[13px] text-ink-3 hover:text-signal">{g === null ? "Open the levels page →" : "First levels arrive at 8:30 AM ET →"}</a>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: PersonDTO; signOutHref?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useBrain(ref);
@@ -132,11 +169,7 @@ export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: P
             </a>
           ))}
         </nav>
-        <a href="/school#/gex" className="group relative mb-4 flex items-center gap-4 border border-line-2 bg-panel/80 p-4 backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-signal hover:bg-panel-2">
-          <span className="grid h-11 w-11 shrink-0 place-items-center border border-line-2 font-mono text-[11px] text-ice transition-colors group-hover:border-signal group-hover:text-signal">GEX</span>
-          <span className="flex-1"><span className="block text-[17px] font-semibold text-ink">Daily GEX Levels</span><span className="block text-[13px] text-ink-2">Today&apos;s call wall, put wall and gamma flip for NQ. Updated every weekday at 8:30 AM.</span></span>
-          <span aria-hidden="true" className="text-ink-3 transition-all group-hover:translate-x-1 group-hover:text-signal">→</span>
-        </a>
+        <GexTab />
         {vault === "restricted" ? (
           <div className="mb-8 flex items-center gap-4 border border-line bg-panel/50 p-4 opacity-70 backdrop-blur" aria-label="The vault: restricted">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0 text-ink-3"><rect x="5" y="11" width="14" height="9" rx="1.5" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
