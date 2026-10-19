@@ -12,6 +12,7 @@ import { LocalAccounts } from "./LocalAccounts";
 import { ActivityPanel } from "./Activity";
 import { VaultPanel } from "./VaultPanel";
 import { PacePanel } from "./PacePanel";
+import { GexPanel } from "./GexPanel";
 import { PracticeCard } from "./PracticeCard";
 import { JournalTable } from "./JournalTable";
 import { StatsStrip } from "./MemberDashboard";
@@ -48,6 +49,7 @@ export function CoachPortal({ initial, today, isAdmin = false }: { initial: Coac
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <LocalAccounts />
       <ActivityPanel />
+      <GexPanel />
       <PacePanel />
       <VaultPanel isAdmin={isAdmin} />
       <section className="hud animate-rise grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-end">

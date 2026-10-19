@@ -40,6 +40,7 @@ let VIEW='map',CUR=null,PENDING=null;
 function route(){
   const h=location.hash.replace(/^#\/?/,'').split('/').filter(Boolean);
   if(!h.length){VIEW='map';CUR=null}
+  else if(h[0]==='gex'&&gexOn()){VIEW='gex';CUR=null}
   else{const i=modIdx(h[0]);if(i<0||!modUnlocked(i)){VIEW='map';CUR=null;if(h[0]){if(i>=0&&!LIVE)PENDING=location.hash;history.replaceState(null,'','#/')}}
     else{CUR=MODS[i];if(h[1]==='exam')VIEW='exam';else{VIEW='lab';const k=STEP_KEYS.indexOf(h[1]);LAB=newLab(CUR,k>=0?k:firstOpenStep(CUR))}}}
   render();
@@ -48,7 +49,7 @@ const nav=p=>{location.hash=p};
 function render(){
   $$('main.view').forEach(m=>m.hidden=m.id!=='v-'+VIEW);window.scrollTo(0,0);
   if(VIEW!=='exam')stopExam();
-  if(VIEW==='map')renderMap();else if(VIEW==='lab')renderLab();else renderExam();
+  if(VIEW==='map')renderMap();else if(VIEW==='lab')renderLab();else if(VIEW==='gex')renderGex();else renderExam();
 }
 window.addEventListener('hashchange',route);
 
@@ -71,7 +72,7 @@ function renderMap(){
     <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':`Step <b>${Math.min(stepsDone(cur)+1,4)}</b> of 4: ${STEPS[Math.min(stepsDone(cur),3)]}`}</p>
     <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:stepsDone(cur)/4*100}%"></i></div>
     <a class="btn primary" href="#/${cur.id}">${finished?'Review lessons':stepsDone(cur)?'Continue':'Start'} →</a></div>
-  ${paceCard()}<div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of ${PASS*100}% or better on a set you've never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>
+  ${gexCard()}${paceCard()}<div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of ${PASS*100}% or better on a set you've never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>
   <div class="card"><h3 class="h">Practice, not real money</h3><p class="muted" style="font-size:13.5px">Nothing in the school uses real money. Before real or funded capital, the strategy gets proven on a demo account, in your journal, with your own numbers.</p></div>`;
 }
 function modRow(m,i){

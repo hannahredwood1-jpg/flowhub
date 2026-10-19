@@ -15,6 +15,7 @@ export const VAULT_MODULES = [
   { id: "o02", title: "Reading the Tape Around a Sweep" },
   { id: "o03", title: "Delta, Volume and Imbalance" },
   { id: "o04", title: "Orderflow and the ECHO X ORBIT Checklist" },
+  { id: "o05", title: "Gamma Levels as Orderflow Context" },
 ] as const;
 export const VAULT_MODULE_IDS = VAULT_MODULES.map((m) => m.id) as string[];
 
