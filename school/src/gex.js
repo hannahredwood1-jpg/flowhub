@@ -28,7 +28,7 @@ function paintGex(){
   if(!GX){el.innerHTML='<p class="muted">Loading today\'s levels…</p>';return}
   const cur=GX.current;
   if(GX.error||!cur){el.innerHTML=`<div class="card" style="padding:22px"><h3 class="h">${GX.error?'Levels are not available right now':'No levels yet'}</h3><p class="muted" style="margin-top:6px">${GX.error?'Please try again in a minute.':'FLOWHUB works out the levels at 8:30 AM New York time every weekday. The first set appears on the next trading morning.'}</p></div>`;return}
-  const lv=cur.levels,L=GEX_MODE==='zero'?lv.zero:lv.all,spot=lv.spot,basis=GX.basis,stale=cur.day!==GX.today,line=lv.export;
+  const lv=cur.levels,L=GEX_MODE==='zero'?lv.zero:lv.all,spot=lv.spot,basis=GX.basis,stale=cur.day!==GX.today,line=(GEX_MODE==='zero'&&lv.exportZero)?lv.exportZero:lv.export;
   const tile=(n,v,k)=>`<div class="card gx-t ${k}"><span class="hud">${n}</span><b class="num">${gexN(v)}</b>${basis&&v?`<small>NQ ≈ ${gexN(v+basis)}</small>`:''}</div>`;
   el.innerHTML=`
   <div class="gx-top"><div class="gx-meta"><span class="chip ${L.regime==='negative'?'bad':'ok'}">${L.regime==='negative'?'Negative gamma':'Positive gamma'}</span>
@@ -38,10 +38,10 @@ function paintGex(){
   <div class="gx-tiles">${tile('Call wall',L.callWall,'gc')}${tile('Gamma flip',L.flip,'gf')}${tile('Put wall',L.putWall,'gp')}${tile('NDX price',spot,'gs')}</div>
   <p class="gx-cap">${gexCaption(L,spot)}</p>
   <div class="gx-two"><div class="card gx-card"><h3 class="h">Where they sit</h3>${gexLadder(L,spot,basis)}<p class="muted" style="font-size:12.5px;margin-top:8px">Small ticks are the next strongest strikes. NQ values are an estimate; the indicator measures the real gap on your chart.</p></div>
-  <div class="card gx-card"><h3 class="h">Copy for the indicator</h3><p class="muted" style="font-size:13.5px;margin:4px 0 10px">Copy this line, then paste it into the indicator's settings with Symbol Mode set to NDX / NQ.</p>
+  <div class="card gx-card"><h3 class="h">Copy for the indicator</h3><p class="muted" style="font-size:13.5px;margin:4px 0 10px">Copy this line, then paste it into the GEX-L indicator's GEX Data box with Symbol Mode set to NDX / NQ. It is the ${GEX_MODE==='zero'?'0DTE':'all-expiries'} line.</p>
    <code class="gx-code" id="gexLine">${esc(line)}</code><div class="gx-act"><button class="btn primary" id="gexCopy">Copy levels</button><button class="btn ghost sm" id="gexLeg">What each number is</button></div>
-   <table class="tblx gx-leg" id="gexLegT" hidden><tr><th>#</th><th>Value</th></tr>${GX.legend.map((n,i)=>`<tr><td>${i+1}</td><td>${esc(n)}</td></tr>`).join('')}<tr><td>18</td><td>Symbol (NDX)</td></tr></table>
-   <p class="muted" style="font-size:12.5px;margin-top:10px">A 0 means a level was not available.</p></div></div>
+   <table class="tblx gx-leg" id="gexLegT" hidden><tr><th>#</th><th>Value</th></tr>${GX.legend.map((n,i)=>`<tr><td>${i+1}</td><td>${esc(n)}</td></tr>`).join('')}<tr><td>22</td><td>Symbol (NDX)</td></tr></table>
+   <p class="muted" style="font-size:12.5px;margin-top:10px">A 0 hides that level in the indicator (used when fewer than ten strikes exist).</p></div></div>
   ${GX.history&&GX.history.length?`<div class="card gx-card" style="margin-top:14px"><h3 class="h">Recent days</h3><div class="gx-hist"><table class="tblx"><tr><th>Day</th><th>Call wall</th><th>Flip</th><th>Put wall</th><th>NDX</th><th>Regime</th></tr>${GX.history.map(h=>`<tr><td>${gexDay(h.day)}</td><td>${gexN(h.callWall)}</td><td>${gexN(h.flip)}</td><td>${gexN(h.putWall)}</td><td>${gexN(h.spot)}</td><td>${h.regime==='negative'?'Negative':'Positive'}</td></tr>`).join('')}</table></div></div>`:''}
   <p class="muted gx-foot">These levels are worked out from delayed Nasdaq-100 options data and a model of dealer hedging. They are context for your read, not a trade signal, and they are for education only.<br><a href="#/m50">Learn how to read them: Understanding GEX Levels →</a></p>`;
   $$('[data-gm]',el).forEach(b=>b.onclick=()=>{GEX_MODE=b.dataset.gm;paintGex()});

@@ -759,23 +759,27 @@ function levelsFor(opts, spot, asOf) {
     prevV = v;
   }
   const regime = flip == null ? total(spot) >= 0 ? "positive" : "negative" : spot >= flip ? "positive" : "negative";
-  return { callWall: calls[0] ?? null, putWall: puts[0] ?? null, flip: flip == null ? null : Math.round(flip), regime, calls: calls.slice(0, 6), puts: puts.slice(0, 6) };
+  return { callWall: calls[0] ?? null, putWall: puts[0] ?? null, flip: flip == null ? null : Math.round(flip), regime, calls: calls.slice(0, 10), puts: puts.slice(0, 10) };
 }
 function nextExpiry(exps) {
   return [...new Set(exps)].sort()[0] ?? null;
 }
-var EXPORT_LEGEND = ["Call wall", "Gamma flip", "Put wall", "NDX price", "Call strike 2", "Call strike 3", "Call strike 4", "Call strike 5", "Call strike 6", "Put strike 2", "Put strike 3", "Put strike 4", "Put strike 5", "Put strike 6", "0DTE call wall", "0DTE gamma flip", "0DTE put wall"];
-function exportLine(spot, all, zero) {
+var EXPORT_LEGEND = [
+  ...Array.from({ length: 10 }, (_, i) => `Call wall ${i + 1}${i === 0 ? " (strongest)" : ""}`),
+  ...Array.from({ length: 10 }, (_, i) => `Put wall ${i + 1}${i === 0 ? " (strongest)" : ""}`),
+  "Gamma flip"
+];
+function exportLine(l) {
   const n2 = (v) => v == null ? 0 : Math.round(v);
-  const five = (a) => [1, 2, 3, 4, 5].map((i) => n2(a[i]));
-  return [n2(all.callWall), n2(all.flip), n2(all.putWall), n2(spot), ...five(all.calls), ...five(all.puts), n2(zero.callWall), n2(zero.flip), n2(zero.putWall), "NDX"].join(",");
+  const ten = (a) => Array.from({ length: 10 }, (_, i) => n2(a[i]));
+  return [...ten(l.calls), ...ten(l.puts), n2(l.flip), "NDX"].join(",");
 }
 function computeGex(chain, spot, asOf) {
   const opts = chain.map(parseOption).filter((o) => !!o && expiryMs(o.exp) > asOf.getTime());
   if (!(spot > 0) || opts.length < 20) return null;
   const e0 = nextExpiry(opts.map((o) => o.exp));
   const all = levelsFor(opts, spot, asOf), zero = levelsFor(opts.filter((o) => o.exp === e0), spot, asOf);
-  return { spot, expiry0: e0, all, zero, export: exportLine(spot, all, zero) };
+  return { spot, expiry0: e0, all, zero, export: exportLine(all), exportZero: exportLine(zero) };
 }
 function estimateBasis(spot, now, rate = 0.035, divYield = 7e-3) {
   const y = now.getUTCFullYear();
