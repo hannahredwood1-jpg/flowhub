@@ -10,7 +10,7 @@ async function gexLoad(){
   try{const r=await fetch('/api/gex/latest',{headers:{Accept:'application/json'}});GX=r.ok?await r.json():{error:true}}catch(e){GX={error:true}}
   GEX_LOADING=false;if(VIEW==='gex')paintGex()}
 function renderGex(){if(!GX&&!GEX_LOADING)gexLoad();paintGex()}
-const gexN=v=>v?Number(v).toLocaleString('en-US'):'–';
+const gexN=v=>v?Math.round(Number(v)).toLocaleString('en-US'):'–';
 const gexWhen=iso=>iso?new Date(iso).toLocaleString('en-US',{weekday:'short',hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET':'';
 const gexDay=d=>new Date(d+'T12:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'});
 function gexLadder(L,spot,basis){
