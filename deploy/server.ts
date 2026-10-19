@@ -799,7 +799,10 @@ async function runGex(): Promise<{ ok: boolean; message: string }> {
 let gexBusy = false;
 async function gexTick() {
   const e = etParts();
-  if (gexBusy || e.dow === "Sat" || e.dow === "Sun" || e.h < 8 || (e.h === 8 && e.m < 30) || e.h >= 11) return;
+  if (gexBusy) return;
+  const inWindow = !(e.dow === "Sat" || e.dow === "Sun" || e.h < 8 || (e.h === 8 && e.m < 30) || e.h >= 11);
+  const [any] = await sql`select 1 as x from "GexDaily" where symbol = 'NDX' limit 1`;
+  if (!inWindow && any) return; // outside 8:30-11:00 we only fetch once, the very first time, so there is something to show right away
   const [have] = await sql`select 1 as x from "GexDaily" where day = ${e.ymd} and symbol = 'NDX'`;
   if (have) return;
   if (gexHealth.lastTry && Date.now() - Date.parse(gexHealth.lastTry) < 10 * 60_000) return; // retry every 10 minutes until it works
