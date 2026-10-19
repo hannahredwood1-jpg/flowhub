@@ -151,4 +151,4 @@ Every weekday at 8:30 AM Eastern the server fetches the Nasdaq-100 (NDX) options
 - The page shows an NQ estimate from cost of carry (`GEX_CARRY_RATE`, default 0.035). The indicator measures the real NQ/NDX gap on the chart.
 - GEX is a model (dealers assumed long calls, short puts): the page and lessons call it context, never a signal. CBOE's terms for using the free feed commercially should be checked before charging for anything built on it.
 - School module `m50` "Understanding GEX Levels" sits right before INVERTIX; the sealed Orderflow room has `o05` "Gamma Levels as Orderflow Context".
-- The indicator is **FLOWGEX** on TradingView (https://www.tradingview.com/script/jD4HhcIk-FLOWGEX/). It is linked from the Daily GEX Levels page (banner at the top) and the m50 lesson; the home-screen tab just opens that page.
+- The indicator is **FLOWGEX** on TradingView (https://www.tradingview.com/script/HMDYxbPq-FLOWGEX/). It is linked from the Daily GEX Levels page (banner at the top) and the m50 lesson; the home-screen tab just opens that page.
