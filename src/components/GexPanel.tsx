@@ -5,7 +5,7 @@ import { api, type GexLatest } from "@/lib/api-client";
 import { ErrorLine, Panel, cx } from "./ui";
 
 const when = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }) + " ET" : "never");
-const n = (v: number | null | undefined) => (v ? v.toLocaleString("en-US") : "–");
+const n = (v: number | null | undefined) => (v ? Math.round(v).toLocaleString("en-US") : "–");
 
 export function GexPanel() {
   const [show, setShow] = useState(false);

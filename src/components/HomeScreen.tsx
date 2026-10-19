@@ -106,7 +106,7 @@ const ITEMS: { href: string; n: string; t: string; d: string }[] = [
 ];
 
 type GexTabData = { current: { day: string; levels: { spot: number; export: string; all: { callWall: number | null; flip: number | null; putWall: number | null; regime: "positive" | "negative" | null } } } | null; today: string };
-const num = (v: number | null | undefined) => (v ? v.toLocaleString("en-US") : "–");
+const num = (v: number | null | undefined) => (v ? Math.round(v).toLocaleString("en-US") : "–");
 const dayLabel = (d: string) => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
 /** A small strip on the home screen: today's NQ gamma levels, with a one-click copy for the indicator. */
