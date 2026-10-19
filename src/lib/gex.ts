@@ -25,7 +25,14 @@ export function bsGamma(S: number, K: number, sigma: number, T: number) {
   const t = Math.max(T, MIN_T), v = sigma * Math.sqrt(t);
   return phi((Math.log(S / K) + 0.5 * v * v) / v) / (S * v);
 }
-const yearsTo = (exp: string, asOf: Date) => (Date.UTC(+exp.slice(0, 4), +exp.slice(5, 7) - 1, +exp.slice(8, 10), 20, 0) - asOf.getTime()) / (365 * 86400_000);
+/** When an option stops trading: 4:15 PM New York time on its expiry date (PM-settled index options). */
+const etHour = (ms: number) => Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date(ms)));
+export function expiryMs(exp: string) {
+  const y = +exp.slice(0, 4), m = +exp.slice(5, 7) - 1, d = +exp.slice(8, 10);
+  for (const off of [4, 5]) { const t = Date.UTC(y, m, d, 16 + off, 15); if (etHour(t) === 16) return t; }
+  return Date.UTC(y, m, d, 21, 15);
+}
+const yearsTo = (exp: string, asOf: Date) => (expiryMs(exp) - asOf.getTime()) / (365 * 86400_000);
 const gexAt = (o: Parsed, S: number, T: number, gamma: number) => (o.type === "C" ? 1 : -1) * o.oi * gamma * 100 * S * S * 0.01;
 
 function levelsFor(opts: Parsed[], spot: number, asOf: Date): Levels {
@@ -53,9 +60,9 @@ function levelsFor(opts: Parsed[], spot: number, asOf: Date): Levels {
   return { callWall: calls[0] ?? null, putWall: puts[0] ?? null, flip: flip == null ? null : Math.round(flip), regime, calls: calls.slice(0, 6), puts: puts.slice(0, 6) };
 }
 
-/** The nearest expiry that has not passed, in New York dates: today's while the day is live, otherwise the next one. */
-export function nextExpiry(exps: string[], today: string) {
-  return [...new Set(exps)].sort().find((e) => e >= today) ?? null;
+/** The nearest expiry that has not passed: today's while the market is open, the next one after the 4:15 PM close. */
+export function nextExpiry(exps: string[]) {
+  return [...new Set(exps)].sort()[0] ?? null;
 }
 
 /**
@@ -71,10 +78,11 @@ export function exportLine(spot: number, all: Levels, zero: Levels) {
   return [n(all.callWall), n(all.flip), n(all.putWall), n(spot), ...five(all.calls), ...five(all.puts), n(zero.callWall), n(zero.flip), n(zero.putWall), "NDX"].join(",");
 }
 
-export function computeGex(chain: ChainOption[], spot: number, today: string, asOf: Date): GexResult | null {
-  const opts = chain.map(parseOption).filter((o): o is Parsed => !!o && o.exp >= today);
+export function computeGex(chain: ChainOption[], spot: number, asOf: Date): GexResult | null {
+  // Options that have already stopped trading carry no hedging, and their gamma blows up near expiry, so they are left out.
+  const opts = chain.map(parseOption).filter((o): o is Parsed => !!o && expiryMs(o.exp) > asOf.getTime());
   if (!(spot > 0) || opts.length < 20) return null;
-  const e0 = nextExpiry(opts.map((o) => o.exp), today);
+  const e0 = nextExpiry(opts.map((o) => o.exp));
   const all = levelsFor(opts, spot, asOf), zero = levelsFor(opts.filter((o) => o.exp === e0), spot, asOf);
   return { spot, expiry0: e0, all, zero, export: exportLine(spot, all, zero) };
 }

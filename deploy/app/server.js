@@ -723,7 +723,16 @@ function bsGamma(S, K, sigma, T) {
   const t = Math.max(T, MIN_T), v = sigma * Math.sqrt(t);
   return phi((Math.log(S / K) + 0.5 * v * v) / v) / (S * v);
 }
-var yearsTo = (exp, asOf) => (Date.UTC(+exp.slice(0, 4), +exp.slice(5, 7) - 1, +exp.slice(8, 10), 20, 0) - asOf.getTime()) / (365 * 864e5);
+var etHour = (ms) => Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date(ms)));
+function expiryMs(exp) {
+  const y = +exp.slice(0, 4), m = +exp.slice(5, 7) - 1, d = +exp.slice(8, 10);
+  for (const off of [4, 5]) {
+    const t = Date.UTC(y, m, d, 16 + off, 15);
+    if (etHour(t) === 16) return t;
+  }
+  return Date.UTC(y, m, d, 21, 15);
+}
+var yearsTo = (exp, asOf) => (expiryMs(exp) - asOf.getTime()) / (365 * 864e5);
 var gexAt = (o, S, T, gamma) => (o.type === "C" ? 1 : -1) * o.oi * gamma * 100 * S * S * 0.01;
 function levelsFor(opts, spot, asOf) {
   if (!opts.length) return { callWall: null, putWall: null, flip: null, regime: null, calls: [], puts: [] };
@@ -752,8 +761,8 @@ function levelsFor(opts, spot, asOf) {
   const regime = flip == null ? total(spot) >= 0 ? "positive" : "negative" : spot >= flip ? "positive" : "negative";
   return { callWall: calls[0] ?? null, putWall: puts[0] ?? null, flip: flip == null ? null : Math.round(flip), regime, calls: calls.slice(0, 6), puts: puts.slice(0, 6) };
 }
-function nextExpiry(exps, today) {
-  return [...new Set(exps)].sort().find((e) => e >= today) ?? null;
+function nextExpiry(exps) {
+  return [...new Set(exps)].sort()[0] ?? null;
 }
 var EXPORT_LEGEND = ["Call wall", "Gamma flip", "Put wall", "NDX price", "Call strike 2", "Call strike 3", "Call strike 4", "Call strike 5", "Call strike 6", "Put strike 2", "Put strike 3", "Put strike 4", "Put strike 5", "Put strike 6", "0DTE call wall", "0DTE gamma flip", "0DTE put wall"];
 function exportLine(spot, all, zero) {
@@ -761,10 +770,10 @@ function exportLine(spot, all, zero) {
   const five = (a) => [1, 2, 3, 4, 5].map((i) => n2(a[i]));
   return [n2(all.callWall), n2(all.flip), n2(all.putWall), n2(spot), ...five(all.calls), ...five(all.puts), n2(zero.callWall), n2(zero.flip), n2(zero.putWall), "NDX"].join(",");
 }
-function computeGex(chain, spot, today, asOf) {
-  const opts = chain.map(parseOption).filter((o) => !!o && o.exp >= today);
+function computeGex(chain, spot, asOf) {
+  const opts = chain.map(parseOption).filter((o) => !!o && expiryMs(o.exp) > asOf.getTime());
   if (!(spot > 0) || opts.length < 20) return null;
-  const e0 = nextExpiry(opts.map((o) => o.exp), today);
+  const e0 = nextExpiry(opts.map((o) => o.exp));
   const all = levelsFor(opts, spot, asOf), zero = levelsFor(opts.filter((o) => o.exp === e0), spot, asOf);
   return { spot, expiry0: e0, all, zero, export: exportLine(spot, all, zero) };
 }
@@ -1675,13 +1684,7 @@ var etParts = (d = /* @__PURE__ */ new Date()) => {
 };
 var feedInstant = (label) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/.exec(String(label ?? ""));
-  if (!m) return null;
-  const guess = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0));
-  for (const off of [4, 5]) {
-    const d = new Date(guess + off * 36e5), e = etParts(d);
-    if (e.ymd === `${m[1]}-${m[2]}-${m[3]}` && e.h === +m[4]) return d;
-  }
-  return new Date(guess + 5 * 36e5);
+  return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0))) : null;
 };
 var gexHealth = { lastTry: null, lastError: null, lastOk: null };
 async function fetchGexChain() {
@@ -1696,7 +1699,7 @@ async function runGex() {
   gexHealth.lastTry = (/* @__PURE__ */ new Date()).toISOString();
   try {
     const now = /* @__PURE__ */ new Date(), today = etParts(now).ymd, f = await fetchGexChain();
-    const res = computeGex(f.options, f.spot, today, now);
+    const res = computeGex(f.options, f.spot, now);
     if (!res) throw new Error("Not enough option data to work out levels");
     const feedAt = feedInstant(f.label);
     await sql`insert into "GexDaily" (day, symbol, levels, "feedLabel", "feedAt") values (${today}, 'NDX', ${JSON.stringify(res)}::jsonb, ${f.label}, ${feedAt})

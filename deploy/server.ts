@@ -762,13 +762,10 @@ const etParts = (d = new Date()) => {
   const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short", hourCycle: "h23" }).formatToParts(d).map((x) => [x.type, x.value]));
   return { ymd: `${p.year}-${p.month}-${p.day}`, h: +p.hour, m: +p.minute, dow: p.weekday as string };
 };
-/** CBOE stamps its feed in New York time ("2026-10-19 08:30:15"); this turns it into a real instant. */
+/** CBOE stamps its feed in UTC ("2026-10-19 20:23:54"); this turns it into a real instant. */
 const feedInstant = (label: unknown): Date | null => {
   const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/.exec(String(label ?? ""));
-  if (!m) return null;
-  const guess = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0));
-  for (const off of [4, 5]) { const d = new Date(guess + off * 3600_000), e = etParts(d); if (e.ymd === `${m[1]}-${m[2]}-${m[3]}` && e.h === +m[4]) return d; }
-  return new Date(guess + 5 * 3600_000);
+  return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0))) : null;
 };
 const gexHealth: { lastTry: string | null; lastError: string | null; lastOk: string | null } = { lastTry: null, lastError: null, lastOk: null };
 async function fetchGexChain() {
@@ -783,7 +780,7 @@ async function runGex(): Promise<{ ok: boolean; message: string }> {
   gexHealth.lastTry = new Date().toISOString();
   try {
     const now = new Date(), today = etParts(now).ymd, f = await fetchGexChain();
-    const res = computeGex(f.options, f.spot, today, now);
+    const res = computeGex(f.options, f.spot, now);
     if (!res) throw new Error("Not enough option data to work out levels");
     const feedAt = feedInstant(f.label);
     await sql`insert into "GexDaily" (day, symbol, levels, "feedLabel", "feedAt") values (${today}, 'NDX', ${JSON.stringify(res)}::jsonb, ${f.label}, ${feedAt})

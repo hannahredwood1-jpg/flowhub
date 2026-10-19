@@ -32,7 +32,7 @@ test("gamma is highest at the money and falls away", () => {
 });
 
 test("walls land on the heavy strikes and the flip sits between them", () => {
-  const r = computeGex(chain(), 29500, "2026-10-19", asOf)!;
+  const r = computeGex(chain(), 29500, asOf)!;
   assert.equal(r.all.callWall, 29700);
   assert.equal(r.all.putWall, 29300);
   assert.ok(r.all.flip != null && r.all.flip > 28500 && r.all.flip < 30500);
@@ -42,7 +42,7 @@ test("walls land on the heavy strikes and the flip sits between them", () => {
 });
 
 test("export line is 17 numbers then NDX", () => {
-  const r = computeGex(chain(), 29500, "2026-10-19", asOf)!;
+  const r = computeGex(chain(), 29500, asOf)!;
   const parts = r.export.split(",");
   assert.equal(parts.length, 18);
   assert.equal(parts[17], "NDX");
@@ -53,13 +53,17 @@ test("export line is 17 numbers then NDX", () => {
 });
 
 test("too little data returns nothing instead of made-up levels", () => {
-  assert.equal(computeGex(chain().slice(0, 5), 29500, "2026-10-19", asOf), null);
-  assert.equal(computeGex(chain(), 0, "2026-10-19", asOf), null);
+  assert.equal(computeGex(chain().slice(0, 5), 29500, asOf), null);
+  assert.equal(computeGex(chain(), 0, asOf), null);
 });
 
-test("expired contracts are ignored", () => {
-  const r = computeGex(chain(), 29500, "2026-10-21", asOf)!;
-  assert.equal(r.expiry0, "2026-10-23");
+test("contracts that have already stopped trading are ignored", () => {
+  const afterClose = computeGex(chain(), 29500, new Date("2026-10-19T20:30:00Z"))!; // 4:30 PM ET on the expiry day
+  assert.equal(afterClose.expiry0, "2026-10-23");
+  const later = computeGex(chain(), 29500, new Date("2026-10-21T14:00:00Z"))!;
+  assert.equal(later.expiry0, "2026-10-23");
+  const before = computeGex(chain(), 29500, new Date("2026-10-19T19:00:00Z"))!; // 3 PM ET: still trading
+  assert.equal(before.expiry0, "2026-10-19");
 });
 
 test("basis estimate is positive and shrinks toward expiry", () => {
