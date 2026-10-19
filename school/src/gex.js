@@ -4,6 +4,7 @@
 ============================================================ */
 let GX=null,GEX_MODE='all',GEX_LOADING=false;
 const gexOn=()=>!window.VAULT&&!window.PRACTICE;
+const FLOWGEX_URL='https://www.tradingview.com/script/jD4HhcIk-FLOWGEX/';
 async function gexLoad(){
   GEX_LOADING=true;
   try{const r=await fetch('/api/gex/latest',{headers:{Accept:'application/json'}});GX=r.ok?await r.json():{error:true}}catch(e){GX={error:true}}
@@ -37,8 +38,9 @@ function paintGex(){
     <div class="seg" role="group" aria-label="Which expiries"><button class="${GEX_MODE==='all'?'on':''}" data-gm="all">All expiries</button><button class="${GEX_MODE==='zero'?'on':''}" data-gm="zero">0DTE${lv.expiry0?' · '+gexDay(lv.expiry0):''}</button></div></div>
   <div class="gx-tiles">${tile('Call wall',L.callWall,'gc')}${tile('Gamma flip',L.flip,'gf')}${tile('Put wall',L.putWall,'gp')}${tile('NDX price',spot,'gs')}</div>
   <p class="gx-cap">${gexCaption(L,spot)}</p>
+  <div class="card gx-get"><div><span class="hud">The indicator</span><h3 class="h" style="margin-top:2px">Get FLOWGEX for TradingView</h3><p class="muted" style="font-size:13.5px;margin-top:4px">FLOWGEX draws these levels on your NQ chart. Add it to your chart from TradingView, then copy the levels below and paste them into its settings.</p></div><a class="btn primary" href="${FLOWGEX_URL}" target="_blank" rel="noopener noreferrer">Get FLOWGEX on TradingView ↗</a></div>
   <div class="gx-two"><div class="card gx-card"><h3 class="h">Where they sit</h3>${gexLadder(L,spot,basis)}<p class="muted" style="font-size:12.5px;margin-top:8px">Small ticks are the next strongest strikes. NQ values are an estimate; the indicator measures the real gap on your chart.</p></div>
-  <div class="card gx-card"><h3 class="h">Copy for the indicator</h3><p class="muted" style="font-size:13.5px;margin:4px 0 10px">Copy this line, then paste it into the GEX-L indicator's GEX Data box with Symbol Mode set to NDX / NQ. It is the ${GEX_MODE==='zero'?'0DTE':'all-expiries'} line.</p>
+  <div class="card gx-card"><h3 class="h">Copy for the indicator</h3><p class="muted" style="font-size:13.5px;margin:4px 0 10px">1. Add FLOWGEX to your chart. 2. Copy the line. 3. Paste it into FLOWGEX's GEX Data box and set Symbol Mode to NDX / NQ. It is the ${GEX_MODE==='zero'?'0DTE':'all-expiries'} line.</p>
    <code class="gx-code" id="gexLine">${esc(line)}</code><div class="gx-act"><button class="btn primary" id="gexCopy">Copy levels</button><button class="btn ghost sm" id="gexLeg">What each number is</button></div>
    <table class="tblx gx-leg" id="gexLegT" hidden><tr><th>#</th><th>Value</th></tr>${GX.legend.map((n,i)=>`<tr><td>${i+1}</td><td>${esc(n)}</td></tr>`).join('')}<tr><td>22</td><td>Symbol (NDX)</td></tr></table>
    <p class="muted" style="font-size:12.5px;margin-top:10px">A 0 hides that level in the indicator (used when fewer than ten strikes exist).</p></div></div>

@@ -367,3 +367,4 @@ dialog p{color:var(--ink2);margin:4px 0}
 .gx-hist{overflow-x:auto}
 .gx-foot{margin-top:18px;font-size:13px;max-width:700px}.gx-foot a{color:var(--ice)}
 @media(max-width:760px){.gx-tiles{grid-template-columns:repeat(2,1fr)}.gx-two{grid-template-columns:1fr}.gx-wrap{padding-inline:16px}}
+.gx-get{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;padding:16px 18px;margin-bottom:14px;border-color:color-mix(in srgb,var(--signal) 45%,var(--line2))}.gx-get>div{min-width:0;flex:1 1 320px}
