@@ -132,6 +132,11 @@ export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: P
             </a>
           ))}
         </nav>
+        <a href="/school#/gex" className="group relative mb-4 flex items-center gap-4 border border-line-2 bg-panel/80 p-4 backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-signal hover:bg-panel-2">
+          <span className="grid h-11 w-11 shrink-0 place-items-center border border-line-2 font-mono text-[11px] text-ice transition-colors group-hover:border-signal group-hover:text-signal">GEX</span>
+          <span className="flex-1"><span className="block text-[17px] font-semibold text-ink">Daily GEX Levels</span><span className="block text-[13px] text-ink-2">Today&apos;s call wall, put wall and gamma flip for NQ. Updated every weekday at 8:30 AM.</span></span>
+          <span aria-hidden="true" className="text-ink-3 transition-all group-hover:translate-x-1 group-hover:text-signal">→</span>
+        </a>
         {vault === "restricted" ? (
           <div className="mb-8 flex items-center gap-4 border border-line bg-panel/50 p-4 opacity-70 backdrop-blur" aria-label="The vault: restricted">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0 text-ink-3"><rect x="5" y="11" width="14" height="9" rx="1.5" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>

@@ -11,7 +11,7 @@
 <header class="top">
   <a class="brand" href="/" aria-label="FLOWHUB home"><span class="logo"><b>F</b>LOWHUB</span><small>by FLOWMTD Trading</small></a>
   <!--FH_NAV-->
-  <div class="top-r"><button type="button" class="btn sm" id="glossBtn" aria-haspopup="dialog">Glossary</button><span class="pill"><span class="dot"></span>Practice · no real money</span><span id="who" class="dim" style="font-size:13px"></span></div>
+  <div class="top-r"><a class="btn sm" id="gexNav" href="#/gex">GEX levels</a><button type="button" class="btn sm" id="glossBtn" aria-haspopup="dialog">Glossary</button><span class="pill"><span class="dot"></span>Practice · no real money</span><span id="who" class="dim" style="font-size:13px"></span></div>
 </header>
 
 <main id="v-map" class="view">
@@ -58,6 +58,8 @@
     <aside class="lesson" id="lesson"></aside>
   </div>
 </main>
+
+<main id="v-gex" class="view gex" hidden><div class="gx-wrap"><a class="back" href="#/">← Course map</a><div class="hud" style="margin-top:14px">Daily GEX Levels</div><h1 class="h gx-h">Today's NQ gamma levels</h1><p class="gx-sub">Call wall, put wall and gamma flip, worked out from Nasdaq-100 options and updated by FLOWHUB at 8:30 AM New York time every weekday.</p><div id="gexBody"></div></div></main>
 
 <main id="v-exam" class="view exam" hidden><div class="ex-wrap" id="exBody"></div></main>
 

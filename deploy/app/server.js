@@ -709,6 +709,76 @@ function summarizePractice(rows, now = Date.now()) {
   };
 }
 
+// src/lib/gex.ts
+var SIGMA_PROXY = 0.2;
+var MIN_T = 0.25 / 365;
+function parseOption(o) {
+  const m = /^[A-Z]+W?(\d{2})(\d{2})(\d{2})([CP])(\d{8})$/.exec(o.sym.replace(/^_/, ""));
+  if (!m || !(o.oi > 0)) return null;
+  const iv = Number(o.iv);
+  return { type: m[4], strike: Number(m[5]) / 1e3, exp: `20${m[1]}-${m[2]}-${m[3]}`, oi: o.oi, iv: iv > 0.01 && iv < 5 ? iv : SIGMA_PROXY, gamma: Number.isFinite(Number(o.gamma)) && Number(o.gamma) > 0 ? Number(o.gamma) : null };
+}
+var phi = (x) => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+function bsGamma(S, K, sigma, T) {
+  const t = Math.max(T, MIN_T), v = sigma * Math.sqrt(t);
+  return phi((Math.log(S / K) + 0.5 * v * v) / v) / (S * v);
+}
+var yearsTo = (exp, asOf) => (Date.UTC(+exp.slice(0, 4), +exp.slice(5, 7) - 1, +exp.slice(8, 10), 20, 0) - asOf.getTime()) / (365 * 864e5);
+var gexAt = (o, S, T, gamma) => (o.type === "C" ? 1 : -1) * o.oi * gamma * 100 * S * S * 0.01;
+function levelsFor(opts, spot, asOf) {
+  if (!opts.length) return { callWall: null, putWall: null, flip: null, regime: null, calls: [], puts: [] };
+  const callBy = /* @__PURE__ */ new Map(), putBy = /* @__PURE__ */ new Map();
+  for (const o of opts) {
+    const g = o.gamma ?? bsGamma(spot, o.strike, o.iv, yearsTo(o.exp, asOf));
+    const v = gexAt(o, spot, 0, g);
+    (o.type === "C" ? callBy : putBy).set(o.strike, ((o.type === "C" ? callBy : putBy).get(o.strike) ?? 0) + v);
+  }
+  const rank = (m, sign2) => [...m.entries()].sort((a, b) => sign2 * (b[1] - a[1]) || Math.abs(a[0] - spot) - Math.abs(b[0] - spot)).map(([k]) => k);
+  const calls = rank(callBy, 1), puts = rank(putBy, -1);
+  const total = (S) => opts.reduce((s, o) => s + gexAt(o, S, 0, bsGamma(S, o.strike, o.iv, yearsTo(o.exp, asOf))), 0);
+  let flip = null, best = Infinity, prevS = spot * 0.9, prevV = total(prevS);
+  for (let i = 1; i <= 160; i++) {
+    const S = spot * (0.9 + i * 125e-5), v = total(S);
+    if (prevV === 0 || prevV < 0 !== v < 0) {
+      const x = prevV === v ? S : prevS + (S - prevS) * (0 - prevV) / (v - prevV);
+      if (Math.abs(x - spot) < best) {
+        best = Math.abs(x - spot);
+        flip = x;
+      }
+    }
+    prevS = S;
+    prevV = v;
+  }
+  const regime = flip == null ? total(spot) >= 0 ? "positive" : "negative" : spot >= flip ? "positive" : "negative";
+  return { callWall: calls[0] ?? null, putWall: puts[0] ?? null, flip: flip == null ? null : Math.round(flip), regime, calls: calls.slice(0, 6), puts: puts.slice(0, 6) };
+}
+function nextExpiry(exps, today) {
+  return [...new Set(exps)].sort().find((e) => e >= today) ?? null;
+}
+var EXPORT_LEGEND = ["Call wall", "Gamma flip", "Put wall", "NDX price", "Call strike 2", "Call strike 3", "Call strike 4", "Call strike 5", "Call strike 6", "Put strike 2", "Put strike 3", "Put strike 4", "Put strike 5", "Put strike 6", "0DTE call wall", "0DTE gamma flip", "0DTE put wall"];
+function exportLine(spot, all, zero) {
+  const n2 = (v) => v == null ? 0 : Math.round(v);
+  const five = (a) => [1, 2, 3, 4, 5].map((i) => n2(a[i]));
+  return [n2(all.callWall), n2(all.flip), n2(all.putWall), n2(spot), ...five(all.calls), ...five(all.puts), n2(zero.callWall), n2(zero.flip), n2(zero.putWall), "NDX"].join(",");
+}
+function computeGex(chain, spot, today, asOf) {
+  const opts = chain.map(parseOption).filter((o) => !!o && o.exp >= today);
+  if (!(spot > 0) || opts.length < 20) return null;
+  const e0 = nextExpiry(opts.map((o) => o.exp), today);
+  const all = levelsFor(opts, spot, asOf), zero = levelsFor(opts.filter((o) => o.exp === e0), spot, asOf);
+  return { spot, expiry0: e0, all, zero, export: exportLine(spot, all, zero) };
+}
+function estimateBasis(spot, now, rate = 0.035, divYield = 7e-3) {
+  const y = now.getUTCFullYear();
+  const third = (yr, m) => {
+    const d = new Date(Date.UTC(yr, m, 1));
+    d.setUTCDate(1 + (5 - d.getUTCDay() + 7) % 7 + 14);
+    return d;
+  };
+  const q = [2, 5, 8, 11].map((m) => third(y, m)).concat([third(y + 1, 2)]).find((d) => d.getTime() + 20 * 36e5 > now.getTime());
+  return spot * (rate - divYield) * ((q.getTime() - now.getTime()) / (365 * 864e5));
+}
+
 // src/lib/schoolPace.ts
 var PACE_MIN = 1;
 var PACE_MAX = 14;
@@ -755,12 +825,13 @@ var SCHOOL_MODULES = [
   { id: "m14", n: 24, title: "Risk Management" },
   { id: "m23", n: 25, title: "Trade Management & Spot the Mistake" },
   { id: "m24", n: 26, title: "Why the Math Works" },
-  { id: "m43", n: 27, title: "INVERTIX: The Idea and the Pieces" },
-  { id: "m44", n: 28, title: "INVERTIX: The Key Level" },
-  { id: "m45", n: 29, title: "INVERTIX: The Flip, Entry and Stop" },
-  { id: "m46", n: 30, title: "INVERTIX: Targets, Windows and Size" },
-  { id: "m47", n: 31, title: "INVERTIX: The Daily Playbook" },
-  { id: "m16", n: 32, title: "Putting It All Together: The Complete Read" }
+  { id: "m50", n: 27, title: "Understanding GEX Levels" },
+  { id: "m43", n: 28, title: "INVERTIX: The Idea and the Pieces" },
+  { id: "m44", n: 29, title: "INVERTIX: The Key Level" },
+  { id: "m45", n: 30, title: "INVERTIX: The Flip, Entry and Stop" },
+  { id: "m46", n: 31, title: "INVERTIX: Targets, Windows and Size" },
+  { id: "m47", n: 32, title: "INVERTIX: The Daily Playbook" },
+  { id: "m16", n: 33, title: "Putting It All Together: The Complete Read" }
 ];
 var SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id);
 var SCHOOL_FIRST_CORE = 5;
@@ -819,7 +890,8 @@ var VAULT_MODULES = [
   { id: "o01", title: "What Orderflow Is and Why It Confirms a Sweep" },
   { id: "o02", title: "Reading the Tape Around a Sweep" },
   { id: "o03", title: "Delta, Volume and Imbalance" },
-  { id: "o04", title: "Orderflow and the ECHO X ORBIT Checklist" }
+  { id: "o04", title: "Orderflow and the ECHO X ORBIT Checklist" },
+  { id: "o05", title: "Gamma Levels as Orderflow Context" }
 ];
 var VAULT_MODULE_IDS = VAULT_MODULES.map((m) => m.id);
 var ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -1597,6 +1669,85 @@ async function runPaceNudges(now = /* @__PURE__ */ new Date()) {
 }
 setTimeout(() => runPaceNudges().catch((e) => console.error("pace nudges", e)), 12e4);
 setInterval(() => runPaceNudges().catch((e) => console.error("pace nudges", e)), 36e5);
+var etParts = (d = /* @__PURE__ */ new Date()) => {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short", hourCycle: "h23" }).formatToParts(d).map((x) => [x.type, x.value]));
+  return { ymd: `${p.year}-${p.month}-${p.day}`, h: +p.hour, m: +p.minute, dow: p.weekday };
+};
+var feedInstant = (label) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/.exec(String(label ?? ""));
+  if (!m) return null;
+  const guess = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0));
+  for (const off of [4, 5]) {
+    const d = new Date(guess + off * 36e5), e = etParts(d);
+    if (e.ymd === `${m[1]}-${m[2]}-${m[3]}` && e.h === +m[4]) return d;
+  }
+  return new Date(guess + 5 * 36e5);
+};
+var gexHealth = { lastTry: null, lastError: null, lastOk: null };
+async function fetchGexChain() {
+  const r = await fetch("https://cdn.cboe.com/api/global/delayed_quotes/options/_NDX.json", { headers: { "User-Agent": "Mozilla/5.0 (compatible; FLOWHUB/1.0)", Accept: "application/json" }, signal: AbortSignal.timeout(45e3) });
+  if (!r.ok) throw new Error(`CBOE answered ${r.status}`);
+  const j = await r.json();
+  const d = j.data;
+  if (!d?.options?.length || !(Number(d.current_price) > 0)) throw new Error("CBOE sent no options chain");
+  return { spot: Number(d.current_price), label: String(j.timestamp ?? d.last_trade_time ?? ""), options: d.options.map((o) => ({ sym: o.option, oi: Number(o.open_interest), iv: o.iv, gamma: o.gamma })) };
+}
+async function runGex() {
+  gexHealth.lastTry = (/* @__PURE__ */ new Date()).toISOString();
+  try {
+    const now = /* @__PURE__ */ new Date(), today = etParts(now).ymd, f = await fetchGexChain();
+    const res = computeGex(f.options, f.spot, today, now);
+    if (!res) throw new Error("Not enough option data to work out levels");
+    const feedAt = feedInstant(f.label);
+    await sql`insert into "GexDaily" (day, symbol, levels, "feedLabel", "feedAt") values (${today}, 'NDX', ${JSON.stringify(res)}::jsonb, ${f.label}, ${feedAt})
+              on conflict (day, symbol) do update set levels = excluded.levels, "feedLabel" = excluded."feedLabel", "feedAt" = excluded."feedAt", "fetchedAt" = now()`;
+    gexHealth.lastOk = (/* @__PURE__ */ new Date()).toISOString();
+    gexHealth.lastError = null;
+    return { ok: true, message: `Saved levels for ${today} (feed ${f.label})` };
+  } catch (e) {
+    gexHealth.lastError = e.message;
+    console.error("gex", e);
+    return { ok: false, message: e.message };
+  }
+}
+var gexBusy = false;
+async function gexTick() {
+  const e = etParts();
+  if (gexBusy || e.dow === "Sat" || e.dow === "Sun" || e.h < 8 || e.h === 8 && e.m < 30 || e.h >= 11) return;
+  const [have] = await sql`select 1 as x from "GexDaily" where day = ${e.ymd} and symbol = 'NDX'`;
+  if (have) return;
+  if (gexHealth.lastTry && Date.now() - Date.parse(gexHealth.lastTry) < 10 * 6e4) return;
+  gexBusy = true;
+  try {
+    await runGex();
+  } finally {
+    gexBusy = false;
+  }
+}
+setInterval(() => gexTick().catch((e) => console.error("gex tick", e)), 6e4);
+var gexRow = (r) => {
+  const lv = typeof r.levels === "string" ? JSON.parse(r.levels) : r.levels;
+  const day = typeof r.day === "string" ? r.day.slice(0, 10) : new Date(r.day).toISOString().slice(0, 10);
+  return { day, levels: lv, feedLabel: r.feedLabel ?? null, feedAt: r.feedAt ? new Date(r.feedAt).toISOString() : null, fetchedAt: new Date(r.fetchedAt).toISOString() };
+};
+app.get("/api/gex/latest", async (c) => {
+  const rows = await sql`select day, levels, "feedLabel", "feedAt", "fetchedAt" from "GexDaily" where symbol = 'NDX' order by day desc limit 12`;
+  const list = rows.map(gexRow), cur = list[0] ?? null;
+  const basis = cur ? Math.round(estimateBasis(cur.levels.spot, /* @__PURE__ */ new Date(), Number(process.env.GEX_CARRY_RATE ?? 0.035))) : null;
+  const u = c.get("user");
+  return c.json({
+    current: cur,
+    history: list.slice(1, 11).map((x) => ({ day: x.day, callWall: x.levels.all.callWall, flip: x.levels.all.flip, putWall: x.levels.all.putWall, spot: x.levels.spot, regime: x.levels.all.regime })),
+    legend: EXPORT_LEGEND,
+    basis,
+    today: etParts().ymd,
+    health: isStaff(u) ? gexHealth : void 0
+  });
+});
+app.post("/api/coach/gex/run", async (c) => {
+  staffOnly(c);
+  return c.json(await runGex());
+});
 app.get("/api/plan", async (c) => {
   const [row] = await sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${c.get("user").id}`;
   const plan = row ? { ...typeof row.plan === "string" ? JSON.parse(row.plan) : row.plan, models: cleanPlanModels((typeof row.plan === "string" ? JSON.parse(row.plan) : row.plan).models), done: true, updatedAt: new Date(row.updatedAt).toISOString() } : null;

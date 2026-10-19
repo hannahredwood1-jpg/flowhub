@@ -7,5 +7,6 @@ const PH=[
  {n:'Structure & Imbalance',d:'Confirming a sweep, spotting where price will keep going, and where it gets rejected.'},
  {n:'Context & Timing',d:'Cross-checking with a second index, and knowing when to look.'},
  {n:'Prop Firm Risk Management',d:'Funded accounts and their rules, sizing every trade, managing it after entry, and why the maths works.'},
+ {n:'Gamma Levels',d:'What the daily GEX levels are and how to read them, so you know the backdrop before you learn your first model.'},
  {n:'INVERTIX',d:'The first trading model you learn: a key level, a manipulation leg, a flip and a defined entry, stop and target.'},
  {n:'Putting It Together',d:'Everything above combined into one repeatable read of the market, run on real trades.'}];

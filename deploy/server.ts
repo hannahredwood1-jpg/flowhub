@@ -20,6 +20,7 @@ import { accountInput, accountPatch, feedbackInput, journalInput, journalPatch, 
 import { todayET, type CatalogFirm, type DashboardData, type PersonDTO, type ProjectionDTO, type RulesDTO } from "../src/lib/types";
 import type { Instrument } from "../src/lib/planner";
 import { PRACTICE_MODELS, summarizePractice } from "../src/lib/practice";
+import { computeGex, estimateBasis, EXPORT_LEGEND, type GexResult } from "../src/lib/gex";
 import { clampPace, expectedPassed, nudgeGapDays, paceStatus, PACE_MAX_NUDGES } from "../src/lib/schoolPace";
 import { SCHOOL_MODULES, SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
 import { cleanPlanModels, type TradingPlanDTO } from "../src/lib/tradingPlan";
@@ -755,6 +756,71 @@ async function runPaceNudges(now = new Date()): Promise<number> {
 }
 setTimeout(() => runPaceNudges().catch((e) => console.error("pace nudges", e)), 120_000);
 setInterval(() => runPaceNudges().catch((e) => console.error("pace nudges", e)), 3600_000);
+
+// ── Daily GEX levels: fetched, worked out and saved by the server every weekday at 8:30 AM Eastern ──
+const etParts = (d = new Date()) => {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short", hourCycle: "h23" }).formatToParts(d).map((x) => [x.type, x.value]));
+  return { ymd: `${p.year}-${p.month}-${p.day}`, h: +p.hour, m: +p.minute, dow: p.weekday as string };
+};
+/** CBOE stamps its feed in New York time ("2026-10-19 08:30:15"); this turns it into a real instant. */
+const feedInstant = (label: unknown): Date | null => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/.exec(String(label ?? ""));
+  if (!m) return null;
+  const guess = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0));
+  for (const off of [4, 5]) { const d = new Date(guess + off * 3600_000), e = etParts(d); if (e.ymd === `${m[1]}-${m[2]}-${m[3]}` && e.h === +m[4]) return d; }
+  return new Date(guess + 5 * 3600_000);
+};
+const gexHealth: { lastTry: string | null; lastError: string | null; lastOk: string | null } = { lastTry: null, lastError: null, lastOk: null };
+async function fetchGexChain() {
+  const r = await fetch("https://cdn.cboe.com/api/global/delayed_quotes/options/_NDX.json", { headers: { "User-Agent": "Mozilla/5.0 (compatible; FLOWHUB/1.0)", Accept: "application/json" }, signal: AbortSignal.timeout(45_000) });
+  if (!r.ok) throw new Error(`CBOE answered ${r.status}`);
+  const j = (await r.json()) as { timestamp?: string; data?: { current_price?: number; last_trade_time?: string; options?: { option: string; open_interest: number; iv: number; gamma: number }[] } };
+  const d = j.data;
+  if (!d?.options?.length || !(Number(d.current_price) > 0)) throw new Error("CBOE sent no options chain");
+  return { spot: Number(d.current_price), label: String(j.timestamp ?? d.last_trade_time ?? ""), options: d.options.map((o) => ({ sym: o.option, oi: Number(o.open_interest), iv: o.iv, gamma: o.gamma })) };
+}
+async function runGex(): Promise<{ ok: boolean; message: string }> {
+  gexHealth.lastTry = new Date().toISOString();
+  try {
+    const now = new Date(), today = etParts(now).ymd, f = await fetchGexChain();
+    const res = computeGex(f.options, f.spot, today, now);
+    if (!res) throw new Error("Not enough option data to work out levels");
+    const feedAt = feedInstant(f.label);
+    await sql`insert into "GexDaily" (day, symbol, levels, "feedLabel", "feedAt") values (${today}, 'NDX', ${JSON.stringify(res)}::jsonb, ${f.label}, ${feedAt})
+              on conflict (day, symbol) do update set levels = excluded.levels, "feedLabel" = excluded."feedLabel", "feedAt" = excluded."feedAt", "fetchedAt" = now()`;
+    gexHealth.lastOk = new Date().toISOString(); gexHealth.lastError = null;
+    return { ok: true, message: `Saved levels for ${today} (feed ${f.label})` };
+  } catch (e) {
+    gexHealth.lastError = (e as Error).message;
+    console.error("gex", e);
+    return { ok: false, message: (e as Error).message };
+  }
+}
+let gexBusy = false;
+async function gexTick() {
+  const e = etParts();
+  if (gexBusy || e.dow === "Sat" || e.dow === "Sun" || e.h < 8 || (e.h === 8 && e.m < 30) || e.h >= 11) return;
+  const [have] = await sql`select 1 as x from "GexDaily" where day = ${e.ymd} and symbol = 'NDX'`;
+  if (have) return;
+  if (gexHealth.lastTry && Date.now() - Date.parse(gexHealth.lastTry) < 10 * 60_000) return; // retry every 10 minutes until it works
+  gexBusy = true;
+  try { await runGex(); } finally { gexBusy = false; }
+}
+setInterval(() => gexTick().catch((e) => console.error("gex tick", e)), 60_000);
+const gexRow = (r: Record<string, any>) => {
+  const lv = (typeof r.levels === "string" ? JSON.parse(r.levels) : r.levels) as GexResult;
+  const day = typeof r.day === "string" ? r.day.slice(0, 10) : new Date(r.day).toISOString().slice(0, 10);
+  return { day, levels: lv, feedLabel: r.feedLabel ?? null, feedAt: r.feedAt ? new Date(r.feedAt).toISOString() : null, fetchedAt: new Date(r.fetchedAt).toISOString() };
+};
+app.get("/api/gex/latest", async (c) => {
+  const rows = await sql`select day, levels, "feedLabel", "feedAt", "fetchedAt" from "GexDaily" where symbol = 'NDX' order by day desc limit 12`;
+  const list = rows.map(gexRow), cur = list[0] ?? null;
+  const basis = cur ? Math.round(estimateBasis(cur.levels.spot, new Date(), Number(process.env.GEX_CARRY_RATE ?? 0.035))) : null;
+  const u = c.get("user");
+  return c.json({ current: cur, history: list.slice(1, 11).map((x) => ({ day: x.day, callWall: x.levels.all.callWall, flip: x.levels.all.flip, putWall: x.levels.all.putWall, spot: x.levels.spot, regime: x.levels.all.regime })), legend: EXPORT_LEGEND, basis, today: etParts().ymd,
+    health: isStaff(u) ? gexHealth : undefined });
+});
+app.post("/api/coach/gex/run", async (c) => { staffOnly(c); return c.json(await runGex()); });
 
 // Trading plan (Trading Plan → Build your plan)
 app.get("/api/plan", async (c) => {

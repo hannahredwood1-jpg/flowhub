@@ -28,12 +28,13 @@ export const SCHOOL_MODULES = [
   { id: "m14", n: 24, title: "Risk Management" },
   { id: "m23", n: 25, title: "Trade Management & Spot the Mistake" },
   { id: "m24", n: 26, title: "Why the Math Works" },
-  { id: "m43", n: 27, title: "INVERTIX: The Idea and the Pieces" },
-  { id: "m44", n: 28, title: "INVERTIX: The Key Level" },
-  { id: "m45", n: 29, title: "INVERTIX: The Flip, Entry and Stop" },
-  { id: "m46", n: 30, title: "INVERTIX: Targets, Windows and Size" },
-  { id: "m47", n: 31, title: "INVERTIX: The Daily Playbook" },
-  { id: "m16", n: 32, title: "Putting It All Together: The Complete Read" },
+  { id: "m50", n: 27, title: "Understanding GEX Levels" },
+  { id: "m43", n: 28, title: "INVERTIX: The Idea and the Pieces" },
+  { id: "m44", n: 29, title: "INVERTIX: The Key Level" },
+  { id: "m45", n: 30, title: "INVERTIX: The Flip, Entry and Stop" },
+  { id: "m46", n: 31, title: "INVERTIX: Targets, Windows and Size" },
+  { id: "m47", n: 32, title: "INVERTIX: The Daily Playbook" },
+  { id: "m16", n: 33, title: "Putting It All Together: The Complete Read" },
 ] as const;
 export const SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id) as string[];
 
