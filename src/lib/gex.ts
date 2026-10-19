@@ -6,7 +6,7 @@
 export type ChainOption = { sym: string; oi: number; iv?: number | null; gamma?: number | null };
 export type Parsed = { type: "C" | "P"; strike: number; exp: string; oi: number; iv: number; gamma: number | null };
 export type Levels = { callWall: number | null; putWall: number | null; flip: number | null; regime: "positive" | "negative" | null; calls: number[]; puts: number[] };
-export type GexResult = { spot: number; expiry0: string | null; all: Levels; zero: Levels; export: string };
+export type GexResult = { spot: number; expiry0: string | null; all: Levels; zero: Levels; export: string; exportZero?: string };
 
 const SIGMA_PROXY = 0.2; // used when an option has no implied volatility
 const MIN_T = 0.25 / 365;
@@ -57,7 +57,7 @@ function levelsFor(opts: Parsed[], spot: number, asOf: Date): Levels {
     prevS = S; prevV = v;
   }
   const regime = flip == null ? (total(spot) >= 0 ? "positive" : "negative") : spot >= flip ? "positive" : "negative";
-  return { callWall: calls[0] ?? null, putWall: puts[0] ?? null, flip: flip == null ? null : Math.round(flip), regime, calls: calls.slice(0, 6), puts: puts.slice(0, 6) };
+  return { callWall: calls[0] ?? null, putWall: puts[0] ?? null, flip: flip == null ? null : Math.round(flip), regime, calls: calls.slice(0, 10), puts: puts.slice(0, 10) };
 }
 
 /** The nearest expiry that has not passed: today's while the market is open, the next one after the 4:15 PM close. */
@@ -66,16 +66,19 @@ export function nextExpiry(exps: string[]) {
 }
 
 /**
- * The line the indicator reads. 17 numbers then the symbol. Positions (a 0 means "not available"):
- *  1 call wall · 2 gamma flip · 3 put wall · 4 NDX spot
- *  5-9 next five call strikes (after the wall) · 10-14 next five put strikes (after the wall)
- *  15 0DTE call wall · 16 0DTE gamma flip · 17 0DTE put wall · then NDX
+ * The line the GEX-L indicator reads: 21 numbers then NDX.
+ *  1-10 call walls cw1-cw10 (strongest first) · 11-20 put walls pw1-pw10 (strongest first) · 21 gamma flip · then NDX
+ * A 0 means "hide this level" (used when fewer than ten strikes exist).
  */
-export const EXPORT_LEGEND = ["Call wall", "Gamma flip", "Put wall", "NDX price", "Call strike 2", "Call strike 3", "Call strike 4", "Call strike 5", "Call strike 6", "Put strike 2", "Put strike 3", "Put strike 4", "Put strike 5", "Put strike 6", "0DTE call wall", "0DTE gamma flip", "0DTE put wall"];
-export function exportLine(spot: number, all: Levels, zero: Levels) {
+export const EXPORT_LEGEND = [
+  ...Array.from({ length: 10 }, (_, i) => `Call wall ${i + 1}${i === 0 ? " (strongest)" : ""}`),
+  ...Array.from({ length: 10 }, (_, i) => `Put wall ${i + 1}${i === 0 ? " (strongest)" : ""}`),
+  "Gamma flip",
+];
+export function exportLine(l: Levels) {
   const n = (v: number | null | undefined) => (v == null ? 0 : Math.round(v));
-  const five = (a: number[]) => [1, 2, 3, 4, 5].map((i) => n(a[i]));
-  return [n(all.callWall), n(all.flip), n(all.putWall), n(spot), ...five(all.calls), ...five(all.puts), n(zero.callWall), n(zero.flip), n(zero.putWall), "NDX"].join(",");
+  const ten = (a: number[]) => Array.from({ length: 10 }, (_, i) => n(a[i]));
+  return [...ten(l.calls), ...ten(l.puts), n(l.flip), "NDX"].join(",");
 }
 
 export function computeGex(chain: ChainOption[], spot: number, asOf: Date): GexResult | null {
@@ -84,7 +87,7 @@ export function computeGex(chain: ChainOption[], spot: number, asOf: Date): GexR
   if (!(spot > 0) || opts.length < 20) return null;
   const e0 = nextExpiry(opts.map((o) => o.exp));
   const all = levelsFor(opts, spot, asOf), zero = levelsFor(opts.filter((o) => o.exp === e0), spot, asOf);
-  return { spot, expiry0: e0, all, zero, export: exportLine(spot, all, zero) };
+  return { spot, expiry0: e0, all, zero, export: exportLine(all), exportZero: exportLine(zero) };
 }
 
 /** A rough NQ-over-NDX gap from cost of carry to the next quarterly expiry. Display only; the indicator measures the real gap on the chart. */

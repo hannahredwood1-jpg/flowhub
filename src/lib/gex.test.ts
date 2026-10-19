@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bsGamma, computeGex, estimateBasis, exportLine, parseOption, type ChainOption } from "./gex";
+import { bsGamma, computeGex, estimateBasis, exportLine, EXPORT_LEGEND, parseOption, type ChainOption } from "./gex";
 
 const asOf = new Date("2026-10-19T12:30:00Z"); // 8:30 AM ET
 // A made-up chain around 29,500: heavy call open interest at 29,700, heavy put open interest at 29,300.
@@ -41,15 +41,19 @@ test("walls land on the heavy strikes and the flip sits between them", () => {
   assert.ok(r.all.calls.length >= 6 && r.all.puts.length >= 6);
 });
 
-test("export line is 17 numbers then NDX", () => {
+test("export line is 21 numbers then NDX, call walls first, put walls next, flip last", () => {
   const r = computeGex(chain(), 29500, asOf)!;
   const parts = r.export.split(",");
-  assert.equal(parts.length, 18);
-  assert.equal(parts[17], "NDX");
-  assert.equal(parts[0], "29700");
-  assert.equal(parts[3], "29500");
-  assert.ok(parts.slice(0, 17).every((x) => /^\d+$/.test(x)));
-  assert.equal(exportLine(100, { callWall: null, putWall: null, flip: null, regime: null, calls: [], puts: [] }, { callWall: null, putWall: null, flip: null, regime: null, calls: [], puts: [] }).split(",").length, 18);
+  assert.equal(parts.length, 22);
+  assert.equal(parts[21], "NDX");
+  assert.equal(parts[0], "29700"); // cw1 is the strongest call wall
+  assert.equal(parts[10], "29300"); // pw1 is the strongest put wall
+  assert.equal(parts[20], String(r.all.flip)); // the flip is value 21
+  assert.ok(parts.slice(0, 21).every((x) => /^\d+$/.test(x)));
+  assert.equal(EXPORT_LEGEND.length, 21);
+  assert.equal(r.exportZero!.split(",").length, 22);
+  const empty = { callWall: null, putWall: null, flip: null, regime: null, calls: [], puts: [] };
+  assert.equal(exportLine(empty), [...Array(21).fill(0), "NDX"].join(","));
 });
 
 test("too little data returns nothing instead of made-up levels", () => {
