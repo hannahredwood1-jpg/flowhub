@@ -13,8 +13,8 @@ export async function buildSchool(esbuild, { minify = true, practice = false, va
   // The vault is its own page: the shared engine and helpers plus ONLY the vault's own content (never the school's lessons).
   const shared = ["content/00-core.js", "content/00-glossary.js", "content/08-helpers.js"];
   const parts = vault
-    ? ["util.js", "gen.js", "gen2.js", "chart.js", "items.js", ...shared, ...list("vault", (f2) => f2 !== "orderflow-pack.js"), "pace.js", "gex.js", "app.js", "track.js"]
-    : ["util.js", "gen.js", "gen2.js", "chart.js", "items.js", ...list("content"), ...(practice ? [...list("data"), "indicators.js", "lab.js"] : []), "pace.js", "gex.js", "app.js", "track.js"];
+    ? ["util.js", "gen.js", "gen2.js", "chart.js", "items.js", ...shared, ...list("vault", (f2) => f2 !== "orderflow-pack.js"), "path.js", "pace.js", "gex.js", "app.js", "track.js"]
+    : ["util.js", "gen.js", "gen2.js", "chart.js", "items.js", ...list("content"), ...(practice ? [...list("data"), "indicators.js", "lab.js"] : []), "path.js", "pace.js", "gex.js", "app.js", "track.js"];
   let js = parts.map((p) => `/* ── ${p} ── */\n${src(p)}`).join("\n");
   let css = src("style.css");
   if (minify) {

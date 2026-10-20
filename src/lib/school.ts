@@ -37,9 +37,12 @@ export const SCHOOL_MODULES = [
   { id: "m16", n: 33, title: "Putting It All Together: The Complete Read" },
 ] as const;
 export const SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id) as string[];
+/** Modules that can never be tested out: Understanding GEX Levels, all five INVERTIX modules, and the final read. Everything else can be proved with one exam. */
+export const SCHOOL_NO_PROOF = ["m50", "m43", "m44", "m45", "m46", "m47", "m16"] as string[];
+export const SCHOOL_PROVABLE_IDS = SCHOOL_MODULE_IDS.filter((id) => !SCHOOL_NO_PROOF.includes(id));
 
 /** What the school page saves for each module: steps done ("1101"), passed, best score %, attempt number, exam tries, last attempt time. */
-export type ModuleProgress = { s?: string; p?: number; sc?: number; a?: number; n?: number; at?: number };
+export type ModuleProgress = { s?: string; p?: number; sc?: number; a?: number; n?: number; at?: number; t?: number };
 type Best = { best?: number; pass?: boolean; n?: number; at?: number };
 export type SchoolState = {
   v2?: { m?: Record<string, ModuleProgress> };
@@ -48,7 +51,7 @@ export type SchoolState = {
 };
 export type SchoolAttemptRow = { kind: string; ref: string; score: number; total: number; pass: boolean; createdAt: Date | string };
 export type SchoolSummary = {
-  modules: { id: string; n: number; title: string; stepsDone: number; passed: boolean; best: number; tries: number; attempt: number; manualUnlock: boolean }[];
+  modules: { id: string; n: number; title: string; stepsDone: number; passed: boolean; tested: boolean; best: number; tries: number; attempt: number; manualUnlock: boolean }[];
   passed: number; total: number;
   current: string;
   attempts: { label: string; pct: number; pass: boolean; at: string }[];
@@ -58,7 +61,9 @@ export type SchoolSummary = {
  *  (or a coach unlocks it). */
 export const SCHOOL_FIRST_CORE = 5;
 export function schoolOpen(modules: { id: string; passed: boolean; manualUnlock: boolean }[], i: number): boolean {
-  return modules[i].manualUnlock || i <= SCHOOL_FIRST_CORE || modules[i - 1].passed;
+  if (modules[i].manualUnlock) return true;
+  if (modules[i].id === "m43") return modules[i].passed || modules.slice(0, i).every((x) => x.passed); // INVERTIX needs every earlier module learned or proved
+  return i <= SCHOOL_FIRST_CORE || modules[i - 1].passed;
 }
 
 export function summarizeSchool(state: SchoolState | null, unlocks: string[], attempts: SchoolAttemptRow[]): SchoolSummary {
@@ -68,7 +73,7 @@ export function summarizeSchool(state: SchoolState | null, unlocks: string[], at
     return {
       id: def.id, n: def.n, title: def.title,
       stepsDone: String(p.s ?? "").slice(0, 3).split("").filter((c) => c === "1").length,
-      passed: p.p === 1, best: p.p === 1 ? Math.max(0, Math.min(100, p.sc ?? 0)) : 0, tries: p.n ?? 0, attempt: p.a ?? 1,
+      passed: p.p === 1, tested: p.p === 1 && p.t === 1, best: p.p === 1 ? Math.max(0, Math.min(100, p.sc ?? 0)) : 0, tries: p.n ?? 0, attempt: p.a ?? 1,
       manualUnlock: unlocks.includes(def.id),
     };
   });
@@ -79,7 +84,7 @@ export function summarizeSchool(state: SchoolState | null, unlocks: string[], at
   return {
     modules, passed, total: modules.length,
     current: passed === modules.length ? "Course complete" : cur >= 0 ? `Module ${modules[cur].n}` : "Not started",
-    attempts: attempts.filter((a) => a.kind === "ex" && SCHOOL_MODULE_IDS.includes(a.ref)).slice(0, 12).map((a) => ({
+    attempts: attempts.filter((a) => (a.kind === "ex" || a.kind === "po") && SCHOOL_MODULE_IDS.includes(a.ref)).slice(0, 12).map((a) => ({
       label: label(a.ref), pct: a.total ? a.score / a.total : 0, pass: a.pass, at: new Date(a.createdAt).toISOString(),
     })),
   };

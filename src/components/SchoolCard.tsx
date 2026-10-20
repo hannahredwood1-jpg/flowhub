@@ -16,7 +16,7 @@ export function SchoolCard({ data, onChanged }: { data: DashboardData; onChanged
     setBusy(id); setError(null);
     try { await api.schoolUnlock(data.trader.id, id, on); onChanged?.(); } catch (e) { setError((e as Error).message); } finally { setBusy(null); }
   };
-  const modules = s?.modules ?? SCHOOL_MODULES.map((m) => ({ ...m, stepsDone: 0, passed: false, best: 0, tries: 0, attempt: 1, manualUnlock: false }));
+  const modules = s?.modules ?? SCHOOL_MODULES.map((m) => ({ ...m, stepsDone: 0, passed: false, tested: false, best: 0, tries: 0, attempt: 1, manualUnlock: false }));
   return (
     <Panel title={`Trading School · ${who}`} right={<span className="label">{s ? `${s.passed} of ${s.total} modules passed · ${s.current}` : "Not started"}</span>}>
       <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -29,7 +29,7 @@ export function SchoolCard({ data, onChanged }: { data: DashboardData; onChanged
                 <span className={cx("truncate", locked && "text-ink-3")}>{m.title}</span>
                 <span className="flex items-center gap-2">
                   <span className={cx("chip !py-0", m.passed ? "text-win" : m.stepsDone ? "text-signal" : "text-ink-3")}>
-                    {m.passed ? `Passed · ${m.best}%` : locked ? "Locked" : `${m.stepsDone}/3 steps${m.attempt > 1 ? ` · attempt ${m.attempt}` : ""}`}
+                    {m.passed ? `${m.tested ? "Tested out" : "Passed"} · ${m.best}%` : locked ? "Locked" : `${m.stepsDone}/3 steps${m.attempt > 1 ? ` · attempt ${m.attempt}` : ""}`}
                   </span>
                   {!m.passed && (locked || m.manualUnlock) && (
                     <button className={cx("btn !h-7 !px-2 text-xs", m.manualUnlock ? "btn-ghost" : "btn-primary")} disabled={busy === m.id} onClick={() => unlock(m.id, !m.manualUnlock)}>

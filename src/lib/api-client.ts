@@ -5,6 +5,7 @@ export type UsageRow = { id: string; name: string; role: string; lastSeen: strin
 export type UsageDetail = { days: number; sessions: { startedAt: string; lastSeenAt: string; minutes: number }[]; sections: { area: string; section: string; minutes: number; lastDay: string }[] };
 
 export type PaceRow = { id: string; name: string; perWeek: number; preset: string | null; passed: number; total: number; expected: number; status: "done" | "ahead" | "on" | "behind"; finish: string | null; lastActive: string | null; setAt: string; changes: number; emails: boolean; hasEmail: boolean; nudges: number; lastNudgeAt: string | null };
+export type PathRow = { id: string; name: string; start: string; prop: string; committedAt: string; locked: boolean; prove: number; learn: number; proofPassed: number; proofFailed: number; tested: number; passed: number; total: number; fast: number; lastProofAt: string | null };
 export type GexHealth = { lastTry: string | null; lastError: string | null; lastOk: string | null };
 export type GexLatest = { current: { day: string; feedLabel: string | null; feedAt: string | null; fetchedAt: string; levels: { spot: number; export: string; all: { callWall: number | null; flip: number | null; putWall: number | null } } } | null; today: string; health?: GexHealth };
 export type VaultRow = { id: string; name: string; role: string; mentorship: boolean; override: boolean; code: "none" | "issued" | "opened" | "revoked"; hint: string | null; issuedAt: string | null; redeemedAt: string | null; orderflow: boolean; passed: number };
@@ -51,6 +52,8 @@ export const api = {
   usageDetail: (userId: string, days = 30) => call<UsageDetail>(`/api/coach/usage/${userId}?days=${days}`),
   paceList: () => call<{ rows: PaceRow[]; unset: number }>("/api/coach/pace"),
   paceSet: (userId: string, body: { perWeek?: number; reset?: boolean }) => call(`/api/coach/pace/${userId}`, send("POST", body)),
+  pathList: () => call<{ rows: PathRow[]; unbuilt: number }>("/api/coach/paths"),
+  pathReset: (userId: string) => call(`/api/coach/path/${userId}/reset`, send("POST", {})),
   gexLatest: () => call<GexLatest>("/api/gex/latest"),
   gexRun: () => call<{ ok: boolean; message: string }>("/api/coach/gex/run", send("POST", {})),
   vaultList: () => call<VaultRow[]>("/api/coach/vault"),
