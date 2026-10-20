@@ -709,6 +709,108 @@ function summarizePractice(rows, now = Date.now()) {
   };
 }
 
+// src/lib/school.ts
+var SCHOOL_MODULES = [
+  { id: "m37", n: 1, title: "Market Basics" },
+  { id: "m02", n: 2, title: "Chart Reading Basics" },
+  { id: "m38", n: 3, title: "Your First 20 Minutes on a Chart" },
+  { id: "m19", n: 4, title: "TradingView & Platform Setup" },
+  { id: "m20", n: 5, title: "How Futures & NQ Work" },
+  { id: "m39", n: 6, title: "Your Demo Account: Open It and Use It" },
+  { id: "m21", n: 7, title: "Orders & Your First Trade" },
+  { id: "m41", n: 8, title: "Sessions & Economic News" },
+  { id: "m13", n: 9, title: "Building Daily Bias" },
+  { id: "m42", n: 10, title: "One Trade Per Session" },
+  { id: "m01", n: 11, title: "Trading Mindset" },
+  { id: "m15", n: 12, title: "Trading Psychology & Discipline" },
+  { id: "m25", n: 13, title: "A Day in the Life & Your Trading Plan" },
+  { id: "m03", n: 14, title: "Liquidity Explained" },
+  { id: "m04", n: 15, title: "Advanced Liquidity Concepts" },
+  { id: "m05", n: 16, title: "Break of Structure" },
+  { id: "m06", n: 17, title: "Fair Value Gaps & Inverse Fair Value Gaps" },
+  { id: "m48", n: 18, title: "Rejection Blocks" },
+  { id: "m49", n: 19, title: "CISD: Change in State of Delivery" },
+  { id: "m07", n: 20, title: "Advanced Imbalance & Equilibrium" },
+  { id: "m10", n: 21, title: "SMT Divergence" },
+  { id: "m11", n: 22, title: "Time Theory & Session Timing" },
+  { id: "m12", n: 23, title: "Funded Accounts & Prop Firms" },
+  { id: "m14", n: 24, title: "Risk Management" },
+  { id: "m23", n: 25, title: "Trade Management & Spot the Mistake" },
+  { id: "m24", n: 26, title: "Why the Math Works" },
+  { id: "m50", n: 27, title: "Understanding GEX Levels" },
+  { id: "m43", n: 28, title: "INVERTIX: The Idea and the Pieces" },
+  { id: "m44", n: 29, title: "INVERTIX: The Key Level" },
+  { id: "m45", n: 30, title: "INVERTIX: The Flip, Entry and Stop" },
+  { id: "m46", n: 31, title: "INVERTIX: Targets, Windows and Size" },
+  { id: "m47", n: 32, title: "INVERTIX: The Daily Playbook" },
+  { id: "m16", n: 33, title: "Putting It All Together: The Complete Read" }
+];
+var SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id);
+var SCHOOL_NO_PROOF = ["m50", "m43", "m44", "m45", "m46", "m47", "m16"];
+var SCHOOL_PROVABLE_IDS = SCHOOL_MODULE_IDS.filter((id) => !SCHOOL_NO_PROOF.includes(id));
+var SCHOOL_FIRST_CORE = 5;
+function schoolOpen(modules, i) {
+  if (modules[i].manualUnlock) return true;
+  if (modules[i].id === "m43") return modules[i].passed || modules.slice(0, i).every((x) => x.passed);
+  return i <= SCHOOL_FIRST_CORE || modules[i - 1].passed;
+}
+function summarizeSchool(state, unlocks, attempts) {
+  const m = state?.v2?.m ?? {};
+  const modules = SCHOOL_MODULES.map((def) => {
+    const p = m[def.id] ?? {};
+    return {
+      id: def.id,
+      n: def.n,
+      title: def.title,
+      stepsDone: String(p.s ?? "").slice(0, 3).split("").filter((c) => c === "1").length,
+      passed: p.p === 1,
+      tested: p.p === 1 && p.t === 1,
+      best: p.p === 1 ? Math.max(0, Math.min(100, p.sc ?? 0)) : 0,
+      tries: p.n ?? 0,
+      attempt: p.a ?? 1,
+      manualUnlock: unlocks.includes(def.id)
+    };
+  });
+  const passed = modules.filter((x) => x.passed).length;
+  const unlocked = (i) => schoolOpen(modules, i);
+  const cur = modules.findIndex((x, i) => !x.passed && unlocked(i));
+  const label = (ref) => {
+    const d = SCHOOL_MODULES.find((x) => x.id === ref);
+    return d ? `Module ${d.n} exam \xB7 ${d.title}` : ref;
+  };
+  return {
+    modules,
+    passed,
+    total: modules.length,
+    current: passed === modules.length ? "Course complete" : cur >= 0 ? `Module ${modules[cur].n}` : "Not started",
+    attempts: attempts.filter((a) => (a.kind === "ex" || a.kind === "po") && SCHOOL_MODULE_IDS.includes(a.ref)).slice(0, 12).map((a) => ({
+      label: label(a.ref),
+      pct: a.total ? a.score / a.total : 0,
+      pass: a.pass,
+      at: new Date(a.createdAt).toISOString()
+    }))
+  };
+}
+
+// src/lib/schoolPath.ts
+var PROOF_PASS = 0.8;
+var PROOF_FAST_SECS_PER_Q = 6;
+var PROVABLE = new Set(SCHOOL_PROVABLE_IDS);
+var isProvable = (id) => PROVABLE.has(id);
+function cleanModes(raw, passed, used) {
+  const o = raw && typeof raw === "object" ? raw : {};
+  const out = {};
+  for (const id of SCHOOL_PROVABLE_IDS) out[id] = o[id] === "prove" && !passed.has(id) && !used.has(id) ? "prove" : "learn";
+  return out;
+}
+function cleanAnswers(raw) {
+  const o = raw && typeof raw === "object" ? raw : {};
+  const pick = (v, ok) => typeof v === "string" && ok.includes(v) ? v : "";
+  return { start: pick(o.start, ["new", "traded", "experienced"]), prop: pick(o.prop, ["no", "yes"]) };
+}
+var proofNeeded = (total) => Math.ceil(total * PROOF_PASS - 1e-9);
+var proofFast = (secs, total) => secs > 0 && secs < total * PROOF_FAST_SECS_PER_Q;
+
 // src/lib/gex.ts
 var SIGMA_PROXY = 0.2;
 var MIN_T = 0.25 / 365;
@@ -809,84 +911,6 @@ function paceStatus(passed, expected, total) {
   return "behind";
 }
 var nudgeGapDays = (perWeek) => Math.max(2, Math.min(6, Math.round(7 / clampPace(perWeek)) + 1));
-
-// src/lib/school.ts
-var SCHOOL_MODULES = [
-  { id: "m37", n: 1, title: "Market Basics" },
-  { id: "m02", n: 2, title: "Chart Reading Basics" },
-  { id: "m38", n: 3, title: "Your First 20 Minutes on a Chart" },
-  { id: "m19", n: 4, title: "TradingView & Platform Setup" },
-  { id: "m20", n: 5, title: "How Futures & NQ Work" },
-  { id: "m39", n: 6, title: "Your Demo Account: Open It and Use It" },
-  { id: "m21", n: 7, title: "Orders & Your First Trade" },
-  { id: "m41", n: 8, title: "Sessions & Economic News" },
-  { id: "m13", n: 9, title: "Building Daily Bias" },
-  { id: "m42", n: 10, title: "One Trade Per Session" },
-  { id: "m01", n: 11, title: "Trading Mindset" },
-  { id: "m15", n: 12, title: "Trading Psychology & Discipline" },
-  { id: "m25", n: 13, title: "A Day in the Life & Your Trading Plan" },
-  { id: "m03", n: 14, title: "Liquidity Explained" },
-  { id: "m04", n: 15, title: "Advanced Liquidity Concepts" },
-  { id: "m05", n: 16, title: "Break of Structure" },
-  { id: "m06", n: 17, title: "Fair Value Gaps & Inverse Fair Value Gaps" },
-  { id: "m48", n: 18, title: "Rejection Blocks" },
-  { id: "m49", n: 19, title: "CISD: Change in State of Delivery" },
-  { id: "m07", n: 20, title: "Advanced Imbalance & Equilibrium" },
-  { id: "m10", n: 21, title: "SMT Divergence" },
-  { id: "m11", n: 22, title: "Time Theory & Session Timing" },
-  { id: "m12", n: 23, title: "Funded Accounts & Prop Firms" },
-  { id: "m14", n: 24, title: "Risk Management" },
-  { id: "m23", n: 25, title: "Trade Management & Spot the Mistake" },
-  { id: "m24", n: 26, title: "Why the Math Works" },
-  { id: "m50", n: 27, title: "Understanding GEX Levels" },
-  { id: "m43", n: 28, title: "INVERTIX: The Idea and the Pieces" },
-  { id: "m44", n: 29, title: "INVERTIX: The Key Level" },
-  { id: "m45", n: 30, title: "INVERTIX: The Flip, Entry and Stop" },
-  { id: "m46", n: 31, title: "INVERTIX: Targets, Windows and Size" },
-  { id: "m47", n: 32, title: "INVERTIX: The Daily Playbook" },
-  { id: "m16", n: 33, title: "Putting It All Together: The Complete Read" }
-];
-var SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id);
-var SCHOOL_FIRST_CORE = 5;
-function schoolOpen(modules, i) {
-  return modules[i].manualUnlock || i <= SCHOOL_FIRST_CORE || modules[i - 1].passed;
-}
-function summarizeSchool(state, unlocks, attempts) {
-  const m = state?.v2?.m ?? {};
-  const modules = SCHOOL_MODULES.map((def) => {
-    const p = m[def.id] ?? {};
-    return {
-      id: def.id,
-      n: def.n,
-      title: def.title,
-      stepsDone: String(p.s ?? "").slice(0, 3).split("").filter((c) => c === "1").length,
-      passed: p.p === 1,
-      best: p.p === 1 ? Math.max(0, Math.min(100, p.sc ?? 0)) : 0,
-      tries: p.n ?? 0,
-      attempt: p.a ?? 1,
-      manualUnlock: unlocks.includes(def.id)
-    };
-  });
-  const passed = modules.filter((x) => x.passed).length;
-  const unlocked = (i) => schoolOpen(modules, i);
-  const cur = modules.findIndex((x, i) => !x.passed && unlocked(i));
-  const label = (ref) => {
-    const d = SCHOOL_MODULES.find((x) => x.id === ref);
-    return d ? `Module ${d.n} exam \xB7 ${d.title}` : ref;
-  };
-  return {
-    modules,
-    passed,
-    total: modules.length,
-    current: passed === modules.length ? "Course complete" : cur >= 0 ? `Module ${modules[cur].n}` : "Not started",
-    attempts: attempts.filter((a) => a.kind === "ex" && SCHOOL_MODULE_IDS.includes(a.ref)).slice(0, 12).map((a) => ({
-      label: label(a.ref),
-      pct: a.total ? a.score / a.total : 0,
-      pass: a.pass,
-      at: new Date(a.createdAt).toISOString()
-    }))
-  };
-}
 
 // src/lib/vault.ts
 import { createHash } from "node:crypto";
@@ -1508,7 +1532,7 @@ function cleanSchoolState(b) {
     for (const [k, v] of Object.entries(o.v2.m && typeof o.v2.m === "object" ? o.v2.m : {}).slice(0, 40)) {
       if (!SCHOOL_MODULE_SET.has(k) || !v || typeof v !== "object") continue;
       const s = String(v.s ?? "000");
-      m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+      m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
     }
     out.v2 = { m };
   }
@@ -1535,29 +1559,39 @@ function cleanSchoolState(b) {
 }
 app.get("/api/school", async (c) => {
   const u = c.get("user");
-  const [[row], [pace], [acct]] = await Promise.all([
+  const [[row], [pace], [acct], [path], proofRows] = await Promise.all([
     sql`select state, unlocks from "SchoolProgress" where "userId" = ${u.id}`,
     sql`select "perWeek", preset, baseline, "startedAt", emails from "SchoolPace" where "userId" = ${u.id}`,
-    sql`select email from "LocalAccount" where "userId" = ${u.id} and email is not null and not disabled`
+    sql`select email from "LocalAccount" where "userId" = ${u.id} and email is not null and not disabled`,
+    sql`select modes, answers, "committedAt", "lockedAt" from "SchoolPath" where "userId" = ${u.id}`,
+    sql`select ref, score, total, pass, "createdAt" from "SchoolAttempt" where "userId" = ${u.id} and kind = 'po'`
   ]);
+  const js = (v) => typeof v === "string" ? JSON.parse(v) : v;
+  const proofs = {};
+  for (const r of proofRows) proofs[r.ref] = { pass: !!r.pass, sc: Math.round(r.score / r.total * 100), at: new Date(r.createdAt).getTime() };
   return c.json({
-    state: row ? typeof row.state === "string" ? JSON.parse(row.state) : row.state : null,
+    state: row ? js(row.state) : null,
     unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [],
     staff: isStaff(u),
     name: u.globalName ?? u.username,
     pace: pace ? { perWeek: Number(pace.perWeek), preset: pace.preset, baseline: pace.baseline, startedAt: new Date(pace.startedAt).toISOString(), emails: pace.emails } : null,
-    hasEmail: !!acct
+    hasEmail: !!acct,
+    path: path ? { modes: js(path.modes), answers: js(path.answers), committedAt: new Date(path.committedAt).toISOString(), locked: !!path.lockedAt } : null,
+    proofs
   });
 });
 app.put("/api/school", async (c) => {
   const clean = cleanSchoolState(await c.req.json());
   const mods = clean.v2?.m;
-  if (mods && Object.values(mods).some((x) => x.p === 1)) {
-    const rows = await sql`select distinct ref from "SchoolAttempt" where "userId" = ${c.get("user").id} and kind = 'ex' and pass = true`;
-    const passed = new Set(rows.map((r) => r.ref));
-    for (const [id, x] of Object.entries(mods)) if (x.p === 1 && !passed.has(id)) {
-      x.p = 0;
-      x.sc = 0;
+  if (mods && Object.values(mods).some((x) => x.p === 1 || x.t === 1)) {
+    const rows = await sql`select distinct ref, kind from "SchoolAttempt" where "userId" = ${c.get("user").id} and kind in ('ex', 'po') and pass = true`;
+    const ex = new Set(rows.filter((r) => r.kind === "ex").map((r) => r.ref)), po = new Set(rows.filter((r) => r.kind === "po").map((r) => r.ref));
+    for (const [id, x] of Object.entries(mods)) {
+      if (x.t === 1 && !(po.has(id) && isProvable(id))) x.t = 0;
+      if (x.p === 1 && !(ex.has(id) || x.t === 1)) {
+        x.p = 0;
+        x.sc = 0;
+      }
     }
   }
   const json = JSON.stringify(clean);
@@ -1569,10 +1603,77 @@ app.put("/api/school", async (c) => {
 app.post("/api/school/attempt", async (c) => {
   const b = await c.req.json();
   const score = Math.round(Number(b.score)), total = Math.round(Number(b.total));
-  if (b.kind !== "ck" && b.kind !== "ex" || !b.ref || !ID_RE.test(b.ref) || !(total > 0 && total <= 50) || !(score >= 0 && score <= total) || typeof b.pass !== "boolean")
+  if (b.kind !== "ck" && b.kind !== "ex" && b.kind !== "po" || !b.ref || !ID_RE.test(b.ref) || !(total > 0 && total <= 50) || !(score >= 0 && score <= total) || typeof b.pass !== "boolean")
     throw new HttpError(400, "Bad attempt");
+  const u = c.get("user"), secs = Math.max(0, Math.min(7200, Math.round(Number(b.secs) || 0)));
   if (b.kind === "ex" && b.pass && SCHOOL_MODULE_SET.has(b.ref) && score < Math.ceil(total * 0.8 - 1e-9)) throw new HttpError(400, "Bad attempt");
-  await sql`insert into "SchoolAttempt" (id, "userId", kind, ref, score, total, pass) values (${randomUUID()}, ${c.get("user").id}, ${b.kind}, ${b.ref}, ${score}, ${total}, ${b.pass})`;
+  if (b.kind === "po") {
+    if (!isProvable(b.ref)) throw new HttpError(400, "This module cannot be tested out");
+    if (b.pass && score < proofNeeded(total)) throw new HttpError(400, "Bad attempt");
+    const [path] = await sql`select modes from "SchoolPath" where "userId" = ${u.id}`;
+    const modes = path ? typeof path.modes === "string" ? JSON.parse(path.modes) : path.modes : {};
+    if (modes[b.ref] !== "prove") throw new HttpError(403, "This module is not on your prove-it list");
+    try {
+      await sql`insert into "SchoolAttempt" (id, "userId", kind, ref, score, total, pass, secs) values (${randomUUID()}, ${u.id}, 'po', ${b.ref}, ${score}, ${total}, ${b.pass}, ${secs || null})`;
+    } catch (e) {
+      if (e.code === "23505") throw new HttpError(409, "You have already used your proof attempt for this module");
+      throw e;
+    }
+    await sql`update "SchoolPath" set "lockedAt" = coalesce("lockedAt", now()), "updatedAt" = now() where "userId" = ${u.id}`;
+    return c.json({ ok: true });
+  }
+  await sql`insert into "SchoolAttempt" (id, "userId", kind, ref, score, total, pass) values (${randomUUID()}, ${u.id}, ${b.kind}, ${b.ref}, ${score}, ${total}, ${b.pass})`;
+  return c.json({ ok: true });
+});
+app.put("/api/school/path", async (c) => {
+  const u = c.get("user"), b = await c.req.json().catch(() => ({}));
+  const [old] = await sql`select "lockedAt" from "SchoolPath" where "userId" = ${u.id}`;
+  if (old?.lockedAt) throw new HttpError(403, "Your path is locked because you have started proof exams. Ask a coach to reset it.");
+  const [sp] = await sql`select state from "SchoolProgress" where "userId" = ${u.id}`;
+  const st = sp?.state ? typeof sp.state === "string" ? JSON.parse(sp.state) : sp.state : null;
+  const passed = new Set(Object.entries(st?.v2?.m ?? {}).filter(([, v]) => v?.p === 1).map(([k]) => k));
+  const used = new Set((await sql`select ref from "SchoolAttempt" where "userId" = ${u.id} and kind = 'po'`).map((r) => r.ref));
+  const modes = cleanModes(b.modes, passed, used), answers = cleanAnswers(b.answers);
+  await sql`insert into "SchoolPath" ("userId", modes, answers) values (${u.id}, ${JSON.stringify(modes)}::jsonb, ${JSON.stringify(answers)}::jsonb)
+            on conflict ("userId") do update set modes = excluded.modes, answers = excluded.answers, "updatedAt" = now()`;
+  return c.json({ path: { modes, answers, committedAt: (/* @__PURE__ */ new Date()).toISOString(), locked: false } });
+});
+app.get("/api/coach/paths", async (c) => {
+  staffOnly(c);
+  const rows = await sql`select u.id, coalesce(u."globalName", u.username) as name, p.modes, p.answers, p."committedAt", p."lockedAt", sp.state
+    from "SchoolPath" p join "User" u on u.id = p."userId" left join "SchoolProgress" sp on sp."userId" = u.id order by p."committedAt" desc limit 500`;
+  const att = await sql`select "userId", ref, score, total, pass, secs, "createdAt" from "SchoolAttempt" where kind = 'po' and "userId" = any(${pgArray(rows.map((r) => r.id))}::text[])`;
+  const [{ n: unbuilt }] = await sql`select count(*)::int as n from "SchoolProgress" sp join "User" u on u.id = sp."userId" where u."isGuildMember" and not exists (select 1 from "SchoolPath" p where p."userId" = sp."userId")`;
+  const js = (v) => typeof v === "string" ? JSON.parse(v) : v;
+  const out = rows.map((r) => {
+    const modes = js(r.modes), ans = js(r.answers), mine = att.filter((a) => a.userId === r.id);
+    const st = r.state ? js(r.state) : null, ms = st?.v2?.m ?? {};
+    const tested = Object.values(ms).filter((x) => x.p === 1 && x.t === 1).length;
+    const passedAll = Object.values(ms).filter((x) => x.p === 1).length;
+    const last = mine.length ? new Date(Math.max(...mine.map((a) => new Date(a.createdAt).getTime()))).toISOString() : null;
+    return {
+      id: r.id,
+      name: r.name,
+      start: ans.start ?? "",
+      prop: ans.prop ?? "",
+      committedAt: new Date(r.committedAt).toISOString(),
+      locked: !!r.lockedAt,
+      prove: Object.values(modes).filter((m) => m === "prove").length,
+      learn: Object.values(modes).filter((m) => m === "learn").length,
+      proofPassed: mine.filter((a) => a.pass).length,
+      proofFailed: mine.filter((a) => !a.pass).length,
+      tested,
+      passed: passedAll,
+      total: SCHOOL_MODULES.length,
+      fast: mine.filter((a) => a.pass && proofFast(Number(a.secs) || 0, a.total)).length,
+      lastProofAt: last
+    };
+  });
+  return c.json({ rows: out, unbuilt });
+});
+app.post("/api/coach/path/:id/reset", async (c) => {
+  staffOnly(c);
+  await sql`delete from "SchoolPath" where "userId" = ${c.req.param("id")}`;
   return c.json({ ok: true });
 });
 var passedIn = (state) => {
@@ -1928,7 +2029,7 @@ app.put("/api/vault/progress", async (c) => {
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
-    m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+    m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
   await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
   return c.json({ ok: true });

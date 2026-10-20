@@ -1,6 +1,6 @@
-/* The school's phases (the vault has its own list in vault/00-phases.js). open:true = open from the start and optional. */
+/* The school's phases (the vault has its own list in vault/00-phases.js). open:true = open from the start in any order (still needed before INVERTIX). */
 const PH=[
- {n:'Beginner Basics',open:true,d:'Optional, and open from the start in any order: what a market is, how to read a chart, your platform, and what futures and NQ are.'},
+ {n:'Beginner Basics',open:true,d:'Open from the start, in any order: what a market is, how to read a chart, your platform, and what futures and NQ are. Needed before INVERTIX, and you can prove you already know them.'},
  {n:'Foundations',d:'Your demo account, your first order, when the market is busy, and how to build a daily bias. Unlocks one module at a time.'},
  {n:'Psychology',d:'One trade per session, the mindset, discipline, and what a full trading day looks like.'},
  {n:'Liquidity',d:'Where orders rest, and why price is drawn to them.'},

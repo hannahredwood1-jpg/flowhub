@@ -152,3 +152,11 @@ Every weekday at 8:30 AM Eastern the server fetches the Nasdaq-100 (NDX) options
 - GEX is a model (dealers assumed long calls, short puts): the page and lessons call it context, never a signal. CBOE's terms for using the free feed commercially should be checked before charging for anything built on it.
 - School module `m50` "Understanding GEX Levels" sits right before INVERTIX; the sealed Orderflow room has `o05` "Gamma Levels as Orderflow Context".
 - The indicator is **FLOWGEX** on TradingView (https://www.tradingview.com/script/HMDYxbPq-FLOWGEX/). It is linked from the Daily GEX Levels page (banner at the top) and the m50 lesson; the home-screen tab just opens that page.
+
+## Learning paths and proof exams (`src/lib/schoolPath.ts`, `school/src/path.js`)
+Before a student can use the Trading School they build a path: where they are starting, and for each phase (or module) either **Teach me** (the normal lesson and exam) or **I can prove it** (a one-attempt proof exam with no lesson). The school stays closed until the path is committed (coaches are never locked out).
+- A proof exam is the module's normal exam, same 80% bar, taken first. Pass: the module is marked tested out and counts as complete. Miss: that module becomes a normal learn module (no restart, no penalty) and the proof attempt is never given back (`SchoolAttempt` kind `po`, one per student per module, enforced by a unique index).
+- Gamma Levels (m50), the five INVERTIX modules and Putting It All Together (m16) can never be tested out. INVERTIX (m43) opens only when every earlier module, Beginner Basics included, is learned or proved, and the certificate needs the whole chain.
+- A learn-it module's exam can no longer be reached by URL before its three lesson steps are done.
+- The path can be edited until the first proof exam, then it is locked; a coach can reset it in the portal (the "learning paths" panel, which also flags very quick passes). Used proof attempts stay used.
+- Migration 0013 adds `SchoolPath`, `SchoolAttempt.secs` and the `po` kind. Scoring is still reported by the browser and recorded by the server; the server enforces who may take a proof exam, one attempt, and the 80% bar on what is reported.

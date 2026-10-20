@@ -3,16 +3,16 @@
 ============================================================ */
 const LS=window.VAULT?'fh-vault-v1':'fh-school-v2',LSX=window.VAULT?'fh-vault-v1-txt':'fh-school-v2-txt';
 let PROG={m:{}},TXT={},UNLOCKS=[],LIVE=false,WHO='';
-const BLANK=()=>({s:[0,0,0],p:0,sc:0,a:1,n:0,at:0});
+const BLANK=()=>({s:[0,0,0],p:0,sc:0,a:1,n:0,at:0,t:0,po:0});
 const pm=id=>PROG.m[id]||(PROG.m[id]=BLANK());
 try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(j&&j.m)PROG=j}catch(e){}
 try{TXT=JSON.parse(localStorage.getItem(LSX)||'{}')||{}}catch(e){TXT={}}
-const compact=()=>({m:Object.fromEntries(Object.entries(PROG.m).map(([k,v])=>[k,{s:v.s.join(''),p:v.p?1:0,sc:v.sc|0,a:v.a|0,n:v.n|0,at:v.at|0}]))});
+const compact=()=>({m:Object.fromEntries(Object.entries(PROG.m).map(([k,v])=>[k,{s:v.s.join(''),p:v.p?1:0,t:v.t?1:0,sc:v.sc|0,a:v.a|0,n:v.n|0,at:v.at|0}]))});
 function mergeServer(v2){
   if(!v2||!v2.m)return;
   for(const [id,s] of Object.entries(v2.m)){const l=pm(id),bits=String(s.s||'000').split('').slice(0,3).map(Number),a=s.a|0||1;
     if(a>l.a){l.a=a;l.s=bits;l.n=Math.max(l.n,s.n|0)}else if(a===l.a){l.s=l.s.map((x,i)=>x||bits[i]||0);l.n=Math.max(l.n,s.n|0)}
-    if(s.p&&!l.p){l.p=1;l.sc=s.sc|0;l.at=s.at|0}else if(s.p&&l.p){l.sc=Math.max(l.sc,s.sc|0)}}
+    if(s.p&&!l.p){l.p=1;l.sc=s.sc|0;l.at=s.at|0}else if(s.p&&l.p){l.sc=Math.max(l.sc,s.sc|0)}if(s.t&&s.p)l.t=1}
   persist(false)}
 function persist(sync=true){try{localStorage.setItem(LS,JSON.stringify(PROG))}catch(e){}if(sync)syncSoon()}
 function saveTxt(){try{localStorage.setItem(LSX,JSON.stringify(TXT))}catch(e){}}
@@ -20,14 +20,17 @@ let syncT=null;
 const syncSoon=()=>{clearTimeout(syncT);syncT=setTimeout(push,900)};
 const API=window.VAULT?'/api/vault/progress':'/api/school';
 async function push(){if(!LIVE)return;try{await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({v2:compact()})})}catch(e){}}
-async function pull(){try{const r=await fetch(API,{headers:{Accept:'application/json'}});if(!r.ok)return;const j=await r.json();LIVE=true;if(window.VAULT&&j.orderflow&&!window.OF_OK){await new Promise(ok=>{const sc=document.createElement('script');sc.src='/api/vault/orderflow.js';sc.onload=sc.onerror=ok;document.head.append(sc)})}WHO=j.name||'';UNLOCKS=j.unlocks||[];mergeServer(j.state&&j.state.v2);paceAfterPull(j);const w=$('#who');if(w)w.textContent=WHO;if(PENDING){const h=PENDING;PENDING=null;location.hash=h}else render()}catch(e){}}
-async function logAttempt(id,score,total,pass){if(!LIVE||window.VAULT)return;try{await fetch('/api/school/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'ex',ref:id,score,total,pass})})}catch(e){}}
+async function pull(){try{const r=await fetch(API,{headers:{Accept:'application/json'}});if(!r.ok)return;const j=await r.json();LIVE=true;if(window.VAULT&&j.orderflow&&!window.OF_OK){await new Promise(ok=>{const sc=document.createElement('script');sc.src='/api/vault/orderflow.js';sc.onload=sc.onerror=ok;document.head.append(sc)})}WHO=j.name||'';UNLOCKS=j.unlocks||[];mergeServer(j.state&&j.state.v2);paceAfterPull(j);pathAfterPull(j);const w=$('#who');if(w)w.textContent=WHO;if(PENDING){const h=PENDING;PENDING=null;location.hash=h}else if(pathGate()||(CUR&&VIEW==='lab'&&proofPending(CUR)))route();else render()}catch(e){}}
+async function logAttempt(id,score,total,pass,kind='ex',secs=0){if(!LIVE||window.VAULT)return;try{await fetch('/api/school/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,ref:id,score,total,pass,secs})})}catch(e){}}
 
 /* ---------- module helpers ---------- */
 const modIdx=id=>MODS.findIndex(m=>m.id===id);
 const FIRST_CORE=MODS.findIndex(m=>!PH[m.ph].open);
-/* Beginner Basics (phase 1) are open from the start and optional. Everything after them unlocks one module at a time, starting with the first Foundations module. */
-const modUnlocked=i=>{const m=MODS[i];if(m.sealed&&!window.OF_OK)return false;if(UNLOCKS.includes(m.id)||UNLOCKS.includes('all')||PH[m.ph].open||i===FIRST_CORE)return true;return !!pm(MODS[i-1].id).p};
+/* Beginner Basics (phase 1) are open from the start in any order. Everything after them unlocks one module at a time, starting with the first Foundations module. INVERTIX needs every earlier module learned or proved. */
+const modUnlocked=i=>{const m=MODS[i];if(m.sealed&&!window.OF_OK)return false;if(pathGate())return false;if(UNLOCKS.includes(m.id)||UNLOCKS.includes('all'))return true;
+  /* INVERTIX opens only when every module before it (Beginner Basics included) is learned or proved */
+  if(m.id==='m43')return !!pm(m.id).p||MODS.slice(0,i).every(x=>pm(x.id).p);
+  if(PH[m.ph].open||i===FIRST_CORE)return true;return !!pm(MODS[i-1].id).p};
 const modStatus=i=>pm(MODS[i].id).p?'done':modUnlocked(i)?'active':'locked';
 const stepsDone=m=>pm(m.id).s.filter(Boolean).length;
 const currentIdx=()=>{const i=MODS.findIndex((m,k)=>!pm(m.id).p&&modUnlocked(k));return i<0?MODS.length-1:i};
@@ -42,7 +45,11 @@ function route(){
   if(!h.length){VIEW='map';CUR=null}
   else if(h[0]==='gex'&&gexOn()){VIEW='gex';CUR=null}
   else{const i=modIdx(h[0]);if(i<0||!modUnlocked(i)){VIEW='map';CUR=null;if(h[0]){if(i>=0&&!LIVE)PENDING=location.hash;history.replaceState(null,'','#/')}}
-    else{CUR=MODS[i];if(h[1]==='exam')VIEW='exam';else{VIEW='lab';const k=STEP_KEYS.indexOf(h[1]);LAB=newLab(CUR,k>=0?k:firstOpenStep(CUR))}}}
+    else{CUR=MODS[i];const pend=proofPending(CUR);
+      /* a module on the prove-it list opens its proof exam first; a learn-it module's exam needs the lesson steps done first */
+      if(pend){if(h[1]!=='exam')history.replaceState(null,'','#/'+CUR.id+'/exam');VIEW='exam'}
+      else if(h[1]==='exam'){if(!pm(CUR.id).p&&stepsDone(CUR)<3){history.replaceState(null,'','#/'+CUR.id);VIEW='lab';LAB=newLab(CUR,firstOpenStep(CUR))}else VIEW='exam'}
+      else{VIEW='lab';const k=STEP_KEYS.indexOf(h[1]);LAB=newLab(CUR,k>=0?k:firstOpenStep(CUR))}}}
   render();
 }
 const nav=p=>{location.hash=p};
@@ -69,20 +76,22 @@ function renderMap(){
   html+='</div></section>';
   $('#phases').innerHTML=(pm('m16').p?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">${window.VAULT?'Vault complete.':'Course complete.'}</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
   $('#aside').innerHTML=`<div class="card next-card"><div class="hud">${finished?'All modules passed':'Up next'}</div><div class="h">${cur.n}. ${cur.t}</div>
-    <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':`Step <b>${Math.min(stepsDone(cur)+1,4)}</b> of 4: ${STEPS[Math.min(stepsDone(cur),3)]}`}</p>
-    <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:stepsDone(cur)/4*100}%"></i></div>
-    <a class="btn primary" href="#/${cur.id}">${finished?'Review lessons':stepsDone(cur)?'Continue':'Start'} →</a></div>
-  ${gexCard()}${paceCard()}<div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of ${PASS*100}% or better on a set you've never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>
+    <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':proofPending(cur)?'Proof exam: one attempt, no lesson':`Step <b>${Math.min(stepsDone(cur)+1,4)}</b> of 4: ${STEPS[Math.min(stepsDone(cur),3)]}`}</p>
+    <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:proofPending(cur)?0:stepsDone(cur)/4*100}%"></i></div>
+    <a class="btn primary" href="#/${cur.id}">${finished?'Review lessons':proofPending(cur)?'Take the proof exam':stepsDone(cur)?'Continue':'Start'} →</a></div>
+  ${pathCard()}${gexCard()}${paceCard()}<div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of ${PASS*100}% or better on a set you've never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>
   <div class="card"><h3 class="h">Practice, not real money</h3><p class="muted" style="font-size:13.5px">Nothing in the school uses real money. Before real or funded capital, the strategy gets proven on a demo account, in your journal, with your own numbers.</p></div>`;
+  if(pathMaybeFirst())return;
   paceMaybeFirst();
 }
 function modRow(m,i){
   const st=modStatus(i),P=PH[m.ph],open=OPEN===m.id,p=pm(m.id);let chip;
-  if(st==='done')chip=`<span class="chip ok">✓ Passed · ${p.sc}%</span>`;
-  else if(st==='active')chip=`<span class="chip live">${p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/3 steps${PH[m.ph].open?' · optional':''}</span>`;
+  if(st==='done')chip=`<span class="chip ok">✓ ${p.t?'Tested out':'Passed'} · ${p.sc}%</span>`;
+  else if(st==='active')chip=proofPending(m)?`<span class="chip live">Prove it</span>`:`<span class="chip live">${p.po&&!stepsDone(m)?'Learn it · ':p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/3 steps</span>`;
   else chip=`<span class="chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${m.sealed&&!window.OF_OK?'Sealed':'Locked'}</span>`;
   const prev=MODS[i-1]?MODS[i-1].t:'';let act;
-  if(st==='locked')act=m.sealed&&!window.OF_OK?`<div class="pcheck"><b>Sealed.</b> This room opens only when Hannah approves you for it. Nothing in it is shown until then.</div>`:`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
+  if(st==='locked')act=m.sealed&&!window.OF_OK?`<div class="pcheck"><b>Sealed.</b> This room opens only when Hannah approves you for it. Nothing in it is shown until then.</div>`:pathGate()?`<div class="pcheck">Build your path to open the school.</div>`:m.id==='m43'?`<div class="pcheck">Unlocks when every module before INVERTIX is learned or proved.</div>`:`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
+  else if(proofPending(m))act=`<a class="btn primary" href="#/${m.id}/exam">Take the proof exam →</a><span class="chip">One attempt · pass and it counts as done</span>`;
   else act=`<a class="btn primary" href="#/${m.id}">${st==='done'?'Review lesson':stepsDone(m)?'Continue lesson':'Start lesson'} →</a>${p.a>1&&st!=='done'?`<span class="chip bad">Attempt ${p.a}: new exam set</span>`:''}`;
   const hist=p.n?`<div style="grid-column:1/-1"><span class="hud">Exam attempts: ${p.n}</span></div>`:'';
   return `<article class="mod ${st}" data-id="${m.id}"><button class="mod-h" data-tog="${m.id}" aria-expanded="${open}">
@@ -270,27 +279,23 @@ function renderExam(keep){
   showQ(X.i);
 }
 function examIntro(){
-  const m=CUR,p=pm(m.id),n=examSize(m),ready=p.s.every(Boolean);
+  const m=CUR,p=pm(m.id),n=examSize(m),proof=proofPending(m),ready=proof||p.s.every(Boolean);
+  const rules=proof?[`<b>${n} questions.</b>`,`<b>${PASS*100}% to pass</b>, so ${passNeeded(n)} of ${n}.`,`<b>One attempt.</b> Pass and Module ${m.n} counts as complete. If it does not go your way, you learn it with the full lesson. There is no restart and no penalty.`,`<b>No hints, no feedback</b> until you submit. You can change answers and flag questions first.`,`<b>Charts and numbers are generated for you.</b>`]
+   :[`<b>${n} questions.</b>`,`<b>${PASS*100}% to pass</b>, so ${passNeeded(n)} of ${n}.`,`<b>No hints, no feedback</b> until you submit. You can change answers and flag questions first.`,`<b>Charts and numbers are generated for you.</b> The next exam will differ from this one.`,`<b>Don't pass and the module restarts.</b> Lessons re-open and you get a different exam.`];
   $('#exBody').innerHTML=`<div class="ex-intro"><div>
-    <div class="hud" style="margin-bottom:8px">Module ${m.n} · ${m.t} · Attempt ${p.a}</div>
-    <h1 class="h">Module exam</h1>
-    <p class="muted" style="margin:12px 0 18px;max-width:56ch">This tests whether you can do it, not whether you remember it. ${m.examDesc||'Concept questions and chart tasks, with fresh charts and numbers every attempt.'}</p>
-    ${p.a>1?`<div class="fb no" style="max-width:56ch"><b>New set.</b> After your last attempt this module restarted. These questions, charts and numbers are different from the ones you saw.</div>`:''}
-    <button class="btn primary" id="startEx" ${ready&&!p.p?'':'disabled'}>Begin exam →</button>
+    <div class="hud" style="margin-bottom:8px">Module ${m.n} · ${m.t} · ${proof?'Proof exam':'Attempt '+p.a}</div>
+    <h1 class="h">${proof?'Proof exam':'Module exam'}</h1>
+    <p class="muted" style="margin:12px 0 18px;max-width:56ch">${proof?`You said you can do this without help, so this one exam is how you show it. ${m.examDesc||'Concept questions and chart tasks.'}`:`This tests whether you can do it, not whether you remember it. ${m.examDesc||'Concept questions and chart tasks, with fresh charts and numbers every attempt.'}`}</p>
+    ${!proof&&p.a>1?`<div class="fb no" style="max-width:56ch"><b>New set.</b> After your last attempt this module restarted. These questions, charts and numbers are different from the ones you saw.</div>`:''}
+    <button class="btn primary" id="startEx" ${ready&&!p.p?'':'disabled'}>${proof?'Begin proof exam →':'Begin exam →'}</button>
     ${p.p?'<p class="dim" style="margin-top:10px;font-size:13.5px">You already passed this module.</p>':ready?'':`<p class="dim" style="margin-top:10px;font-size:13.5px">Finish all three lesson steps first (${stepsDone(m)}/3 done). <a href="#/${m.id}" style="color:var(--ice)">Back to the lesson</a></p>`}
-  </div><div class="card"><div class="hud" style="margin-bottom:6px">Before you start</div><ol class="rules">
-    <li><span><b>${n} questions.</b></span></li>
-    <li><span><b>${PASS*100}% to pass</b>, so ${passNeeded(n)} of ${n}.</span></li>
-    <li><span><b>No hints, no feedback</b> until you submit. You can change answers and flag questions first.</span></li>
-    <li><span><b>Charts and numbers are generated for you.</b> The next exam will differ from this one.</span></li>
-    <li><span><b>Don't pass and the module restarts.</b> Lessons re-open and you get a different exam.</span></li>
-  </ol></div></div>`;
-  const b=$('#startEx');if(b)b.onclick=()=>{X={m,items:buildExam(m,Date.now()%2147483647),st:[],flag:{},i:0,done:false};X.st=X.items.map(()=>({}));showQ(0);window.scrollTo(0,0)};
+  </div><div class="card"><div class="hud" style="margin-bottom:6px">Before you start</div><ol class="rules">${rules.map(r=>`<li><span>${r}</span></li>`).join('')}</ol></div></div>`;
+  const b=$('#startEx');if(b)b.onclick=()=>{X={m,proof,t0:Date.now(),items:buildExam(m,Date.now()%2147483647),st:[],flag:{},i:0,done:false};X.st=X.items.map(()=>({}));showQ(0);window.scrollTo(0,0)};
 }
 function showQ(i){
   stopExam();X.i=i;const it=X.items[i],st=X.st[i],n=X.items.length,kd=K[it.kind],cs=chartsOf(it);
   const un=X.items.filter((_,k)=>!itemHasAnswer(X.items[k],X.st[k])).length;
-  $('#exBody').innerHTML=`<div class="ex-head"><div class="hud">Module ${X.m.n} · ${X.m.t} · Attempt ${pm(X.m.id).a}</div><div class="h">Exam</div></div>
+  $('#exBody').innerHTML=`<div class="ex-head"><div class="hud">Module ${X.m.n} · ${X.m.t} · ${X.proof?'Proof exam':'Attempt '+pm(X.m.id).a}</div><div class="h">${X.proof?'Proof exam':'Exam'}</div></div>
    <div class="ex-grid"><div><div class="card exq"><div class="exq-h"><span class="hud">Question ${i+1} of ${n}</span><span class="chip">${TYPE_LABEL[it.kind]}</span><button class="flag ${X.flag[i]?'on':''}" id="flagBtn">${X.flag[i]?'Flagged':'Flag for review'}</button></div>
      <p class="exq-t">${it.q}</p>
      ${cs.map((c,k)=>`<div id="qc${k}" class="tvc ${kd.chart&&cs.length===1?'tall':''}" style="${cs.length>1?'height:200px;margin-bottom:10px':''}"></div>`).join('')}
@@ -319,7 +324,7 @@ $('#exBody').addEventListener('click',e=>{
 function confirmSubmit(){
   const un=X.items.filter((_,k)=>!itemHasAnswer(X.items[k],X.st[k])).length,n=X.items.length;
   $('#dlgBody').innerHTML=`<h2 class="h">Submit your exam?</h2><p>${un?`<b>${un} question${un>1?'s are':' is'} unanswered</b> and will count as wrong. `:'All questions are answered. '}You can't change anything after this, and nothing is shown until you submit.</p>
-   <p>Scoring under ${PASS*100}% (fewer than ${passNeeded(n)} of ${n}) restarts the module.</p><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px"><button class="btn" id="dNo">Keep working</button><button class="btn primary" id="dYes">Submit</button></div>`;
+   <p>${X.proof?'This is your one proof attempt for this module. If it does not go your way, you will learn it with the full lesson.':`Scoring under ${PASS*100}% (fewer than ${passNeeded(n)} of ${n}) restarts the module.`}</p><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px"><button class="btn" id="dNo">Keep working</button><button class="btn primary" id="dYes">Submit</button></div>`;
   const d=$('#dlg');d.showModal();$('#dNo').onclick=()=>d.close();$('#dYes').onclick=()=>{d.close();finishExam()};
 }
 function finishExam(){
@@ -328,17 +333,18 @@ function finishExam(){
   Object.assign(X,{res,score,pass});
   const topics={};X.items.forEach((it,i)=>{const t=topics[it.topic||'General']||(topics[it.topic||'General']={c:0,n:0});t.n++;if(res[i])t.c++});X.topics=topics;
   p.n++;p.at=Date.now();
-  if(pass){p.p=1;p.sc=Math.round(score/total*100)}
+  if(X.proof){p.po=1;if(pass){p.p=1;p.t=1;p.sc=Math.round(score/total*100)}if(PATH)PATH.locked=true}   /* a proof exam never restarts the module */
+  else if(pass){p.p=1;p.sc=Math.round(score/total*100)}
   else{p.a++;p.s=[0,0,0];delete TXT[m.id];saveTxt();m._sc=null;m._see=null}
-  persist();logAttempt(m.id,score,total,pass);examResult();window.scrollTo(0,0);
+  persist();logAttempt(m.id,score,total,pass,X.proof?'po':'ex',Math.round((Date.now()-(X.t0||Date.now()))/1000));examResult();window.scrollTo(0,0);
 }
 function examResult(){
   const m=X.m,{score,pass,res,topics}=X,total=X.items.length,pct=Math.round(score/total*100),miss=X.items.map((it,i)=>({it,i})).filter(o=>!res[o.i]),i=modIdx(m.id),next=MODS[i+1];
   $('#exBody').innerHTML=`
    <div class="card res-top"><div><div class="score" style="color:${pass?'var(--win)':'var(--loss)'}">${score}<small> / ${total}</small></div><div class="muted" style="margin-top:4px">${pct}% · needed ${PASS*100}%</div></div>
-    <div><span class="chip ${pass?'ok':'bad'}">${pass?'Module passed':'Not yet'}</span>
-    <h1 class="h" style="font-size:30px;margin:8px 0 6px">${pass?`Module ${m.n} complete.`:'Not this time.'}</h1>
-    <p class="muted">${pass?`You've shown you can do it, not just recognise it.${next?` <b>Module ${next.n}: ${next.t}</b> is now unlocked.`:' That was the last module.'}`:`That's useful: it shows exactly which ideas haven't landed yet. Use it.`}</p></div></div>
+    <div><span class="chip ${pass?'ok':X.proof?'live':'bad'}">${pass?(X.proof?'Tested out':'Module passed'):X.proof?'Learn this one':'Not yet'}</span>
+    <h1 class="h" style="font-size:30px;margin:8px 0 6px">${pass?`Module ${m.n} complete.`:X.proof?'Let\'s learn this one together.':'Not this time.'}</h1>
+    <p class="muted">${pass?(X.proof?`You showed you already know this, so it counts as complete.${next?` <b>Module ${next.n}: ${next.t}</b> is next.`:''}`:`You've shown you can do it, not just recognise it.${next?` <b>Module ${next.n}: ${next.t}</b> is now unlocked.`:' That was the last module.'}`):X.proof?`You scored ${pct}% and a pass is ${PASS*100}%. That tells us where your time is best spent. This module moves to Learn it and the full lesson is open now, with no penalty.`:`That's useful: it shows exactly which ideas haven't landed yet. Use it.`}</p></div></div>
    <div class="ex-grid"><div>
     <div class="card" style="padding:18px 22px"><div class="hud" style="margin-bottom:8px">Score by topic</div>
       ${Object.entries(topics).map(([t,o])=>{const p=o.c/o.n;return `<div class="topic"><span>${esc(t)}</span><div class="pbar"><i style="width:${p*100}%;background:${p<.7?'var(--loss)':'var(--win)'}"></i></div><span class="num">${o.c}/${o.n}</span></div>`}).join('')}
@@ -346,8 +352,8 @@ function examResult(){
     ${miss.length?`<div class="hud" style="margin:22px 0 4px">Review${pass?'':': shown once. Your next exam is a different set.'}</div>${miss.map(({it,i})=>`<div class="rev"><p><b>Q${i+1} · ${TYPE_LABEL[it.kind]}</b></p><p>${it.q}</p><p>Correct: <b>${K[it.kind].correct(it)}</b></p><p>${it.why}</p></div>`).join('')}`:'<p class="muted" style="margin-top:18px">No missed questions.</p>'}
    </div><aside>
     ${pass?`<div class="card next-card" style="padding:18px"><div class="hud">${next?'Unlocked':'Finished'}</div><div class="h" style="font-size:21px;margin:4px 0 8px">${next?`${next.n}. ${next.t}`:'Course complete'}</div><p class="muted" style="font-size:14px">${next?next.out:'You passed every module.'}</p><a class="btn primary" href="#/" style="margin-top:12px">Back to the course map</a></div>`:
-    `<div class="reset"><div class="hud" style="color:var(--loss)">Module restarted</div><h3 class="h" style="font-size:20px;margin:6px 0">Back to the lesson</h3><p class="muted" style="font-size:14px">Under ${PASS*100}% means a re-learn, not a re-roll. The lessons have re-opened, the practice tasks are new, and the exam will be a <b>different set</b>: different charts, numbers and questions.</p>
-     <button class="btn primary" id="restartBtn" style="margin-top:12px;white-space:normal;text-align:left">Restart Module ${m.n} · attempt ${pm(m.id).a}</button></div>`}
+    (X.proof?`<div class="card next-card" style="padding:18px"><div class="hud">Next step</div><div class="h" style="font-size:21px;margin:4px 0 8px">Learn Module ${m.n}</div><p class="muted" style="font-size:14px">Work through the lesson, the worked example and the chart tasks, then take the normal module exam. The review below shows what to look at.</p><button class="btn primary" id="restartBtn" style="margin-top:12px">Start the lesson →</button></div>`:`<div class="reset"><div class="hud" style="color:var(--loss)">Module restarted</div><h3 class="h" style="font-size:20px;margin:6px 0">Back to the lesson</h3><p class="muted" style="font-size:14px">Under ${PASS*100}% means a re-learn, not a re-roll. The lessons have re-opened, the practice tasks are new, and the exam will be a <b>different set</b>: different charts, numbers and questions.</p>
+     <button class="btn primary" id="restartBtn" style="margin-top:12px;white-space:normal;text-align:left">Restart Module ${m.n} · attempt ${pm(m.id).a}</button></div>`)}
    </aside></div>`;
     const r=$('#restartBtn');if(r)r.onclick=()=>{X=null;nav(`/${m.id}/learn`)};
 }

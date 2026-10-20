@@ -20,6 +20,7 @@ import { accountInput, accountPatch, feedbackInput, journalInput, journalPatch, 
 import { todayET, type CatalogFirm, type DashboardData, type PersonDTO, type ProjectionDTO, type RulesDTO } from "../src/lib/types";
 import type { Instrument } from "../src/lib/planner";
 import { PRACTICE_MODELS, summarizePractice } from "../src/lib/practice";
+import { cleanAnswers, cleanModes, isProvable, proofFast, proofNeeded } from "../src/lib/schoolPath";
 import { computeGex, estimateBasis, EXPORT_LEGEND, type GexResult } from "../src/lib/gex";
 import { clampPace, expectedPassed, nudgeGapDays, paceStatus, PACE_MAX_NUDGES } from "../src/lib/schoolPace";
 import { SCHOOL_MODULES, SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
@@ -601,7 +602,7 @@ function cleanSchoolState(b: unknown): SchoolState {
     for (const [k, v] of Object.entries(((o.v2 as Record<string, unknown>).m && typeof (o.v2 as Record<string, unknown>).m === "object" ? (o.v2 as Record<string, unknown>).m : {}) as Record<string, Record<string, unknown>>).slice(0, 40)) {
       if (!SCHOOL_MODULE_SET.has(k) || !v || typeof v !== "object") continue;
       const s = String(v.s ?? "000");
-      m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+      m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
     }
     out.v2 = { m };
   }
@@ -628,25 +629,35 @@ function cleanSchoolState(b: unknown): SchoolState {
 }
 app.get("/api/school", async (c) => {
   const u = c.get("user");
-  const [[row], [pace], [acct]] = await Promise.all([
+  const [[row], [pace], [acct], [path], proofRows] = await Promise.all([
     sql`select state, unlocks from "SchoolProgress" where "userId" = ${u.id}`,
     sql`select "perWeek", preset, baseline, "startedAt", emails from "SchoolPace" where "userId" = ${u.id}`,
     sql`select email from "LocalAccount" where "userId" = ${u.id} and email is not null and not disabled`,
+    sql`select modes, answers, "committedAt", "lockedAt" from "SchoolPath" where "userId" = ${u.id}`,
+    sql`select ref, score, total, pass, "createdAt" from "SchoolAttempt" where "userId" = ${u.id} and kind = 'po'`,
   ]);
+  const js = (v: unknown) => (typeof v === "string" ? JSON.parse(v) : v);
+  const proofs: Record<string, { pass: boolean; sc: number; at: number }> = {};
+  for (const r of proofRows as Record<string, any>[]) proofs[r.ref] = { pass: !!r.pass, sc: Math.round((r.score / r.total) * 100), at: new Date(r.createdAt).getTime() };
   return c.json({
-    state: row ? (typeof row.state === "string" ? JSON.parse(row.state) : row.state) : null, unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username,
+    state: row ? js(row.state) : null, unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username,
     pace: pace ? { perWeek: Number(pace.perWeek), preset: pace.preset, baseline: pace.baseline, startedAt: new Date(pace.startedAt).toISOString(), emails: pace.emails } : null,
     hasEmail: !!acct,
+    path: path ? { modes: js(path.modes), answers: js(path.answers), committedAt: new Date(path.committedAt).toISOString(), locked: !!path.lockedAt } : null,
+    proofs,
   });
 });
 app.put("/api/school", async (c) => {
   const clean = cleanSchoolState(await c.req.json());
-  // A module only counts as passed on the server if a passing exam attempt was logged for it.
+  // A module only counts as passed on the server if a passing exam attempt was logged for it. A tested-out module needs a passing proof attempt instead.
   const mods = clean.v2?.m;
-  if (mods && Object.values(mods).some((x) => x.p === 1)) {
-    const rows = (await sql`select distinct ref from "SchoolAttempt" where "userId" = ${c.get("user").id} and kind = 'ex' and pass = true`) as { ref: string }[];
-    const passed = new Set(rows.map((r) => r.ref));
-    for (const [id, x] of Object.entries(mods)) if (x.p === 1 && !passed.has(id)) { x.p = 0; x.sc = 0; }
+  if (mods && Object.values(mods).some((x) => x.p === 1 || x.t === 1)) {
+    const rows = (await sql`select distinct ref, kind from "SchoolAttempt" where "userId" = ${c.get("user").id} and kind in ('ex', 'po') and pass = true`) as { ref: string; kind: string }[];
+    const ex = new Set(rows.filter((r) => r.kind === "ex").map((r) => r.ref)), po = new Set(rows.filter((r) => r.kind === "po").map((r) => r.ref));
+    for (const [id, x] of Object.entries(mods)) {
+      if (x.t === 1 && !(po.has(id) && isProvable(id))) x.t = 0;
+      if (x.p === 1 && !(ex.has(id) || x.t === 1)) { x.p = 0; x.sc = 0; }
+    }
   }
   const json = JSON.stringify(clean);
   if (json.length > 20000) throw new HttpError(400, "Too long");
@@ -655,12 +666,69 @@ app.put("/api/school", async (c) => {
   return c.json({ ok: true });
 });
 app.post("/api/school/attempt", async (c) => {
-  const b = (await c.req.json()) as { kind?: string; ref?: string; score?: number; total?: number; pass?: boolean };
+  const b = (await c.req.json()) as { kind?: string; ref?: string; score?: number; total?: number; pass?: boolean; secs?: number };
   const score = Math.round(Number(b.score)), total = Math.round(Number(b.total));
-  if ((b.kind !== "ck" && b.kind !== "ex") || !b.ref || !ID_RE.test(b.ref) || !(total > 0 && total <= 50) || !(score >= 0 && score <= total) || typeof b.pass !== "boolean")
+  if ((b.kind !== "ck" && b.kind !== "ex" && b.kind !== "po") || !b.ref || !ID_RE.test(b.ref) || !(total > 0 && total <= 50) || !(score >= 0 && score <= total) || typeof b.pass !== "boolean")
     throw new HttpError(400, "Bad attempt");
+  const u = c.get("user"), secs = Math.max(0, Math.min(7200, Math.round(Number(b.secs) || 0)));
   if (b.kind === "ex" && b.pass && SCHOOL_MODULE_SET.has(b.ref) && score < Math.ceil(total * 0.8 - 1e-9)) throw new HttpError(400, "Bad attempt");
-  await sql`insert into "SchoolAttempt" (id, "userId", kind, ref, score, total, pass) values (${randomUUID()}, ${c.get("user").id}, ${b.kind}, ${b.ref}, ${score}, ${total}, ${b.pass})`;
+  if (b.kind === "po") {
+    // A proof exam: only for a module on the student's own prove-it list, once, and never for GEX, INVERTIX or the final read.
+    if (!isProvable(b.ref)) throw new HttpError(400, "This module cannot be tested out");
+    if (b.pass && score < proofNeeded(total)) throw new HttpError(400, "Bad attempt");
+    const [path] = await sql`select modes from "SchoolPath" where "userId" = ${u.id}`;
+    const modes = path ? (typeof path.modes === "string" ? JSON.parse(path.modes) : path.modes) : {};
+    if (modes[b.ref] !== "prove") throw new HttpError(403, "This module is not on your prove-it list");
+    try {
+      await sql`insert into "SchoolAttempt" (id, "userId", kind, ref, score, total, pass, secs) values (${randomUUID()}, ${u.id}, 'po', ${b.ref}, ${score}, ${total}, ${b.pass}, ${secs || null})`;
+    } catch (e) {
+      if ((e as { code?: string }).code === "23505") throw new HttpError(409, "You have already used your proof attempt for this module");
+      throw e;
+    }
+    await sql`update "SchoolPath" set "lockedAt" = coalesce("lockedAt", now()), "updatedAt" = now() where "userId" = ${u.id}`;
+    return c.json({ ok: true });
+  }
+  await sql`insert into "SchoolAttempt" (id, "userId", kind, ref, score, total, pass) values (${randomUUID()}, ${u.id}, ${b.kind}, ${b.ref}, ${score}, ${total}, ${b.pass})`;
+  return c.json({ ok: true });
+});
+
+// Learning path: the student says where they are; anything they claim they can do is proved with a one-attempt exam.
+app.put("/api/school/path", async (c) => {
+  const u = c.get("user"), b = (await c.req.json().catch(() => ({}))) as { modes?: unknown; answers?: unknown };
+  const [old] = await sql`select "lockedAt" from "SchoolPath" where "userId" = ${u.id}`;
+  if (old?.lockedAt) throw new HttpError(403, "Your path is locked because you have started proof exams. Ask a coach to reset it.");
+  const [sp] = await sql`select state from "SchoolProgress" where "userId" = ${u.id}`;
+  const st = sp?.state ? ((typeof sp.state === "string" ? JSON.parse(sp.state) : sp.state) as SchoolState) : null;
+  const passed = new Set(Object.entries(st?.v2?.m ?? {}).filter(([, v]) => (v as { p?: number })?.p === 1).map(([k]) => k));
+  const used = new Set(((await sql`select ref from "SchoolAttempt" where "userId" = ${u.id} and kind = 'po'`) as { ref: string }[]).map((r) => r.ref));
+  const modes = cleanModes(b.modes, passed, used), answers = cleanAnswers(b.answers);
+  await sql`insert into "SchoolPath" ("userId", modes, answers) values (${u.id}, ${JSON.stringify(modes)}::jsonb, ${JSON.stringify(answers)}::jsonb)
+            on conflict ("userId") do update set modes = excluded.modes, answers = excluded.answers, "updatedAt" = now()`;
+  return c.json({ path: { modes, answers, committedAt: new Date().toISOString(), locked: false } });
+});
+app.get("/api/coach/paths", async (c) => {
+  staffOnly(c);
+  const rows = await sql`select u.id, coalesce(u."globalName", u.username) as name, p.modes, p.answers, p."committedAt", p."lockedAt", sp.state
+    from "SchoolPath" p join "User" u on u.id = p."userId" left join "SchoolProgress" sp on sp."userId" = u.id order by p."committedAt" desc limit 500`;
+  const att = (await sql`select "userId", ref, score, total, pass, secs, "createdAt" from "SchoolAttempt" where kind = 'po' and "userId" = any(${pgArray(rows.map((r: Record<string, any>) => r.id as string))}::text[])`) as Record<string, any>[];
+  const [{ n: unbuilt }] = await sql`select count(*)::int as n from "SchoolProgress" sp join "User" u on u.id = sp."userId" where u."isGuildMember" and not exists (select 1 from "SchoolPath" p where p."userId" = sp."userId")`;
+  const js = (v: unknown) => (typeof v === "string" ? JSON.parse(v) : v);
+  const out = rows.map((r: Record<string, any>) => {
+    const modes = js(r.modes) as Record<string, string>, ans = js(r.answers) as { start?: string; prop?: string }, mine = att.filter((a) => a.userId === r.id);
+    const st = r.state ? (js(r.state) as SchoolState) : null, ms = st?.v2?.m ?? {};
+    const tested = Object.values(ms).filter((x) => (x as { p?: number; t?: number }).p === 1 && (x as { t?: number }).t === 1).length;
+    const passedAll = Object.values(ms).filter((x) => (x as { p?: number }).p === 1).length;
+    const last = mine.length ? new Date(Math.max(...mine.map((a) => new Date(a.createdAt).getTime()))).toISOString() : null;
+    return { id: r.id, name: r.name, start: ans.start ?? "", prop: ans.prop ?? "", committedAt: new Date(r.committedAt).toISOString(), locked: !!r.lockedAt,
+      prove: Object.values(modes).filter((m) => m === "prove").length, learn: Object.values(modes).filter((m) => m === "learn").length,
+      proofPassed: mine.filter((a) => a.pass).length, proofFailed: mine.filter((a) => !a.pass).length, tested, passed: passedAll, total: SCHOOL_MODULES.length,
+      fast: mine.filter((a) => a.pass && proofFast(Number(a.secs) || 0, a.total)).length, lastProofAt: last };
+  });
+  return c.json({ rows: out, unbuilt });
+});
+app.post("/api/coach/path/:id/reset", async (c) => {
+  staffOnly(c);
+  await sql`delete from "SchoolPath" where "userId" = ${c.req.param("id")}`; // attempts stay: a used proof attempt is never given back
   return c.json({ ok: true });
 });
 
@@ -1003,7 +1071,7 @@ app.put("/api/vault/progress", async (c) => {
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
-    m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+    m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
   await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
   return c.json({ ok: true });
