@@ -45,6 +45,7 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
             {tab(links.plan, "plan", "Trading Plan")}
             {links.school && tab(links.school, "school", "Trading School")}
             {links.practice && tab(links.practice, "practice", "Practice")}
+            <a href="/signals-login" className="relative rounded-md px-3 py-2 text-[14px] font-medium text-ink-2 transition-colors hover:text-ink">Signals</a>
             {staff && tab(links.coach, "coach", "Coach Portal")}
           </nav>
           <div className="ml-auto flex items-center gap-3">

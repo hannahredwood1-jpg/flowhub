@@ -43,6 +43,7 @@ const CFG = {
   mentorshipRoles: ids(env.DISCORD_MENTORSHIP_ROLE_IDS), // roles that count as mentorship for the ECHO X ORBIT vault (a role whose name contains "mentor" also counts)
   launched: (env.FLOWHUB_LAUNCHED ?? "").toLowerCase() === "true", // false = staff only
   botToken: env.DISCORD_BOT_TOKEN ?? "",
+  signalsSecret: env.SIGNALS_HANDOFF_SECRET ?? "", // shared with the Signals site (signals.flowmtd.com); empty = Signals link switched off
   sessionSecret: env.SESSION_SECRET ?? "",
   encKey: Buffer.from(env.TOKEN_ENCRYPTION_KEY ?? "", "base64"),
 };
@@ -350,12 +351,32 @@ app.get("/auth/callback", async (c) => {
     returning id`;
   const jwt = await sign({ uid: u.id, exp: Math.floor(Date.now() / 1000) + SESSION_DAYS * 86400 }, CFG.sessionSecret, "HS256");
   setCookie(c, "fh_session", jwt, { ...cookieOpts, maxAge: SESSION_DAYS * 86400 });
+  if (getCookie(c, "fh_next") === "signals") { deleteCookie(c, "fh_next", { path: "/" }); return c.redirect("/signals-login"); }
   return c.redirect("/#home");
 });
 
 app.get("/auth/logout", (c) => {
   deleteCookie(c, "fh_session", { path: "/" });
   return c.redirect("/");
+});
+
+// ── Signals handoff: a signed-in member opens signals.flowmtd.com already logged in ──
+// FlowHub vouches for the member with a 2-minute signed pass (HMAC with SIGNALS_HANDOFF_SECRET). The Signals site checks it and starts its own session.
+// Access = whoever FlowHub lets in (Premium / Mentorship roles, coaches, admins). Non-Discord (local) accounts get in only if they are staff.
+const SIGNALS_ORIGIN = "https://signals.flowmtd.com";
+app.get("/signals-login", async (c) => {
+  if (!CFG.signalsSecret) return c.text("Signals is not switched on yet.", 503);
+  const u = await currentUser(c);
+  if (!u) { setCookie(c, "fh_next", "signals", { ...cookieOpts, maxAge: 600 }); return c.redirect("/auth/discord"); }
+  const local = String(u.discordId).startsWith("local:");
+  const payload = {
+    did: String(u.discordId), name: u.globalName ?? u.username, avatar: avatarUrl(u.discordId, u.avatarHash), role: u.role,
+    tier: isStaff(u) ? "staff" : hasMentorRole(u) ? "mentorship" : "premium", access: !local || isStaff(u),
+    exp: Math.floor(Date.now() / 1000) + 120,
+  };
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const pass = `${body}.${createHmac("sha256", CFG.signalsSecret).update(body).digest("base64url")}`;
+  return c.redirect(`${SIGNALS_ORIGIN}/?pass=${pass}`);
 });
 
 // ── Local (non-Discord) accounts: created, limited and removed by coaches and admins ──
