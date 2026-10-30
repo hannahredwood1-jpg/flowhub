@@ -38,6 +38,12 @@ h1 .o{color:var(--o)}
 .lead{margin:26px 0 0;max-width:620px;color:var(--fg-2);font-size:clamp(16px,2vw,19px)}
 .tags{display:flex;flex-wrap:wrap;gap:8px;margin:28px 0 0;padding:0;list-style:none}
 .tags li{padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font:500 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg-2)}
+.wwr{max-width:640px;margin-top:34px;align-self:flex-start;display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;padding:18px 22px;border:1px solid var(--line-2);border-radius:12px;background:rgba(15,15,15,.78)}
+.wwr[hidden]{display:none}
+.wwr .k{font:500 12px var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3)}
+.wwr .v{font-family:var(--f-display);font-weight:900;font-size:clamp(40px,7vw,64px);line-height:1;color:var(--o)}
+.wwr .s{font:500 13px var(--f-mono);color:var(--fg-2);letter-spacing:.04em}
+.wwr .d{flex-basis:100%;margin:2px 0 0;color:var(--fg-3);font-size:12px}
 .cta{display:flex;flex-wrap:wrap;align-items:center;gap:16px 20px;margin-top:38px}
 .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 24px;border-radius:8px;background:var(--o);color:#160a00;font:800 15px var(--f-body);transition:transform .15s,background .15s}
 .btn:hover{background:#ff8226;transform:translateY(-2px)}
@@ -59,6 +65,11 @@ footer{padding-block:22px max(24px,env(safe-area-inset-bottom,0px));border-top:1
   <ul class="tags" aria-label="What is coming">
     <li>Trading School</li><li>Practice</li><li>Journal</li><li>Daily Levels</li>
   </ul>
+  <div class="wwr" id="wwr" hidden aria-live="polite">
+    <div><div class="k" id="wwr-k">Weekly win rate</div><div class="v" id="wwr-v"></div></div>
+    <div class="s" id="wwr-s"></div>
+    <p class="d">From the trades logged in our own journal. Past results do not guarantee future results.</p>
+  </div>
   <div class="cta">
     <a class="btn" href="https://hub.flowmtd.com">Student login <span aria-hidden="true">→</span></a>
     <p class="note">Already a student? Your FLOWHUB account works as usual.</p>
@@ -69,5 +80,20 @@ footer{padding-block:22px max(24px,env(safe-area-inset-bottom,0px));border-top:1
   <span>© FLOWMTD Trading</span>
   <span>Educational content only, not financial advice. Trading futures involves substantial risk of loss.</span>
 </footer>
+<script>
+(function(){
+  // Weekly win rate, worked out by FLOWHUB from the trades entered in the journal. If it can't load, the card simply stays hidden.
+  fetch("https://hub.flowmtd.com/public/weekly-win-rate",{headers:{Accept:"application/json"}}).then(function(r){return r.ok?r.json():null}).then(function(d){
+    if(!d)return;
+    var w=d.current&&d.current.rate!=null?d.current:d.previous&&d.previous.rate!=null?d.previous:null;
+    if(!w)return;
+    var isNow=w===d.current;
+    document.getElementById("wwr-k").textContent="Weekly win rate"+(isNow?"":" · last week");
+    document.getElementById("wwr-v").textContent=Math.round(w.rate*100)+"%";
+    document.getElementById("wwr-s").textContent=w.wins+"W · "+w.losses+"L"+(w.breakeven?" · "+w.breakeven+" BE":"")+" · "+w.label;
+    document.getElementById("wwr").hidden=false;
+  }).catch(function(){});
+})();
+</script>
 </body>
 </html>
