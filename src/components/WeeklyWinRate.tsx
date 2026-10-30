@@ -1,18 +1,16 @@
 "use client";
 import { useState } from "react";
 import { api } from "@/lib/api-client";
-import type { DashboardData } from "@/lib/types";
 import { pct } from "@/lib/format";
-import { shareText, type WeekWinRate } from "@/lib/weeklyWinRate";
+import { shareText, type WeekWinRate, type WeeklyWinRate } from "@/lib/weeklyWinRate";
 import { cx } from "./ui";
 
 const tone = (r: number | null) => (r == null ? "text-ink-3" : r >= 0.5 ? "text-win" : "text-loss");
 
-export function WeeklyWinRateCard({ data }: { data: DashboardData }) {
-  const { current: w, previous: p, history } = data.weekly;
+export function WeeklyWinRateCard({ weekly, canShare, name, className = "" }: { weekly: WeeklyWinRate; canShare: boolean; name: string; className?: string }) {
+  const { current: w, previous: p, history } = weekly;
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const canShare = data.viewer.role === "ADMIN" && !data.readOnly;
 
   const share = async () => {
     setBusy(true); setMsg(null);
@@ -21,13 +19,13 @@ export function WeeklyWinRateCard({ data }: { data: DashboardData }) {
     setBusy(false);
   };
   const copy = async () => {
-    try { await navigator.clipboard.writeText(shareText(w, data.trader.name)); setMsg({ ok: true, text: "Copied. Paste it in Discord." }); }
+    try { await navigator.clipboard.writeText(shareText(w, name)); setMsg({ ok: true, text: "Copied. Paste it in Discord." }); }
     catch { setMsg({ ok: false, text: "Couldn't copy. Select the text and copy it." }); }
   };
 
   const bars = [...history].reverse();
   return (
-    <section className="hud animate-rise px-4 py-4" aria-label="Weekly win rate">
+    <section className={cx("hud animate-rise px-4 py-4", className)} aria-label="Weekly win rate">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="label">Weekly win rate</div>
