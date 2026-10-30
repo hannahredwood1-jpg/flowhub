@@ -1165,7 +1165,8 @@ app.put("/api/vault/progress", async (c) => {
 // ─────────────────────────────────────────────────────────────
 async function invertixAccess(u: UserRow) {
   const [fs, is] = await Promise.all([trackState(u.id, "fundamentals"), trackState(u.id, "invertix")]);
-  return { open: isStaff(u) || invertixOpen(fs, is), fPassed: passedIn(fs, "fundamentals"), fTotal: trackTotal("fundamentals"), iPassed: passedIn(is, "invertix"), iTotal: trackTotal("invertix"), state: is };
+  const earned = invertixOpen(fs, is);
+  return { open: isStaff(u) || earned, earned, staff: isStaff(u), fPassed: passedIn(fs, "fundamentals"), fTotal: trackTotal("fundamentals"), iPassed: passedIn(is, "invertix"), iTotal: trackTotal("invertix"), state: is };
 }
 let invHtml: { etag: string; html: string } | null = null;
 app.get("/invertix", async (c) => {
@@ -1183,7 +1184,7 @@ app.get("/invertix", async (c) => {
 // what the home screen shows: the open door, or the locked door with how far along the fundamentals are
 app.get("/api/invertix/status", async (c) => {
   const acc = await invertixAccess(c.get("user"));
-  return c.json({ status: acc.open ? "open" : "locked", fundamentals: { passed: acc.fPassed, total: acc.fTotal }, invertix: { passed: acc.iPassed, total: acc.iTotal } });
+  return c.json({ status: acc.earned ? "open" : "locked", staffBypass: acc.staff && !acc.earned, fundamentals: { passed: acc.fPassed, total: acc.fTotal }, invertix: { passed: acc.iPassed, total: acc.iTotal } });
 });
 app.get("/api/invertix/progress", async (c) => {
   const u = c.get("user"), acc = await invertixAccess(u);
