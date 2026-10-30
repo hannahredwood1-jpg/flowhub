@@ -30,8 +30,10 @@ document.addEventListener('click',e=>{if(e.target.closest('[data-pace-open]'))op
 
 /* The journey: a path with one node per phase, and a comet that travels it faster the faster the pace. */
 const PACE_PATH='M46 232 C 170 236, 196 92, 330 108 S 500 250, 626 178 S 820 52, 954 76';
+/* one milestone per phase; a track with fewer than three phases (INVERTIX has one) gets one per module instead */
+const paceNodes=()=>PH.length>2?PH.length:Math.max(3,COURSE().length);
 function paceSVG(){
-  const nodes=PH.map((p,i)=>`<g class="pn" data-i="${i}"><circle r="9"/><text y="3.6">${i+1}</text></g>`).join('');
+  const nodes=Array.from({length:paceNodes()},(_,i)=>`<g class="pn" data-i="${i}"><circle r="9"/><text y="3.6">${i+1}</text></g>`).join('');
   return`<svg class="pace-svg" viewBox="0 0 1000 290" aria-hidden="true"><defs><linearGradient id="pg" x1="0" x2="1"><stop offset="0" stop-color="#8cc4ff"/><stop offset="1" stop-color="#ff6a00"/></linearGradient><filter id="pglow"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
   <path d="${PACE_PATH}" class="pp-ghost"/><path d="${PACE_PATH}" class="pp-draw" id="ppDraw"/>${nodes}
   <g class="pflag"><text x="46" y="268" text-anchor="middle">Day 1</text></g>
@@ -54,7 +56,7 @@ function openPace(mode){
       <div class="pace-act"><button class="btn primary" id="paceGo">${first?'Start my journey →':'Save pace'}</button><button class="btn ghost" id="paceSkip">${first?'Set this later':'Cancel'}</button></div></div></div>`;
   document.body.append(ov);PACE_OV=ov;document.body.style.overflow='hidden';
   const path=ov.querySelector('#ppDraw'),L=path.getTotalLength();path.style.strokeDasharray=L;if(!reduced)path.style.strokeDashoffset=L;
-  ov.querySelectorAll('.pn').forEach((g,i)=>{const p=path.getPointAtLength(L*i/(PH.length-1));g.setAttribute('transform',`translate(${p.x} ${p.y})`);g.style.setProperty('--d',(reduced?0:.5+i*.2)+'s')});
+  ov.querySelectorAll('.pn').forEach((g,i)=>{const p=path.getPointAtLength(L*i/(paceNodes()-1));g.setAttribute('transform',`translate(${p.x} ${p.y})`);g.style.setProperty('--d',(reduced?0:.5+i*.2)+'s')});
   if(reduced)ov.classList.add('still');
   requestAnimationFrame(()=>{ov.classList.add('on');if(!reduced){path.style.transition='stroke-dashoffset 2.2s cubic-bezier(.5,.1,.2,1) .3s';path.style.strokeDashoffset=0}});
   const comet=ov.querySelector('#pcomet');

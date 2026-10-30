@@ -43,7 +43,7 @@ export function PaceTable({ rows, busy, onSet, onReset }: { rows: PaceRow[]; bus
                 <span className="num text-xs text-ink-2">{r.passed}/{r.total}</span>
               </div>
               <div className="mt-0.5 text-xs text-ink-3">
-                Last in the school {ago(r.lastActive)}{r.finish ? ` · on track to finish ${day(r.finish)}` : ""}
+                Last active {ago(r.lastActive)}{r.finish ? ` · on track to finish ${day(r.finish)}` : ""}
                 {" · "}
                 {!r.hasEmail ? "no email on file" : !r.emails ? "reminders off" : r.nudges ? `${r.nudges} reminder${r.nudges === 1 ? "" : "s"} sent, last ${day(r.lastNudgeAt)}` : "no reminders sent yet"}
               </div>
