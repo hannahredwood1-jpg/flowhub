@@ -60,8 +60,6 @@ function daysAgo(today: string, n: number) {
   return d.toISOString().slice(0, 10);
 }
 
-import { weeklyWinRate } from "./weeklyWinRate";
-
 export function buildDashboard(raw: RawInput): DashboardData {
   const strat = strategyOf(raw.roadmap);
   const active = raw.accounts.filter((a) => ACTIVE.includes(a.stage));
@@ -128,7 +126,6 @@ export function buildDashboard(raw: RawInput): DashboardData {
     practice: raw.practice ?? null,
     school: raw.school ?? null,
     tradingPlan: raw.tradingPlan ?? null,
-    weekly: weeklyWinRate(journal, raw.today),
     stats: {
       todayPnl: sum(raw.today),
       weekPnl: sum(weekStart(raw.today)),

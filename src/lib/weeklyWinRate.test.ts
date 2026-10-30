@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mondayOf, shareText, weeklyWinRate, weekWinRate, type WinRow } from "./weeklyWinRate";
+import { fromSignalsWeeks, mondayOf, shareText, weeklyWinRate, weekWinRate, type WinRow } from "./weeklyWinRate";
 
 const r = (tradeDate: string, outcome: WinRow["outcome"]): WinRow => ({ tradeDate, outcome });
 
@@ -33,5 +33,17 @@ test("history is newest first and includes the current week", () => {
 
 test("share text", () => {
   const w = weekWinRate([r("2026-10-26", "WIN"), r("2026-10-27", "LOSS"), r("2026-10-28", "WIN")], "2026-10-26");
-  assert.equal(shareText(w), "📊 FLOWMTD · Weekly win rate (Oct 26 – Nov 1)\n67% · 2W / 1L · 3 trades");
+  assert.equal(shareText(w), "📊 FLOWMTD · Weekly win rate (Oct 26 – Nov 1)\n67% · 2W / 1L");
+});
+
+test("signals weeks: break-even is a win, pending is not counted, newest first", () => {
+  const w = fromSignalsWeeks([
+    { weekStart: "2026-10-19", wins: 3, losses: 1, be: 1, pending: 0, signals: 4 },
+    { weekStart: "2026-10-26", wins: 5, losses: 0, be: 0, pending: 8, signals: 13 },
+  ]);
+  assert.equal(w.current.weekStart, "2026-10-26");
+  assert.equal(w.current.rate, 1); assert.equal(w.current.pending, 8);
+  assert.equal(w.previous.rate, 0.75);
+  assert.equal(shareText(w.current), "📊 FLOWMTD · Weekly win rate (Oct 26 – Nov 1)\n100% · 5W / 0L · 8 still open");
+  assert.equal(fromSignalsWeeks([{ weekStart: "2026-10-26", wins: 0, losses: 0, be: 0, pending: 2, signals: 2 }]).current.rate, null);
 });

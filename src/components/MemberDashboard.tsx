@@ -15,7 +15,6 @@ import { TradingPlanCard } from "./Projections";
 import { PlanCard } from "./TradingPlan";
 import { RoutineRow, TiltGuard } from "./Routine";
 import { PracticeCard } from "./PracticeCard";
-import { WeeklyWinRateCard } from "./WeeklyWinRate";
 
 type ModalState =
   | { kind: "none" }
@@ -35,7 +34,6 @@ export function MemberDashboard({ initial, catalog, planHref = "/plan" }: { init
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <StatsStrip data={data} />
-      <WeeklyWinRateCard weekly={data.weekly} canShare={data.viewer.role === "ADMIN" && !data.readOnly} name={data.trader.name} />
       <TiltGuard data={data} />
       <PlanCard data={data} href={planHref} />
       <TradingPlanCard data={data} catalog={catalog} planHref={planHref === "#plan" ? "#plan-projections" : planHref} />

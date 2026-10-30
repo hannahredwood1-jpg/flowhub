@@ -31,17 +31,17 @@ export function WeeklyWinRateCard({ weekly, canShare, name, className = "" }: { 
           <div className="label">Weekly win rate</div>
           <div className="mt-1 flex items-baseline gap-3">
             <span className={cx("text-4xl font-semibold tabular-nums", tone(w.rate))}>{pct(w.rate)}</span>
-            <span className="text-sm text-ink-2">{w.trades ? `${w.wins}W · ${w.losses}L${w.breakeven ? ` · ${w.breakeven} BE` : ""}` : "no trades logged yet this week"}</span>
+            <span className="text-sm text-ink-2">{w.wins + w.losses ? `${w.wins}W · ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}` : "no results entered yet this week"}{w.pending ? ` · ${w.pending} still open` : ""}</span>
           </div>
-          <div className="mt-1 text-xs text-ink-3">{w.label} · last week {pct(p.rate)}{p.trades ? ` (${p.wins}W · ${p.losses}L)` : ""}</div>
+          <div className="mt-1 text-xs text-ink-3">{w.label} · last week {pct(p.rate)}{p.wins + p.losses ? ` (${p.wins}W · ${p.losses}L)` : ""}</div>
         </div>
         <div className="flex items-end gap-1" aria-hidden>
           {bars.map((b) => <Bar key={b.weekStart} b={b} />)}
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {canShare && <button className="btn btn-primary" disabled={busy || !w.trades} onClick={share}>{busy ? "Posting…" : "Share to Discord"}</button>}
-        <button className="btn" disabled={!w.trades} onClick={copy}>Copy text</button>
+        {canShare && <button className="btn btn-primary" disabled={busy || !(w.wins + w.losses)} onClick={share}>{busy ? "Posting…" : "Share to Discord"}</button>}
+        <button className="btn" disabled={!(w.wins + w.losses)} onClick={copy}>Copy text</button>
         {msg && <span className={cx("text-xs", msg.ok ? "text-win" : "text-loss")} role="status">{msg.text}</span>}
       </div>
     </section>
