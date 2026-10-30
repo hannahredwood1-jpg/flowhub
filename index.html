@@ -88,7 +88,7 @@ footer{padding-block:22px max(24px,env(safe-area-inset-bottom,0px));border-top:1
     var w=d&&d.current; if(!w)return;
     document.getElementById("wwr-k").textContent="Weekly win rate";
     document.getElementById("wwr-v").textContent=w.rate==null?"\u2014":Math.round(w.rate*100)+"%";
-    document.getElementById("wwr-s").textContent=(w.rate==null?"No results entered yet":w.wins+"W \u00b7 "+w.losses+"L"+(w.breakeven?" ("+w.breakeven+" BE)":""))+(w.pending?" \u00b7 "+w.pending+" still open":"")+" \u00b7 "+w.label;
+    document.getElementById("wwr-s").textContent=(w.rate==null?"No results entered yet":w.wins+"W \u00b7 "+w.losses+"L"+(w.breakeven?" ("+w.breakeven+" BE)":""))+" \u00b7 "+w.label;
     document.getElementById("wwr").hidden=false;
   }).catch(function(){});
 })();
