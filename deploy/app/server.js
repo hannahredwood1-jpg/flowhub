@@ -17,7 +17,7 @@ var short = (ymd) => `${MON[+ymd.slice(5, 7) - 1]} ${+ymd.slice(8, 10)}`;
 function shareText(w, name = "FLOWMTD") {
   const pct = w.rate == null ? "\u2014" : `${Math.round(w.rate * 100)}%`;
   return `\u{1F4CA} ${name} \xB7 Weekly win rate (${w.label})
-${pct} \xB7 ${w.wins}W / ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}${w.pending ? ` \xB7 ${w.pending} still open` : ""}`;
+${pct} \xB7 ${w.wins}W / ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}`;
 }
 function fromSignalsWeeks(weeks) {
   const history = [...weeks].sort((a, b) => b.weekStart.localeCompare(a.weekStart)).map((w) => ({

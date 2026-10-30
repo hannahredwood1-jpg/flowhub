@@ -43,7 +43,7 @@ export function weeklyWinRate(rows: WinRow[], today: string, weeks = 8): WeeklyW
 /** The text that goes to Discord (and the copy button). */
 export function shareText(w: WeekWinRate, name = "FLOWMTD") {
   const pct = w.rate == null ? "—" : `${Math.round(w.rate * 100)}%`;
-  return `📊 ${name} · Weekly win rate (${w.label})\n${pct} · ${w.wins}W / ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}${w.pending ? ` · ${w.pending} still open` : ""}`;
+  return `📊 ${name} · Weekly win rate (${w.label})\n${pct} · ${w.wins}W / ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}`;
 }
 
 /** The Signals site's own weekly numbers (entered by FLOWMTD in the back end). Break-even counts as a win (it is inside `wins`), only a stop is a loss, no result yet = pending. */
