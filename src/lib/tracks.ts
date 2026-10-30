@@ -1,7 +1,7 @@
 // The Trading School is three separate places, each with its own page, progress, pace and certificate:
 //   fundamentals: the school (/school) · invertix: its own page (/invertix), opened by the fundamentals certificate · exo: the ECHO X ORBIT vault (/vault)
 import { SCHOOL_MODULES } from "./school";
-import { VAULT_MODULES } from "./vault";
+import { VAULT_MODULES } from "./vaultModules";
 
 export type TrackId = "fundamentals" | "invertix" | "exo";
 export const TRACK_IDS: TrackId[] = ["fundamentals", "invertix", "exo"];
