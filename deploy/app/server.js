@@ -14,35 +14,24 @@ var parse = (ymd) => Date.parse(ymd + "T12:00:00Z");
 var fmt = (ms) => new Date(ms).toISOString().slice(0, 10);
 var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 var short = (ymd) => `${MON[+ymd.slice(5, 7) - 1]} ${+ymd.slice(8, 10)}`;
-function mondayOf(ymd) {
-  const dow = new Date(parse(ymd)).getUTCDay();
-  return fmt(parse(ymd) - (dow + 6) % 7 * DAY);
-}
-function weekWinRate(rows, weekStart2) {
-  const weekEnd = fmt(parse(weekStart2) + 6 * DAY);
-  const inWeek = rows.filter((r) => r.tradeDate >= weekStart2 && r.tradeDate <= weekEnd);
-  const wins = inWeek.filter((r) => r.outcome === "WIN").length;
-  const losses = inWeek.filter((r) => r.outcome === "LOSS").length;
-  return {
-    weekStart: weekStart2,
-    weekEnd,
-    label: `${short(weekStart2)} \u2013 ${short(weekEnd)}`,
-    wins,
-    losses,
-    breakeven: inWeek.length - wins - losses,
-    trades: inWeek.length,
-    rate: wins + losses ? wins / (wins + losses) : null
-  };
-}
-function weeklyWinRate(rows, today, weeks = 8) {
-  const start = mondayOf(today);
-  const history = Array.from({ length: weeks }, (_, i) => weekWinRate(rows, fmt(parse(start) - i * 7 * DAY)));
-  return { current: history[0], previous: history[1], history };
-}
 function shareText(w, name = "FLOWMTD") {
   const pct = w.rate == null ? "\u2014" : `${Math.round(w.rate * 100)}%`;
   return `\u{1F4CA} ${name} \xB7 Weekly win rate (${w.label})
-${pct} \xB7 ${w.wins}W / ${w.losses}L${w.breakeven ? ` / ${w.breakeven} BE` : ""} \xB7 ${w.trades} trade${w.trades === 1 ? "" : "s"}`;
+${pct} \xB7 ${w.wins}W / ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}${w.pending ? ` \xB7 ${w.pending} still open` : ""}`;
+}
+function fromSignalsWeeks(weeks) {
+  const history = [...weeks].sort((a, b) => b.weekStart.localeCompare(a.weekStart)).map((w) => ({
+    weekStart: w.weekStart,
+    weekEnd: fmt(parse(w.weekStart) + 6 * DAY),
+    label: `${short(w.weekStart)} \u2013 ${short(fmt(parse(w.weekStart) + 6 * DAY))}`,
+    wins: w.wins,
+    losses: w.losses,
+    breakeven: w.be,
+    trades: w.signals,
+    pending: w.pending,
+    rate: w.wins + w.losses ? w.wins / (w.wins + w.losses) : null
+  }));
+  return { current: history[0], previous: history[1] ?? history[0], history };
 }
 
 // src/lib/planner.ts
@@ -509,7 +498,6 @@ function buildDashboard(raw) {
     practice: raw.practice ?? null,
     school: raw.school ?? null,
     tradingPlan: raw.tradingPlan ?? null,
-    weekly: weeklyWinRate(journal, raw.today),
     stats: {
       todayPnl: sum(raw.today),
       weekPnl: sum(weekStart(raw.today)),
@@ -1308,11 +1296,16 @@ app.use("*", async (c, next) => {
   await next();
 });
 app.get("/healthz", async (c) => c.json({ ok: true, db: (await sql`select 1 as ok`)[0].ok === 1, discord: discordReady() }));
-var winRows = async (userId) => (await sql`select to_char("tradeDate", 'YYYY-MM-DD') as d, outcome from "JournalEntry" where "userId" = ${userId} and "tradeDate" >= current_date - 70`).map((r) => ({ tradeDate: r.d, outcome: r.outcome }));
-async function winrateOwner() {
-  const id = env.WINRATE_USER_ID;
-  const [u] = id ? await sql`select id from "User" where id = ${id}` : await sql`select id from "User" where role = 'ADMIN' and "discordId" ~ '^[0-9]+$' order by "createdAt" limit 1`;
-  return u;
+var SIGNALS_WEEKLY = "https://gtzwxamwnuxjnamwmtyn.supabase.co/functions/v1/weekly-win-rate";
+var weeklyCache = null;
+async function signalsWeekly() {
+  if (weeklyCache && Date.now() - weeklyCache.at < 6e4) return weeklyCache.v;
+  const r = await fetch(SIGNALS_WEEKLY, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(15e3) });
+  if (!r.ok) throw new HttpError(502, "Couldn't load the signal results right now.");
+  const j = await r.json();
+  if (!j.weeks?.length) throw new HttpError(502, "Couldn't load the signal results right now.");
+  weeklyCache = { at: Date.now(), v: fromSignalsWeeks(j.weeks) };
+  return weeklyCache.v;
 }
 var WINRATE_ORIGINS = ["https://www.flowmtd.com", "https://flowmtd.com"];
 var winrateOrigin = (o) => o && WINRATE_ORIGINS.includes(o) ? o : WINRATE_ORIGINS[0];
@@ -1321,10 +1314,8 @@ app.get("/public/weekly-win-rate", async (c) => {
   c.header("Access-Control-Allow-Origin", winrateOrigin(c.req.header("origin")));
   c.header("Vary", "Origin");
   c.header("Cache-Control", "public, max-age=300");
-  const owner = await winrateOwner();
-  if (!owner) return c.json({ current: null, previous: null });
-  const w = weeklyWinRate(await winRows(owner.id), todayET());
-  const pick = ({ label, wins, losses, breakeven, trades, rate }) => ({ label, wins, losses, breakeven, trades, rate });
+  const w = await signalsWeekly();
+  const pick = ({ label, wins, losses, breakeven, trades, pending, rate }) => ({ label, wins, losses, breakeven, trades, pending, rate });
   return c.json({ current: pick(w.current), previous: pick(w.previous) });
 });
 app.get("/auth/discord", (c) => {
@@ -1505,13 +1496,13 @@ var staffOnly = (c) => {
   if (!isStaff(c.get("user"))) throw new HttpError(403, "Coach or Admin role required");
 };
 app.get("/api/dashboard", async (c) => c.json(await loadDashboard(c.get("user"), c.get("user").id)));
-app.get("/api/winrate", async (c) => c.json(weeklyWinRate(await winRows(c.get("user").id), todayET())));
+app.get("/api/winrate", async (c) => c.json(await signalsWeekly()));
 app.get("/api/catalog", async (c) => c.json(await loadCatalog()));
 app.post("/api/winrate/share", async (c) => {
   const u = c.get("user");
   if (u.role !== "ADMIN") throw new HttpError(403, "Admin role required");
-  const w = weeklyWinRate(await winRows(u.id), todayET()).current;
-  if (!w.trades) throw new HttpError(400, "No trades logged this week yet");
+  const w = (await signalsWeekly()).current;
+  if (!(w.wins + w.losses)) throw new HttpError(400, "No results entered this week yet");
   const content = shareText(w);
   const hook = env.WINRATE_DISCORD_WEBHOOK_URL, chan = env.WINRATE_CHANNEL_ID;
   if (!hook && !(CFG.botToken && chan)) throw new HttpError(409, "Discord sharing isn't connected yet. Add WINRATE_DISCORD_WEBHOOK_URL in Railway (or WINRATE_CHANNEL_ID for the bot).");

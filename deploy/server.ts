@@ -14,7 +14,7 @@ import { SQL } from "bun";
 import { gunzipSync } from "node:zlib";
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 
-import { shareText, weeklyWinRate, type WinRow } from "../src/lib/weeklyWinRate";
+import { fromSignalsWeeks, shareText, type SignalsWeek, type WeeklyWinRate } from "../src/lib/weeklyWinRate";
 import { buildDashboard, buildDirectoryRow, sortDirectory, type DirectorySort, type RawAccount } from "../src/lib/viewmodel";
 import { RETIRED_STRATEGIES, blendedWinRate, type StrategyKey } from "../src/lib/strategies";
 import { accountInput, accountPatch, feedbackInput, journalInput, journalPatch, projectionInput, roadmapSchema, templatePatch, tradingPlanInput } from "../src/lib/validators";
@@ -307,15 +307,18 @@ app.use("*", async (c, next) => {
 });
 app.get("/healthz", async (c) => c.json({ ok: true, db: (await sql`select 1 as ok`)[0].ok === 1, discord: discordReady() }));
 
-// ── Weekly win rate: public numbers for flowmtd.com, taken from the owner's journal (win/loss/trade counts only, never dollars) ──
-// Owner = WINRATE_USER_ID if set, otherwise the first Admin account. Shares are posted with WINRATE_DISCORD_WEBHOOK_URL, or the bot + WINRATE_CHANNEL_ID.
-const winRows = async (userId: string): Promise<WinRow[]> =>
-  (await sql`select to_char("tradeDate", 'YYYY-MM-DD') as d, outcome from "JournalEntry" where "userId" = ${userId} and "tradeDate" >= current_date - 70`)
-    .map((r: Record<string, any>) => ({ tradeDate: r.d, outcome: r.outcome }));
-async function winrateOwner() {
-  const id = env.WINRATE_USER_ID;
-  const [u] = id ? await sql`select id from "User" where id = ${id}` : await sql`select id from "User" where role = 'ADMIN' and "discordId" ~ '^[0-9]+$' order by "createdAt" limit 1`;
-  return u as { id: string } | undefined;
+// ── Weekly win rate: the FLOWMTD signals results that are entered in the back end (the same numbers as the Weekly results tab on the Signals site) ──
+// Read from the weekly-win-rate function of the Signals database. Counts only. Shares are posted with WINRATE_DISCORD_WEBHOOK_URL, or the bot + WINRATE_CHANNEL_ID.
+const SIGNALS_WEEKLY = "https://gtzwxamwnuxjnamwmtyn.supabase.co/functions/v1/weekly-win-rate";
+let weeklyCache: { at: number; v: WeeklyWinRate } | null = null;
+async function signalsWeekly(): Promise<WeeklyWinRate> {
+  if (weeklyCache && Date.now() - weeklyCache.at < 60_000) return weeklyCache.v;
+  const r = await fetch(SIGNALS_WEEKLY, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(15_000) });
+  if (!r.ok) throw new HttpError(502, "Couldn't load the signal results right now.");
+  const j = (await r.json()) as { weeks?: SignalsWeek[] };
+  if (!j.weeks?.length) throw new HttpError(502, "Couldn't load the signal results right now.");
+  weeklyCache = { at: Date.now(), v: fromSignalsWeeks(j.weeks) };
+  return weeklyCache.v;
 }
 const WINRATE_ORIGINS = ["https://www.flowmtd.com", "https://flowmtd.com"];
 const winrateOrigin = (o: string | undefined) => (o && WINRATE_ORIGINS.includes(o) ? o : WINRATE_ORIGINS[0]);
@@ -324,10 +327,8 @@ app.get("/public/weekly-win-rate", async (c) => {
   c.header("Access-Control-Allow-Origin", winrateOrigin(c.req.header("origin")));
   c.header("Vary", "Origin");
   c.header("Cache-Control", "public, max-age=300");
-  const owner = await winrateOwner();
-  if (!owner) return c.json({ current: null, previous: null });
-  const w = weeklyWinRate(await winRows(owner.id), todayET());
-  const pick = ({ label, wins, losses, breakeven, trades, rate }: typeof w.current) => ({ label, wins, losses, breakeven, trades, rate });
+  const w = await signalsWeekly();
+  const pick = ({ label, wins, losses, breakeven, trades, pending, rate }: typeof w.current) => ({ label, wins, losses, breakeven, trades, pending, rate });
   return c.json({ current: pick(w.current), previous: pick(w.previous) });
 });
 
@@ -506,15 +507,15 @@ app.use("/api/*", async (c, next) => {
 const staffOnly = (c: Context<Env>) => { if (!isStaff(c.get("user"))) throw new HttpError(403, "Coach or Admin role required"); };
 
 app.get("/api/dashboard", async (c) => c.json(await loadDashboard(c.get("user"), c.get("user").id)));
-app.get("/api/winrate", async (c) => c.json(weeklyWinRate(await winRows(c.get("user").id), todayET())));
+app.get("/api/winrate", async (c) => c.json(await signalsWeekly()));
 app.get("/api/catalog", async (c) => c.json(await loadCatalog()));
 
-// Share this week's win rate to Discord (Admin only, from their own journal)
+// Share this week's win rate to Discord (Admin only)
 app.post("/api/winrate/share", async (c) => {
   const u = c.get("user");
   if (u.role !== "ADMIN") throw new HttpError(403, "Admin role required");
-  const w = weeklyWinRate(await winRows(u.id), todayET()).current;
-  if (!w.trades) throw new HttpError(400, "No trades logged this week yet");
+  const w = (await signalsWeekly()).current;
+  if (!(w.wins + w.losses)) throw new HttpError(400, "No results entered this week yet");
   const content = shareText(w);
   const hook = env.WINRATE_DISCORD_WEBHOOK_URL, chan = env.WINRATE_CHANNEL_ID;
   if (!hook && !(CFG.botToken && chan)) throw new HttpError(409, "Discord sharing isn't connected yet. Add WINRATE_DISCORD_WEBHOOK_URL in Railway (or WINRATE_CHANNEL_ID for the bot).");
