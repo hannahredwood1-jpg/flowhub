@@ -8,6 +8,43 @@ import { SQL } from "bun";
 import { gunzipSync } from "node:zlib";
 import { createCipheriv, createDecipheriv, createHash as createHash2, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 
+// src/lib/weeklyWinRate.ts
+var DAY = 864e5;
+var parse = (ymd) => Date.parse(ymd + "T12:00:00Z");
+var fmt = (ms) => new Date(ms).toISOString().slice(0, 10);
+var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+var short = (ymd) => `${MON[+ymd.slice(5, 7) - 1]} ${+ymd.slice(8, 10)}`;
+function mondayOf(ymd) {
+  const dow = new Date(parse(ymd)).getUTCDay();
+  return fmt(parse(ymd) - (dow + 6) % 7 * DAY);
+}
+function weekWinRate(rows, weekStart2) {
+  const weekEnd = fmt(parse(weekStart2) + 6 * DAY);
+  const inWeek = rows.filter((r) => r.tradeDate >= weekStart2 && r.tradeDate <= weekEnd);
+  const wins = inWeek.filter((r) => r.outcome === "WIN").length;
+  const losses = inWeek.filter((r) => r.outcome === "LOSS").length;
+  return {
+    weekStart: weekStart2,
+    weekEnd,
+    label: `${short(weekStart2)} \u2013 ${short(weekEnd)}`,
+    wins,
+    losses,
+    breakeven: inWeek.length - wins - losses,
+    trades: inWeek.length,
+    rate: wins + losses ? wins / (wins + losses) : null
+  };
+}
+function weeklyWinRate(rows, today, weeks = 8) {
+  const start = mondayOf(today);
+  const history = Array.from({ length: weeks }, (_, i) => weekWinRate(rows, fmt(parse(start) - i * 7 * DAY)));
+  return { current: history[0], previous: history[1], history };
+}
+function shareText(w, name = "FLOWMTD") {
+  const pct = w.rate == null ? "\u2014" : `${Math.round(w.rate * 100)}%`;
+  return `\u{1F4CA} ${name} \xB7 Weekly win rate (${w.label})
+${pct} \xB7 ${w.wins}W / ${w.losses}L${w.breakeven ? ` / ${w.breakeven} BE` : ""} \xB7 ${w.trades} trade${w.trades === 1 ? "" : "s"}`;
+}
+
 // src/lib/planner.ts
 var POINT_VALUE = {
   NQ: 20,
@@ -472,6 +509,7 @@ function buildDashboard(raw) {
     practice: raw.practice ?? null,
     school: raw.school ?? null,
     tradingPlan: raw.tradingPlan ?? null,
+    weekly: weeklyWinRate(journal, raw.today),
     stats: {
       todayPnl: sum(raw.today),
       weekPnl: sum(weekStart(raw.today)),
@@ -891,10 +929,10 @@ function estimateBasis(spot, now, rate = 0.035, divYield = 7e-3) {
 var PACE_MIN = 1;
 var PACE_MAX = 14;
 var PACE_MAX_NUDGES = 3;
-var DAY = 864e5;
+var DAY2 = 864e5;
 var clampPace = (n2) => Math.max(PACE_MIN, Math.min(PACE_MAX, Math.round(Number(n2) || 0) || 4));
 function expectedPassed(baseline, perWeek, startedAt, now, total) {
-  const weeks = Math.max(0, now.getTime() - startedAt.getTime()) / (7 * DAY);
+  const weeks = Math.max(0, now.getTime() - startedAt.getTime()) / (7 * DAY2);
   return Math.min(total, baseline + Math.floor(clampPace(perWeek) * weeks));
 }
 function paceStatus(passed, expected, total) {
@@ -1270,6 +1308,25 @@ app.use("*", async (c, next) => {
   await next();
 });
 app.get("/healthz", async (c) => c.json({ ok: true, db: (await sql`select 1 as ok`)[0].ok === 1, discord: discordReady() }));
+var winRows = async (userId) => (await sql`select to_char("tradeDate", 'YYYY-MM-DD') as d, outcome from "JournalEntry" where "userId" = ${userId} and "tradeDate" >= current_date - 70`).map((r) => ({ tradeDate: r.d, outcome: r.outcome }));
+async function winrateOwner() {
+  const id = env.WINRATE_USER_ID;
+  const [u] = id ? await sql`select id from "User" where id = ${id}` : await sql`select id from "User" where role = 'ADMIN' and "discordId" ~ '^[0-9]+$' order by "createdAt" limit 1`;
+  return u;
+}
+var WINRATE_ORIGINS = ["https://www.flowmtd.com", "https://flowmtd.com"];
+var winrateOrigin = (o) => o && WINRATE_ORIGINS.includes(o) ? o : WINRATE_ORIGINS[0];
+app.options("/public/weekly-win-rate", (c) => c.body(null, 204, { "Access-Control-Allow-Origin": winrateOrigin(c.req.header("origin")), "Access-Control-Allow-Methods": "GET", Vary: "Origin" }));
+app.get("/public/weekly-win-rate", async (c) => {
+  c.header("Access-Control-Allow-Origin", winrateOrigin(c.req.header("origin")));
+  c.header("Vary", "Origin");
+  c.header("Cache-Control", "public, max-age=300");
+  const owner = await winrateOwner();
+  if (!owner) return c.json({ current: null, previous: null });
+  const w = weeklyWinRate(await winRows(owner.id), todayET());
+  const pick = ({ label, wins, losses, breakeven, trades, rate }) => ({ label, wins, losses, breakeven, trades, rate });
+  return c.json({ current: pick(w.current), previous: pick(w.previous) });
+});
 app.get("/auth/discord", (c) => {
   if (!discordReady()) return c.redirect("/#setup");
   const state = randomBytes(16).toString("base64url");
@@ -1449,6 +1506,23 @@ var staffOnly = (c) => {
 };
 app.get("/api/dashboard", async (c) => c.json(await loadDashboard(c.get("user"), c.get("user").id)));
 app.get("/api/catalog", async (c) => c.json(await loadCatalog()));
+app.post("/api/winrate/share", async (c) => {
+  const u = c.get("user");
+  if (u.role !== "ADMIN") throw new HttpError(403, "Admin role required");
+  const w = weeklyWinRate(await winRows(u.id), todayET()).current;
+  if (!w.trades) throw new HttpError(400, "No trades logged this week yet");
+  const content = shareText(w);
+  const hook = env.WINRATE_DISCORD_WEBHOOK_URL, chan = env.WINRATE_CHANNEL_ID;
+  if (!hook && !(CFG.botToken && chan)) throw new HttpError(409, "Discord sharing isn't connected yet. Add WINRATE_DISCORD_WEBHOOK_URL in Railway (or WINRATE_CHANNEL_ID for the bot).");
+  const body = JSON.stringify({ content, allowed_mentions: { parse: [] } });
+  const res = hook ? await fetch(hook, { method: "POST", headers: { "Content-Type": "application/json" }, body, signal: AbortSignal.timeout(15e3) }) : await fetch(`${DISCORD}/channels/${chan}/messages`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bot ${CFG.botToken}` }, body, signal: AbortSignal.timeout(15e3) });
+  if (!res.ok) {
+    console.error("winrate share", res.status, await res.text().catch(() => ""));
+    throw new HttpError(502, "Discord didn't accept the post. Check the webhook or channel permissions.");
+  }
+  await audit(u.id, "winrate.share", null, { week: w.weekStart });
+  return c.json({ ok: true, message: "Posted to Discord." });
+});
 app.put("/api/roadmap", async (c) => {
   const u = c.get("user");
   const d = roadmapSchema.parse(await c.req.json());
