@@ -92,6 +92,10 @@ console.log(`practice ${(practice.length / 1024).toFixed(0)}KB`);
 // The ECHO X ORBIT vault: private files, read by the server only for approved members (never listed in the public asset table).
 const vaultHtml = await buildSchool(esbuild, { vault: true });
 writeFileSync(path.join(appDir, "assets/vault.html.gz"), gzipSync(Buffer.from(vaultHtml), { level: 9 }));
+// INVERTIX: its own page, a private file the server reads only for students who have earned the fundamentals certificate.
+const invertixHtml = await buildSchool(esbuild, { invertix: true });
+writeFileSync(path.join(appDir, "assets/invertix.html.gz"), gzipSync(Buffer.from(invertixHtml), { level: 9 }));
+console.log(`invertix ${(invertixHtml.length / 1024).toFixed(0)}KB`);
 const orderflow = (await esbuild.transform(readFileSync(path.join(root, "school/src/vault/orderflow-pack.js"), "utf8"), { minify: true, target: "es2020", legalComments: "none" })).code;
 writeFileSync(path.join(appDir, "assets/vault-orderflow.js.gz"), gzipSync(Buffer.from(orderflow), { level: 9 }));
 console.log(`vault ${(vaultHtml.length / 1024).toFixed(0)}KB · orderflow pack ${(orderflow.length / 1024).toFixed(0)}KB`);

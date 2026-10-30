@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, type PaceRow } from "@/lib/api-client";
 import { PACE_PRESETS } from "@/lib/schoolPace";
+import { TRACK_NAME } from "@/lib/tracks";
 import { ErrorLine, Panel, cx } from "./ui";
 
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" }) : "never");
@@ -26,10 +27,11 @@ export function PaceTable({ rows, busy, onSet, onReset }: { rows: PaceRow[]; bus
       {rows.map((r) => {
         const s = STATUS[r.status];
         return (
-          <div key={r.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-line py-2 text-sm">
+          <div key={r.id + r.track} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-line py-2 text-sm">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-2">
                 <span className="truncate">{r.name}</span>
+                <span className="chip !py-0 text-xs text-ink-2">{TRACK_NAME[r.track]}</span>
                 <span className={cx("text-xs font-semibold", s.tone)}>{s.label}</span>
                 <span className="text-xs text-ink-3">{presetName(r.perWeek)} · {r.perWeek} a week</span>
               </div>
@@ -49,9 +51,9 @@ export function PaceTable({ rows, busy, onSet, onReset }: { rows: PaceRow[]; bus
             {onSet && (
               <div className="flex flex-wrap items-center justify-end gap-1.5">
                 {PACE_PRESETS.map((p) => (
-                  <button key={p.id} className={cx("btn !h-7 !px-2 text-xs", p.perWeek === r.perWeek ? "btn-primary" : "btn-ghost")} disabled={busy === r.id} onClick={() => onSet(r, p.perWeek)}>{p.name}</button>
+                  <button key={p.id} className={cx("btn !h-7 !px-2 text-xs", p.perWeek === r.perWeek ? "btn-primary" : "btn-ghost")} disabled={busy === r.id + r.track} onClick={() => onSet(r, p.perWeek)}>{p.name}</button>
                 ))}
-                <button className="btn btn-ghost !h-7 !px-2 text-xs" disabled={busy === r.id} title="They see the welcome screen again next visit" onClick={() => onReset?.(r)}>Reset</button>
+                <button className="btn btn-ghost !h-7 !px-2 text-xs" disabled={busy === r.id + r.track} title="They see the pace welcome screen again next visit" onClick={() => onReset?.(r)}>Reset</button>
               </div>
             )}
           </div>
@@ -80,7 +82,7 @@ export function PacePanel() {
   const behind = (data?.rows ?? []).filter((r) => r.status === "behind").length;
 
   return (
-    <Panel title="Trading School · pace" right={<button className="btn btn-ghost !h-7 !px-2 text-xs" onClick={() => setShow(!show)}>{show ? "Hide" : "Show"}</button>}>
+    <Panel title="Pace · by track" right={<button className="btn btn-ghost !h-7 !px-2 text-xs" onClick={() => setShow(!show)}>{show ? "Hide" : "Show"}</button>}>
       {show && (
         <div className="grid gap-3 p-4">
           <p className="text-xs text-ink-3">Students pick their own pace the first time they open the school. The line on each bar is where that pace says they should be today. Reminder emails go out only to students who are behind or gone quiet, at most one every few days, and stop after three with no reply.</p>
@@ -96,7 +98,7 @@ export function PacePanel() {
                 <input className="field !h-8 min-w-[180px] flex-1 text-sm sm:max-w-xs" placeholder="Find a student" value={q} onChange={(e) => setQ(e.target.value)} />
                 <label className="flex items-center gap-1 text-xs text-ink-3"><input type="checkbox" checked={onlyBehind} onChange={(e) => setOnlyBehind(e.target.checked)} />Only behind</label>
               </div>
-              <PaceTable rows={rows} busy={busy} onSet={(r, w) => act(r.id, () => api.paceSet(r.id, { perWeek: w }))} onReset={(r) => act(r.id, () => api.paceSet(r.id, { reset: true }))} />
+              <PaceTable rows={rows} busy={busy} onSet={(r, w) => act(r.id + r.track, () => api.paceSet(r.id, { track: r.track, perWeek: w }))} onReset={(r) => act(r.id + r.track, () => api.paceSet(r.id, { track: r.track, reset: true }))} />
               {!rows.length && <p className="text-sm text-ink-3">{data.rows.length ? "No students match." : "Nobody has set a pace yet. They are asked the first time they open the school."}</p>}
             </>
           )}

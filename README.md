@@ -160,3 +160,16 @@ Before a student can use the Trading School they build a path: where they are st
 - A learn-it module's exam can no longer be reached by URL before its three lesson steps are done.
 - The path can be edited until the first proof exam, then it is locked; a coach can reset it in the portal (the "learning paths" panel, which also flags very quick passes). Used proof attempts stay used.
 - Migration 0013 adds `SchoolPath`, `SchoolAttempt.secs` and the `po` kind. Scoring is still reported by the browser and recorded by the server; the server enforces who may take a proof exam, one attempt, and the 80% bar on what is reported.
+
+## Three tracks (`src/lib/tracks.ts`, `school/src/tracks.js`)
+The school is now three separate places, each with its own page, saved progress, pace, reminder emails and certificate:
+| Track | Page | Opens | Progress saved in | Certificate |
+|---|---|---|---|---|
+| Trading Fundamentals (27 modules, ends with Understanding GEX Levels) | `/school` | everyone | `SchoolProgress` | Certificate of Learning · Trading Fundamentals |
+| INVERTIX (5 modules) | `/invertix` | when every fundamentals module is passed (a student who had already passed an INVERTIX module keeps their way in); coaches always | `TrackProgress` (track `invertix`) | Certificate of understanding · INVERTIX |
+| ECHO X ORBIT (the vault) | `/vault` | mentorship role + a code from a coach | `VaultAccess.state` | Certificate of understanding · ECHO X ORBIT |
+- After the fundamentals certificate the student chooses a strategy: the school shows an INVERTIX card (opens at once) and an ECHO X ORBIT card (the mentorship door and the Discord message to ask for a code).
+- **Pace is per track** (`SchoolPace` is keyed by user and track). Each track's page asks for a pace the first time it is opened, the coach panel shows pace by track, and reminder emails name the right next module and link to the right page.
+- Learning paths and proof exams only exist in the fundamentals. INVERTIX and ECHO X ORBIT cannot be tested out. "Putting It All Together" was removed.
+- INVERTIX's lessons are in `school/src/content/11-invertix.js`; the fundamentals build leaves that file out, the INVERTIX page (`buildSchool({ invertix: true })`, private file `invertix.html.gz`) and the practice page (its drills) include it.
+- Migration 0014 adds the track column and `TrackProgress` and moves any INVERTIX progress out of the school's saved state.

@@ -8,13 +8,17 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const src = (p) => readFileSync(path.join(here, "src", p), "utf8");
 
-export async function buildSchool(esbuild, { minify = true, practice = false, vault = false } = {}) {
+export async function buildSchool(esbuild, { minify = true, practice = false, vault = false, invertix = false } = {}) {
   const list = (d, f = () => true) => readdirSync(path.join(here, "src", d)).filter((f2) => f2.endsWith(".js") && f(f2)).sort().map((f2) => d + "/" + f2);
-  // The vault is its own page: the shared engine and helpers plus ONLY the vault's own content (never the school's lessons).
+  // The vault and the INVERTIX page are their own pages: the shared engine and helpers plus ONLY their own content (never the school's lessons).
   const shared = ["content/00-core.js", "content/00-glossary.js", "content/08-helpers.js"];
+  const engine = ["util.js", "gen.js", "gen2.js", "chart.js", "items.js"], tail = ["tracks.js", "path.js", "pace.js", "gex.js", "app.js", "track.js"];
   const parts = vault
-    ? ["util.js", "gen.js", "gen2.js", "chart.js", "items.js", ...shared, ...list("vault", (f2) => f2 !== "orderflow-pack.js"), "path.js", "pace.js", "gex.js", "app.js", "track.js"]
-    : ["util.js", "gen.js", "gen2.js", "chart.js", "items.js", ...list("content"), ...(practice ? [...list("data"), "indicators.js", "lab.js"] : []), "path.js", "pace.js", "gex.js", "app.js", "track.js"];
+    ? [...engine, ...shared, ...list("vault", (f2) => f2 !== "orderflow-pack.js"), ...tail]
+    : invertix
+      ? [...engine, ...shared, "content/11-invertix.js", ...list("invertix"), ...tail]
+      // the fundamentals school leaves INVERTIX out (it has its own page); the practice page keeps it for its drills
+      : [...engine, ...list("content", (f2) => practice || f2 !== "11-invertix.js"), ...(practice ? [...list("data"), "indicators.js", "lab.js"] : []), ...tail];
   let js = parts.map((p) => `/* ── ${p} ── */\n${src(p)}`).join("\n");
   let css = src("style.css");
   if (minify) {
@@ -23,6 +27,7 @@ export async function buildSchool(esbuild, { minify = true, practice = false, va
   }
   let html = src("shell.html").replace("/*CSS*/", () => css).replace("/*JS*/", () => js.replace(/<\/script/gi, "<\\/script"));
   if (vault) html = vaultShell(html);
+  if (invertix) html = invertixShell(html);
   return html;
 }
 
@@ -45,4 +50,15 @@ export function vaultShell(html) {
   sub('Learn to trade, <span class="f">A to Z.</span>', 'You are <span class="f">inside.</span>');
   sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Everything about ECHO X ORBIT lives in this room: the model, the trade, the practice charts and the exams. Nothing here is shown outside it.");
   return html.replace("<script>", "<script>window.VAULT=1;</script><script>");
+}
+
+/** The INVERTIX page: the school shell with its own words. */
+export function invertixShell(html) {
+  const sub = (a, b2) => { if (!html.includes(a)) throw new Error("invertix shell text not found: " + a.slice(0, 40)); html = html.replace(a, b2); };
+  sub("<title>Trading School · FLOWHUB</title>", "<title>INVERTIX · FLOWHUB</title>");
+  sub('<span class="pill"><span class="dot"></span>Practice · no real money</span>', '<span class="pill"><span class="dot"></span>INVERTIX · practice, no real money</span>');
+  sub('<div class="hud" style="margin-bottom:8px">Trading School</div>', '<div class="hud" style="margin-bottom:8px">INVERTIX</div>');
+  sub('Learn to trade, <span class="f">A to Z.</span>', 'Learn <span class="f">INVERTIX.</span>');
+  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Five modules take you from the key level to the daily playbook. Each one teaches one idea, makes you apply it on a chart, and then tests you. You move on by proving it, not by clicking through.");
+  return html.replace("<script>", "<script>window.INV=1;</script><script>");
 }

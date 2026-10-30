@@ -6,7 +6,7 @@
 const PACE_PRESETS={sprint:10,steady:4,relaxed:2};
 const PACE_INFO=[{id:'sprint',n:'Sprint',w:10,d:'A module or two a day'},{id:'steady',n:'Steady',w:4,d:'A few sessions a week'},{id:'relaxed',n:'Relaxed',w:2,d:'A couple of modules a week'}];
 let PACE=null,PACE_EMAIL=false,PACE_READY=false,PACE_OV=null;
-const paceOn=()=>!window.VAULT&&!window.PRACTICE;
+const paceOn=()=>!!TRACK;
 const paceClamp=n=>Math.max(1,Math.min(14,Math.round(+n||4)));
 const passedCount=()=>MODS.filter(m=>pm(m.id).p).length;
 const paceDate=(w,from=new Date())=>{const left=MODS.length-passedCount();return new Date(from.getTime()+(left<=0?0:left/paceClamp(w)*7*864e5))};
@@ -35,7 +35,7 @@ function paceSVG(){
   return`<svg class="pace-svg" viewBox="0 0 1000 290" aria-hidden="true"><defs><linearGradient id="pg" x1="0" x2="1"><stop offset="0" stop-color="#8cc4ff"/><stop offset="1" stop-color="#ff6a00"/></linearGradient><filter id="pglow"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
   <path d="${PACE_PATH}" class="pp-ghost"/><path d="${PACE_PATH}" class="pp-draw" id="ppDraw"/>${nodes}
   <g class="pflag"><text x="46" y="268" text-anchor="middle">Day 1</text></g>
-  <g class="pseal"><circle cx="954" cy="76" r="17"/><text x="954" y="38" text-anchor="middle" class="pseal-t">INVERTIX certificate</text></g>
+  <g class="pseal"><circle cx="954" cy="76" r="17"/><text x="954" y="38" text-anchor="middle" class="pseal-t">${TRACK.short} certificate</text></g>
   <g id="pcomet" filter="url(#pglow)"></g></svg>`}
 function openPace(mode){
   if(PACE_OV)return;const first=mode==='first',total=MODS.length;
@@ -43,8 +43,8 @@ function openPace(mode){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ov=document.createElement('div');ov.className='pace-ov'+(first?' first':'');ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label','Set your pace');
   ov.innerHTML=`<div class="pace-in">
-    <div class="pace-hero"><div class="hud pace-k">${first?'Welcome to the Trading School':'Your pace'}</div><h2 class="h pace-h">${first?'Before you start, set your pace.':'Change your pace'}</h2>
-    <p class="pace-p">${first?`There are <b>${total} modules</b> from first chart to your INVERTIX certificate. Tell us how fast you want to go and we will show you where that lands.`:'This only changes your finish date and your reminders. Your progress stays exactly as it is.'}</p></div>
+    <div class="pace-hero"><div class="hud pace-k">${first?(TRACK.id==='fundamentals'?'Welcome to the Trading School':'Welcome to '+TRACK.name):'Your pace'}</div><h2 class="h pace-h">${first?'Before you start, set your pace.':'Change your pace'}</h2>
+    <p class="pace-p">${first?`There are <b>${total} modules</b> ${TRACK.endText}. Tell us how fast you want to go and we will show you where that lands.`:'This only changes your finish date and your reminders. Your progress stays exactly as it is.'}</p></div>
     ${paceSVG()}
     <div class="pace-card2"><div class="pace-pre">${PACE_INFO.map(p=>`<button type="button" class="pre" data-w="${p.w}"><b>${p.n}</b><span>${p.d}</span><i>${p.w} a week</i></button>`).join('')}</div>
       <div class="pace-slide"><label for="paceR">Fine-tune: <b id="paceV"></b> modules a week</label><input type="range" id="paceR" min="1" max="14" step="1"></div>
@@ -72,11 +72,11 @@ function openPace(mode){
   ov.querySelector('#paceR').oninput=e=>{w=paceClamp(e.target.value);paint()};
   const close=()=>{cancelAnimationFrame(raf);ov.classList.remove('on');document.body.style.overflow='';setTimeout(()=>{ov.remove();if(PACE_OV===ov)PACE_OV=null},320)};
   const onKey=e=>{if(e.key==='Escape'){document.removeEventListener('keydown',onKey);skip()}};document.addEventListener('keydown',onKey);
-  const skip=()=>{try{sessionStorage.setItem('fh-pace-skip','1')}catch(e){}document.removeEventListener('keydown',onKey);close()};
+  const skip=()=>{try{sessionStorage.setItem('fh-pace-skip-'+TRACK.id,'1')}catch(e){}document.removeEventListener('keydown',onKey);close()};
   ov.querySelector('#paceSkip').onclick=skip;
   ov.querySelector('#paceGo').onclick=async()=>{const b=ov.querySelector('#paceGo');b.disabled=true;
     const m=ov.querySelector('#paceM');
-    try{const r=await fetch('/api/school/pace',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({perWeek:w,preset:(PACE_INFO.find(p=>p.w===w)||{id:'custom'}).id,emails:m?m.checked:true})});
+    try{const r=await fetch('/api/school/pace',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({track:TRACK.id,perWeek:w,preset:(PACE_INFO.find(p=>p.w===w)||{id:'custom'}).id,emails:m?m.checked:true})});
       if(!r.ok)throw 0;const j=await r.json();PACE=j.pace;document.removeEventListener('keydown',onKey);close();render();toast(first?'Pace set. Your first module is ready.':'Pace updated.')}
     catch(e){b.disabled=false;toast('Could not save your pace. Try again.')}};
   paint();
@@ -85,6 +85,6 @@ function paceAfterPull(j){if(!paceOn())return;PACE=j.pace||null;PACE_EMAIL=!!j.h
 /* The welcome only shows on the course map (called from renderMap), never on the GEX levels page or inside a lesson. */
 function paceMaybeFirst(){
   if(!paceOn()||!PACE_READY||PACE||PACE_OV)return;
-  let skipped=false;try{skipped=sessionStorage.getItem('fh-pace-skip')==='1'}catch(e){}
+  let skipped=false;try{skipped=sessionStorage.getItem('fh-pace-skip-'+TRACK.id)==='1'}catch(e){}
   if(!skipped)openPace('first')}
 function gexCard(){return gexOn()?`<div class="card pace-card"><div class="hud">Every morning</div><div class="h" style="font-size:17px;margin:4px 0 6px">Daily GEX levels</div><p class="muted" style="font-size:13.5px">Today's call wall, put wall and gamma flip for NQ, with a one-click copy for the indicator.</p><a class="btn sm" href="#/gex" style="margin-top:10px">Open today's levels →</a></div>`:''}

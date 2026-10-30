@@ -34,9 +34,9 @@ const ORDER=[
  [4,['m05','m06','m48','m49','m07']],
  [5,['m10','m11']],
  [6,['m12','m14','m23','m24']],
- [7,['m50']],
- [8,['m43','m44','m45','m46','m47']],
- [9,['m16']]];
+ [7,['m50']]];
+/* The INVERTIX modules live on their own page. Only the practice page loads them (its drills use them), after the fundamentals. */
+if(byId('m43'))ORDER.push([8,['m43','m44','m45','m46','m47']]);
 const ORD={};ORDER.forEach(([ph,ids])=>ids.forEach(id=>{const m=byId(id);if(!m)throw new Error('missing module '+id);m.ph=ph;ORD[id]=ORDER.slice(0,ph).reduce((n,[,x])=>n+x.length,0)+ids.indexOf(id)}));
 MODS.forEach(m=>{if(ORD[m.id]==null)throw new Error('module not in the course order: '+m.id)});
 MODS.sort((a,b)=>ORD[a.id]-ORD[b.id]);

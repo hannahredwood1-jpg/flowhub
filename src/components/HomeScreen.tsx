@@ -101,7 +101,7 @@ function useBrain(ref: React.RefObject<HTMLCanvasElement | null>) {
 const ITEMS: { href: string; n: string; t: string; d: string }[] = [
   { href: "#dashboard", n: "01", t: "My Dashboard", d: "Accounts, drawdown, targets and your journal." },
   { href: "#plan", n: "02", t: "My Trading Plan", d: "Your plan, your numbers, your daily checklist." },
-  { href: "/school", n: "03", t: "Trading School", d: "Learn it, apply it on a chart, prove it." },
+  { href: "/school", n: "03", t: "Trading Fundamentals", d: "Learn it, apply it on a chart, prove it." },
   { href: "/practice", n: "04", t: "Practice", d: "Endless generated charts with instant feedback." },
 ];
 
@@ -142,6 +142,29 @@ function GexTab() {
   );
 }
 
+type InvStatus = { status: "open" | "locked"; fundamentals: { passed: number; total: number }; invertix: { passed: number; total: number } };
+/** The INVERTIX door: it opens with the fundamentals certificate. */
+function InvertixDoor() {
+  const [s, setS] = useState<InvStatus | null>(null);
+  useEffect(() => { fetch("/api/invertix/status", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then(setS).catch(() => {}); }, []);
+  if (!s) return null;
+  if (s.status === "locked") {
+    return (
+      <div className="mb-4 flex items-center gap-4 border border-line bg-panel/50 p-4 opacity-80 backdrop-blur" aria-label="INVERTIX: opens with your fundamentals certificate">
+        <span className="grid h-11 w-11 shrink-0 place-items-center border border-line font-mono text-[10px] text-ink-3">INV</span>
+        <span className="flex-1"><span className="block text-[15px] font-semibold text-ink-2">INVERTIX</span><span className="block text-[13px] text-ink-3">Opens with your Trading Fundamentals certificate. {s.fundamentals.passed} of {s.fundamentals.total} fundamentals modules passed.</span></span>
+      </div>
+    );
+  }
+  return (
+    <a href="/invertix" className="group relative mb-4 flex items-center gap-4 border border-line-2 bg-panel/80 p-4 backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-signal hover:bg-panel-2">
+      <span className="grid h-11 w-11 shrink-0 place-items-center border border-line-2 font-mono text-[10px] text-ice transition-colors group-hover:border-signal group-hover:text-signal">INV</span>
+      <span className="flex-1"><span className="block text-[17px] font-semibold text-ink">INVERTIX</span><span className="block text-[13px] text-ink-2">{s.invertix.passed >= s.invertix.total ? "Complete. Review any lesson." : s.invertix.passed ? `${s.invertix.passed} of ${s.invertix.total} modules passed. Keep going.` : "Open. Five modules, your own pace, your own certificate."}</span></span>
+      <span aria-hidden="true" className="text-ink-3 transition-all group-hover:translate-x-1 group-hover:text-signal">→</span>
+    </a>
+  );
+}
+
 export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: PersonDTO; signOutHref?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useBrain(ref);
@@ -170,6 +193,7 @@ export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: P
           ))}
         </nav>
         <GexTab />
+        <InvertixDoor />
         {vault === "restricted" ? (
           <div className="mb-8 flex items-center gap-4 border border-line bg-panel/50 p-4 opacity-70 backdrop-blur" aria-label="The vault: restricted">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0 text-ink-3"><rect x="5" y="11" width="14" height="9" rx="1.5" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>

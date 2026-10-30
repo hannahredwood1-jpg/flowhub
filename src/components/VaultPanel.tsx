@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, type VaultRow } from "@/lib/api-client";
 import { ErrorLine, Panel, cx } from "./ui";
+import { EXO_MODULE_IDS } from "@/lib/tracks";
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" }) : "");
 
@@ -50,7 +51,7 @@ export function VaultPanel({ isAdmin }: { isAdmin: boolean }) {
                     <span className="ml-2 text-xs text-ink-3">{r.mentorship ? "mentorship role" : r.override ? "marked mentorship" : ""}</span>
                     <div className="text-xs text-ink-3">
                       <span className={cx(r.code === "opened" && "text-win", r.code === "revoked" && "text-loss")}>{label[r.code]}{r.hint ? ` · …${r.hint}` : ""}{r.code === "opened" ? ` · ${when(r.redeemedAt)}` : r.issuedAt ? ` · ${when(r.issuedAt)}` : ""}</span>
-                      {r.code === "opened" && <span> · {r.passed} of 9 modules passed</span>}
+                      {r.code === "opened" && <span> · {r.passed} of {EXO_MODULE_IDS.length} modules passed</span>}
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">

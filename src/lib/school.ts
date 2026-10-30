@@ -29,16 +29,10 @@ export const SCHOOL_MODULES = [
   { id: "m23", n: 25, title: "Trade Management & Spot the Mistake" },
   { id: "m24", n: 26, title: "Why the Math Works" },
   { id: "m50", n: 27, title: "Understanding GEX Levels" },
-  { id: "m43", n: 28, title: "INVERTIX: The Idea and the Pieces" },
-  { id: "m44", n: 29, title: "INVERTIX: The Key Level" },
-  { id: "m45", n: 30, title: "INVERTIX: The Flip, Entry and Stop" },
-  { id: "m46", n: 31, title: "INVERTIX: Targets, Windows and Size" },
-  { id: "m47", n: 32, title: "INVERTIX: The Daily Playbook" },
-  { id: "m16", n: 33, title: "Putting It All Together: The Complete Read" },
 ] as const;
 export const SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id) as string[];
-/** Modules that can never be tested out: Understanding GEX Levels, all five INVERTIX modules, and the final read. Everything else can be proved with one exam. */
-export const SCHOOL_NO_PROOF = ["m50", "m43", "m44", "m45", "m46", "m47", "m16"] as string[];
+/** The one module that can never be tested out: Understanding GEX Levels. Everything else in the fundamentals can be proved with one exam. */
+export const SCHOOL_NO_PROOF = ["m50"] as string[];
 export const SCHOOL_PROVABLE_IDS = SCHOOL_MODULE_IDS.filter((id) => !SCHOOL_NO_PROOF.includes(id));
 
 /** What the school page saves for each module: steps done ("1101"), passed, best score %, attempt number, exam tries, last attempt time. */
@@ -62,7 +56,6 @@ export type SchoolSummary = {
 export const SCHOOL_FIRST_CORE = 5;
 export function schoolOpen(modules: { id: string; passed: boolean; manualUnlock: boolean }[], i: number): boolean {
   if (modules[i].manualUnlock) return true;
-  if (modules[i].id === "m43") return modules[i].passed || modules.slice(0, i).every((x) => x.passed); // INVERTIX needs every earlier module learned or proved
   return i <= SCHOOL_FIRST_CORE || modules[i - 1].passed;
 }
 
