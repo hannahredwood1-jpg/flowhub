@@ -1,4 +1,4 @@
-/* ---------- m50 · Understanding GEX levels (right before INVERTIX) ---------- */
+/* ---------- m50 · Understanding GEX levels (the last module of the fundamentals) ---------- */
 const gexRegime=numGen('Which side of the flip',r=>{const f=pick(r,[29400,29500,29600,29700]),d=pick(r,[40,60,90,120]),above=r()<.5,s=above?f+d:f-d;
   return{q:`The gamma flip is ${fm(f,0)} and price is ${fm(s,0)}. How many points is price ${above?'above':'below'} the flip?`,ans:d,unit:'pts',tol:.5,why:`${fm(s,0)} ${above?'−':'+'} ${fm(f,0)} = ${d} points. ${above?'Above the flip dealers are modelled long gamma, so hedging tends to lean against moves.':'Below the flip dealers are modelled short gamma, so hedging tends to go with moves.'}`}});
 const gexBasis=numGen('NDX to NQ',r=>{const w=pick(r,[29500,29600,29700,29800]),ndx=pick(r,[29450,29520,29580]),gap=pick(r,[80,110,140,165]);

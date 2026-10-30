@@ -129,7 +129,7 @@ function PlanBuilder({ data, onSaved, onProjections }: { data: DashboardData; on
             <>
               <p className="text-sm text-ink-2">Which setups are you allowed to take? Anything not on this list is a no.</p>
               <div className="grid gap-2 sm:grid-cols-2">{(Object.keys(PLAN_MODELS) as PlanModel[]).map((m) => <Toggle key={m} on={p.models.includes(m)} onChange={() => set("models", toggleIn(p.models, m))} label={PLAN_MODELS[m]} />)}</div>
-              <p className="text-xs text-ink-3">New to the models? Finish them in the Trading School before adding them here.</p>
+              <p className="text-xs text-ink-3">New to the models? INVERTIX and ECHO X ORBIT each have their own course: finish the fundamentals first, then learn the model before adding it here.</p>
             </>
           )}
           {step === 2 && (

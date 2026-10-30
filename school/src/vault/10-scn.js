@@ -1,78 +1,169 @@
 /* ============================================================
-   ECHO X ORBIT vault · generated 1-minute scenarios: a level is swept, price reacts, a candle closes back through the start of the run,
-   then the trade is managed to its exit. Built as a long (a swept LOW) and mirrored for shorts.
+   ECHO X ORBIT vault · generated scenes. Every scene is built as a LONG (a swept low, a bullish rejection) and mirrored for shorts.
+   Narrative scene: a 1-hour chart with unfilled and filled gaps. Model 1: an external rejection block out of a higher-timeframe gap.
+   Model 2: a CISD rejection block (a CISD level retested). Model 3: a 1-minute continuation. All numbers come from the candles.
 ============================================================ */
-function exoScn(r,{side='long',fast=true,out='target',align='gap',level='1H'}={}){
-  const s=2.4+r()*1.4,P=basePrice(r),C=[];
-  let p=P;
-  const push=c=>{C.push(c);p=c.c};
-  /* the range before: a quiet chop that stays above the level */
-  const LV=q4(P-9*s);
-  for(let i=0;i<16;i++){const o=p,c=P+(r()-.5)*3.2*s,h=Math.max(o,c)+r()*.7*s,l=Math.max(LV+1.6*s,Math.min(o,c)-r()*.7*s);push(mk(o,h,l,c))}
-  /* the delivery run: 4 to 6 candles pushing down into the level; its opening price is the CISD line */
-  const nrun=4+Math.floor(r()*3),R0=q4(p),runI=C.length;
-  const step=(R0-(LV+1.2*s))/nrun;
-  for(let i=0;i<nrun;i++){const o=p,c=o-step*(.85+r()*.3),h=o+r()*.25*s,l=c-r()*.35*s;push(mk(o,h,Math.max(l,LV+.4*s),c))}
-  /* the sweep candle: trades beyond the level by a few points, closes near it */
-  const sweepD=1.5+r()*1.8,swLow=q4(LV-sweepD),sweepI=C.length;
-  push(mk(p,p+.2*s,swLow,LV+.6*s));
-  /* the reaction: fast = one or two candles, slow = a longer, choppy wait */
-  const wait=fast?Math.floor(r()*2):5+Math.floor(r()*5);
-  for(let i=0;i<wait;i++){const o=p,c=o+(r()-.35)*1.1*s,h=Math.max(o,c)+r()*.5*s,l=Math.max(swLow+.1,Math.min(o,c)-r()*.5*s);push(mk(o,h,l,c))}
-  /* the confirmation: a strong candle that closes back above the CISD line */
-  const confI=C.length,cc=q4(R0+.8*s+r()*1.2*s);
-  push(mk(p,cc+.3*s,Math.min(p,cc)-.2*s,cc));
-  const E=q4(cc),stop=q4(swLow-1),Rr=q4(E-stop);
-  /* the range the level came from: its far end plus half its size is the target */
-  const need=(E-LV+1.3*Rr)/1.5,rng=Math.max(60,Math.ceil(need*(1+r()*.5)/5)*5),H1=q4(LV+rng),tgt=q4(H1+.5*rng),be=q4(E+.25*Rr);
-  /* the trade (entry = open of the next candle) */
-  const entryI=C.length;
-  const exitPath=()=>{
-    if(out==='target'){let q=E,guard=0;push(mk(E,E+.4*s,E-.3*s,E+.5*s));while(q<tgt&&guard++<90){const o=p,c=Math.min(tgt+.5,o+(1+r()*1.1)*s*1.4);push(mk(o,c+.3*s*r(),Math.max(E+.1,o-.3*s*r()),c));q=C[C.length-1].h}return C.length-1}
-    if(out==='scratch'){let g=0;while(C[C.length-1].h<be+.25&&g++<40){const o=p,c=o+(.5+r())*s;push(mk(o,c+.2*s*r(),o-.2*s*r(),c))}
-      for(let i=0;i<3;i++){const o=p,c=o-(.6+r()*.4)*s*1.6;push(mk(o,o+.15*s,Math.max(c-.2*s,E-.6),c))}
-      push(mk(p,p+.1*s,E-.5,E-.25));return C.length-1}
-    /* stop */
-    push(mk(E,E+.5*s,E-.5*s,E-.2*s));let g=0;while(C[C.length-1].l>stop-.5&&g++<40){const o=p,c=o-(.5+r())*s;push(mk(o,o+.2*s*r(),c-.3*s*r(),c))}
-    push(mk(p,p+.1*s,stop-.5,stop-.25));return C.length-1};
-  push(mk(cc,cc+.35*s,cc-.2*s,E+.1));
-  const exitI=exitPath();
-  const beI=out==='stop'?null:(()=>{for(let i=entryI;i<C.length;i++)if(C[i].h>=be)return i;return null})();
-  /* alignment: the sweep extreme sits inside an unfilled gap (or not) */
-  const al={kind:align,lo:q4(swLow-2.5*s),hi:q4(LV+3*s),i0:Math.max(0,runI-9)};
-  let out0={C,s,P,t0:570,step:1,side:'long',level:LV,levelKind:level,R0,runI,sweepI,swLow,confI,wait,fast,entryI,E,stop,R:Rr,be,beI,tgt,exitI,out,rng,H1,Lrange:LV,align:al,
-    ok:{inside:true,fast,big:level!=='15m'}};
-  if(side==='short'){const f=x=>2*P-x;
-    out0={...out0,C:mirrorC(C,P),side:'short',level:f(LV),R0:f(R0),swLow:f(swLow),E:f(E),stop:f(stop),be:f(be),tgt:f(tgt),H1:f(H1),Lrange:f(LV),align:{...al,lo:f(al.hi),hi:f(al.lo)}}}
-  return out0}
-/* overlay builders */
-const exLvl=e=>hlAt(e.level,e.levelKind==='15m'?'previous 15m '+(e.side==='long'?'low':'high'):e.levelKind==='1H'?'previous 1H '+(e.side==='long'?'low':'high'):'previous-day '+(e.side==='long'?'low':'high'),COL.ice,0,{scale:true});
-const exCisd=e=>hlAt(e.R0,'CISD line',COL.gold,e.runI,{scale:true,dash:true});
-const exAlign=e=>e.align.kind==='none'?null:rectAt(e.align.i0,e.sweepI+12,Math.min(e.align.lo,e.align.hi),Math.max(e.align.lo,e.align.hi),e.align.kind==='gap'?(e.side==='long'?'15m bullish gap':'15m bearish gap'):(e.side==='long'?'15m bullish rejection block':'15m bearish rejection block'),COL.lag,{dash:true});
-const exTrade=(e,i1)=>[hlAt(e.E,'entry',COL.ice,e.entryI,{scale:true,pine:1,pcol:'#9db2bd',pleft:1,i1}),hlAt(e.stop,'stop',COL.bad,e.entryI,{scale:true,pine:1,pcol:'#f23645',pleft:1,i1}),hlAt(e.be,'break-even step (+0.25R)',COL.gold,e.entryI,{scale:true,pine:1,pcol:'#9aa0ad',pdot:1,pleft:1,i1}),hlAt(e.tgt,'target',COL.ok,e.entryI,{scale:true,pine:1,pcol:'#00e676',pleft:1,i1})];
-const exWatch=e=>({...tagAt(e.sweepI,e.side==='long'?e.C[e.sweepI].l:e.C[e.sweepI].h,'WATCHING 1/3',e.side==='long'?'below':'above',COL.ice),pine:1,bg:'rgba(75,82,96,.85)',tc:'#fff',tiny:1});
-const exEntryTab=e=>({...tagAt(e.entryI,e.side==='long'?e.C[e.entryI].l:e.C[e.entryI].h,`ExO · ${e.side==='long'?'LONG':'SHORT'} ${fm(e.E)} · 3/3`,e.side==='long'?'below':'above',COL.ice),pine:1,bg:'rgba(41,98,255,.85)',tc:'#fff',tiny:1});
-const exX=(it,e)=>({t0:e.t0,step:1,...it});
-/* ---------- chart drills ---------- */
-const exTapSweep=r=>{const e=exoScn(r,{side:pick(r,['long','short']),fast:r()<.6,level:pick(r,['1H','1H','15m','day'])}),L=e.side==='long';
-  return exX({kind:'tap',many:false,topic:'ExO · the sweep',q:`The ${e.levelKind==='15m'?'previous 15-minute':e.levelKind==='1H'?'previous 1-hour':'previous-day'} ${L?'low':'high'} is marked. Click the candle that SWEEPS it: the first to trade through it.`,C:e.C.slice(0,e.sweepI+3),ov:[exLvl(e)],want:[e.sweepI],why:`The candle at ${hhmm(e.t0+e.sweepI)} is the first to trade ${L?'below':'above'} ${fm(e.level)}, by ${fm(Math.abs(e.swLow-e.level),1)} points. A grey WATCHING tab would appear on its wick. Nothing to enter yet.`},e)};
-const exCisdLine=r=>{const e=exoScn(r,{side:pick(r,['long','short']),fast:r()<.6}),L=e.side==='long';
-  return exX({kind:'level',topic:'ExO · the CISD line',q:`Price swept the ${L?'low':'high'} at ${fm(e.level)}. The candles that pushed price into the level are the delivery run. Place a line at the price a candle must CLOSE through to confirm: the opening price of the run.`,C:e.C.slice(0,e.sweepI+1),ov:[exLvl(e)],truth:[{p:e.R0,tol:Math.max(1.6,e.s*.8),label:'CISD line'}],why:`The run that pushed into the level opened at ${fm(e.R0)}: that is the CISD line. A candle that closes ${L?'above':'below'} it says the push has been overturned.`},e)};
-const exTapConfirm=r=>{const e=exoScn(r,{side:pick(r,['long','short']),fast:r()<.5}),L=e.side==='long';
-  return exX({kind:'tap',many:false,topic:'ExO · the confirmation',q:`The dotted line is the CISD line. Click the candle that CONFIRMS: the first to close ${L?'above':'below'} it.`,C:e.C.slice(0,e.confI+3),ov:[exLvl(e),exCisd(e)],want:[e.confI],why:`The candle at ${hhmm(e.t0+e.confI)} is the first to close ${L?'above':'below'} ${fm(e.R0)} (and back inside the swept level). A wick through the line does nothing; the close is what counts. The entry is the open of the next candle.`},e)};
-const exCount=r=>{const e=exoScn(r,{side:pick(r,['long','short']),fast:r()<.5}),n=e.confI-e.sweepI;
-  return exX({kind:'num',topic:'ExO · fast or slow',q:`Count the candles from the sweep candle to the confirmation candle (the sweep candle is candle 0; the confirmation candle counts). How many?`,C:e.C.slice(0,e.confI+2),ov:[exLvl(e),exCisd(e),exWatch(e)],ans:n,unit:'candles',tol:.01,why:`The sweep is candle 0 and the confirmation is candle ${n}. ${n<=3?'That is within 3 candles: a fast reaction (check 2 passes).':'That is more than 3 candles: a slow turn (check 2 fails), a B setup.'}`},e)};
-const exStopLine=r=>{const e=exoScn(r,{side:pick(r,['long','short']),fast:true}),L=e.side==='long';
-  return exX({kind:'level',topic:'ExO · stop and break-even',q:`You enter at ${fm(e.E)}, the open of the candle after the confirmation. Place the STOP (one point beyond the sweep extreme) and the BREAK-EVEN step (a quarter of the way to your risk, +0.25R).`,C:e.C.slice(0,e.entryI+1),ov:[exLvl(e),hlAt(e.E,'entry',COL.ice,e.entryI,{scale:true,pine:1,pcol:'#9db2bd',pleft:1})],truth:[{p:e.stop,tol:Math.max(1.2,e.R*.08),label:'stop'},{p:e.be,tol:Math.max(1.4,e.R*.08),label:'break-even step'}],why:`The sweep extreme is ${fm(e.swLow)}, so the stop is one point beyond it: ${fm(e.stop)} (${fm(e.R,1)} points of risk). +0.25R is ${fm(e.R*.25,1)} points in your favour: ${fm(e.be)}. When price reaches it, the stop moves to the entry.`},e)};
-const exTarget=r=>{const e=exoScn(r,{side:pick(r,['long','short']),fast:true}),L=e.side==='long',far=e.H1;
-  return exX({kind:'num',topic:'ExO · the target',q:`The ${e.levelKind==='15m'?'15-minute':e.levelKind==='1H'?'1-hour':'day'} candle you swept ranged from ${fm(L?e.level:far)} to ${fm(L?far:e.level)} (${fm(e.rng,0)} points). The target is half that size beyond the far end of the range. What is the target price?`,ans:e.tgt,unit:'',tol:.3,why:`Half of ${fm(e.rng,0)} is ${fm(e.rng/2,1)}. The far end of the range is ${fm(far)}, so the target is ${fm(far)} ${L?'+':'−'} ${fm(e.rng/2,1)} = ${fm(e.tgt)}.`},e)};
-const exAlignQ=r=>{const al=pick(r,['gap','rb','none']),e=exoScn(r,{side:pick(r,['long','short']),align:al}),L=e.side==='long';
-  const a=exAlign(e);
-  return exX(mcq('ExO · alignment',`The sweep extreme (${fm(e.swLow)}) is marked. ${a?'The shaded zone is a 15-minute zone of the opposite side.':'There is no 15-minute or 1-hour gap or rejection block around it.'} How do you grade this setup?`,al==='none'?['Aligned with nothing: skip unless there is a very specific reason','Highest quality: take it at full risk','Normal setup','Always take it']:al==='gap'?['Aligned with a gap: a normal setup (two kinds of alignment would be the best)','Aligned with nothing: skip','Skip: a gap is a warning','Take it twice the size']:['Aligned with a rejection block: a normal setup','Aligned with nothing: skip','Skip: a rejection block is a warning','Take it twice the size'],al==='none'?'Not sitting inside a 15m or 1h gap or rejection block means the other side was not already waiting there. Skip unless you can name a very specific reason.':`The sweep extreme sits inside ${al==='gap'?'an unfilled gap':'the wick zone of a rejection block'} of the right side: price was delivered into an area where the other side was already waiting. Aligned with one is a normal setup; aligned with a gap and a rejection block is the highest quality.`,{ov:a?[a]:[],C:e.C.slice(0,e.sweepI+6)}),e)};
-const exReplayLike=r=>{const out=pick(r,['target','scratch','stop']),e=exoScn(r,{side:pick(r,['long','short']),fast:true,out}),L=e.side==='long';
-  const lab={target:'target',scratch:'scratch (stopped at the entry after break-even)',stop:'full stop'};
-  return exX(mcq('ExO · the outcome',`After the entry the chart shows what happened. Which outcome is it?`,[lab[out],...Object.values(lab).filter(x=>x!==lab[out])].slice(0,3).concat(['time exit after 120 minutes']),out==='target'?'Price reached the target line.':out==='scratch'?'Price reached the +0.25R step (the stop moved to the entry) and then came back to the entry: a scratch. It costs about the trading costs and is not a win.':'Price traded back through the stop: a full loss at the planned risk.',{C:e.C.slice(0,e.exitI+3),ov:[...exTrade(e,e.exitI+2)]}),e)};
-/* the three checks, as a question */
-const exChecks=r=>{const inside=r()<.75,fast=r()<.6,big=r()<.7,n=(inside?1:0)+(fast?1:0)+(big?1:0);
-  const lvl=big?pick(r,['previous 1-hour','previous-day']):'previous 15-minute';
-  return mcq('ExO · the checks',`A setup: the ${lvl} ${pick(r,['high','low'])} is swept. The confirmation candle ${inside?'closes back inside the swept level':'closes through the CISD line but not back inside the swept level'}, and it arrives ${fast?'2':'7'} candles after the sweep. How many of the three checks pass, and what does the playbook say?`,[`${n}/3: ${n===3?'the base case, take it':n===2?'needs a reason you can write down':'usually a skip'}`,`${(n+1)%4}/3: ${((n+1)%4)===3?'the base case, take it':'usually a skip'}`,`${(n+2)%4}/3: ${((n+2)%4)===3?'the base case, take it':'usually a skip'}`,`${(n+3)%4}/3: ${((n+3)%4)===3?'the base case, take it':'usually a skip'}`],`The three checks: closed back inside the swept level (${inside?'yes':'no'}), reacted within 3 candles (${fast?'yes':'no'}), swept the previous 1H or previous-day level (${big?'yes':'no'}). That is ${n}/3. 3/3 is the base case, 2/3 needs a reason you can write down, 1/3 or lower is usually a skip.`)};
+const jit=(r,a)=>(r()-.5)*2*a;
+/* n candles from the last close to `to`, in a straight-ish line with small wicks */
+function legC(C,r,s,to,n,wick=.4){
+  let p=C.length?C[C.length-1].c:to;const st=(to-p)/n;
+  for(let k=0;k<n;k++){const o=p,c=k===n-1?to:o+st+jit(r,Math.abs(st)*.22+s*.12);
+    C.push(mk(o,Math.max(o,c)+r()*wick*s,Math.min(o,c)-r()*wick*s,c));p=C[C.length-1].c}
+  return p}
+/* no accidental gaps: every candle overlaps the candle two bars back, except the candles in `skip` */
+function degap(C,skip=[]){for(let i=2;i<C.length;i++){if(skip.includes(i))continue;const a=C[i-2],c=C[i];
+  if(c.l>a.h)c.l=q4(a.h-.25);else if(c.h<a.l)c.h=q4(a.l+.25)}}
+/* make the last three candles a fair value gap at least `size` wide (dir 1 = bullish, -1 = bearish) */
+function carveLast(C,dir,size){const n=C.length,c1=C[n-3],c2=C[n-2],c3=C[n-1];
+  if(dir>0){const want=c1.h+size,d=want-c3.l;if(d>0)Object.assign(c3,{o:q4(c3.o+d),h:q4(c3.h+d),l:q4(c3.l+d),c:q4(c3.c+d)});c2.l=Math.min(c2.l,q4(c1.h-.25));c2.h=Math.max(c2.h,q4(c3.l+.25))}
+  else{const want=c1.l-size,d=c3.h-want;if(d>0)Object.assign(c3,{o:q4(c3.o-d),h:q4(c3.h-d),l:q4(c3.l-d),c:q4(c3.c-d)});c2.h=Math.max(c2.h,q4(c1.l+.25));c2.l=Math.min(c2.l,q4(c3.h-.25))}}
+/* every fair value gap in a series, and whether later price traded back into it */
+function fvgList(C){const out=[];
+  for(let i=1;i<C.length-1;i++){const a=C[i-1],c=C[i+1];
+    if(c.l-a.h>=.5)out.push({i,dir:1,lo:a.h,hi:c.l});
+    if(a.l-c.h>=.5)out.push({i,dir:-1,lo:c.h,hi:a.l})}
+  out.forEach(g=>{g.filled=false;for(let j=g.i+2;j<C.length;j++){if(g.dir>0?C[j].l<g.hi-.5:C[j].h>g.lo+.5){g.filled=true;g.fillI=j;break}}});
+  return out}
+const wickMid=c=>c.c>=c.o?q4((c.o+c.l)/2):q4((c.c+c.l)/2);   /* midpoint of the LOWER wick (a long's rejection wick) */
+const wickLen=c=>q4(Math.min(c.o,c.c)-c.l);
+const flipP=(P)=>x=>x==null?x:q4(2*P-x);
+/* mirror a long scene into a short: candles, prices, and zones (lo and hi swap) */
+function mirrorScn(sc,prices,zones=[]){const f=flipP(sc.P),o={...sc,C:mirrorC(sc.C,sc.P),side:'short'};
+  prices.forEach(k=>{if(sc[k]!=null)o[k]=f(sc[k])});
+  zones.forEach(k=>{if(sc[k])o[k]={...sc[k],lo:f(sc[k].hi),hi:f(sc[k].lo)}});
+  return o}
+const sideWord=e=>e.side==='long'?'low':'high',dirWord=e=>e.side==='long'?'LONG':'SHORT';
+
+/* ---------- narrative scene: a 1-hour chart with gaps ---------- */
+function narrScn(r,{side='long'}={}){
+  for(let att=0;att<40;att++){
+    const u=17+r()*7,P=basePrice(r),s=u*.32,C=[],carved=[];
+    C.push(mk(P,P+.35*u,P-.3*u,P+.1*u));
+    legC(C,r,s,P-.2*u,3);
+    legC(C,r,s,P+1.5*u,3);carveLast(C,1,.55*u);carved.push(C.length-1);const f1=C.length-2;   /* F1: a bullish gap that price later fills */
+    legC(C,r,s,P+4*u,3);legC(C,r,s,P+3.7*u,2);
+    legC(C,r,s,P-.7*u,4);carveLast(C,-1,.5*u);carved.push(C.length-1);const u1=C.length-2;      /* U1: a bearish gap above where price ends up */
+    legC(C,r,s,P-6*u,5);legC(C,r,s,P-5.8*u,2);
+    legC(C,r,s,P-5.0*u,2);carveLast(C,1,.45*u);carved.push(C.length-1);const u2=C.length-2;     /* U2: a bullish gap below where price ends up */
+    legC(C,r,s,P-2*u,4);legC(C,r,s,P-2.9*u,3);
+    degap(C,carved);
+    const gaps=fvgList(C).filter(g=>g.hi-g.lo>=.3*u);
+    const gF=gaps.find(g=>g.i===f1),gU1=gaps.find(g=>g.i===u1),gU2=gaps.find(g=>g.i===u2),cur=C[C.length-1].c;
+    if(gaps.length!==3||!gF||!gU1||!gU2||!gF.filled||gU1.filled||gU2.filled||gU1.dir!==-1||gU2.dir!==1||gU1.lo<cur+u||gU2.hi>cur-u)continue;
+    const hi=Math.max(...C.map(c=>c.h)),lo=Math.min(...C.map(c=>c.l)),sc={C,P,u,s,t0:18*60,step:60,tf:'60',side:'long',cur,gaps:{up:gU1,down:gU2,filled:gF},rangeHi:q4(hi),rangeLo:q4(lo),mid:q4((hi+lo)/2),zone:cur<(hi+lo)/2?'discount':'premium'};
+    if(side==='long')return sc;
+    const m=mirrorScn(sc,['cur','rangeHi','rangeLo','mid']),fz=g=>({...g,dir:-g.dir,lo:flipP(P)(g.hi),hi:flipP(P)(g.lo)});
+    return{...m,rangeHi:flipP(P)(sc.rangeLo),rangeLo:flipP(P)(sc.rangeHi),zone:sc.zone==='discount'?'premium':'discount',gaps:{up:fz(gU2),down:fz(gU1),filled:fz(gF)}}}
+  throw new Error('narrative scene failed')}
+
+/* ---------- Model 1: the external rejection block ---------- */
+function m1Scn(r,{side='long',outcome='target',decoy=false}={}){
+  const s=2.7+r()*.8,P=basePrice(r),C=[];
+  const size=16+Math.floor(r()*13),EL=q4(P),wA=3.5+r()*1.5,wB=10+r()*3,wC=5.5+r()*2;
+  const gL=q4(Math.min(EL-.3*size,EL+1.25-wB/2-2.5)),gH=q4(gL+size),gM=q4((gL+gH)/2);
+  /* lead-in: a random long wick in mid-air (nothing behind it), then a slide into the gap and equal lows */
+  C.push(mk(gH+10,gH+13,gH+7,gH+11));legC(C,r,s,gH+6,3);
+  let decoyI=null;if(decoy){const o=C[C.length-1].c;C.push(mk(o,o+.6*s,o-15,o-1.5));decoyI=C.length-1;legC(C,r,s,o-4,1)}
+  legC(C,r,s,EL+9,7);
+  legC(C,r,s,EL+1.5,2);const eq1=C.length-1;C[eq1].l=EL;C[eq1].c=Math.max(C[eq1].c,q4(EL+1));
+  legC(C,r,s,EL+8,2);legC(C,r,s,EL+2,2);const eq2=C.length-1;C[eq2].l=EL;C[eq2].c=Math.max(C[eq2].c,q4(EL+1.25));
+  legC(C,r,s,EL+6,1);
+  /* the cluster: three attempts below the equal lows, none closes beyond them. The longest wick is the most rejected. */
+  const A=mk(EL+6,EL+7,EL-wA,EL+2.5);C.push(A);const iA=C.length-1;legC(C,r,s,EL+8,1);
+  const B=mk(EL+8,EL+9,EL-wB,EL+2.5);C.push(B);const iB=C.length-1;legC(C,r,s,EL+7,1);
+  const Cc=mk(EL+7,EL+7.5,EL-wC,EL+3);C.push(Cc);const iC=C.length-1;
+  const E=wickMid(C[iB]),stopD=10,stop=q4(E-stopD),T=q4(E+40),D2=q4(E+78);
+  const swept=q4(Math.min(C[iA].l,C[iB].l,C[iC].l)),reactI0=C.length;
+  legC(C,r,s,E+22,4);
+  let fillI=null,exitI=null,untap=null;
+  const edged=outcome==='edged',tapped=outcome==='tapped';
+  if(tapped){const uH=q4(swept-3),uL=q4(uH-14);untap={lo:uL,hi:uH}}
+  legC(C,r,s,edged?E+1.75:E+1,3);
+  if(!edged){const k=C.length-1;C[k].l=q4(E-.75);fillI=k}else C[C.length-1].l=Math.max(C[C.length-1].l,q4(E+1.25));
+  const afterFill=C.length;
+  if(outcome==='target'||edged){legC(C,r,s,T+3,7);exitI=edged?null:(()=>{for(let i=afterFill;i<C.length;i++)if(C[i].h>=T)return i;return null})();
+    /* the trade is over at the target; keep a little more price after it */
+    if(!edged)legC(C,r,s,T+9,2)}
+  else if(outcome==='stop'){legC(C,r,s,stop-.5,4);for(let i=afterFill;i<C.length;i++)if(C[i].l<=stop-.25){exitI=i;C[i].l=Math.min(C[i].l,q4(stop-.5));break};legC(C,r,s,stop-6,2)}
+  else{ /* tapped: price runs down into the untapped gap, takes the stop, then does what was expected */
+    legC(C,r,s,untap.hi+1,4);C[C.length-1].l=q4(untap.hi-4);for(let i=afterFill;i<C.length;i++)if(C[i].l<=stop-.25){exitI=i;break}
+    legC(C,r,s,T+4,8)}
+  degap(C);
+  const mids=[iA,iB,iC].map(i=>({i,mid:wickMid(C[i]),len:wickLen(C[i])}));
+  const draw={lo:T,hi:q4(T+14)},gap={lo:gL,hi:gH};
+  let sc={C,P,s,t0:570,step:5,side:'long',outcome:tapped?'tapped':outcome,EL,eq:[eq1,eq2],cluster:[iA,iB,iC],iB,gap,gM,swept,mids,decoyI,E,stop,stopD,T,D2,draw,fillI,exitI,untap,reactI0,
+    zoneI:{i0:0,i1:C.length-1},gapSize:size};
+  if(side==='short')sc=mirrorScn(sc,['EL','gM','swept','E','stop','T','D2'],['gap','draw','untap']),sc.mids=mids.map(m=>({...m,mid:flipP(P)(m.mid)}));
+  return sc}
+
+/* ---------- Model 2: the CISD rejection block ---------- */
+function m2Scn(r,{side='long',outcome='target',noRetest=false}={}){
+  const s=2.8+r()*.8,P=basePrice(r),C=[];
+  const Lr=q4(P);
+  C.push(mk(Lr+6,Lr+8,Lr+4,Lr+5));legC(C,r,s,Lr+9,2);legC(C,r,s,Lr+2,2);
+  C.push(mk(C[C.length-1].c,Lr+7,Lr-2,Lr+5));const rejI=C.length-1;       /* the rejection out of the higher-timeframe gap */
+  const H1=q4(Lr+44+r()*8);legC(C,r,s,H1,7);const topI=C.length-1;
+  /* the pullback: a couple of mixed candles, then three red candles that drove the last leg down */
+  /* a short red pullback, then one green candle that closes at C0, then the three red candles: the red run is exactly those three */
+  const C0=q4(H1-13-r()*3);legC(C,r,s,q4(C0-4),2);{const pl=C[C.length-1].c;C.push(mk(pl,C0+.6,pl-.5,C0))}
+  const R=[];for(let k=0;k<3;k++){const o=C[C.length-1].c;const c=q4(o-(4.5+r()*2));C.push(mk(o,o+.8+r()*.8,c-(.4+r()*1.2),c));R.push(C.length-1)}
+  C[R[0]].o=C0;C[R[0]].h=Math.max(C[R[0]].h,C0+.5);C[R[0]].c=Math.min(C[R[0]].c,q4(C0-4));
+  const lowRun=C[R[2]].c;
+  /* the CISD candle: closes above the open of the first red candle */
+  const K=mk(lowRun,C0+6,lowRun-1,q4(C0+4.5+r()*1.5));C.push(K);const kI=C.length-1;
+  let t1=null,fillI=null,exitI=null,E=null,stop=null,T=null,retestI=null;
+  if(noRetest){legC(C,r,s,q4(C0+22),4);legC(C,r,s,q4(C0+34),9);legC(C,r,s,q4(C0+31),2)}
+  else{
+    legC(C,r,s,q4(C0+10),2);
+    /* the retest: a wick down to the CISD level that does not close below it */
+    legC(C,r,s,q4(C0+5.5),1);
+    const dip=5+r()*3;C.push(mk(C[C.length-1].c,C[C.length-1].c+.8,q4(C0-dip),q4(C0+2.6)));t1=C.length-1;retestI=t1;
+    E=wickMid(C[t1]);stop=q4(E-12);T=q4(E+40);
+    legC(C,r,s,q4(C0+11),3);                           /* price bounces, then comes back for the limit */
+    legC(C,r,s,q4(C0+4),2);C[C.length-1].l=q4(E-.75);fillI=C.length-1;     /* the fill is a wick down to the limit: the candle still closes above the CISD level */
+    const afterFill=C.length;
+    if(outcome==='target'){legC(C,r,s,T+3,8);for(let i=afterFill;i<C.length;i++)if(C[i].h>=T){exitI=i;break};legC(C,r,s,T+8,2)}
+    else{ /* hard exit: a candle closes back through the CISD level; price would have gone on to the target anyway */
+      legC(C,r,s,q4(C0+6),2);const o=C[C.length-1].c,c=q4(C0-2.5-r()*1.5);C.push(mk(o,o+.6,c-1,c));exitI=C.length-1;
+      legC(C,r,s,q4(C0+8),2);legC(C,r,s,q4(T+3),7)}
+  }
+  degap(C);
+  const lastI=C.length-1,drawZ={lo:q4((E??C0)+40),hi:q4((E??C0)+58)};
+  let sc={C,P,s,t0:570,step:5,side:'long',outcome:noRetest?'noRetest':outcome,Lr,rejI,H1,topI,C0,runI:R,lowRun,kI,retestI,E,stop,T,fillI,exitI,draw:drawZ,
+    gap1:{lo:q4(Lr-6),hi:q4(Lr+8)}};
+  if(side==='short')sc=mirrorScn(sc,['Lr','H1','C0','lowRun','E','stop','T'],['draw','gap1']);
+  return sc}
+
+/* ---------- Model 3: the 1-minute continuation ---------- */
+function m3Scn(r,{side='long',outcome='target',qualifies=true}={}){
+  const s=1.7+r()*.5,P=basePrice(r),C=[];
+  const gapSize=3+Math.floor(r()*3);
+  C.push(mk(P,P+1.4,P-1.2,P+.5));legC(C,r,s,P+2,5);legC(C,r,s,P-1,4);
+  {const pl=C[C.length-1].c;C.push(mk(pl,pl+1.4,pl-.3,q4(pl+1.25)))}      /* one green candle so the red run is exactly the three below */
+  const C0=C[C.length-1].c;
+  const R=[];{let p=C0;for(let k=0;k<3;k++){const o=p,c=q4(o-(1.6+r()*.9));C.push(mk(o,o+.4,c-.5,c));R.push(C.length-1);p=c}}
+  C[R[0]].o=C0;C[R[0]].h=Math.max(C[R[0]].h,C0+.4);
+  const lowRun=C[R[2]].c;
+  /* the impulse: a small candle, a big one that closes above the CISD level, and a third that leaves a gap behind */
+  const g1=mk(lowRun,q4(lowRun+2.5),lowRun-.5,q4(lowRun+1.75));C.push(g1);const iG1=C.length-1;
+  const g1h=g1.h;
+  const gL=q4(g1h),gH=q4(g1h+gapSize);
+  const o2=g1.c,c2=q4(C0+7+r()*2);C.push(mk(o2,c2+.6,o2-.5,c2));const iG2=C.length-1;
+  const c3=q4(gH+3.5);C.push(mk(c2-.5,c3+1,gH,c3));const iG3=C.length-1;
+  legC(C,r,s,q4(C0+10),2);
+  const wLow=qualifies?q4(C0-4.5):q4(gL+.4);
+  legC(C,r,s,q4(C0+6),2);
+  /* the retest: rejects out of both the gap and the CISD level (or closes through the level and does not qualify) */
+  const wo=C[C.length-1].c,wc=qualifies?q4(C0+2.25):q4(C0-1.5);
+  C.push(mk(wo,wo+.5,wLow,wc));const wI=C.length-1;
+  const E=qualifies?wickMid(C[wI]):q4((Math.min(wo,wc)+wLow)/2),stop=q4(E-10),T=q4(E+30);
+  let fillI=null,exitI=null;
+  if(qualifies){
+    legC(C,r,s,q4(E+9),3);legC(C,r,s,q4(E+1),2);C[C.length-1].l=q4(E-.75);fillI=C.length-1;const af=C.length;
+    if(outcome==='target'){legC(C,r,s,T+2,8);for(let i=af;i<C.length;i++)if(C[i].h>=T){exitI=i;break};legC(C,r,s,T+5,2)}
+    else{legC(C,r,s,stop-.5,5);for(let i=af;i<C.length;i++)if(C[i].l<=stop-.25){exitI=i;break};legC(C,r,s,stop-4,2)}
+  }else{legC(C,r,s,q4(C0-9),5);legC(C,r,s,q4(C0-14),4)}
+  degap(C,[iG3]);
+  let sc={C,P,s,t0:570,step:1,side:'long',outcome:qualifies?outcome:'void',qualifies,C0,runI:R,lowRun,gap:{lo:gL,hi:gH,i:iG2},iG1,iG2,iG3,wI,wLow,E,stop,T,fillI,exitI,gapSize};
+  if(side==='short')sc=mirrorScn(sc,['C0','lowRun','wLow','E','stop','T'],['gap']);
+  return sc}

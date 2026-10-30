@@ -2,7 +2,7 @@
 // Tiers match the Practice page: accuracy over a model's last 40 reps, plus a minimum rep count.
 export const PRACTICE_MODELS = ["inv", "exo"] as const;
 export type PracticeModel = (typeof PRACTICE_MODELS)[number];
-export const PRACTICE_MODEL_LABEL: Record<PracticeModel, string> = { inv: "INVERTIX", exo: "ECHO X ORBIT" };
+export const PRACTICE_MODEL_LABEL: Record<PracticeModel, string> = { inv: "INVERTIX", exo: "Rejection blocks & CISD" };
 export type PracticeTier = "none" | "bronze" | "silver" | "gold" | "elite";
 export const PRACTICE_TAGS: Record<string, string> = {
   "early-entry": "Enters before the flip closes",

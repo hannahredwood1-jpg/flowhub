@@ -1,7 +1,7 @@
 /* ============================================================
    progress: saved in this browser and synced to your FLOWHUB account
 ============================================================ */
-const LS=window.VAULT?'fh-vault-v1':'fh-school-v2',LSX=window.VAULT?'fh-vault-v1-txt':'fh-school-v2-txt';
+const LS=window.INV?'fh-invertix-v1':window.VAULT?'fh-vault-v1':'fh-school-v2',LSX=window.INV?'fh-invertix-v1-txt':window.VAULT?'fh-vault-v1-txt':'fh-school-v2-txt';
 let PROG={m:{}},TXT={},UNLOCKS=[],LIVE=false,WHO='';
 const BLANK=()=>({s:[0,0,0],p:0,sc:0,a:1,n:0,at:0,t:0,po:0});
 const pm=id=>PROG.m[id]||(PROG.m[id]=BLANK());
@@ -18,18 +18,16 @@ function persist(sync=true){try{localStorage.setItem(LS,JSON.stringify(PROG))}ca
 function saveTxt(){try{localStorage.setItem(LSX,JSON.stringify(TXT))}catch(e){}}
 let syncT=null;
 const syncSoon=()=>{clearTimeout(syncT);syncT=setTimeout(push,900)};
-const API=window.VAULT?'/api/vault/progress':'/api/school';
+const API=TRACK?TRACK.api:'/api/school';
 async function push(){if(!LIVE)return;try{await fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({v2:compact()})})}catch(e){}}
 async function pull(){try{const r=await fetch(API,{headers:{Accept:'application/json'}});if(!r.ok)return;const j=await r.json();LIVE=true;if(window.VAULT&&j.orderflow&&!window.OF_OK){await new Promise(ok=>{const sc=document.createElement('script');sc.src='/api/vault/orderflow.js';sc.onload=sc.onerror=ok;document.head.append(sc)})}WHO=j.name||'';UNLOCKS=j.unlocks||[];mergeServer(j.state&&j.state.v2);paceAfterPull(j);pathAfterPull(j);const w=$('#who');if(w)w.textContent=WHO;if(PENDING){const h=PENDING;PENDING=null;location.hash=h}else if(pathGate()||(CUR&&VIEW==='lab'&&proofPending(CUR)))route();else render()}catch(e){}}
-async function logAttempt(id,score,total,pass,kind='ex',secs=0){if(!LIVE||window.VAULT)return;try{await fetch('/api/school/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,ref:id,score,total,pass,secs})})}catch(e){}}
+async function logAttempt(id,score,total,pass,kind='ex',secs=0){if(!LIVE||SIDE)return;try{await fetch('/api/school/attempt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,ref:id,score,total,pass,secs})})}catch(e){}}
 
 /* ---------- module helpers ---------- */
 const modIdx=id=>MODS.findIndex(m=>m.id===id);
 const FIRST_CORE=MODS.findIndex(m=>!PH[m.ph].open);
 /* Beginner Basics (phase 1) are open from the start in any order. Everything after them unlocks one module at a time, starting with the first Foundations module. INVERTIX needs every earlier module learned or proved. */
 const modUnlocked=i=>{const m=MODS[i];if(m.sealed&&!window.OF_OK)return false;if(pathGate())return false;if(UNLOCKS.includes(m.id)||UNLOCKS.includes('all'))return true;
-  /* INVERTIX opens only when every module before it (Beginner Basics included) is learned or proved */
-  if(m.id==='m43')return !!pm(m.id).p||MODS.slice(0,i).every(x=>pm(x.id).p);
   if(PH[m.ph].open||i===FIRST_CORE)return true;return !!pm(MODS[i-1].id).p};
 const modStatus=i=>pm(MODS[i].id).p?'done':modUnlocked(i)?'active':'locked';
 const stepsDone=m=>pm(m.id).s.filter(Boolean).length;
@@ -65,16 +63,16 @@ window.addEventListener('hashchange',route);
 ============================================================ */
 let OPEN=null;
 function renderMap(){
-  const done=MODS.filter(m=>pm(m.id).p),scs=done.map(m=>pm(m.id).sc),avg=scs.length?Math.round(scs.reduce((a,b)=>a+b,0)/scs.length):0,cur=MODS[currentIdx()];
-  const finished=done.length===MODS.length;
-  $('#stats').innerHTML=`<div class="card stat"><b>${done.length}<span class="dim">/${MODS.length}</span></b><span>modules passed</span></div><div class="card stat"><b>${done.length?avg+'%':'–'}</b><span>average exam score</span></div>`;
+  const course=COURSE(),done=course.filter(m=>pm(m.id).p),scs=done.map(m=>pm(m.id).sc),avg=scs.length?Math.round(scs.reduce((a,b)=>a+b,0)/scs.length):0,cur=MODS[currentIdx()];
+  const finished=done.length===course.length;
+  $('#stats').innerHTML=`<div class="card stat"><b>${done.length}<span class="dim">/${course.length}</span></b><span>modules passed</span></div><div class="card stat"><b>${done.length?avg+'%':'–'}</b><span>average exam score</span></div>`;
   if(OPEN==null)OPEN=cur.id;
   let html='',ph=-1;
   MODS.forEach((m,i)=>{
     if(m.ph!==ph){if(ph>=0)html+='</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
     html+=modRow(m,i)});
   html+='</div></section>';
-  $('#phases').innerHTML=(pm('m16').p?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">${window.VAULT?'Vault complete.':'Course complete.'}</h2><p class="muted">You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.</p></div>`:'')+html;
+  $('#phases').innerHTML=(TRACK&&finished?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">${TRACK?TRACK.doneTitle+'.':'Course complete.'}</h2><p class="muted">${TRACK&&TRACK.id==='fundamentals'?'You passed every module exam. Next, choose the strategy you want to learn first: INVERTIX or ECHO X ORBIT. Each has its own page, pace and certificate.':'You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.'}</p></div>`:'')+html;
   $('#aside').innerHTML=`<div class="card next-card"><div class="hud">${finished?'All modules passed':'Up next'}</div><div class="h">${cur.n}. ${cur.t}</div>
     <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':proofPending(cur)?'Proof exam: one attempt, no lesson':`Step <b>${Math.min(stepsDone(cur)+1,4)}</b> of 4: ${STEPS[Math.min(stepsDone(cur),3)]}`}</p>
     <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:proofPending(cur)?0:stepsDone(cur)/4*100}%"></i></div>
@@ -113,7 +111,7 @@ function newLab(m,step){const t=TXT[m.id]||{};return{m,step,see:0,recall:null,dn
 const storeTxt=()=>{TXT[LAB.m.id]={t:LAB.t,sub:LAB.sub,ticks:LAB.ticks};saveTxt()};
 function ensureCharts(){
   if(CH)return;
-  CH=new Chart($('#chartHost'));CH2=new Chart($('#chartHost2'));TB=toolbar(CH,['cursor','tap','rect','hline','erase']);$('#tvLeft').append(TB);
+  CH=new Chart($('#chartHost'));CH2=new Chart($('#chartHost2'));if(TRACK&&TRACK.id==='exo'){CH.neutral=false;CH2.neutral=false;$('#candleBtn').textContent='Candles: green / red'}TB=toolbar(CH,['cursor','tap','rect','hline','erase']);$('#tvLeft').append(TB);
   CH.onmarks=()=>{};
   $$('[data-tf]').forEach(b=>b.addEventListener('click',()=>{if(LAB&&LAB.step===2)return toast('The time frame is locked during a chart task.');LAB.tf=+b.dataset.tf;paintChart(true)}));
   $('#candleBtn').onclick=()=>{CH.neutral=!CH.neutral;CH2.neutral=CH.neutral;$('#candleBtn').textContent='Candles: '+(CH.neutral?'neutral':'green / red');CH.draw();CH2.draw()};
@@ -122,7 +120,7 @@ function scenarioOf(m){if(!m._sc)m._sc=m.chart?m.ex():null;return m._sc}
 function renderLab(){
   const m=LAB.m;ensureCharts();
   $('#v-lab').classList.toggle('nochart',!m.chart);
-  $('#crumb').innerHTML=`<a href="#/" class="btn ghost sm">← Course map</a><span>Module ${m.n} of ${MODS.length}</span><b>${m.t}</b>`;
+  $('#crumb').innerHTML=`<a href="#/" class="btn ghost sm">← Course map</a><span>Module ${m.n} of ${COURSE().length}</span><b>${m.t}</b>`;
   renderLesson();if(m.chart)setTimeout(()=>{CH.size();CH2.size();paintChart(true)},20);
 }
 function paintChart(refit){
@@ -182,7 +180,7 @@ function renderLesson(){
     const items=[['Learn: lesson read',p.s[0]],['See it: worked example complete',p.s[1]],['Mark it: chart tasks done correctly',p.s[2]]],all=items.every(x=>x[1]),n=examSize(m);
     body=`<h3>Ready for the exam?</h3><ul class="req">${items.map(([t,o])=>`<li class="${o?'ok':''}"><span class="tick">${o?'✓':''}</span>${t}</li>`).join('')}</ul>
     <div class="callout key"><span class="hud">Exam format</span><p><b>${n} questions</b> · <b>${PASS*100}% to pass</b> (${passNeeded(n)} of ${n})</p><p>${m.examDesc||'A mix of concept questions and chart tasks, with fresh charts and numbers every attempt.'}</p></div>
-    ${m.id==='m16'&&m.explain?`<div class="callout def"><span class="hud">Explain it</span><p>Before the final exam, say it in your own words. Write as much or as little as you like: there is no word minimum and nothing here is graded.</p>${m.explain.prompts.map((q,i)=>`<p><b>${i+1}. ${q}</b></p><textarea id="t${i}" rows="4" placeholder="…">${esc(L.t[i]||'')}</textarea>`).join('')}</div>`:''}
+    ${m.explain&&m===COURSE()[COURSE().length-1]?`<div class="callout def"><span class="hud">Explain it</span><p>Before the final exam, say it in your own words. Write as much or as little as you like: there is no word minimum and nothing here is graded.</p>${m.explain.prompts.map((q,i)=>`<p><b>${i+1}. ${q}</b></p><textarea id="t${i}" rows="4" placeholder="…">${esc(L.t[i]||'')}</textarea>`).join('')}</div>`:''}
     <p class="muted">There are no hints and no feedback until you submit. If you don't pass, <b>this module restarts</b>: the lessons re-open and the exam changes.</p>
     ${p.a>1?`<div class="fb no"><b>Attempt ${p.a}.</b> The practice tasks and the exam are a fresh set.</div>`:''}
     ${p.p?`<div class="fb ok"><b>Passed · ${p.sc}%.</b> You can review the lessons any time.</div>`:''}`;
@@ -307,7 +305,7 @@ function showQ(i){
       <p class="muted" style="font-size:13px">${un?`${un} unanswered`:'All answered'} · ${Object.values(X.flag).filter(Boolean).length} flagged</p>
       <p class="dim" style="font-size:12.5px;margin-top:10px">Answers aren't marked until you submit.</p></aside></div>`;
   cs.forEach((c,k)=>{const host=$('#qc'+k),small=c.C.length<=6;
-    const ch=new Chart(host,{fixed:small&&!kd.chart,view:small?[-1.5,c.C.length+3]:null});loadChart(ch,it,k);ch.neutral=true;xcharts.push(ch);
+    const ch=new Chart(host,{fixed:small&&!kd.chart,view:small?[-1.5,c.C.length+3]:null});loadChart(ch,it,k);ch.neutral=!(TRACK&&TRACK.id==='exo');xcharts.push(ch);
     if(small&&!ch.o.view)ch.fit();ch.draw()});
   if(kd.chart&&xcharts[0]){const ch=xcharts[0],tools=[kd.tool,'cursor','erase'];const tb=toolbar(ch,tools,'h');$('#tbSlot').append(tb);
     kd.attach(ch,it,st,()=>refreshNav());if(it.kind==='tap'){ch.taps=new Set(st.a||[])}else{ch.marks=st.a||(st.a=[])}ch.draw();}
@@ -386,29 +384,36 @@ async function planCheck(){
     fb.innerHTML=j&&j.plan&&j.plan.done?'<div class="fb ok"><b>Plan found.</b> Your plan card is saved. It shows on your dashboard and feeds your pre-trade checklist.</div>':'<div class="fb no"><b>No plan yet.</b> Finish all 6 steps in Trading Plan, save it, then check again.</div>'}
   catch(e){fb.innerHTML='<div class="fb no"><b>Could not check.</b> Try again in a moment.</div>'}
 }
-const BOOK_MSG='Hi Hannah! I finished the FLOWMTD Trading School and earned my INVERTIX certificate. I\'m a mentorship member and I\'d like a code for the ECHO X ORBIT vault.\n\nMy name: ';
+const BOOK_MSG='Hi Hannah! I finished the FLOWMTD Trading Fundamentals and earned my certificate. I\'m a mentorship member and I\'d like a code for the ECHO X ORBIT vault.\n\nMy name: ';
 function drawCertificate(name){
   const W=1600,H=1130,cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');
   c.fillStyle='#030405';c.fillRect(0,0,W,H);c.strokeStyle='#28313e';c.lineWidth=2;c.strokeRect(48,48,W-96,H-96);c.strokeStyle='#ff6a00';c.lineWidth=4;c.beginPath();c.moveTo(48,120);c.lineTo(48,48);c.lineTo(120,48);c.stroke();c.beginPath();c.moveTo(W-48,H-120);c.lineTo(W-48,H-48);c.lineTo(W-120,H-48);c.stroke();
-  c.textAlign='center';c.fillStyle='#e6ebf2';c.font='900 46px Archivo, Arial Black, sans-serif';c.fillText('FLOWHUB',W/2,170);c.fillStyle='#ff6a00';c.font='600 20px Inter, sans-serif';c.fillText('Certificate of understanding · INVERTIX',W/2,215);
+  c.textAlign='center';c.fillStyle='#e6ebf2';c.font='900 46px Archivo, Arial Black, sans-serif';c.fillText('FLOWHUB',W/2,170);c.fillStyle='#ff6a00';c.font='600 20px Inter, sans-serif';c.fillText(TRACK.cert,W/2,215);
   c.fillStyle='#929fb2';c.font='400 26px Inter, sans-serif';c.fillText('This certifies that',W/2,400);
   let fs=96;c.font=`700 ${fs}px Inter, sans-serif`;while(c.measureText(name).width>W-300&&fs>40){fs-=4;c.font=`700 ${fs}px Inter, sans-serif`}c.fillStyle='#e6ebf2';c.fillText(name,W/2,520);
   c.strokeStyle='#ff6a00';c.lineWidth=2;c.beginPath();c.moveTo(W/2-300,560);c.lineTo(W/2+300,560);c.stroke();
-  c.fillStyle='#c9d3e1';c.font='400 30px Inter, sans-serif';c.fillText('has completed the FLOWMTD Trading School, passed every module exam,',W/2,660);c.fillText('and demonstrated an understanding of the INVERTIX model.',W/2,704);
-  const d=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});let h=7;for(const ch of name+d)h=(h*31+ch.charCodeAt(0))>>>0;
-  c.textAlign='left';c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('DATE',150,930);c.fillStyle='#e6ebf2';c.font='500 26px JetBrains Mono, monospace';c.fillText(d,150,968);c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('CERTIFICATE ID',150,1020);c.fillStyle='#e6ebf2';c.font='500 22px JetBrains Mono, monospace';c.fillText('FMTD-'+h.toString(36).toUpperCase().padStart(7,'0'),150,1054);
+  c.fillStyle='#c9d3e1';c.font='400 30px Inter, sans-serif';c.fillText(TRACK.certA,W/2,660);c.fillText(TRACK.certB,W/2,704);
+  const d=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});let h=7;for(const ch of name+d+TRACK.id)h=(h*31+ch.charCodeAt(0))>>>0;
+  c.textAlign='left';c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('DATE',150,930);c.fillStyle='#e6ebf2';c.font='500 26px JetBrains Mono, monospace';c.fillText(d,150,968);c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('CERTIFICATE ID',W-150-340,930);c.fillStyle='#e6ebf2';c.font='500 26px JetBrains Mono, monospace';c.fillText('FH-'+h.toString(36).toUpperCase().padStart(7,'0').slice(0,7),W-150-340,968);
   c.textAlign='center';c.fillStyle='#66717f';c.font='400 15px Inter, sans-serif';c.fillText('Educational certificate of course completion. Not a trading license, qualification or financial advice.',W/2,H-72);
   return cv}
-function gradCard(){
-  return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">Trading School complete</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You passed every module. Your INVERTIX certificate is ready.</h2>
-   <p class="muted" style="max-width:62ch">A certificate of understanding: you learned the INVERTIX model from the key level to the daily playbook, and proved it on every exam.</p>
-   <div class="row" style="align-items:center;margin-top:14px"><input class="in" id="certName" placeholder="Your name for the certificate" maxlength="40" value="${esc(WHO||'')}" style="max-width:300px"><button class="btn primary" id="certBtn">Download certificate</button></div>
-   <div class="envelope"><div class="env-art" aria-hidden="true"><i class="env-flap"></i><i class="env-seal"></i></div>
-    <div><div class="hud">A sealed envelope</div><h3 class="h" style="font-size:19px;margin:4px 0 6px">The next level is not in the school.</h3>
-    <p class="muted" style="font-size:14px;max-width:60ch">There is a vault, a separate place outside this course, with its own door. It is by invitation: <b>mentorship members only</b>, opened with a code from Hannah. Nothing in the school leads to it, and nothing inside it is shown to anyone without the code.</p>
-    <p style="margin-top:10px;font-size:14px"><b>If you are in mentorship:</b> send Hannah a DM on Discord with the message below, then enter your code at the vault door.</p>
+/* After the fundamentals the student chooses a strategy: INVERTIX opens at once, ECHO X ORBIT is the mentorship vault. */
+function chooseCard(){
+  return `<div class="hud" style="margin:22px 0 8px">Choose your path</div><div class="choose">
+   <div class="card choose-c"><span class="chip ok">Open now</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">INVERTIX</h3>
+    <p class="muted" style="font-size:14px">A complete strategy course: the key level, the manipulation leg, the flip, and a defined entry, stop and target. It has its own page, its own pace and its own certificate.</p>
+    <a class="btn primary" href="/invertix" style="margin-top:12px">Open INVERTIX →</a></div>
+   <div class="card choose-c envelope-c"><div class="env-art" aria-hidden="true"><i class="env-flap"></i><i class="env-seal"></i></div><span class="chip">By invitation</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">ECHO X ORBIT</h3>
+    <p class="muted" style="font-size:14px">The mentorship strategy, in a separate vault with its own door. <b>Mentorship members only</b>, opened with a code from Hannah.</p>
+    <p style="margin-top:8px;font-size:13.5px"><b>If you are in mentorship:</b> send Hannah a DM on Discord with this message, then enter your code at the vault door.</p>
     <textarea class="in" id="bookMsg" readonly rows="4" style="margin-top:6px">${esc(BOOK_MSG)}</textarea>
-    <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a><a class="btn primary" href="/vault">Go to the vault door →</a></div></div></div></div>`}
+    <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a><a class="btn" href="/vault">Vault door →</a></div></div></div>`}
+function gradCard(){
+  const fund=TRACK.id==='fundamentals';
+  return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">${TRACK.doneTitle}</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You passed every module. Your ${TRACK.certName} certificate is ready.</h2>
+   <p class="muted" style="max-width:62ch">A certificate of ${fund?'learning':'understanding'}: ${fund?'you worked through the fundamentals of trading NQ futures, from how a market works to the daily levels, and proved it on every exam.':`you learned ${TRACK.name} from the first idea to the end, and proved it on every exam.`}</p>
+   <div class="row" style="align-items:center;margin-top:14px"><input class="in" id="certName" placeholder="Your name for the certificate" maxlength="40" value="${esc(WHO||'')}" style="max-width:300px"><button class="btn primary" id="certBtn">Download certificate</button></div>
+   ${fund?chooseCard():`<p class="muted" style="margin-top:14px;font-size:14px"><a href="/" style="color:var(--ice)">Back to FLOWHUB home</a></p>`}</div>`}
 document.addEventListener('click',e=>{
   if(e.target.closest('#certBtn')){const n=($('#certName').value||'').trim();if(!n){toast('Type your name for the certificate.');return}
     const run=()=>{const a=document.createElement('a');a.download='FLOWMTD-certificate-'+n.replace(/[^a-z0-9]+/gi,'-')+'.png';a.href=drawCertificate(n).toDataURL('image/png');document.body.append(a);a.click();a.remove()};

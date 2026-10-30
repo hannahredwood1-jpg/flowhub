@@ -3,7 +3,7 @@
    with the one-line copy for the indicator. Open to every student, outside the module order.
 ============================================================ */
 let GX=null,GEX_MODE='all',GEX_LOADING=false;
-const gexOn=()=>!window.VAULT&&!window.PRACTICE;
+const gexOn=()=>!!TRACK&&TRACK.id==='fundamentals';
 const FLOWGEX_URL='https://www.tradingview.com/script/HMDYxbPq-FLOWGEX/';
 async function gexLoad(){
   GEX_LOADING=true;

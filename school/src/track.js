@@ -3,7 +3,7 @@
    Counts only while the tab is visible and the member has done something in the last 90 seconds.
 ============================================================ */
 (()=>{
-const area=window.VAULT?'vault':window.PRACTICE?'practice':'school',sid=(window.crypto&&crypto.randomUUID?crypto.randomUUID():(Math.random().toString(36).slice(2)+Date.now().toString(36)+'0000000000')).slice(0,40);
+const area=window.INV?'invertix':window.VAULT?'vault':window.PRACTICE?'practice':'school',sid=(window.crypto&&crypto.randomUUID?crypto.randomUUID():(Math.random().toString(36).slice(2)+Date.now().toString(36)+'0000000000')).slice(0,40);
 let act=Date.now(),at=Date.now(),buf={};
 ['pointerdown','keydown','wheel','touchstart','mousemove'].forEach(e=>addEventListener(e,()=>{act=Date.now()},{passive:true}));
 const section=()=>{try{
@@ -12,7 +12,7 @@ const section=()=>{try{
     if(pv==='ind')return 'Indicator Lab · '+({inv:'INVERTIX',sn:'Eval Sniper',cm:'Confluence Master'}[IV.ind]||'');
     return 'Practice tasks'}
   if(typeof VIEW==='undefined')return 'Trading School';
-  if(VIEW==='map')return window.VAULT?'Vault map':'Course map';
+  if(VIEW==='map')return window.INV?'INVERTIX map':window.VAULT?'Vault map':'Course map';
   if(!CUR)return 'Trading School';
   const m=`Module ${CUR.n} · ${CUR.t}`;return VIEW==='exam'?m+' · Exam':m}catch(e){return 'Trading School'}};
 const send=(sec,secs,beacon)=>{const body=JSON.stringify({sid,area,section:sec,secs:Math.round(secs)});

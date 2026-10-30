@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { cleanAnswers, cleanModes, isProvable, proofFast, proofNeeded } from "./schoolPath";
 import { SCHOOL_MODULE_IDS, SCHOOL_NO_PROOF, SCHOOL_PROVABLE_IDS } from "./school";
 
-test("GEX, INVERTIX and the final read can never be proved", () => {
+test("Understanding GEX Levels can never be proved, and INVERTIX is not part of the fundamentals at all", () => {
   for (const id of ["m50", "m43", "m44", "m45", "m46", "m47", "m16"]) assert.equal(isProvable(id), false, id);
   assert.equal(SCHOOL_PROVABLE_IDS.length + SCHOOL_NO_PROOF.length, SCHOOL_MODULE_IDS.length);
   assert.ok(isProvable("m37") && isProvable("m24"));

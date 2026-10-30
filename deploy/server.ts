@@ -26,6 +26,7 @@ import { clampPace, expectedPassed, nudgeGapDays, paceStatus, PACE_MAX_NUDGES } 
 import { SCHOOL_MODULES, SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
 import { cleanPlanModels, type TradingPlanDTO } from "../src/lib/tradingPlan";
 import { VAULT_MODULE_IDS, hashCode, makeCode, vaultPassed } from "../src/lib/vault";
+import { EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, nextModule, passedIn as passedInSet, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
 
 // ─────────────────────────────────────────────────────────────
 // Config
@@ -652,7 +653,7 @@ app.get("/api/school", async (c) => {
   const u = c.get("user");
   const [[row], [pace], [acct], [path], proofRows] = await Promise.all([
     sql`select state, unlocks from "SchoolProgress" where "userId" = ${u.id}`,
-    sql`select "perWeek", preset, baseline, "startedAt", emails from "SchoolPace" where "userId" = ${u.id}`,
+    sql`select "perWeek", preset, baseline, "startedAt", emails from "SchoolPace" where "userId" = ${u.id} and track = 'fundamentals'`,
     sql`select email from "LocalAccount" where "userId" = ${u.id} and email is not null and not disabled`,
     sql`select modes, answers, "committedAt", "lockedAt" from "SchoolPath" where "userId" = ${u.id}`,
     sql`select ref, score, total, pass, "createdAt" from "SchoolAttempt" where "userId" = ${u.id} and kind = 'po'`,
@@ -754,27 +755,41 @@ app.post("/api/coach/path/:id/reset", async (c) => {
 });
 
 // ── Trading School pace: chosen modules a week, on/behind status, reminder emails ──
-const passedIn = (state: unknown): number => {
-  const st = state ? (typeof state === "string" ? JSON.parse(state) : state) as SchoolState : null;
-  return Object.entries(st?.v2?.m ?? {}).filter(([k, v]) => SCHOOL_MODULE_SET.has(k) && (v as { p?: number })?.p === 1).length;
-};
+const SETS: Record<TrackId, Set<string>> = { fundamentals: SCHOOL_MODULE_SET, invertix: new Set(INVERTIX_MODULE_IDS), exo: new Set(EXO_MODULE_IDS) };
+const passedIn = (state: unknown, track: TrackId = "fundamentals"): number => passedInSet(state, SETS[track]);
+/** The saved progress of one track for one student (INVERTIX has its own table, the vault keeps its progress with the code). */
+async function trackState(userId: string, track: TrackId): Promise<unknown> {
+  const [r] = track === "fundamentals" ? await sql`select state from "SchoolProgress" where "userId" = ${userId}`
+    : track === "invertix" ? await sql`select state from "TrackProgress" where "userId" = ${userId} and track = 'invertix'`
+    : await sql`select state from "VaultAccess" where "userId" = ${userId}`;
+  return r?.state ?? null;
+}
+const trackOf = (v: unknown): TrackId => (isTrack(v) ? v : "fundamentals");
 const paceOut = (p: Record<string, unknown>) => ({ perWeek: Number(p.perWeek), preset: p.preset ?? null, baseline: p.baseline as number, startedAt: new Date(p.startedAt as string).toISOString(), emails: !!p.emails });
 app.put("/api/school/pace", async (c) => {
-  const u = c.get("user"), b = (await c.req.json().catch(() => ({}))) as { perWeek?: unknown; preset?: unknown; emails?: unknown };
-  const [old] = await sql`select "perWeek" from "SchoolPace" where "userId" = ${u.id}`;
+  const u = c.get("user"), b = (await c.req.json().catch(() => ({}))) as { track?: unknown; perWeek?: unknown; preset?: unknown; emails?: unknown };
+  const track = trackOf(b.track);
+  const [old] = await sql`select "perWeek" from "SchoolPace" where "userId" = ${u.id} and track = ${track}`;
   if (b.perWeek == null && !old) throw new HttpError(400, "Pick a pace");
   const perWeek = b.perWeek == null ? Number(old.perWeek) : clampPace(b.perWeek);
   const preset = typeof b.preset === "string" && /^[a-z]{3,10}$/.test(b.preset) ? b.preset : "custom";
   const emails = b.emails !== false;
-  const [sp] = await sql`select state from "SchoolProgress" where "userId" = ${u.id}`;
-  const baseline = passedIn(sp?.state);
+  const baseline = passedIn(await trackState(u.id, track), track);
   const [row] = !old || Number(old.perWeek) !== perWeek
-    ? await sql`insert into "SchoolPace" ("userId", "perWeek", preset, baseline, emails) values (${u.id}, ${perWeek}, ${preset}, ${baseline}, ${emails})
-        on conflict ("userId") do update set "perWeek" = excluded."perWeek", preset = excluded.preset, baseline = excluded.baseline, "startedAt" = now(), "setAt" = now(), changes = "SchoolPace".changes + 1, emails = excluded.emails, "nudgeStreak" = 0
+    ? await sql`insert into "SchoolPace" ("userId", track, "perWeek", preset, baseline, emails) values (${u.id}, ${track}, ${perWeek}, ${preset}, ${baseline}, ${emails})
+        on conflict ("userId", track) do update set "perWeek" = excluded."perWeek", preset = excluded.preset, baseline = excluded.baseline, "startedAt" = now(), "setAt" = now(), changes = "SchoolPace".changes + 1, emails = excluded.emails, "nudgeStreak" = 0
         returning "perWeek", preset, baseline, "startedAt", emails`
-    : await sql`update "SchoolPace" set emails = ${emails} where "userId" = ${u.id} returning "perWeek", preset, baseline, "startedAt", emails`;
+    : await sql`update "SchoolPace" set emails = ${emails} where "userId" = ${u.id} and track = ${track} returning "perWeek", preset, baseline, "startedAt", emails`;
   return c.json({ pace: paceOut(row) });
 });
+/** The student's pace on one track, plus whether they have an email address for reminders. */
+async function paceFor(userId: string, track: TrackId) {
+  const [[pace], [acct]] = await Promise.all([
+    sql`select "perWeek", preset, baseline, "startedAt", emails from "SchoolPace" where "userId" = ${userId} and track = ${track}`,
+    sql`select email from "LocalAccount" where "userId" = ${userId} and email is not null and not disabled`,
+  ]);
+  return { pace: pace ? paceOut(pace) : null, hasEmail: !!acct };
+}
 const unsubSig = (id: string) => createHmac("sha256", CFG.sessionSecret).update("pace-unsub:" + id).digest("hex").slice(0, 32);
 app.get("/unsub/pace", async (c) => {
   const id = c.req.query("u") ?? "", t = c.req.query("t") ?? "";
@@ -784,26 +799,29 @@ app.get("/unsub/pace", async (c) => {
 });
 app.get("/api/coach/pace", async (c) => {
   staffOnly(c);
-  const total = SCHOOL_MODULES.length, now = new Date();
-  const rows = await sql`select u.id, coalesce(u."globalName", u.username) as name, p."perWeek", p.preset, p.baseline, p."startedAt", p."setAt", p.changes, p.emails, p."lastNudgeAt", p."nudgeCount",
-      sp.state, sp."updatedAt" as active, (a.email is not null and not a.disabled) as "hasEmail"
-    from "SchoolPace" p join "User" u on u.id = p."userId" left join "SchoolProgress" sp on sp."userId" = u.id left join "LocalAccount" a on a."userId" = u.id order by p."setAt" desc limit 500`;
-  const [{ n: unset }] = await sql`select count(*)::int as n from "SchoolProgress" sp join "User" u on u.id = sp."userId" where u."isGuildMember" and not exists (select 1 from "SchoolPace" p where p."userId" = sp."userId")`;
+  const now = new Date();
+  const rows = await sql`select u.id, coalesce(u."globalName", u.username) as name, p.track, p."perWeek", p.preset, p.baseline, p."startedAt", p."setAt", p.changes, p.emails, p."lastNudgeAt", p."nudgeCount",
+      sp.state as fstate, sp."updatedAt" as factive, tp.state as istate, tp."updatedAt" as iactive, v.state as xstate, v."updatedAt" as xactive, (a.email is not null and not a.disabled) as "hasEmail"
+    from "SchoolPace" p join "User" u on u.id = p."userId" left join "SchoolProgress" sp on sp."userId" = u.id
+      left join "TrackProgress" tp on tp."userId" = u.id and tp.track = 'invertix' left join "VaultAccess" v on v."userId" = u.id left join "LocalAccount" a on a."userId" = u.id order by p."setAt" desc limit 500`;
+  const [{ n: unset }] = await sql`select count(*)::int as n from "SchoolProgress" sp join "User" u on u.id = sp."userId" where u."isGuildMember" and not exists (select 1 from "SchoolPace" p where p."userId" = sp."userId" and p.track = 'fundamentals')`;
   const out = rows.map((r: Record<string, any>) => {
-    const passed = passedIn(r.state), perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
+    const track = trackOf(r.track), total = trackTotal(track), state = track === "fundamentals" ? r.fstate : track === "invertix" ? r.istate : r.xstate, active = track === "fundamentals" ? r.factive : track === "invertix" ? r.iactive : r.xactive;
+    const passed = passedIn(state, track), perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
     const left = total - passed, fin = passed >= total ? null : new Date(now.getTime() + (left / perWeek) * 7 * 86400_000).toISOString();
-    const act = r.active ? new Date(r.active).toISOString() : null;
-    return { id: r.id, name: r.name, perWeek, preset: r.preset, passed, total, expected: exp, status: paceStatus(passed, exp, total), finish: fin, lastActive: act, setAt: new Date(r.setAt).toISOString(), changes: r.changes,
+    const act = active ? new Date(active).toISOString() : null;
+    return { id: r.id, track, name: r.name, perWeek, preset: r.preset, passed, total, expected: exp, status: paceStatus(passed, exp, total), finish: fin, lastActive: act, setAt: new Date(r.setAt).toISOString(), changes: r.changes,
       emails: !!r.emails, hasEmail: !!r.hasEmail, nudges: r.nudgeCount, lastNudgeAt: r.lastNudgeAt ? new Date(r.lastNudgeAt).toISOString() : null };
   });
   return c.json({ rows: out, unset });
 });
 app.post("/api/coach/pace/:id", async (c) => {
   staffOnly(c);
-  const id = c.req.param("id"), b = (await c.req.json().catch(() => ({}))) as { perWeek?: unknown; reset?: boolean };
-  if (b.reset) { await sql`delete from "SchoolPace" where "userId" = ${id}`; return c.json({ ok: true }); }
-  const perWeek = clampPace(b.perWeek), [sp] = await sql`select state from "SchoolProgress" where "userId" = ${id}`;
-  const [row] = await sql`update "SchoolPace" set "perWeek" = ${perWeek}, preset = 'custom', baseline = ${passedIn(sp?.state)}, "startedAt" = now(), "setAt" = now(), changes = changes + 1, "nudgeStreak" = 0 where "userId" = ${id} returning "userId"`;
+  const id = c.req.param("id"), b = (await c.req.json().catch(() => ({}))) as { track?: unknown; perWeek?: unknown; reset?: boolean };
+  const track = trackOf(b.track);
+  if (b.reset) { await sql`delete from "SchoolPace" where "userId" = ${id} and track = ${track}`; return c.json({ ok: true }); }
+  const perWeek = clampPace(b.perWeek);
+  const [row] = await sql`update "SchoolPace" set "perWeek" = ${perWeek}, preset = 'custom', baseline = ${passedIn(await trackState(id, track), track)}, "startedAt" = now(), "setAt" = now(), changes = changes + 1, "nudgeStreak" = 0 where "userId" = ${id} and track = ${track} returning "userId"`;
   if (!row) throw new HttpError(404, "This member has not set a pace yet");
   return c.json({ ok: true });
 });
@@ -811,35 +829,36 @@ app.post("/api/coach/pace/:id", async (c) => {
 // Reminder emails: a short nudge when someone has gone quiet for about one study gap at their pace and is not ahead of it.
 const NUDGE_FROM_UTC = 14, NUDGE_TO_UTC = 23; // 10am to 7pm Eastern
 const firstName = (n: string) => (n.trim().split(/\s+/)[0] || "there").replace(/[<>&"]/g, "");
-const nudgeHtml = (name: string, passed: number, total: number, next: { n: number; title: string }, behind: boolean, perWeek: number, unsub: string) =>
-  `<div style="font-family:Arial,sans-serif;background:#030405;color:#e6ebf2;padding:32px"><div style="max-width:480px;margin:auto"><div style="font-weight:900;font-size:22px;letter-spacing:.02em"><span style="color:#ff6a00">F</span>LOWHUB</div><h2 style="margin:24px 0 8px">Next up, ${firstName(name)}: Module ${next.n}</h2><p style="color:#929fb2;line-height:1.6;margin:0 0 6px"><b style="color:#e6ebf2">${next.title.replace(/[<>&"]/g, "")}</b></p><p style="color:#929fb2;line-height:1.6">You have passed ${passed} of ${total} modules.${behind ? ` You set a pace of ${perWeek} a week, and one short session gets you back on it.` : " One short session keeps your streak going."}</p><p style="margin:24px 0"><a href="${baseUrl()}/school" style="background:#ff6a00;color:#160a00;font-weight:700;padding:12px 20px;text-decoration:none;border-radius:8px">Continue the school</a></p><p style="color:#66717f;font-size:12px">Too many emails? <a href="${unsub}" style="color:#8cc4ff">Turn reminders off</a>. You can change your pace any time inside the school.</p></div></div>`;
+const nudgeHtml = (name: string, passed: number, total: number, next: { n: number; title: string }, behind: boolean, perWeek: number, unsub: string, track: TrackId = "fundamentals") =>
+  `<div style="font-family:Arial,sans-serif;background:#030405;color:#e6ebf2;padding:32px"><div style="max-width:480px;margin:auto"><div style="font-weight:900;font-size:22px;letter-spacing:.02em"><span style="color:#ff6a00">F</span>LOWHUB</div><h2 style="margin:24px 0 8px">Next up, ${firstName(name)}: Module ${next.n}</h2><p style="color:#929fb2;line-height:1.6;margin:0 0 6px"><b style="color:#e6ebf2">${next.title.replace(/[<>&"]/g, "")}</b></p><p style="color:#929fb2;line-height:1.6">You have passed ${passed} of ${total} modules.${behind ? ` You set a pace of ${perWeek} a week, and one short session gets you back on it.` : " One short session keeps your streak going."}</p><p style="margin:24px 0"><a href="${baseUrl()}${TRACK_URL[track]}" style="background:#ff6a00;color:#160a00;font-weight:700;padding:12px 20px;text-decoration:none;border-radius:8px">Continue ${TRACK_NAME[track]}</a></p><p style="color:#66717f;font-size:12px">Too many emails? <a href="${unsub}" style="color:#8cc4ff">Turn reminders off</a>. You can change your pace any time inside the school.</p></div></div>`;
 async function runPaceNudges(now = new Date()): Promise<number> {
   const h = now.getUTCHours();
   if (h < NUDGE_FROM_UTC || h >= NUDGE_TO_UTC || !process.env.RESEND_API_KEY) return 0;
-  const rows = await sql`select p."userId", p."perWeek", p.baseline, p."startedAt", p."lastNudgeAt", p."nudgeStreak", u."globalName" as name, a.email, sp.state, sp."updatedAt" as active
+  const rows = await sql`select p."userId", p.track, p."perWeek", p.baseline, p."startedAt", p."lastNudgeAt", p."nudgeStreak", u."globalName" as name, a.email,
+      sp.state as fstate, sp."updatedAt" as factive, tp.state as istate, tp."updatedAt" as iactive, v.state as xstate, v."updatedAt" as xactive
     from "SchoolPace" p join "User" u on u.id = p."userId" join "LocalAccount" a on a."userId" = p."userId" and a.email is not null and not a.disabled and (a."expiresAt" is null or a."expiresAt" > now())
-    left join "SchoolProgress" sp on sp."userId" = p."userId" where p.emails and u.role = 'MEMBER'::"Role" limit 1000`;
-  const total = SCHOOL_MODULES.length;
+    left join "SchoolProgress" sp on sp."userId" = p."userId" left join "TrackProgress" tp on tp."userId" = p."userId" and tp.track = 'invertix' left join "VaultAccess" v on v."userId" = p."userId"
+    where p.emails and u.role = 'MEMBER'::"Role" limit 1000`;
   let sent = 0;
   for (const r of rows as Record<string, any>[]) {
-    const passed = passedIn(r.state);
+    const track = trackOf(r.track), total = trackTotal(track), state = track === "fundamentals" ? r.fstate : track === "invertix" ? r.istate : r.xstate, activeAt = track === "fundamentals" ? r.factive : track === "invertix" ? r.iactive : r.xactive;
+    const passed = passedIn(state, track);
     if (passed >= total) continue;
     const perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
     if (paceStatus(passed, exp, total) === "ahead") continue;
-    const act = r.active ? new Date(r.active) : null, last = r.lastNudgeAt ? new Date(r.lastNudgeAt) : null;
+    const act = activeAt ? new Date(activeAt) : null, last = r.lastNudgeAt ? new Date(r.lastNudgeAt) : null;
     const streak = act && last && act > last ? 0 : r.nudgeStreak;           // they came back since the last email
     if (streak >= PACE_MAX_NUDGES) continue;
     const quietSince = Math.max(new Date(r.startedAt).getTime(), act?.getTime() ?? 0, last?.getTime() ?? 0);
     if (now.getTime() - quietSince < nudgeGapDays(perWeek) * 86400_000) continue;
     const [claim] = await sql`update "SchoolPace" set "lastNudgeAt" = now(), "nudgeCount" = "nudgeCount" + 1, "nudgeStreak" = ${streak + 1}
-      where "userId" = ${r.userId} and ("lastNudgeAt" is null or "lastNudgeAt" < now() - interval '20 hours') returning "userId"`;
+      where "userId" = ${r.userId} and track = ${track} and ("lastNudgeAt" is null or "lastNudgeAt" < now() - interval '20 hours') returning "userId"`;
     if (!claim) continue;
-    const st = r.state ? (typeof r.state === "string" ? JSON.parse(r.state) : r.state) as SchoolState : null;
-    const nextDef = SCHOOL_MODULES.find((d) => (st?.v2?.m?.[d.id] as { p?: number } | undefined)?.p !== 1) ?? SCHOOL_MODULES[0];
+    const nextDef = nextModule(track, state);
     const behind = paceStatus(passed, exp, total) === "behind";
     const unsub = `${baseUrl()}/unsub/pace?u=${encodeURIComponent(r.userId)}&t=${unsubSig(r.userId)}`;
-    const ok = await sendMail(r.email, `Next up in the Trading School: ${nextDef.title}`, nudgeHtml(r.name ?? "", passed, total, { n: nextDef.n, title: nextDef.title }, behind, perWeek, unsub));
-    if (ok) sent++; else await sql`update "SchoolPace" set "nudgeCount" = greatest("nudgeCount" - 1, 0), "nudgeStreak" = ${streak}, "lastNudgeAt" = ${last} where "userId" = ${r.userId}`;
+    const ok = await sendMail(r.email, `Next up in ${TRACK_NAME[track]}: ${nextDef.title}`, nudgeHtml(r.name ?? "", passed, total, { n: nextDef.n, title: nextDef.title }, behind, perWeek, unsub, track));
+    if (ok) sent++; else await sql`update "SchoolPace" set "nudgeCount" = greatest("nudgeCount" - 1, 0), "nudgeStreak" = ${streak}, "lastNudgeAt" = ${last} where "userId" = ${r.userId} and track = ${track}`;
   }
   return sent;
 }
@@ -947,7 +966,7 @@ app.post("/api/feedback/:id/read", async (c) => {
 });
 
 // Usage tracking: the dashboard, school and practice pages send a small heartbeat (seconds spent in a section); coaches read it back.
-const USAGE_AREAS = new Set(["dashboard", "school", "practice", "vault"]);
+const USAGE_AREAS = new Set(["dashboard", "school", "practice", "vault", "invertix"]);
 app.post("/api/usage", async (c) => {
   const b = (await c.req.json().catch(() => ({}))) as { sid?: string; area?: string; section?: string; secs?: number };
   if (!b.sid || !/^[A-Za-z0-9-]{8,48}$/.test(b.sid) || !b.area || !USAGE_AREAS.has(b.area)) throw new HttpError(400, "Bad usage ping");
@@ -1081,7 +1100,7 @@ app.get("/api/vault/progress", async (c) => {
   if (acc.level !== "open") throw new HttpError(403, "Not open");
   const [row] = acc.row ? await sql`select state from "VaultAccess" where "userId" = ${u.id}` : [];
   const state = row?.state ? (typeof row.state === "string" ? JSON.parse(row.state) : row.state) : null;
-  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, orderflow: acc.orderflow });
+  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, orderflow: acc.orderflow, ...(await paceFor(u.id, "exo")) });
 });
 app.put("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
@@ -1095,6 +1114,52 @@ app.put("/api/vault/progress", async (c) => {
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
   await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
+  return c.json({ ok: true });
+});
+// ─────────────────────────────────────────────────────────────
+// INVERTIX: its own page, opened by the fundamentals certificate (every fundamentals module passed). A student who had already passed an INVERTIX
+// module before it moved out of the school keeps their way in. Coaches and admins can always open it.
+// ─────────────────────────────────────────────────────────────
+async function invertixAccess(u: UserRow) {
+  const [fs, is] = await Promise.all([trackState(u.id, "fundamentals"), trackState(u.id, "invertix")]);
+  return { open: isStaff(u) || invertixOpen(fs, is), fPassed: passedIn(fs, "fundamentals"), fTotal: trackTotal("fundamentals"), iPassed: passedIn(is, "invertix"), iTotal: trackTotal("invertix"), state: is };
+}
+let invHtml: { etag: string; html: string } | null = null;
+app.get("/invertix", async (c) => {
+  const user = await currentUser(c);
+  if (!user) return c.redirect("/");
+  const acc = await invertixAccess(user);
+  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens with your fundamentals certificate</h1><p>Finish the Trading Fundamentals to open INVERTIX. You have passed <b>${acc.fPassed} of ${acc.fTotal}</b> modules.</p><p><a href="/school" style="color:#8cc4ff">Continue the fundamentals →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  const gz = await readPrivate("invertix.html.gz");
+  if (!gz) return c.text("INVERTIX is not installed yet.", 404);
+  const etag = String(Bun.hash(gz));
+  if (!invHtml || invHtml.etag !== etag) invHtml = { etag, html: gunzipSync(gz).toString("utf8") };
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">← FLOWHUB home</a><a href="/school">Trading School</a></nav>`;
+  return c.html(invHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+});
+// what the home screen shows: the open door, or the locked door with how far along the fundamentals are
+app.get("/api/invertix/status", async (c) => {
+  const acc = await invertixAccess(c.get("user"));
+  return c.json({ status: acc.open ? "open" : "locked", fundamentals: { passed: acc.fPassed, total: acc.fTotal }, invertix: { passed: acc.iPassed, total: acc.iTotal } });
+});
+app.get("/api/invertix/progress", async (c) => {
+  const u = c.get("user"), acc = await invertixAccess(u);
+  if (!acc.open) throw new HttpError(403, "Not open");
+  const state = acc.state ? (typeof acc.state === "string" ? JSON.parse(acc.state) : acc.state) : null;
+  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, ...(await paceFor(u.id, "invertix")) });
+});
+app.put("/api/invertix/progress", async (c) => {
+  const u = c.get("user"), acc = await invertixAccess(u);
+  if (!acc.open) throw new HttpError(403, "Not open");
+  const set = new Set(INVERTIX_MODULE_IDS), o = (await c.req.json().catch(() => ({}))) as { v2?: { m?: Record<string, Record<string, unknown>> } };
+  const m: Record<string, ModuleProgress> = {};
+  for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
+    if (!set.has(k) || !v || typeof v !== "object") continue;
+    const s = String(v.s ?? "000");
+    m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+  }
+  await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'invertix', ${JSON.stringify({ v2: { m } })}::jsonb)
+            on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
 });
 // the sealed Orderflow room's lessons: sent only to a member with the separate orderflow approval
