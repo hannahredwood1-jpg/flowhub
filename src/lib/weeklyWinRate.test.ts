@@ -44,6 +44,6 @@ test("signals weeks: break-even is a win, pending is not counted, newest first",
   assert.equal(w.current.weekStart, "2026-10-26");
   assert.equal(w.current.rate, 1); assert.equal(w.current.pending, 8);
   assert.equal(w.previous.rate, 0.75);
-  assert.equal(shareText(w.current), "📊 FLOWMTD · Weekly win rate (Oct 26 – Nov 1)\n100% · 5W / 0L · 8 still open");
+  assert.equal(shareText(w.current), "📊 FLOWMTD · Weekly win rate (Oct 26 – Nov 1)\n100% · 5W / 0L");
   assert.equal(fromSignalsWeeks([{ weekStart: "2026-10-26", wins: 0, losses: 0, be: 0, pending: 2, signals: 2 }]).current.rate, null);
 });

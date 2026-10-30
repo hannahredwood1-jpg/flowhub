@@ -31,7 +31,7 @@ export function WeeklyWinRateCard({ weekly, canShare, name, className = "" }: { 
           <div className="label">Weekly win rate</div>
           <div className="mt-1 flex items-baseline gap-3">
             <span className={cx("text-4xl font-semibold tabular-nums", tone(w.rate))}>{pct(w.rate)}</span>
-            <span className="text-sm text-ink-2">{w.wins + w.losses ? `${w.wins}W · ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}` : "no results entered yet this week"}{w.pending ? ` · ${w.pending} still open` : ""}</span>
+            <span className="text-sm text-ink-2">{w.wins + w.losses ? `${w.wins}W · ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}` : "no results entered yet this week"}</span>
           </div>
           <div className="mt-1 text-xs text-ink-3">{w.label} · last week {pct(p.rate)}{p.wins + p.losses ? ` (${p.wins}W · ${p.losses}L)` : ""}</div>
         </div>
