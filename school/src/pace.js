@@ -8,20 +8,20 @@ const PACE_INFO=[{id:'sprint',n:'Sprint',w:10,d:'A module or two a day'},{id:'st
 let PACE=null,PACE_EMAIL=false,PACE_READY=false,PACE_OV=null;
 const paceOn=()=>!!TRACK;
 const paceClamp=n=>Math.max(1,Math.min(14,Math.round(+n||4)));
-const passedCount=()=>MODS.filter(m=>pm(m.id).p).length;
-const paceDate=(w,from=new Date())=>{const left=MODS.length-passedCount();return new Date(from.getTime()+(left<=0?0:left/paceClamp(w)*7*864e5))};
+const passedCount=()=>COURSE().filter(m=>pm(m.id).p).length;
+const paceDate=(w,from=new Date())=>{const left=COURSE().length-passedCount();return new Date(from.getTime()+(left<=0?0:left/paceClamp(w)*7*864e5))};
 const fmtDay=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-const paceWeeks=w=>{const left=MODS.length-passedCount();return left<=0?0:Math.max(1,Math.round(left/paceClamp(w)))};
+const paceWeeks=w=>{const left=COURSE().length-passedCount();return left<=0?0:Math.max(1,Math.round(left/paceClamp(w)))};
 const paceName=w=>(PACE_INFO.find(p=>p.w===w)||{n:'Custom'}).n;
 function paceStatus(){
-  if(!PACE)return null;const total=MODS.length,passed=passedCount();if(passed>=total)return'done';
+  if(!PACE)return null;const total=COURSE().length,passed=passedCount();if(passed>=total)return'done';
   const weeks=Math.max(0,Date.now()-new Date(PACE.startedAt).getTime())/(7*864e5),exp=Math.min(total,(PACE.baseline|0)+Math.floor(PACE.perWeek*weeks));
   return passed>exp?'ahead':passed>=exp-1?'on':'behind'}
 const PACE_CHIP={done:['ok','Finished'],ahead:['ok','Ahead of pace'],on:['live','On pace'],behind:['bad','Behind pace']};
 function paceCard(){
   if(!paceOn()||!PACE_READY)return'';
   if(!PACE)return`<div class="card pace-card"><div class="hud">Your pace</div><div class="h" style="font-size:17px;margin:4px 0 6px">Set how fast you want to go</div><p class="muted" style="font-size:13.5px">Pick a pace and we show you your finish date.</p><button class="btn primary sm" data-pace-open style="margin-top:10px">Set my pace →</button></div>`;
-  const st=paceStatus(),c=PACE_CHIP[st],left=MODS.length-passedCount();
+  const st=paceStatus(),c=PACE_CHIP[st],left=COURSE().length-passedCount();
   return`<div class="card pace-card"><div class="hud" style="display:flex;justify-content:space-between;align-items:center">Your pace <span class="chip ${c[0]}">${c[1]}</span></div>
   <div class="h" style="font-size:17px;margin:6px 0 2px">${paceName(PACE.perWeek)} · ${PACE.perWeek} a week</div>
   <p class="muted" style="font-size:13.5px">${left<=0?'You finished every module.':`${left} to go. At this pace you finish about <b>${fmtDay(paceDate(PACE.perWeek))}</b>.`}</p>
@@ -38,7 +38,7 @@ function paceSVG(){
   <g class="pseal"><circle cx="954" cy="76" r="17"/><text x="954" y="38" text-anchor="middle" class="pseal-t">${TRACK.short} certificate</text></g>
   <g id="pcomet" filter="url(#pglow)"></g></svg>`}
 function openPace(mode){
-  if(PACE_OV)return;const first=mode==='first',total=MODS.length;
+  if(PACE_OV)return;const first=mode==='first',total=COURSE().length;
   let w=PACE?PACE.perWeek:4,email=PACE?PACE.emails:true,raf=0,t0=performance.now(),trail=[];
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ov=document.createElement('div');ov.className='pace-ov'+(first?' first':'');ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label','Set your pace');

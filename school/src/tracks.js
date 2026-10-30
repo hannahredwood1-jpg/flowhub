@@ -15,3 +15,5 @@ const TRACKS={
 const TRACK=window.PRACTICE?null:window.INV?TRACKS.invertix:window.VAULT?TRACKS.exo:TRACKS.fundamentals;
 /* SIDE: one of the separate pages (INVERTIX or the vault), not the fundamentals school */
 const SIDE=!!(window.VAULT||window.INV);
+/* The modules that count toward a track's certificate and pace (the vault's sealed Orderflow room is not part of the course). */
+const COURSE=()=>TRACK&&TRACK.id==='exo'?MODS.filter(m=>m.id[0]==='x'):MODS;

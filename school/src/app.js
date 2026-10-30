@@ -63,9 +63,9 @@ window.addEventListener('hashchange',route);
 ============================================================ */
 let OPEN=null;
 function renderMap(){
-  const done=MODS.filter(m=>pm(m.id).p),scs=done.map(m=>pm(m.id).sc),avg=scs.length?Math.round(scs.reduce((a,b)=>a+b,0)/scs.length):0,cur=MODS[currentIdx()];
-  const finished=done.length===MODS.length;
-  $('#stats').innerHTML=`<div class="card stat"><b>${done.length}<span class="dim">/${MODS.length}</span></b><span>modules passed</span></div><div class="card stat"><b>${done.length?avg+'%':'–'}</b><span>average exam score</span></div>`;
+  const course=COURSE(),done=course.filter(m=>pm(m.id).p),scs=done.map(m=>pm(m.id).sc),avg=scs.length?Math.round(scs.reduce((a,b)=>a+b,0)/scs.length):0,cur=MODS[currentIdx()];
+  const finished=done.length===course.length;
+  $('#stats').innerHTML=`<div class="card stat"><b>${done.length}<span class="dim">/${course.length}</span></b><span>modules passed</span></div><div class="card stat"><b>${done.length?avg+'%':'–'}</b><span>average exam score</span></div>`;
   if(OPEN==null)OPEN=cur.id;
   let html='',ph=-1;
   MODS.forEach((m,i)=>{
@@ -111,7 +111,7 @@ function newLab(m,step){const t=TXT[m.id]||{};return{m,step,see:0,recall:null,dn
 const storeTxt=()=>{TXT[LAB.m.id]={t:LAB.t,sub:LAB.sub,ticks:LAB.ticks};saveTxt()};
 function ensureCharts(){
   if(CH)return;
-  CH=new Chart($('#chartHost'));CH2=new Chart($('#chartHost2'));TB=toolbar(CH,['cursor','tap','rect','hline','erase']);$('#tvLeft').append(TB);
+  CH=new Chart($('#chartHost'));CH2=new Chart($('#chartHost2'));if(TRACK&&TRACK.id==='exo'){CH.neutral=false;CH2.neutral=false;$('#candleBtn').textContent='Candles: green / red'}TB=toolbar(CH,['cursor','tap','rect','hline','erase']);$('#tvLeft').append(TB);
   CH.onmarks=()=>{};
   $$('[data-tf]').forEach(b=>b.addEventListener('click',()=>{if(LAB&&LAB.step===2)return toast('The time frame is locked during a chart task.');LAB.tf=+b.dataset.tf;paintChart(true)}));
   $('#candleBtn').onclick=()=>{CH.neutral=!CH.neutral;CH2.neutral=CH.neutral;$('#candleBtn').textContent='Candles: '+(CH.neutral?'neutral':'green / red');CH.draw();CH2.draw()};
@@ -120,7 +120,7 @@ function scenarioOf(m){if(!m._sc)m._sc=m.chart?m.ex():null;return m._sc}
 function renderLab(){
   const m=LAB.m;ensureCharts();
   $('#v-lab').classList.toggle('nochart',!m.chart);
-  $('#crumb').innerHTML=`<a href="#/" class="btn ghost sm">← Course map</a><span>Module ${m.n} of ${MODS.length}</span><b>${m.t}</b>`;
+  $('#crumb').innerHTML=`<a href="#/" class="btn ghost sm">← Course map</a><span>Module ${m.n} of ${COURSE().length}</span><b>${m.t}</b>`;
   renderLesson();if(m.chart)setTimeout(()=>{CH.size();CH2.size();paintChart(true)},20);
 }
 function paintChart(refit){
@@ -180,7 +180,7 @@ function renderLesson(){
     const items=[['Learn: lesson read',p.s[0]],['See it: worked example complete',p.s[1]],['Mark it: chart tasks done correctly',p.s[2]]],all=items.every(x=>x[1]),n=examSize(m);
     body=`<h3>Ready for the exam?</h3><ul class="req">${items.map(([t,o])=>`<li class="${o?'ok':''}"><span class="tick">${o?'✓':''}</span>${t}</li>`).join('')}</ul>
     <div class="callout key"><span class="hud">Exam format</span><p><b>${n} questions</b> · <b>${PASS*100}% to pass</b> (${passNeeded(n)} of ${n})</p><p>${m.examDesc||'A mix of concept questions and chart tasks, with fresh charts and numbers every attempt.'}</p></div>
-    ${m.explain&&m===MODS[MODS.length-1]?`<div class="callout def"><span class="hud">Explain it</span><p>Before the final exam, say it in your own words. Write as much or as little as you like: there is no word minimum and nothing here is graded.</p>${m.explain.prompts.map((q,i)=>`<p><b>${i+1}. ${q}</b></p><textarea id="t${i}" rows="4" placeholder="…">${esc(L.t[i]||'')}</textarea>`).join('')}</div>`:''}
+    ${m.explain&&m===COURSE()[COURSE().length-1]?`<div class="callout def"><span class="hud">Explain it</span><p>Before the final exam, say it in your own words. Write as much or as little as you like: there is no word minimum and nothing here is graded.</p>${m.explain.prompts.map((q,i)=>`<p><b>${i+1}. ${q}</b></p><textarea id="t${i}" rows="4" placeholder="…">${esc(L.t[i]||'')}</textarea>`).join('')}</div>`:''}
     <p class="muted">There are no hints and no feedback until you submit. If you don't pass, <b>this module restarts</b>: the lessons re-open and the exam changes.</p>
     ${p.a>1?`<div class="fb no"><b>Attempt ${p.a}.</b> The practice tasks and the exam are a fresh set.</div>`:''}
     ${p.p?`<div class="fb ok"><b>Passed · ${p.sc}%.</b> You can review the lessons any time.</div>`:''}`;
@@ -305,7 +305,7 @@ function showQ(i){
       <p class="muted" style="font-size:13px">${un?`${un} unanswered`:'All answered'} · ${Object.values(X.flag).filter(Boolean).length} flagged</p>
       <p class="dim" style="font-size:12.5px;margin-top:10px">Answers aren't marked until you submit.</p></aside></div>`;
   cs.forEach((c,k)=>{const host=$('#qc'+k),small=c.C.length<=6;
-    const ch=new Chart(host,{fixed:small&&!kd.chart,view:small?[-1.5,c.C.length+3]:null});loadChart(ch,it,k);ch.neutral=true;xcharts.push(ch);
+    const ch=new Chart(host,{fixed:small&&!kd.chart,view:small?[-1.5,c.C.length+3]:null});loadChart(ch,it,k);ch.neutral=!(TRACK&&TRACK.id==='exo');xcharts.push(ch);
     if(small&&!ch.o.view)ch.fit();ch.draw()});
   if(kd.chart&&xcharts[0]){const ch=xcharts[0],tools=[kd.tool,'cursor','erase'];const tb=toolbar(ch,tools,'h');$('#tbSlot').append(tb);
     kd.attach(ch,it,st,()=>refreshNav());if(it.kind==='tap'){ch.taps=new Set(st.a||[])}else{ch.marks=st.a||(st.a=[])}ch.draw();}
