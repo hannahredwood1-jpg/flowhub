@@ -82,15 +82,13 @@ footer{padding-block:22px max(24px,env(safe-area-inset-bottom,0px));border-top:1
 </footer>
 <script>
 (function(){
-  // Weekly win rate, worked out by FLOWHUB from the trades entered in the journal. If it can't load, the card simply stays hidden.
+  // Weekly win rate, worked out by FLOWHUB from the trades entered in the journal. If it can't load, the card stays hidden.
   fetch("https://hub.flowmtd.com/public/weekly-win-rate",{headers:{Accept:"application/json"}}).then(function(r){return r.ok?r.json():null}).then(function(d){
     if(!d)return;
-    var w=d.current&&d.current.rate!=null?d.current:d.previous&&d.previous.rate!=null?d.previous:null;
-    if(!w)return;
-    var isNow=w===d.current;
-    document.getElementById("wwr-k").textContent="Weekly win rate"+(isNow?"":" · last week");
-    document.getElementById("wwr-v").textContent=Math.round(w.rate*100)+"%";
-    document.getElementById("wwr-s").textContent=w.wins+"W · "+w.losses+"L"+(w.breakeven?" · "+w.breakeven+" BE":"")+" · "+w.label;
+    var w=d&&d.current; if(!w)return;
+    document.getElementById("wwr-k").textContent="Weekly win rate";
+    document.getElementById("wwr-v").textContent=w.rate==null?"\u2014":Math.round(w.rate*100)+"%";
+    document.getElementById("wwr-s").textContent=w.rate==null?"No trades logged yet \u00b7 "+w.label:w.wins+"W \u00b7 "+w.losses+"L"+(w.breakeven?" \u00b7 "+w.breakeven+" BE":"")+" \u00b7 "+w.label;
     document.getElementById("wwr").hidden=false;
   }).catch(function(){});
 })();
