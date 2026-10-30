@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { PersonDTO } from "@/lib/types";
+import type { WeeklyWinRate } from "@/lib/weeklyWinRate";
+import { WeeklyWinRateCard } from "./WeeklyWinRate";
 import { Logo } from "./AppShell";
 
 const SIGNAL = "255,106,0", ICE = "140,196,255";
@@ -142,21 +144,19 @@ function GexTab() {
   );
 }
 
+function WinRateTab({ viewer }: { viewer: PersonDTO }) {
+  const [w, setW] = useState<WeeklyWinRate | null>(null);
+  useEffect(() => { fetch("/api/winrate", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then(setW).catch(() => {}); }, []);
+  return w ? <WeeklyWinRateCard weekly={w} canShare={viewer.role === "ADMIN"} name={viewer.name} className="mb-4 bg-panel/80 backdrop-blur" /> : null;
+}
+
 type InvStatus = { status: "open" | "locked"; staffBypass?: boolean; fundamentals: { passed: number; total: number }; invertix: { passed: number; total: number } };
-/** The INVERTIX door: it opens with the fundamentals certificate. */
+/** The INVERTIX door: not shown at all until the fundamentals certificate is earned. */
 function InvertixDoor() {
   const [s, setS] = useState<InvStatus | null>(null);
   useEffect(() => { fetch("/api/invertix/status", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then(setS).catch(() => {}); }, []);
   if (!s) return null;
-  if (s.status === "locked") {
-    return (
-      <div className="mb-4 flex items-center gap-4 border border-line bg-panel/50 p-4 opacity-80 backdrop-blur" aria-label="INVERTIX: opens with your fundamentals certificate">
-        <span className="grid h-11 w-11 shrink-0 place-items-center border border-line font-mono text-[10px] text-ink-3">INV</span>
-        <span className="flex-1"><span className="block text-[15px] font-semibold text-ink-2">INVERTIX</span><span className="block text-[13px] text-ink-3">Opens with your Trading Fundamentals certificate. {s.fundamentals.passed} of {s.fundamentals.total} fundamentals modules passed.</span></span>
-        {s.staffBypass && <a href="/invertix" className="shrink-0 text-xs text-ink-3 underline underline-offset-4 hover:text-ink-2">Staff: open anyway</a>}
-      </div>
-    );
-  }
+  if (s.status === "locked") return null; // hidden until the fundamentals certificate is earned
   return (
     <a href="/invertix" className="group relative mb-4 flex items-center gap-4 border border-line-2 bg-panel/80 p-4 backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-signal hover:bg-panel-2">
       <span className="grid h-11 w-11 shrink-0 place-items-center border border-line-2 font-mono text-[10px] text-ice transition-colors group-hover:border-signal group-hover:text-signal">INV</span>
@@ -193,6 +193,7 @@ export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: P
             </a>
           ))}
         </nav>
+        <WinRateTab viewer={viewer} />
         <GexTab />
         <InvertixDoor />
         {vault === "restricted" ? (

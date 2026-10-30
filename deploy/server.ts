@@ -506,6 +506,7 @@ app.use("/api/*", async (c, next) => {
 const staffOnly = (c: Context<Env>) => { if (!isStaff(c.get("user"))) throw new HttpError(403, "Coach or Admin role required"); };
 
 app.get("/api/dashboard", async (c) => c.json(await loadDashboard(c.get("user"), c.get("user").id)));
+app.get("/api/winrate", async (c) => c.json(weeklyWinRate(await winRows(c.get("user").id), todayET())));
 app.get("/api/catalog", async (c) => c.json(await loadCatalog()));
 
 // Share this week's win rate to Discord (Admin only, from their own journal)

@@ -1505,6 +1505,7 @@ var staffOnly = (c) => {
   if (!isStaff(c.get("user"))) throw new HttpError(403, "Coach or Admin role required");
 };
 app.get("/api/dashboard", async (c) => c.json(await loadDashboard(c.get("user"), c.get("user").id)));
+app.get("/api/winrate", async (c) => c.json(weeklyWinRate(await winRows(c.get("user").id), todayET())));
 app.get("/api/catalog", async (c) => c.json(await loadCatalog()));
 app.post("/api/winrate/share", async (c) => {
   const u = c.get("user");
