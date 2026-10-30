@@ -146,8 +146,17 @@ function GexTab() {
 
 function WinRateTab({ viewer }: { viewer: PersonDTO }) {
   const [w, setW] = useState<WeeklyWinRate | null>(null);
-  useEffect(() => { fetch("/api/winrate", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then(setW).catch(() => {}); }, []);
-  return w ? <WeeklyWinRateCard weekly={w} canShare={viewer.role === "ADMIN"} name={viewer.name} className="mb-4 bg-panel/80 backdrop-blur" /> : null;
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    fetch("/api/winrate", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : Promise.reject(r.status))).then(setW).catch(() => setFailed(true));
+  }, []);
+  if (w) return <WeeklyWinRateCard weekly={w} canShare={viewer.role === "ADMIN"} name={viewer.name} className="mb-4 bg-panel/80 backdrop-blur" />;
+  return (
+    <section className="hud mb-4 bg-panel/80 px-4 py-4 backdrop-blur" aria-label="Weekly win rate">
+      <div className="label">Weekly win rate</div>
+      <div className="mt-1 text-sm text-ink-3">{failed ? "Couldn't load this week's results. Refresh in a moment." : "Loading this week's results…"}</div>
+    </section>
+  );
 }
 
 export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: PersonDTO; signOutHref?: string }) {
