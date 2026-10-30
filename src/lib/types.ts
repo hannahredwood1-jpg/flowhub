@@ -91,6 +91,7 @@ export type FeedbackDTO = {
   readAt: string | null;
 };
 
+import type { WeeklyWinRate } from "./weeklyWinRate";
 export type DashboardData = {
   viewer: PersonDTO;
   trader: PersonDTO;
@@ -106,6 +107,7 @@ export type DashboardData = {
   practice: PracticeSummary | null; // Practice tab results (coaches see this)
   school: SchoolSummary | null;    // Trading School progress (coaches see this)
   tradingPlan: TradingPlanDTO | null; // written plan from Trading Plan → Build your plan
+  weekly: WeeklyWinRate;           // Weekly win rate card (journal trades, Monday–Sunday)
   stats: { todayPnl: number; weekPnl: number; monthPnl: number; trades30: number; winRate30: number | null; planFollowed30: number | null};
 };
 
