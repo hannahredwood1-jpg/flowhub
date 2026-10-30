@@ -142,7 +142,7 @@ function GexTab() {
   );
 }
 
-type InvStatus = { status: "open" | "locked"; fundamentals: { passed: number; total: number }; invertix: { passed: number; total: number } };
+type InvStatus = { status: "open" | "locked"; staffBypass?: boolean; fundamentals: { passed: number; total: number }; invertix: { passed: number; total: number } };
 /** The INVERTIX door: it opens with the fundamentals certificate. */
 function InvertixDoor() {
   const [s, setS] = useState<InvStatus | null>(null);
@@ -153,6 +153,7 @@ function InvertixDoor() {
       <div className="mb-4 flex items-center gap-4 border border-line bg-panel/50 p-4 opacity-80 backdrop-blur" aria-label="INVERTIX: opens with your fundamentals certificate">
         <span className="grid h-11 w-11 shrink-0 place-items-center border border-line font-mono text-[10px] text-ink-3">INV</span>
         <span className="flex-1"><span className="block text-[15px] font-semibold text-ink-2">INVERTIX</span><span className="block text-[13px] text-ink-3">Opens with your Trading Fundamentals certificate. {s.fundamentals.passed} of {s.fundamentals.total} fundamentals modules passed.</span></span>
+        {s.staffBypass && <a href="/invertix" className="shrink-0 text-xs text-ink-3 underline underline-offset-4 hover:text-ink-2">Staff: open anyway</a>}
       </div>
     );
   }
