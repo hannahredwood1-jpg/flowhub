@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { clampPace, expectedPassed, finishDate, nudgeGapDays, paceStatus, weeksToFinish } from "./schoolPace";
+import { PACE_PRESETS_FUNDAMENTALS, presetsFor, clampPace, expectedPassed, finishDate, nudgeGapDays, paceStatus, weeksToFinish } from "./schoolPace";
 
 test("weeks to finish and finish date follow the pace", () => {
   assert.equal(weeksToFinish(32, 4), 8);
@@ -38,5 +38,8 @@ test("reminder gap scales with pace", () => {
 
 test("the school page uses the same presets", () => {
   const js = readFileSync(new URL("../../school/src/pace.js", import.meta.url), "utf8");
-  for (const p of ["sprint:10", "steady:4", "relaxed:2"]) assert.ok(js.includes(p.replace(":", ":")), p);
+  for (const p of ["w:10", "w:4", "w:2"]) assert.ok(js.includes(p), p);               // INVERTIX and ECHO X ORBIT
+  for (const p of ["w:14", "w:7", "w:3"]) assert.ok(js.includes(p), p);               // Trading Fundamentals (no exams)
+  assert.deepEqual(PACE_PRESETS_FUNDAMENTALS.map((p) => p.perWeek), [14, 7, 3]);
+  assert.deepEqual(presetsFor("invertix").map((p) => p.perWeek), [10, 4, 2]);
 });

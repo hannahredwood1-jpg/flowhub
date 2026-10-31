@@ -3,8 +3,9 @@
    A student picks modules a week; the finish date, on-track status and reminder emails all come from that.
    Mirrors src/lib/pace.ts (a test keeps the presets in step).
 ============================================================ */
-const PACE_PRESETS={sprint:10,steady:4,relaxed:2};
-const PACE_INFO=[{id:'sprint',n:'Sprint',w:10,d:'A module or two a day'},{id:'steady',n:'Steady',w:4,d:'A few sessions a week'},{id:'relaxed',n:'Relaxed',w:2,d:'A couple of modules a week'}];
+/* the fundamentals have no exams, so a module takes much less time and the presets are faster there */
+const PACE_INFO=NOEX?[{id:'sprint',n:'Sprint',w:14,d:'Two modules a day'},{id:'steady',n:'Steady',w:7,d:'About a module a day'},{id:'relaxed',n:'Relaxed',w:3,d:'A few modules a week'}]:[{id:'sprint',n:'Sprint',w:10,d:'A module or two a day'},{id:'steady',n:'Steady',w:4,d:'A few sessions a week'},{id:'relaxed',n:'Relaxed',w:2,d:'A couple of modules a week'}];
+const PACE_PRESETS=Object.fromEntries(PACE_INFO.map(p=>[p.id,p.w]));
 let PACE=null,PACE_EMAIL=false,PACE_READY=false,PACE_OV=null;
 const paceOn=()=>!!TRACK;
 const paceClamp=n=>Math.max(1,Math.min(14,Math.round(+n||4)));
@@ -41,7 +42,7 @@ function paceSVG(){
   <g id="pcomet" filter="url(#pglow)"></g></svg>`}
 function openPace(mode){
   if(PACE_OV)return;const first=mode==='first',total=COURSE().length;
-  let w=PACE?PACE.perWeek:4,email=PACE?PACE.emails:true,raf=0,t0=performance.now(),trail=[];
+  let w=PACE?PACE.perWeek:(NOEX?7:4),email=PACE?PACE.emails:true,raf=0,t0=performance.now(),trail=[];
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ov=document.createElement('div');ov.className='pace-ov'+(first?' first':'');ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label','Set your pace');
   ov.innerHTML=`<div class="pace-in">

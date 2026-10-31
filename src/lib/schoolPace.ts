@@ -6,6 +6,13 @@ export const PACE_PRESETS = [
   { id: "steady", name: "Steady", perWeek: 4 },
   { id: "relaxed", name: "Relaxed", perWeek: 2 },
 ] as const;
+/** The Trading Fundamentals have no exams and an express path, so a module takes much less time: the presets are faster there. */
+export const PACE_PRESETS_FUNDAMENTALS = [
+  { id: "sprint", name: "Sprint", perWeek: 14 },
+  { id: "steady", name: "Steady", perWeek: 7 },
+  { id: "relaxed", name: "Relaxed", perWeek: 3 },
+] as const;
+export const presetsFor = (track: string) => (track === "fundamentals" ? PACE_PRESETS_FUNDAMENTALS : PACE_PRESETS);
 export const PACE_MIN = 1;
 export const PACE_MAX = 14;
 export const PACE_MAX_NUDGES = 3; // reminders in a row with no activity in between, then we stop

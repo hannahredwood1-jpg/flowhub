@@ -2,7 +2,7 @@
 // Coach portal: each student's chosen Trading School pace, whether they are on it, and the reminder emails sent.
 import { useEffect, useState } from "react";
 import { api, type PaceRow } from "@/lib/api-client";
-import { PACE_PRESETS } from "@/lib/schoolPace";
+import { presetsFor } from "@/lib/schoolPace";
 import { TRACK_NAME } from "@/lib/tracks";
 import { ErrorLine, Panel, cx } from "./ui";
 
@@ -19,7 +19,7 @@ const STATUS: Record<PaceRow["status"], { label: string; tone: string }> = {
   behind: { label: "Behind", tone: "text-loss" },
 };
 const ORDER: Record<PaceRow["status"], number> = { behind: 0, on: 1, ahead: 2, done: 3 };
-const presetName = (w: number) => PACE_PRESETS.find((p) => p.perWeek === w)?.name ?? "Custom";
+const presetName = (w: number, track: string) => presetsFor(track).find((p) => p.perWeek === w)?.name ?? "Custom";
 
 export function PaceTable({ rows, busy, onSet, onReset }: { rows: PaceRow[]; busy?: string | null; onSet?: (r: PaceRow, perWeek: number) => void; onReset?: (r: PaceRow) => void }) {
   return (
@@ -33,7 +33,7 @@ export function PaceTable({ rows, busy, onSet, onReset }: { rows: PaceRow[]; bus
                 <span className="truncate">{r.name}</span>
                 <span className="chip !py-0 text-xs text-ink-2">{TRACK_NAME[r.track]}</span>
                 <span className={cx("text-xs font-semibold", s.tone)}>{s.label}</span>
-                <span className="text-xs text-ink-3">{presetName(r.perWeek)} · {r.perWeek} a week</span>
+                <span className="text-xs text-ink-3">{presetName(r.perWeek, r.track)} · {r.perWeek} a week</span>
               </div>
               <div className="mt-1 flex items-center gap-2">
                 <div className="relative h-1.5 w-40 max-w-full bg-line">
@@ -50,7 +50,7 @@ export function PaceTable({ rows, busy, onSet, onReset }: { rows: PaceRow[]; bus
             </div>
             {onSet && (
               <div className="flex flex-wrap items-center justify-end gap-1.5">
-                {PACE_PRESETS.map((p) => (
+                {presetsFor(r.track).map((p) => (
                   <button key={p.id} className={cx("btn !h-7 !px-2 text-xs", p.perWeek === r.perWeek ? "btn-primary" : "btn-ghost")} disabled={busy === r.id + r.track} onClick={() => onSet(r, p.perWeek)}>{p.name}</button>
                 ))}
                 <button className="btn btn-ghost !h-7 !px-2 text-xs" disabled={busy === r.id + r.track} title="They see the pace welcome screen again next visit" onClick={() => onReset?.(r)}>Reset</button>
