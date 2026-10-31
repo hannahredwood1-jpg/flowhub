@@ -248,7 +248,7 @@ const TERMS = [
       { k: 'band', lo: c[6].l, hi: 22.4, i0: 3.5, i1: 6.5, col: 'lag', t: 'RT', tpos: 'below', at: 6, say: 'A pullback against the trend. Temporary.' },
       { k: 'tag', i: 9, p: c[10].h, dy: -4, t: 'trend continues', col: 'win', at: 10, say: 'The trend picks back up after the retracement.' }] };
   }, cap: 'Up, pull back a little, then up again. The pullback is the retracement.', rel: ['PA'] },
-  { ab: 'PA', full: 'Price Action', cat: 0, def: 'Reading candle movement and market structure without indicators.', vis() {
+  { ab: 'PA', full: 'Price Action', cat: 0, def: 'Reading candle movement and market structure without extra tools.', vis() {
     const c = cs([10, 12, 14, 13, 12, 14.5, 17, 16, 15, 17.5, 20, 19, 18, 20.5, 23]);
     const H = (i, t) => ({ k: 'tag', i, p: c[i].h, dy: -6, t, col: 'win', at: i }), L = (i, t) => ({ k: 'tag', i, p: c[i].l, dy: 14, t, col: 'ice', at: i });
     return { c, ann: [H(1, 'H'), L(3, 'L'), { ...H(5, 'HH'), say: 'Higher high.' }, { ...L(7, 'HL'), say: 'Higher low.' }, H(9, 'HH'), L(11, 'HL'), { ...H(13, 'HH'), say: 'Higher highs and higher lows = uptrend. No indicators needed.' }] };

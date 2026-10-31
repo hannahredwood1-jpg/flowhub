@@ -13,7 +13,7 @@ export const VAULT_MODULES = [
   { id: "x10", title: "Stops, Targets, Partials and Break-even" },
   { id: "x11", title: "Why Trades Lose, and Adapting to Conditions" },
   { id: "x12", title: "Daily Rules and the Pre-Trade Checklist" },
-  { id: "x13", title: "The Echo x Orbit Indicator" },
+  { id: "x13", title: "The Echo x Orbit Trade Plan" },
   { id: "x14", title: "Make the Call: ECHO X ORBIT" },
   { id: "o01", title: "What Orderflow Is and Why It Backs a Rejection" },
   { id: "o02", title: "Reading the Tape Around a Rejection" },

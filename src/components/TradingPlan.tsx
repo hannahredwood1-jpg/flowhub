@@ -12,7 +12,6 @@ import { usd } from "@/lib/format";
 import { ErrorLine, Field, Panel, Stat, cx } from "./ui";
 import { IconTarget } from "./icons";
 import { ProjectionsPage } from "./Projections";
-import { EvalSniperPage } from "./EvalSniper";
 
 const STEPS = ["Schedule", "Models", "Entries & targets", "Risk & limits", "Your numbers", "Plan card"] as const;
 
@@ -30,16 +29,16 @@ function defaults(data: DashboardData): TradingPlanInput {
 }
 
 export function TradingPlanPage({ data, catalog, onSaved }: { data: DashboardData; catalog: CatalogFirm[]; onSaved: () => Promise<void> }) {
-  const [tab, setTab] = useState<"build" | "proj" | "sniper">(() => (typeof location !== "undefined" && location.hash === "#plan-projections" ? "proj" : typeof location !== "undefined" && location.hash === "#plan-sniper" ? "sniper" : "build"));
+  const [tab, setTab] = useState<"build" | "proj">(() => (typeof location !== "undefined" && location.hash === "#plan-projections" ? "proj" : "build"));
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Trading Plan">
-        {([["build", "Build your plan"], ["proj", "Projections"], ["sniper", "EVAL SNIPER"]] as const).map(([k, t]) => (
+        {([["build", "Build your plan"], ["proj", "Projections"]] as const).map(([k, t]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
             className={cx("border px-4 py-2 font-hud text-[12.5px]", tab === k ? "border-ice bg-ice/10 text-ice shadow-[inset_0_-2px_0_var(--color-signal)]" : "border-line text-ink-3 hover:text-ink-2")}>{t}</button>
         ))}
       </div>
-      {tab === "build" ? <PlanBuilder data={data} onSaved={onSaved} onProjections={() => setTab("proj")} /> : tab === "sniper" ? <EvalSniperPage data={data} catalog={catalog} /> : <ProjectionsPage data={data} catalog={catalog} onSaved={onSaved} />}
+      {tab === "build" ? <PlanBuilder data={data} onSaved={onSaved} onProjections={() => setTab("proj")} /> : <ProjectionsPage data={data} catalog={catalog} onSaved={onSaved} />}
     </div>
   );
 }

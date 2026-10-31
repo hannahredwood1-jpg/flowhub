@@ -5,9 +5,10 @@
 const LI={MNQ:{pv:2,fee:1.4,name:'Micro E-mini Nasdaq (MNQ)',cap:'maxMicros'},NQ:{pv:20,fee:4.5,name:'E-mini Nasdaq (NQ)',cap:'maxMinis'}};
 const LTICK=.25,LSTART=29,LEND=179;
 const LDEF=[{firm:'Example firm',plan:'50K eval (default rules)',sizes:[{id:'x',accountSize:50000,profitTarget:3000,maxLoss:2000,dailyLossLimit:1200,drawdownModel:'EOD_TRAILING',consistencyPct:50,minDays:2,maxMinis:5,maxMicros:50,profitSplit:'90%',drawdownNote:'End-of-day trailing',dataStatus:'VERIFY'}]}];
-const LB={scr:'setup',tour:0,cat:null,sel:0,inst:'MNQ',q:1,sp:20,tp:40,ind:{inv:1,o930:0,pd:0},t:null,firm:'',stage:'eval',a:null,d:null,used:[],msg:'',last:null};
+const LB={scr:'setup',tour:0,cat:null,sel:0,inst:'MNQ',q:1,sp:20,tp:40,ind:{o930:0,pd:0},t:null,firm:'',stage:'eval',a:null,d:null,used:[],msg:'',last:null};
 const money=(x,s)=>(x<0?'−':s&&x>0?'+':'')+'$'+fm(Math.abs(x),0);
 const m2=(x,s)=>(x<0?'−':s&&x>0?'+':'')+'$'+fm(Math.abs(x),2);
+function labLoad(){ensureCharts();$('#v-lab').classList.remove('nochart');$$('[data-tf]').forEach(b=>b.hidden=true);$('#chartHost2').hidden=true;$('.chartcol').classList.remove('dual');TB.set('cursor')}
 function labFlat(){const out=[];for(const f of LB.cat||LDEF)for(const p of f.plans||f.plan&&[{plan:f.plan,sizes:f.sizes}]||[])for(const s of p.sizes)out.push({firm:f.firm,plan:p.plan,...s});return out}
 async function labLoadCat(){
   if(LB.cat)return;LB.cat=LDEF;
@@ -75,7 +76,6 @@ function labEndDay(){
 function labOv(){
   const d=LB.d,C=d.C,i=d.i,ov=[],s=LB.ind,P=(p,tx,col,x={})=>hlAt(p,tx,col,x.i0==null?30:x.i0,{scale:!!x.scale,pine:1,pcol:col,pdash:x.dash,pdot:x.dot,pleft:1});
   if(s.o930)ov.push(P(C[30].o,'9:30 Open','#e6e9f0',{i0:30}));
-  if(s.inv&&d.src.inv)ov.push(...invLive(d.src.inv,i,C));
   if(s.pd){const sr=d.src;ov.push(P(sr.p0+sr.pdh/4,'Prior day high','#8cc4ff',{i0:0,dash:1}),P(sr.p0+sr.pdl/4,'Prior day low','#8cc4ff',{i0:0,dash:1}))}
   const p=d.pos;
   if(p){ov.push(hlAt(p.fill,'entry '+fm(p.fill),COL.ice,p.i0,{scale:true,pine:1,pcol:'#9db2bd',pleft:1}),hlAt(p.stop,'stop',COL.bad,p.i0,{scale:true,pine:1,pcol:'#f23645',pdash:1,pleft:1}));
@@ -83,7 +83,7 @@ function labOv(){
   const lt=LB.last;if(lt&&lt.i1<=i&&d.trades.includes(lt)){ov.push({...tagAt(lt.i1,lt.exit,(lt.net>=0?'+':'−')+'$'+fm(Math.abs(lt.net),2)+' net',lt.dir===1?(lt.net>=0?'above':'below'):(lt.net>=0?'below':'above'),lt.net>=0?COL.ok:COL.bad),pine:1,bg:lt.net>=0?'#0e5a35':'#6a1b24',tc:'#fff'})}
   return ov}
 function labPaint(fit){
-  const d=LB.d;indLoad();CH.size();
+  const d=LB.d;labLoad();CH.size();
   CH.setData(d.C.slice(0,d.i+1),{k:1,t0:540,stepMin:1,fit:!!fit});CH.marks=[];CH.taps=new Set();CH.ov=labOv();
   if(fit)CH.count=70;CH.from=d.i-CH.count+14;
   $('#chartTf').textContent='1m candles · NQ';$('#chartHint').textContent='Replay of a real NQ morning. Prices shifted, date hidden. MNQ and NQ move the same; only the dollar value of a point differs.';CH.draw()}
@@ -116,14 +116,14 @@ function labPanelDay(){
   const bar=t.target&&a.stage==='eval'?`<div style="height:8px;border-radius:5px;background:var(--panel2);margin:6px 0 2px"><div style="height:8px;border-radius:5px;background:var(--signal);width:${Math.max(0,Math.min(100,prof/t.target*100)).toFixed(0)}%"></div></div>`:'';
   const q=labQ(),sp=Math.max(2,+LB.sp||0),risk=sp*I.pv*q+I.fee*q+2*LTICK*I.pv*q,room=eq-fl;
   const rsk=`<p class="muted" style="font-size:13px">If this trade is stopped: about <b>${m2(risk)}</b> (${sp} pts + fees + slippage). That is <b>${Math.min(999,risk/room*100).toFixed(0)}%</b> of your room to the floor${t.dll?` and <b>${Math.min(999,risk/Math.max(1,t.dll+Math.min(0,dayP))*100).toFixed(0)}%</b> of what is left of today's limit`:''}. About <b>${Math.max(0,Math.floor(room/risk))}</b> such losses would end the account.</p>`;
-  const tog=[['inv','INVERTIX'],['o930','9:30 open'],['pd','Prior day high / low']].map(([k,n])=>`<button type="button" class="chip" data-lb="tog" data-v="${k}" style="cursor:pointer;${LB.ind[k]?'border-color:var(--signal);color:var(--signal)':''}">${n}</button>`).join('');
+  const tog=[['o930','9:30 open'],['pd','Prior day high / low']].map(([k,n])=>`<button type="button" class="chip" data-lb="tog" data-v="${k}" style="cursor:pointer;${LB.ind[k]?'border-color:var(--signal);color:var(--signal)':''}">${n}</button>`).join('');
   const inp=(k,l,w=64)=>`<label style="display:flex;flex-direction:column;font-size:12px;color:var(--ink2);gap:3px">${l}<input data-lbin="${k}" type="number" value="${LB[k]}" min="0" style="width:${w}px;padding:7px;background:var(--panel2);color:var(--ink);border:1px solid var(--line2);border-radius:7px"></label>`;
   const lt=LB.last&&d.trades.includes(LB.last)?LB.last:null;
   const why={stop:'Stopped out. The stop line is where it triggered; the fill was one tick worse.',target:'Target filled (price traded one tick through it).',dll:'Daily loss limit reached; the lab closed your trade.',floor:'The account floor was reached.',close:'Closed at the end of the session.',flat:'Closed by you at the market (one tick of slippage).'};
   const card=lt?`<div class="rev" style="margin-top:10px"><p><b>Last trade: ${lt.dir===1?'long':'short'} ${lt.q} · ${hhmm(540+lt.i0)} → ${hhmm(540+lt.i1)}</b></p><p>${why[lt.reason]}</p>${lbRow('Price move',m2(lt.raw,1))}${lbRow('Slippage',m2(-lt.slip))}${lbRow('Fees',m2(-lt.fee))}${lbRow('Net',m2(lt.net,1),`style="color:var(--${lt.net>=0?'win':'loss'})"`)}</div>`:'';
   const body=`<div class="hud">${a.stage==='eval'?'Evaluation':'Funded'} · day ${d.n} · ${hhmm(540+d.i)} ET · ${LB.inst}</div>
    <div style="margin-top:8px">${lbRow('Balance',money(a.bal))}${lbRow('Open P&L',m2(open,1),`style="color:var(--${open>=0?'win':'loss'})"`)}${lbRow('Today',m2(dayP,1),`style="color:var(--${dayP>=0?'win':'loss'})"`)}${lbRow(`Account floor (${modelName(t.model).toLowerCase()})`,`${money(fl)} · ${money(eq-fl)} away`)}${t.dll?lbRow('Daily limit left',money(Math.max(0,t.dll+Math.min(0,dayP)))):''}${a.stage==='eval'&&t.target!=null?lbRow('Profit target',`${money(Math.max(0,prof))} of ${money(t.target)}`)+bar:lbRow('Profit above start',money(prof))}${a.stage==='eval'&&t.cons&&prof>0?lbRow('Best day vs limit',`${money(Math.max(0,...a.dp))} / ${money(prof*t.cons/100)}`):''}</div>
-   <h3>Indicator lines</h3><div class="kv">${tog}</div>${LB.ind.inv&&d.src.inv?(()=>{const q=d.src.inv;return`<p class="muted" style="font-size:13px"><b>INVERTIX:</b> ${d.i>=q.fi?`${q.dir>0?'long':'short'} signal: key level touched at ${hhmm(540+q.ti)}, flip at ${hhmm(540+q.fi)}${d.i>=q.en?`, entry ${fm(q.e)}, stop ${fm(q.stop)}`:''}. The order is a market entry on the next candle.`:d.i>=q.ti?`price is in the key level (${fm(q.kg.lo)} to ${fm(q.kg.hi)}). Waiting for the flip (the signal only prints if the flip candle is strong enough).`:'no key level touched yet.'}</p>`})():LB.ind.inv?'<p class="muted" style="font-size:13px"><b>INVERTIX:</b> no setup in the 09:30 to 11:00 window today.</p>':''}
+   <h3>Chart lines</h3><div class="kv">${tog}</div>
    <h3>Order ticket</h3>${p?`<p><b>${p.dir===1?'Long':'Short'} ${p.q} ${LB.inst}</b> from ${fm(p.fill)} · stop ${fm(p.stop)}${p.tgt?` · target ${fm(p.tgt)}`:''}</p>`:`<div style="display:flex;gap:10px;flex-wrap:wrap">${inp('q','Contracts (max '+labCap()+')')}${inp('sp','Stop (points)')}${inp('tp','Target (points, 0 = none)',110)}</div>${rsk}`}
    ${LB.msg?`<p style="color:var(--loss)">${esc(LB.msg)}</p>`:''}${d.ended?`<div class="cap"><b>${esc(d.why)}</b></div>`:''}${card}`;
   const foot=d.ended?`<button class="btn primary" data-lb="endday">See what happened today →</button>`:
@@ -162,7 +162,7 @@ function labPanel(){
   box.innerHTML=`<div class="les-h"><div class="hud">Eval &amp; Funded Lab</div><div class="h">${LB.a&&LB.a.stage==='funded'?'Funded account':'Evaluation'}${LB.t&&LB.scr!=='setup'?' · '+esc(LB.t.firm):''}</div></div><div class="les-b">${r.body}</div><div class="les-f">${r.foot}</div>`}
 function labOpen(){
   PV='lab';$('#v-lab').classList.remove('nochart');labLoadCat();
-  if(LB.scr==='day'){labPaint(true)}else{indLoad();CH.size();CH.setData([{o:100,h:100,l:100,c:100}],{k:1,t0:540,stepMin:1,fit:true});CH.ov=[];CH.draw()}
+  if(LB.scr==='day'){labPaint(true)}else{labLoad();CH.size();CH.setData([{o:100,h:100,l:100,c:100}],{k:1,t0:540,stepMin:1,fit:true});CH.ov=[];CH.draw()}
   labPanel()}
 function labBegin(){LB.a=labNewAcct(LB.stage);LB.d=labDay();LB.scr='day';LB.last=null;LB.msg='';labPaint(true);labPanel()}
 document.addEventListener('change',e=>{
