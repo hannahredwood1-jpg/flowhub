@@ -36,33 +36,39 @@ export function WeeklyWinRateCard({ weekly, canShare, name, className = "" }: { 
   };
 
   const days = (w.days ?? []).filter((d, i) => i < 5 || d.signals > 0);
+  const decided = w.wins + w.losses;
   return (
-    <section className={cx("hud animate-rise px-4 py-4", className)} aria-label="Weekly win rate">
-      <div className="label">Weekly win rate</div>
-      <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className={cx("text-4xl font-semibold tabular-nums", tone(w.rate))}>{pct(w.rate)}</span>
-        <span className="text-sm text-ink-2">{w.wins + w.losses ? `${w.wins}W · ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}` : "no results entered yet this week"}</span>
+    <section className={cx("hud animate-rise px-3.5 py-3", className)} aria-label="Weekly win rate">
+      <div className="flex items-center justify-between gap-3">
+        <span className="label">Weekly win rate</span>
+        <span className="text-[11px] text-ink-3">{w.label}</span>
       </div>
-      <div className="mt-2 text-lg font-semibold tabular-nums text-ink">{w.pts ? <span className={w.pts > 0 ? "text-win" : "text-loss"}>{ptsText(w.pts)}</span> : <span className="text-ink-3">0 pts</span>} <span className="text-sm font-normal text-ink-3">this week</span></div>
-      <div className="mt-1 text-xs text-ink-3">{w.label} · last week {pct(p.rate)}{p.wins + p.losses ? ` (${p.wins}W · ${p.losses}L)` : ""}</div>
-
-      {days.length > 0 && (
-        <div className="mt-4 grid gap-2" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }} role="img" aria-label="Win rate by day this week">
-          {days.map((d) => <DayBar key={d.date} d={d} />)}
+      <div className="mt-1.5 flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-baseline gap-x-2.5">
+            <span className={cx("text-[26px] font-semibold leading-none tabular-nums", tone(w.rate))}>{pct(w.rate)}</span>
+            <span className="text-xs text-ink-2">{decided ? `${w.wins}W · ${w.losses}L${w.breakeven ? ` · ${w.breakeven} BE` : ""}` : "no results yet"}</span>
+          </div>
+          <div className="mt-1.5 text-xs tabular-nums text-ink-3">
+            <span className={w.pts > 0 ? "text-win" : w.pts < 0 ? "text-loss" : ""}>{w.pts ? ptsText(w.pts) : "0 pts"}</span> · last week {pct(p.rate)}
+          </div>
         </div>
-      )}
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        {canShare && <button className="btn btn-primary" disabled={busy || !(w.wins + w.losses)} onClick={share}>{busy && !setup ? "Posting…" : "Share to Discord"}</button>}
-        <button className="btn" disabled={!(w.wins + w.losses)} onClick={copy}>Copy text</button>
-        {msg && <span className={cx("text-xs", msg.ok ? "text-win" : "text-loss")} role="status">{msg.text}</span>}
+        {days.length > 0 && (
+          <div className="flex shrink-0 items-end gap-2" role="img" aria-label="Win rate by day this week">
+            {days.map((d) => <DayBar key={d.date} d={d} />)}
+          </div>
+        )}
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        {canShare && <button className="btn !h-7 !px-2.5 text-[11px]" disabled={busy || !decided} onClick={share}>{busy && !setup ? "Posting…" : "Share to Discord"}</button>}
+        <button className="btn btn-ghost !h-7 !px-2.5 text-[11px]" disabled={!decided} onClick={copy}>Copy text</button>
+        {msg && <span className={cx("text-[11px]", msg.ok ? "text-win" : "text-loss")} role="status">{msg.text}</span>}
       </div>
       {setup && (
-        <div className="mt-3 grid gap-2 border border-line p-3">
-          <div className="text-sm text-ink">Connect a Discord channel (one time)</div>
-          <div className="text-xs text-ink-3">In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL. Paste it here.</div>
+        <div className="mt-2.5 grid gap-2 border border-line p-2.5">
+          <div className="text-xs text-ink-2">Connect a Discord channel (one time). In Discord: channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL.</div>
           <input className="field" inputMode="url" placeholder="https://discord.com/api/webhooks/…" value={url} onChange={(e) => setUrl(e.target.value)} aria-label="Discord webhook URL" />
-          <div><button className="btn btn-primary" disabled={busy || !url.trim()} onClick={connect}>{busy ? "Connecting…" : "Connect and post"}</button></div>
+          <div><button className="btn !h-7 !px-2.5 text-[11px]" disabled={busy || !url.trim()} onClick={connect}>{busy ? "Connecting…" : "Connect and post"}</button></div>
         </div>
       )}
     </section>
@@ -71,12 +77,11 @@ export function WeeklyWinRateCard({ weekly, canShare, name, className = "" }: { 
 
 function DayBar({ d }: { d: DayStat }) {
   const decided = d.wins + d.losses, rate = decided ? d.wins / decided : null, idx = (new Date(d.date + "T12:00:00Z").getUTCDay() + 6) % 7;
-  const future = d.date > todayYmd(), h = rate == null ? 4 : Math.max(6, Math.round(rate * 44));
+  const future = d.date > todayYmd(), h = rate == null ? 3 : Math.max(4, Math.round(rate * 22));
   return (
-    <div className="flex min-w-0 flex-col items-center gap-1" title={`${d.date}: ${decided ? pct(rate) : "no results"} (${d.wins}W · ${d.losses}L)`}>
-      <div className="flex h-[44px] items-end"><div className={cx("w-5 rounded-sm sm:w-6", rate == null ? "bg-line" : rate >= 0.5 ? "bg-win" : "bg-loss")} style={{ height: h }} /></div>
-      <div className={cx("text-[11px]", future ? "text-ink-3/50" : "text-ink-2")}>{LETTER[idx]}</div>
-      <div className={cx("text-[10px] tabular-nums", d.pts > 0 ? "text-win" : d.pts < 0 ? "text-loss" : "text-ink-3")}>{decided || d.pts ? (d.pts > 0 ? "+" : d.pts < 0 ? "−" : "") + Math.abs(Math.round(d.pts)) : "–"}</div>
+    <div className="flex flex-col items-center gap-1" title={`${d.date}: ${decided ? pct(rate) : "no results"} (${d.wins}W · ${d.losses}L) ${d.pts > 0 ? "+" : d.pts < 0 ? "−" : ""}${Math.abs(Math.round(d.pts))} pts`}>
+      <div className="flex h-[22px] items-end"><div className={cx("w-2 rounded-[1px]", rate == null ? "bg-line" : rate >= 0.5 ? "bg-win" : "bg-loss")} style={{ height: h }} /></div>
+      <div className={cx("text-[9px] leading-none", future ? "text-ink-3/50" : "text-ink-3")}>{LETTER[idx]}</div>
     </div>
   );
 }
