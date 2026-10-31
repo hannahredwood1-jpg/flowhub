@@ -127,14 +127,14 @@ function GexTab() {
   );
   return (
     <div className="mb-4 border border-line-2 bg-panel/80 p-3 backdrop-blur" aria-label="Daily GEX levels">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <a href="/school#/gex" className="group flex items-center gap-2 pr-1">
           <span className="grid h-8 w-8 shrink-0 place-items-center border border-line-2 font-mono text-[10px] text-ice transition-colors group-hover:border-signal group-hover:text-signal">GEX</span>
           <span><span className="block text-[15px] font-semibold text-ink">Daily GEX Levels</span><span className="block text-[11px] text-ink-3">{g === undefined ? "Loading…" : cur ? (stale ? `Not updated today · from ${dayLabel(cur.day)}` : `NQ · ${L?.regime === "negative" ? "negative" : "positive"} gamma`) : "Updated 8:30 AM ET, weekdays"}</span></span>
         </a>
         {cur && L ? (
           <>
-            <span className="grid flex-1 grid-cols-4 gap-3 sm:max-w-md">{cell("Call wall", L.callWall, "text-win")}{cell("Gamma flip", L.flip, "text-signal")}{cell("Put wall", L.putWall, "text-loss")}{cell("NDX", cur.levels.spot, "text-ice")}</span>
+            <span className="order-last grid w-full grid-cols-2 gap-x-6 gap-y-3 sm:order-none sm:w-auto sm:flex-1 sm:max-w-md sm:grid-cols-4 sm:gap-3">{cell("Call wall", L.callWall, "text-win")}{cell("Gamma flip", L.flip, "text-signal")}{cell("Put wall", L.putWall, "text-loss")}{cell("NDX", cur.levels.spot, "text-ice")}</span>
             <span className="ml-auto flex items-center gap-2"><button type="button" onClick={copy} className="btn !h-8 !px-3 text-xs">{copied ? "Copied" : "Copy for indicator"}</button><a href="/school#/gex" className="text-ink-3 transition hover:text-signal" aria-label="Open the Daily GEX Levels page">→</a></span>
           </>
         ) : g !== undefined ? (

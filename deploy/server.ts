@@ -14,7 +14,7 @@ import { SQL } from "bun";
 import { gunzipSync } from "node:zlib";
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 
-import { fromSignalsWeeks, shareText, type SignalsWeek, type WeeklyWinRate } from "../src/lib/weeklyWinRate";
+import { fromSignalsWeeks, shareText, type DayStat, type SignalsWeek, type WeeklyWinRate } from "../src/lib/weeklyWinRate";
 import { buildDashboard, buildDirectoryRow, sortDirectory, type DirectorySort, type RawAccount } from "../src/lib/viewmodel";
 import { RETIRED_STRATEGIES, blendedWinRate, type StrategyKey } from "../src/lib/strategies";
 import { accountInput, accountPatch, feedbackInput, journalInput, journalPatch, projectionInput, roadmapSchema, templatePatch, tradingPlanInput } from "../src/lib/validators";
@@ -315,9 +315,9 @@ async function signalsWeekly(): Promise<WeeklyWinRate> {
   if (weeklyCache && Date.now() - weeklyCache.at < 60_000) return weeklyCache.v;
   const r = await fetch(SIGNALS_WEEKLY, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(15_000) });
   if (!r.ok) throw new HttpError(502, "Couldn't load the signal results right now.");
-  const j = (await r.json()) as { weeks?: SignalsWeek[] };
+  const j = (await r.json()) as { weeks?: SignalsWeek[]; days?: DayStat[] };
   if (!j.weeks?.length) throw new HttpError(502, "Couldn't load the signal results right now.");
-  weeklyCache = { at: Date.now(), v: fromSignalsWeeks(j.weeks) };
+  weeklyCache = { at: Date.now(), v: fromSignalsWeeks(j.weeks, j.days) };
   return weeklyCache.v;
 }
 const WINRATE_ORIGINS = ["https://www.flowmtd.com", "https://flowmtd.com"];
@@ -510,20 +510,35 @@ app.get("/api/dashboard", async (c) => c.json(await loadDashboard(c.get("user"),
 app.get("/api/winrate", async (c) => c.json(await signalsWeekly()));
 app.get("/api/catalog", async (c) => c.json(await loadCatalog()));
 
-// Share this week's win rate to Discord (Admin only)
+// Share this week's win rate to Discord (Admin only). The channel is a Discord webhook URL that Hannah pastes once on the card (kept encrypted),
+// or WINRATE_DISCORD_WEBHOOK_URL / the bot + WINRATE_CHANNEL_ID from Railway.
+const WEBHOOK_RE = /^https:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[\w-]+$/;
+async function storedWebhook() {
+  const [r] = await sql`select value from "AppSetting" where key = 'winrate_webhook'`;
+  try { return r ? decrypt(r.value as string) : ""; } catch { return ""; }
+}
+const adminOnly = (c: Context<Env>) => { if (c.get("user").role !== "ADMIN") throw new HttpError(403, "Admin role required"); };
+app.put("/api/winrate/discord", async (c) => {
+  adminOnly(c);
+  const url = String(((await c.req.json().catch(() => ({}))) as { url?: string }).url ?? "").trim();
+  if (!WEBHOOK_RE.test(url)) throw new HttpError(400, "That doesn't look like a Discord webhook URL. It starts with https://discord.com/api/webhooks/");
+  await sql`insert into "AppSetting" (key, value) values ('winrate_webhook', ${encrypt(url)}) on conflict (key) do update set value = excluded.value, "updatedAt" = now()`;
+  await audit(c.get("user").id, "winrate.webhook.set");
+  return c.json({ ok: true, message: "Discord channel connected." });
+});
 app.post("/api/winrate/share", async (c) => {
+  adminOnly(c);
   const u = c.get("user");
-  if (u.role !== "ADMIN") throw new HttpError(403, "Admin role required");
   const w = (await signalsWeekly()).current;
   if (!(w.wins + w.losses)) throw new HttpError(400, "No results entered this week yet");
   const content = shareText(w);
-  const hook = env.WINRATE_DISCORD_WEBHOOK_URL, chan = env.WINRATE_CHANNEL_ID;
-  if (!hook && !(CFG.botToken && chan)) throw new HttpError(409, "Discord sharing isn't connected yet. Add WINRATE_DISCORD_WEBHOOK_URL in Railway (or WINRATE_CHANNEL_ID for the bot).");
+  const hook = env.WINRATE_DISCORD_WEBHOOK_URL || (await storedWebhook()), chan = env.WINRATE_CHANNEL_ID;
+  if (!hook && !(CFG.botToken && chan)) throw new HttpError(409, "NOT_CONNECTED");
   const body = JSON.stringify({ content, allowed_mentions: { parse: [] } });
   const res = hook
     ? await fetch(hook, { method: "POST", headers: { "Content-Type": "application/json" }, body, signal: AbortSignal.timeout(15_000) })
     : await fetch(`${DISCORD}/channels/${chan}/messages`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bot ${CFG.botToken}` }, body, signal: AbortSignal.timeout(15_000) });
-  if (!res.ok) { console.error("winrate share", res.status, await res.text().catch(() => "")); throw new HttpError(502, "Discord didn't accept the post. Check the webhook or channel permissions."); }
+  if (!res.ok) { console.error("winrate share", res.status, await res.text().catch(() => "")); throw new HttpError(502, "Discord didn't accept the post. Paste a fresh webhook URL and try again."); }
   await audit(u.id, "winrate.share", null, { week: w.weekStart });
   return c.json({ ok: true, message: "Posted to Discord." });
 });
