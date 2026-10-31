@@ -4,7 +4,7 @@
 ============================================================ */
 const TRACKS={
  fundamentals:{id:'fundamentals',name:'Trading Fundamentals',short:'Fundamentals',api:'/api/school',cert:'Certificate of Learning · Trading Fundamentals',
-  certA:'has completed the FLOWMTD Trading Fundamentals course, passed every module exam,',certB:'and demonstrated an understanding of the fundamentals of trading NQ futures.',
+  certA:'has completed the FLOWMTD Trading Fundamentals course and passed every practice task,',certB:'and demonstrated an understanding of the fundamentals of trading NQ futures.',
   endText:'from your first chart to your Fundamentals certificate',doneTitle:'Fundamentals complete',certName:'Trading Fundamentals'},
  invertix:{id:'invertix',name:'INVERTIX',short:'INVERTIX',api:'/api/invertix/progress',cert:'Certificate of understanding · INVERTIX',
   certA:'has completed the FLOWMTD INVERTIX course, passed every module exam,',certB:'and demonstrated an understanding of the INVERTIX model.',
@@ -14,6 +14,8 @@ const TRACKS={
   endText:'from the idea to your ECHO X ORBIT certificate',doneTitle:'ECHO X ORBIT complete',certName:'ECHO X ORBIT'}};
 const TRACK=window.PRACTICE?null:window.INV?TRACKS.invertix:window.VAULT?TRACKS.exo:TRACKS.fundamentals;
 /* SIDE: one of the separate pages (INVERTIX or the vault), not the fundamentals school */
+/* NOEX: the fundamentals have no exams. A module is finished by Learn, See it and Mark it (three chart tasks, each right the first time). */
+const NOEX=!!TRACK&&TRACK.id==='fundamentals';
 const SIDE=!!(window.VAULT||window.INV);
 /* The modules that count toward a track's certificate and pace (the vault's sealed Orderflow room is not part of the course). */
 const COURSE=()=>TRACK&&TRACK.id==='exo'?MODS.filter(m=>m.id[0]==='x'):MODS;

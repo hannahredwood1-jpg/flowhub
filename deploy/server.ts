@@ -731,7 +731,7 @@ app.get("/api/school", async (c) => {
 });
 app.put("/api/school", async (c) => {
   const clean = cleanSchoolState(await c.req.json());
-  // A module only counts as passed on the server if a passing exam attempt was logged for it. A tested-out module needs a passing proof attempt instead.
+  // A module only counts as passed on the server if a passing attempt was logged for it (the fundamentals log their 3/3 practice completion as an 'ex' attempt). A tested-out module needs a passing proof attempt instead.
   const mods = clean.v2?.m;
   if (mods && Object.values(mods).some((x) => x.p === 1 || x.t === 1)) {
     const rows = (await sql`select distinct ref, kind from "SchoolAttempt" where "userId" = ${c.get("user").id} and kind in ('ex', 'po') and pass = true`) as { ref: string; kind: string }[];
@@ -774,11 +774,9 @@ app.post("/api/school/attempt", async (c) => {
   return c.json({ ok: true });
 });
 
-// Learning path: the student says where they are; anything they claim they can do is proved with a one-attempt exam.
+// Learning path: the student says where they are; what they already know they do the express way (practice tasks only). Always editable.
 app.put("/api/school/path", async (c) => {
   const u = c.get("user"), b = (await c.req.json().catch(() => ({}))) as { modes?: unknown; answers?: unknown };
-  const [old] = await sql`select "lockedAt" from "SchoolPath" where "userId" = ${u.id}`;
-  if (old?.lockedAt) throw new HttpError(403, "Your path is locked because you have started proof exams. Ask a coach to reset it.");
   const [sp] = await sql`select state from "SchoolProgress" where "userId" = ${u.id}`;
   const st = sp?.state ? ((typeof sp.state === "string" ? JSON.parse(sp.state) : sp.state) as SchoolState) : null;
   const passed = new Set(Object.entries(st?.v2?.m ?? {}).filter(([, v]) => (v as { p?: number })?.p === 1).map(([k]) => k));

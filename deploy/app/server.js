@@ -797,7 +797,7 @@ function summarizeSchool(state, unlocks, attempts) {
   const cur = modules.findIndex((x, i) => !x.passed && unlocked(i));
   const label = (ref) => {
     const d = SCHOOL_MODULES.find((x) => x.id === ref);
-    return d ? `Module ${d.n} exam \xB7 ${d.title}` : ref;
+    return d ? `Module ${d.n} \xB7 ${d.title}` : ref;
   };
   return {
     modules,
@@ -1775,8 +1775,6 @@ app.post("/api/school/attempt", async (c) => {
 });
 app.put("/api/school/path", async (c) => {
   const u = c.get("user"), b = await c.req.json().catch(() => ({}));
-  const [old] = await sql`select "lockedAt" from "SchoolPath" where "userId" = ${u.id}`;
-  if (old?.lockedAt) throw new HttpError(403, "Your path is locked because you have started proof exams. Ask a coach to reset it.");
   const [sp] = await sql`select state from "SchoolProgress" where "userId" = ${u.id}`;
   const st = sp?.state ? typeof sp.state === "string" ? JSON.parse(sp.state) : sp.state : null;
   const passed = new Set(Object.entries(st?.v2?.m ?? {}).filter(([, v]) => v?.p === 1).map(([k]) => k));

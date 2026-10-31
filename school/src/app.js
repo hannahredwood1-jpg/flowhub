@@ -32,7 +32,7 @@ const modUnlocked=i=>{const m=MODS[i];if(m.sealed&&!window.OF_OK)return false;if
 const modStatus=i=>pm(MODS[i].id).p?'done':modUnlocked(i)?'active':'locked';
 const stepsDone=m=>pm(m.id).s.filter(Boolean).length;
 const currentIdx=()=>{const i=MODS.findIndex((m,k)=>!pm(m.id).p&&modUnlocked(k));return i<0?MODS.length-1:i};
-const STEPS=['Learn','See it','Mark it','Exam'],STEP_KEYS=['learn','see','mark','ready'];
+const STEPS=NOEX?['Learn','See it','Mark it']:['Learn','See it','Mark it','Exam'],STEP_KEYS=['learn','see','mark','ready'];
 const PASS=.8;
 const passNeeded=n=>Math.ceil(n*PASS-1e-9);
 
@@ -43,7 +43,10 @@ function route(){
   if(!h.length){VIEW='map';CUR=null}
   else if(h[0]==='gex'&&gexOn()){VIEW='gex';CUR=null}
   else{const i=modIdx(h[0]);if(i<0||!modUnlocked(i)){VIEW='map';CUR=null;if(h[0]){if(i>=0&&!LIVE)PENDING=location.hash;history.replaceState(null,'','#/')}}
-    else{CUR=MODS[i];const pend=proofPending(CUR);
+    else{CUR=MODS[i];const pend=proofPending(CUR);const k0=STEP_KEYS.indexOf(h[1]);
+      if(NOEX){/* no exams: a module is finished by its three steps. Express modules open on the practice tasks. */
+        if(h[1]==='exam'||k0>=STEPS.length)history.replaceState(null,'','#/'+CUR.id);
+        VIEW='lab';const want=k0>=0&&k0<STEPS.length?k0:expressMod(CUR)&&!stepsDone(CUR)?2:firstOpenStep(CUR);LAB=newLab(CUR,reachable(CUR,want));render();return}
       /* a module on the prove-it list opens its proof exam first; a learn-it module's exam needs the lesson steps done first */
       if(pend){if(h[1]!=='exam')history.replaceState(null,'','#/'+CUR.id+'/exam');VIEW='exam'}
       else if(h[1]==='exam'){if(!pm(CUR.id).p&&stepsDone(CUR)<3){history.replaceState(null,'','#/'+CUR.id);VIEW='lab';LAB=newLab(CUR,firstOpenStep(CUR))}else VIEW='exam'}
@@ -51,6 +54,8 @@ function route(){
   render();
 }
 const nav=p=>{location.hash=p};
+/* the furthest step a student may open: every earlier step has to be done (express modules go straight to the practice tasks) */
+const reachable=(m,want)=>{if(!NOEX||expressMod(m))return want;const s=pm(m.id).s;for(let i=0;i<want;i++)if(!s[i])return i;return want};
 function render(){
   $$('main.view').forEach(m=>m.hidden=m.id!=='v-'+VIEW);window.scrollTo(0,0);
   if(VIEW!=='exam')stopExam();
@@ -62,42 +67,48 @@ window.addEventListener('hashchange',route);
    COURSE MAP
 ============================================================ */
 let OPEN=null;
-function renderMap(){
+/* the fundamentals have no exams: say so in the page intro */
+function noexShell(){const sh=$('#v-map');if(!sh||sh.dataset.noex)return;sh.dataset.noex='1';
+  const intro=$('.hero p',sh)||$('#v-map section p');if(intro)intro.textContent='Each module teaches one idea, shows it worked on a real chart, and makes you apply it yourself. A module is complete when its practice tasks are right. You move on by doing it, not by clicking through.';
+  const lp=$('.loop',sh);if(lp)lp.innerHTML='<div><i>01</i><b>Learn it</b><p>One concept, built from the one before it, with a short recall question to start.</p></div><div><i>02</i><b>See it</b><p>A worked example, step by step, on a live chart.</p></div><div><i>03</i><b>Mark it</b><p>Do it yourself. Three tasks, each right the first time. That finishes the module.</p></div>';
+  const ru=$('.rule',sh);if(ru)ru.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--signal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg><div><b>No exams, and no skipping the practice.</b> If a task is wrong you read the feedback and get a fresh one. Already know a topic? Your learning path can mark it <b>express</b>: skip the lesson and go straight to the practice tasks.</div>'}
+function renderMap(){if(NOEX)noexShell();
   const course=COURSE(),done=course.filter(m=>pm(m.id).p),scs=done.map(m=>pm(m.id).sc),avg=scs.length?Math.round(scs.reduce((a,b)=>a+b,0)/scs.length):0,cur=MODS[currentIdx()];
   const finished=done.length===course.length;
-  $('#stats').innerHTML=`<div class="card stat"><b>${done.length}<span class="dim">/${course.length}</span></b><span>modules passed</span></div><div class="card stat"><b>${done.length?avg+'%':'–'}</b><span>average exam score</span></div>`;
+  $('#stats').innerHTML=`<div class="card stat"><b>${done.length}<span class="dim">/${course.length}</span></b><span>modules ${NOEX?'complete':'passed'}</span></div>${NOEX?`<div class="card stat"><b>${finished?'–':'~'+fmtHrs(minsLeft())}</b><span>${finished?'all done':'left on your path'}</span></div>`:`<div class="card stat"><b>${done.length?avg+'%':'–'}</b><span>average exam score</span></div>`}`;
   if(OPEN==null)OPEN=cur.id;
   let html='',ph=-1;
   MODS.forEach((m,i)=>{
     if(m.ph!==ph){if(ph>=0)html+='</div></section>';ph=m.ph;const P=PH[ph];html+=`<section class="phase"><div class="phase-h"><span class="pn">PHASE ${ph+1}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
     html+=modRow(m,i)});
   html+='</div></section>';
-  $('#phases').innerHTML=(TRACK&&finished?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">${TRACK?TRACK.doneTitle+'.':'Course complete.'}</h2><p class="muted">${TRACK&&TRACK.id==='fundamentals'?'You passed every module exam. Next, choose the strategy you want to learn first: INVERTIX or ECHO X ORBIT. Each has its own page, pace and certificate.':'You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.'}</p></div>`:'')+html;
-  $('#aside').innerHTML=`<div class="card next-card"><div class="hud">${finished?'All modules passed':'Up next'}</div><div class="h">${cur.n}. ${cur.t}</div>
-    <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':proofPending(cur)?'Proof exam: one attempt, no lesson':`Step <b>${Math.min(stepsDone(cur)+1,4)}</b> of 4: ${STEPS[Math.min(stepsDone(cur),3)]}`}</p>
-    <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:proofPending(cur)?0:stepsDone(cur)/4*100}%"></i></div>
-    <a class="btn primary" href="#/${cur.id}">${finished?'Review lessons':proofPending(cur)?'Take the proof exam':stepsDone(cur)?'Continue':'Start'} →</a></div>
-  ${pathCard()}${gexCard()}${paceCard()}<div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of ${PASS*100}% or better on a set you've never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>
+  $('#phases').innerHTML=(TRACK&&finished?gradCard():'')+(finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">${TRACK?TRACK.doneTitle+'.':'Course complete.'}</h2><p class="muted">${TRACK&&TRACK.id==='fundamentals'?'You completed every module. Next, choose the strategy you want to learn first: INVERTIX or ECHO X ORBIT. Each has its own page, pace and certificate.':'You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.'}</p></div>`:'')+html;
+  $('#aside').innerHTML=`<div class="card next-card"><div class="hud">${finished?(NOEX?'All modules complete':'All modules passed'):'Up next'}</div><div class="h">${cur.n}. ${cur.t}</div>
+    <p class="muted" style="font-size:14px">${finished?'You can review any lesson.':proofPending(cur)?'Proof exam: one attempt, no lesson':expressMod(cur)&&!stepsDone(cur)?'Express: the three practice tasks':`Step <b>${Math.min(stepsDone(cur)+1,STEPS.length)}</b> of ${STEPS.length}: ${STEPS[Math.min(stepsDone(cur),STEPS.length-1)]}`}</p>
+    <div class="pbar" style="margin:10px 0 14px"><i style="width:${finished?100:proofPending(cur)?0:stepsDone(cur)/STEPS.length*100}%"></i></div>
+    <a class="btn primary" href="#/${cur.id}">${finished?'Review lessons':proofPending(cur)?'Take the proof exam':stepsDone(cur)?'Continue':expressMod(cur)?'Start express':'Start'} →</a></div>
+  ${pathCard()}${gexCard()}${paceCard()}${NOEX?'<div class="card"><h3 class="h">How a module is completed</h3><ul><li><b>Learn:</b> read the lesson and answer the recall question</li><li><b>See it:</b> step through a worked example</li><li><b>Mark it:</b> three chart tasks, each right the first time</li><li>No exams. You cannot click past the practice tasks</li></ul></div>':'<div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of '+(PASS*100)+'% or better on a set you\'ve never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>'}
   <div class="card"><h3 class="h">Practice, not real money</h3><p class="muted" style="font-size:13.5px">Nothing in the school uses real money. Before real or funded capital, the strategy gets proven on a demo account, in your journal, with your own numbers.</p></div>`;
   if(pathMaybeFirst())return;
   paceMaybeFirst();
 }
 function modRow(m,i){
   const st=modStatus(i),P=PH[m.ph],open=OPEN===m.id,p=pm(m.id);let chip;
-  if(st==='done')chip=`<span class="chip ok">✓ ${p.t?'Tested out':'Passed'} · ${p.sc}%</span>`;
-  else if(st==='active')chip=proofPending(m)?`<span class="chip live">Prove it</span>`:`<span class="chip live">${p.po&&!stepsDone(m)?'Learn it · ':p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/3 steps</span>`;
+  if(st==='done')chip=NOEX?`<span class="chip ok">✓ Complete</span>`:`<span class="chip ok">✓ ${p.t?'Tested out':'Passed'} · ${p.sc}%</span>`;
+  else if(st==='active')chip=NOEX&&expressMod(m)&&!stepsDone(m)?`<span class="chip live">Express</span>`:proofPending(m)?`<span class="chip live">Prove it</span>`:`<span class="chip live">${p.po&&!stepsDone(m)?'Learn it · ':p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/3 steps</span>`;
   else chip=`<span class="chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${m.sealed&&!window.OF_OK?'Sealed':'Locked'}</span>`;
   const prev=MODS[i-1]?MODS[i-1].t:'';let act;
-  if(st==='locked')act=m.sealed&&!window.OF_OK?`<div class="pcheck"><b>Sealed.</b> This room opens only when Hannah approves you for it. Nothing in it is shown until then.</div>`:pathGate()?`<div class="pcheck">Build your path to open the school.</div>`:m.id==='m43'?`<div class="pcheck">Unlocks when every module before INVERTIX is learned or proved.</div>`:`<div class="pcheck">Unlocks when you pass the Module ${i} exam (${esc(prev)}).</div>`;
+  if(st==='locked')act=m.sealed&&!window.OF_OK?`<div class="pcheck"><b>Sealed.</b> This room opens only when Hannah approves you for it. Nothing in it is shown until then.</div>`:pathGate()?`<div class="pcheck">Build your path to open the school.</div>`:m.id==='m43'?`<div class="pcheck">Unlocks when every module before INVERTIX is learned or proved.</div>`:`<div class="pcheck">Unlocks when you ${NOEX?'complete':'pass the exam for'} Module ${i} (${esc(prev)}).</div>`;
   else if(proofPending(m))act=`<a class="btn primary" href="#/${m.id}/exam">Take the proof exam →</a><span class="chip">One attempt · pass and it counts as done</span>`;
-  else act=`<a class="btn primary" href="#/${m.id}">${st==='done'?'Review lesson':stepsDone(m)?'Continue lesson':'Start lesson'} →</a>${p.a>1&&st!=='done'?`<span class="chip bad">Attempt ${p.a}: new exam set</span>`:''}`;
-  const hist=p.n?`<div style="grid-column:1/-1"><span class="hud">Exam attempts: ${p.n}</span></div>`:'';
+  else if(NOEX&&expressMod(m)&&st==='active'&&!stepsDone(m))act=`<a class="btn primary" href="#/${m.id}/mark">Start express →</a><a class="btn" href="#/${m.id}/learn">Read the lesson first</a><span class="chip">About ${EXPRESS_MIN} min</span>`;
+  else act=`<a class="btn primary" href="#/${m.id}">${st==='done'?'Review lesson':stepsDone(m)?'Continue lesson':'Start lesson'} →</a>${NOEX&&st!=='done'?`<span class="chip">About ${teachMin(m)} min</span>`:''}${!NOEX&&p.a>1&&st!=='done'?`<span class="chip bad">Attempt ${p.a}: new exam set</span>`:''}`;
+  const hist=!NOEX&&p.n?`<div style="grid-column:1/-1"><span class="hud">Exam attempts: ${p.n}</span></div>`:'';
   return `<article class="mod ${st}" data-id="${m.id}"><button class="mod-h" data-tog="${m.id}" aria-expanded="${open}">
     <span class="num">${String(m.n).padStart(2,'0')}</span><span class="mod-t"><b>${m.t}</b><small>${m.out}</small></span>
     <span class="mod-m">${m.flag?`<span class="chip">${m.flag}</span>`:''}${chip}</span></button>
     <div class="mod-b" ${open?'':'hidden'}>
       <div><h4 class="hud">What you'll learn</h4><ul>${m.ls.map(x=>`<li>${x}</li>`).join('')}</ul></div>
-      <div><h4 class="hud">Practice on your own chart</h4><p>${m.task}</p><h4 class="hud" style="margin-top:14px">Then prove it</h4><p>An exam with fresh charts and numbers each attempt. ${PASS*100}% to pass.</p></div>
+      <div><h4 class="hud">Practice on your own chart</h4><p>${m.task}</p>${NOEX?'<h4 class="hud" style="margin-top:14px">Then pass the practice</h4><p>Three chart tasks with fresh charts and numbers. Each has to be right the first time.</p>':`<h4 class="hud" style="margin-top:14px">Then prove it</h4><p>An exam with fresh charts and numbers each attempt. ${PASS*100}% to pass.</p>`}</div>
       ${hist}<div class="act">${act}</div></div></article>`;
 }
 $('#v-map').addEventListener('click',e=>{const b=e.target.closest('[data-tog]');if(!b)return;OPEN=OPEN===b.dataset.tog?null:b.dataset.tog;renderMap()});
@@ -106,7 +117,7 @@ $('#v-map').addEventListener('click',e=>{const b=e.target.closest('[data-tog]');
    LESSON WORKSPACE
 ============================================================ */
 let LAB=null,CH=null,CH2=null,TB=null;
-const firstOpenStep=m=>{const s=pm(m.id).s,i=s.findIndex(x=>!x);return i<0?3:i};
+const firstOpenStep=m=>{const s=pm(m.id).s,i=s.findIndex(x=>!x);return i<0?STEPS.length-1:i};
 function newLab(m,step){const t=TXT[m.id]||{};return{m,step,see:0,recall:null,dn:0,dd:0,drill:null,t:t.t||['',''],sub:!!t.sub,ticks:t.ticks||{},tf:1,sc:null}}
 const storeTxt=()=>{TXT[LAB.m.id]={t:LAB.t,sub:LAB.sub,ticks:LAB.ticks};saveTxt()};
 function ensureCharts(){
@@ -173,8 +184,8 @@ function renderLesson(){
   }
   if(L.step===2){
     if(!L.drill&&L.dd<3)newDrill();
-    body=`<div id="markBody"></div>`;
-    foot=`<button class="btn" data-prev>← Back</button><button class="btn primary" data-next ${p.s[2]?'':'disabled'}>Exam checklist →</button>`;
+    body=(NOEX&&expressMod(m)&&!p.s[0]&&!p.s[1]?`<div class="callout key"><span class="hud">Express</span><p>Get three chart tasks right the first time and this module is done. Want the lesson first? <a href="#/${m.id}/learn" style="color:var(--ice)">Open it</a>.</p></div>`:'')+`<div id="markBody"></div>`;
+    foot=NOEX?`<button class="btn" data-prev>← Back</button><button class="btn primary" data-finish ${p.s[2]?'':'disabled'}>${p.p?'Finish module':'Finish the practice'} →</button>`:`<button class="btn" data-prev>← Back</button><button class="btn primary" data-next ${p.s[2]?'':'disabled'}>Exam checklist →</button>`;
   }
   if(L.step===3){
     const items=[['Learn: lesson read',p.s[0]],['See it: worked example complete',p.s[1]],['Mark it: chart tasks done correctly',p.s[2]]],all=items.every(x=>x[1]),n=examSize(m);
@@ -220,7 +231,7 @@ function newDrill(){
 }
 function updateMarkPanel(){
   const L=LAB,box=$('#markBody');if(!box)return;
-  if(!L.drill){box.innerHTML=`<h3>Chart tasks</h3><div class="fb ok"><b>Done.</b> You got three tasks right on the first try. Keep practising if you like, or continue to Explain.</div><button class="btn" data-more>Try another task</button>`;return}
+  if(!L.drill){const nxt=MODS[modIdx(L.m.id)+1];box.innerHTML=NOEX?`<h3>Chart tasks</h3><div class="fb ok"><b>Module complete.</b> You got three tasks right on the first try.</div><div class="row"><button class="btn primary" data-finish>${nxt&&!pm(nxt.id).p?'Next module →':'Back to the course map →'}</button><button class="btn" data-more>Try another task</button></div>`:`<h3>Chart tasks</h3><div class="fb ok"><b>Done.</b> You got three tasks right on the first try. Keep practising if you like, or continue to Explain.</div><button class="btn" data-more>Try another task</button>`;return}
   const d=L.drill,it=d.item,kd=K[it.kind],g=d.fb;
   box.innerHTML=`<div class="kv" style="margin-top:0">${[0,1,2].map(i=>`<span class="chip ${i<L.dd?'ok':i===L.dd?'live':''}">${i<L.dd?'✓':i+1}</span>`).join('')}<span class="chip">${esc(it.topic||'Task')}</span></div>
     <p style="color:var(--ink);margin-top:10px"><b>${it.q}</b></p>${it.table&&it.kind!=='num'?`<table class="dw">${it.table}</table>`:''}${kd.html(it,d.st,{res:d.checked})}
@@ -232,8 +243,11 @@ function updateMarkPanel(){
   if(!d.checked&&kd.bind)kd.bind(box,it,d.st,()=>{const b=$('[data-check]',box);if(b)b.disabled=!itemHasAnswer(it,d.st)},CH,()=>updateMarkPanel());
 }
 const renderStepsOnly=()=>{const s=$('.steps');if(s)s.outerHTML=stepper()};
+/* No exams in the fundamentals: the three steps finish the module. The attempt log is what lets the server keep the completion. */
+function finishModule(m){const p=pm(m.id);p.s=[1,1,1];if(!p.p){p.p=1;p.sc=100;p.at=Date.now();p.n=(p.n|0)+1;logAttempt(m.id,3,3,true,'ex')}persist();toast('Module complete');
+  if(MODS.every(x=>pm(x.id).p))setTimeout(()=>toast('Fundamentals complete. Your certificate is on the course map.'),1800)}
 function complete(i,msg){const p=pm(LAB.m.id);if(!p.s[i]){p.s[i]=1;persist();toast(msg)}renderStepsOnly()}
-function go(step){LAB.step=step;if(step===2&&!LAB.drill&&LAB.dd<3)newDrill();renderLesson();paintChart(true);history.replaceState(null,'',`#/${LAB.m.id}/${STEP_KEYS[step]}`);$('.les-b').scrollTop=0}
+function go(step){if(NOEX){if(step>=STEPS.length)return;const r=reachable(LAB.m,step);if(r<step){toast(r===0?'Read the lesson and answer the recall question first.':'Finish the worked example first.');step=r}}LAB.step=step;if(step===2&&!LAB.drill&&LAB.dd<3)newDrill();renderLesson();paintChart(true);history.replaceState(null,'',`#/${LAB.m.id}/${STEP_KEYS[step]}`);$('.les-b').scrollTop=0}
 $('#lesson').addEventListener('click',e=>{
   const L=LAB,t=e.target;let b;if(!L)return;const m=L.m,p=pm(m.id);
   if((b=t.closest('[data-step]')))return go(+b.dataset.step);
@@ -243,7 +257,7 @@ $('#lesson').addEventListener('click',e=>{
   if(t.closest('[data-seep]')){L.see--;renderLesson();return paintChart(false)}
   if(t.closest('[data-seen]')){const n=seeSteps(m,scenarioOf(m)).length;if(L.see<n-1){L.see++;renderLesson();return paintChart(false)}complete(1,'Worked example complete');return go(2)}
   if(t.closest('[data-check]')){const d=L.drill;if(d.checked)return;d.checked=true;d.fb=gradeItem(d.item,d.st);
-    if(d.fb.ok){L.dd++;if(L.dd>=3&&!p.s[2]){p.s[2]=1;persist();toast('Chart tasks complete');renderStepsOnly();const nb=$('.les-f [data-next]');if(nb)nb.disabled=false}if(K[d.item.kind].reveal&&CH)K[d.item.kind].reveal(CH,d.item)}
+    if(d.fb.ok){L.dd++;if(L.dd>=3&&!p.s[2]){p.s[2]=1;if(NOEX)finishModule(m);else{persist();toast('Chart tasks complete')}renderStepsOnly();const nb=$('.les-f [data-next]');if(nb)nb.disabled=false}if(K[d.item.kind].reveal&&CH)K[d.item.kind].reveal(CH,d.item)}
     return updateMarkPanel()}
   if(t.closest('[data-reveal]')){const d=L.drill;d.revealed=true;K[d.item.kind].reveal(CH,d.item);return updateMarkPanel()}
   if(t.closest('[data-nextdrill]')){if(L.dd>=3){L.drill=null;return updateMarkPanel()}newDrill();paintChart(true);return updateMarkPanel()}
@@ -251,6 +265,7 @@ $('#lesson').addEventListener('click',e=>{
   if(t.closest('[data-skip]')){newDrill();paintChart(true);return updateMarkPanel()}
   if(t.closest('[data-more]')){newDrill();paintChart(true);return updateMarkPanel()}
   if(t.closest('[data-exam]'))return nav(`/${m.id}/exam`);
+  if(t.closest('[data-finish]')){const i=modIdx(m.id),nx=MODS[i+1];return nav(nx&&modUnlocked(i+1)&&!pm(nx.id).p?'/'+nx.id:'/')}
   if(t.closest('[data-plan-check]'))return planCheck();
 });
 $('#lesson').addEventListener('input',e=>{const L=LAB;if(!L)return;const id=e.target.id;if(id==='t0'||id==='t1'){L.t[+id[1]]=e.target.value;storeTxt()}});
@@ -410,8 +425,8 @@ function chooseCard(){
     <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a><a class="btn" href="/vault">Vault door →</a></div></div></div>`}
 function gradCard(){
   const fund=TRACK.id==='fundamentals';
-  return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">${TRACK.doneTitle}</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You passed every module. Your ${TRACK.certName} certificate is ready.</h2>
-   <p class="muted" style="max-width:62ch">A certificate of ${fund?'learning':'understanding'}: ${fund?'you worked through the fundamentals of trading NQ futures, from how a market works to the daily levels, and proved it on every exam.':`you learned ${TRACK.name} from the first idea to the end, and proved it on every exam.`}</p>
+  return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">${TRACK.doneTitle}</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You ${fund?'completed':'passed'} every module. Your ${TRACK.certName} certificate is ready.</h2>
+   <p class="muted" style="max-width:62ch">A certificate of ${fund?'learning':'understanding'}: ${fund?'you worked through the fundamentals of trading NQ futures, from how a market works to the daily levels, and passed every practice task.':`you learned ${TRACK.name} from the first idea to the end, and proved it on every exam.`}</p>
    <div class="row" style="align-items:center;margin-top:14px"><input class="in" id="certName" placeholder="Your name for the certificate" maxlength="40" value="${esc(WHO||'')}" style="max-width:300px"><button class="btn primary" id="certBtn">Download certificate</button></div>
    ${fund?chooseCard():`<p class="muted" style="margin-top:14px;font-size:14px"><a href="/" style="color:var(--ice)">Back to FLOWHUB home</a></p>`}</div>`}
 document.addEventListener('click',e=>{
