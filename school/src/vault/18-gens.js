@@ -1,6 +1,6 @@
 /* ============================================================
    ECHO X ORBIT vault · generated questions for the modules without a chart: vocabulary, directions, grading, stops and targets,
-   why trades lose, the daily rules and checklist, and the indicator. Rule settings only: no results, no account sizes.
+   why trades lose, the daily rules and checklist, and the trade plan. Rule settings only: no results, no account sizes.
 ============================================================ */
 const mc=(topic,q,good,bad,why)=>mcq(topic,q,[good,...bad],why);
 const fm0=n=>fm(n,0);
@@ -163,32 +163,30 @@ const PRECISION=[
  ['Partial and final target set','Set before the order is placed']];
 const precQ=r=>{const [a,b]=pick(r,PRECISION);return mcq('ExO · precision',`On the precision part of the checklist: "${a}". What does it mean?`,[b,...pickN(r,PRECISION.filter(x=>x[0]!==a),3).map(x=>x[1])],`${a}: ${b}.`)};
 
-/* ---------- x13 the indicator ---------- */
+/* ---------- x13 the trade plan ---------- */
 const priceTxt=r=>fm(Math.round((21000+r()*900)*4)/4,2);
 const tabQ=r=>{const n=pick(r,[1,2,3]),s=pick(r,['SHORT','LONG']),p=priceTxt(r),g=pick(r,['A+','A++','A+++']),[suf,txt]=pick(r,[['',''],['',''],[' · FILLED','. The limit order has filled'],[' · TOO LATE','. Price ran away before the fill, so remove the limit']]);
   const t=`M${n} ${s} ${p} · ${g}${suf}`,good=`Model ${n}: a ${s.toLowerCase()} limit at ${p}, graded ${g}${txt}`,
    wrong=[`Model ${n}: a ${s==='SHORT'?'long':'short'} limit at ${p}, graded ${g}${txt}`,`Model ${n===3?1:n+1}: a ${s.toLowerCase()} limit at ${p}, graded ${g}${txt}`,`Model ${n}: a ${s.toLowerCase()} market order at ${p}, graded ${g}${txt}`];
-  return mcq('ExO · reading a tab',`A tab on the chart reads "${t}". What does it say?`,[good,...wrong],'The tab shows the model (M1, M2 or M3), the direction, the limit price (the wick midpoint) and the grade. A suffix shows where the order stands: FILLED, TOO LATE, CANCELLED or EXPIRED.')};
+  return mcq('ExO · reading a note',`A trade note on your chart reads "${t}". What does it say?`,[good,...wrong],'The note shows the model (M1, M2 or M3), the direction, the limit price (the wick midpoint) and the grade. A suffix shows where the order stands: FILLED, TOO LATE, CANCELLED or EXPIRED.')};
 const ALERTS=[
- ['1 · Heads-up (WATCHING FOR SHORTS or LONGS, with the reason)','A rejection formed and this is why we now look for that direction. It is not an entry: get your chart ready.'],
- ['2 · Limit setup (limit price, stop, target, first draw and grade)','Place the limit now. The alert also says when the setup is cancelled and the rules for cancelling.'],
+ ['1 · Heads-up (watching for shorts or longs, with the reason)','A rejection formed and this is why you now look for that direction. It is not an entry: get your chart ready.'],
+ ['2 · Limit setup (limit price, stop, target, first draw and grade)','Place the limit now. Write down when the setup is cancelled and the rules for cancelling.'],
  ['3 · Filled (price traded through your limit)','You are in. Manage the trade with the stop and partial rules.'],
  ['4 · Too late or no longer valid (with the reason)','Price ran about 5 points past the limit before filling, the swept level was closed through, the first draw was hit before the fill, or the limit expired. Remove the limit.'],
  ['Limit moved (sent at most twice per setup)','The rejection wick kept growing, so the midpoint moved. Move your order.']];
-const alertQ=r=>{const [a,b]=pick(r,ALERTS);return mcq('ExO · the alerts',`You get this alert: ${a}. What does it mean for you?`,[b,...pickN(r,ALERTS.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}`)};
-const DRAW=[['The blue line','Your limit price'],['The red dashed line','The stop'],['The green dashed line','The target (40 points for Models 1 and 2, 30 for Model 3)'],['The grey dotted line','The first draw on liquidity, where you take the partial'],['Grey boxes','Open 1-hour and 4-hour gaps (when "Draw the 1H / 4H gaps" is on)'],['Grey lines','Untaken liquidity levels (when "Draw untaken liquidity levels" is on)']];
-const drawQ=r=>{const [a,b]=pick(r,DRAW);return mcq('ExO · what is drawn',`On the chart, what is ${a.toLowerCase()}?`,[b,...pickN(r,DRAW.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}.`)};
-const REV=[['Green','Nothing is working against the setup'],['Yellow','Be careful: a minimum-grade setup, news nearby, price already through the limit, or the chart read is bad'],['Red','Skip it: the first minutes after the open or the Fed announcement window']];
-const revQ=r=>{const [a,b]=pick(r,REV);return mcq('ExO · reviewer colours',`The Reviewer note on a limit setup is ${a}. What does it mean?`,[b,...REV.filter(x=>x[1]!==b).map(x=>x[1]),'The trade has already won'],`${a}: ${b}. It is a quick check, not advice.`)};
+const alertQ=r=>{const [a,b]=pick(r,ALERTS);return mcq('ExO · the order stages',`Your order is at this stage: ${a}. What does it mean for you?`,[b,...pickN(r,ALERTS.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}`)};
+const DRAW=[['The blue line','Your limit price'],['The red dashed line','The stop'],['The green dashed line','The target (40 points for Models 1 and 2, 30 for Model 3)'],['The grey dotted line','The first draw on liquidity, where you take the partial'],['Grey boxes','Open 1-hour and 4-hour gaps'],['Grey lines','Untaken liquidity levels']];
+const drawQ=r=>{const [a,b]=pick(r,DRAW);return mcq('ExO · what is drawn',`In your chart layout, what does ${a.toLowerCase()} stand for?`,[b,...pickN(r,DRAW.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}.`)};
 const SETT=[
- ['Stop and target defaults','Model 1 is 10 and 40, Model 2 is 12 and 40, Model 3 is 10 and 30 (guide defaults: change them for news days or SMT)'],
- ['Model 1 limit life','240 minutes (an indicator default you can change)'],
- ['Model 3 limit life','15 minutes (an indicator default you can change)'],
+ ['Stop and target starting values','Model 1 is 10 and 40, Model 2 is 12 and 40, Model 3 is 10 and 30 (starting values: change them for news days or SMT)'],
+ ['Model 1 limit life','240 minutes (an assumption you can change)'],
+ ['Model 3 limit life','15 minutes (an assumption you can change)'],
  ['Too late when price runs past the limit by','5 points before a fill'],
- ['Smallest draw that counts','10 points (an indicator default: the source gives no minimum distance)'],
- ['Only 9:30 to 12:00','Off by default; turn it on to see New York morning setups only'],
- ['Asia and London session windows','Asia 6 PM to 2 AM and London 2 AM to 7 AM (indicator defaults you can change)']];
-const settQ=r=>{const [a,b]=pick(r,SETT);return mcq('ExO · settings',`In the indicator, what is the default for: ${a}?`,[b,...pickN(r,SETT.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}.`)};
+ ['Smallest draw that counts','10 points (an assumption: the source gives no minimum distance)'],
+ ['Trade only 9:30 to 12:00','Optional: use it to trade the New York morning only'],
+ ['Asia and London session windows','Asia 6 PM to 2 AM and London 2 AM to 7 AM (assumptions you can change)']];
+const settQ=r=>{const [a,b]=pick(r,SETT);return mcq('ExO · numbers',`In your plan, what is a sensible starting value for: ${a}?`,[b,...pickN(r,SETT.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}.`)};
 const BESIDE=[
  ['1-hour and 4-hour fair value gaps','the gap the rejection delivers out of, and the draws above and below'],
  ['15-minute and 5-minute fair value gaps','stacking one inside a higher-timeframe gap lifts the grade'],
@@ -200,8 +198,8 @@ const BESIDE=[
  ['a premium and discount line (50% of the 1H range)','which side to favour'],
  ['ES on a second chart','divergence at a key level: a grade booster and a reason for a wider stop'],
  ['an economic calendar','when to stand aside or widen the stop (CPI, FOMC, 8:30 data)']];
-const besideQ=r=>{const [a,b]=pick(r,BESIDE);return mcq('ExO · on the chart beside it',`You add "${a}" to the chart. What question does it answer?`,[b,...pickN(r,BESIDE.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}.`)};
-const limitsQ=r=>mcq('ExO · honest limits',pick(r,['Can the indicator judge your narrative?','Does the indicator place the orders for you?','Can the indicator see whether your draw has already been hit?']),['No: it marks the mechanical part of the method, and you build the narrative first','Yes: it reads the draw and the news for you','Yes: it places and manages the orders','Yes: it knows how the week is treating higher-timeframe levels'],'The indicator finds the setups of the three models, draws the limit, stop and target and sends alerts. It cannot judge your narrative, whether the draw is already hit, how the week is behaving, or whether news is about to land.');
+const besideQ=r=>{const [a,b]=pick(r,BESIDE);return mcq('ExO · on the chart',`You add "${a}" to the chart. What question does it answer?`,[b,...pickN(r,BESIDE.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}.`)};
+const limitsQ=r=>mcq('ExO · honest limits',pick(r,['Can the rules judge your narrative?','Do the rules place the orders for you?','Do the rules tell you whether your draw has already been hit?']),['No: they cover the mechanical part of the method, and you build the narrative first','Yes: they read the draw and the news for you','Yes: they place and manage the orders','Yes: they know how the week is treating higher-timeframe levels'],'The rules cover the mechanical part of the method: the limit, stop and target. They cannot judge your narrative, whether the draw is already hit, how the week is behaving, or whether news is about to land.');
 
 /* ---------- x02 instruments, sessions and news ---------- */
 const INSTR=[

@@ -48,7 +48,7 @@ MODS.push({id:'m03',ph:1,chart:true,t:'Liquidity Explained',out:'Say where order
  drills:[sweepTap,sweepOrBreak,restLevel,restQ],
  bank:[
   mcq('Definition','What is liquidity?',['Resting orders','The speed price moves','Trading volume on the day','The amount of money in an account'],'Liquidity = resting orders.'),
-  mcq('Definition','Why does price move toward areas of liquidity?',['The market needs orders to be filled in order to move','Brokers push price there','Because highs always break','Because indicators say so'],'Price needs orders to be filled to move.'),
+  mcq('Definition','Why does price move toward areas of liquidity?',['The market needs orders to be filled in order to move','Brokers push price there','Because highs always break','Because the news says so'],'Price needs orders to be filled to move.'),
   mcq('Where it sits','Whose stop-losses rest above a swing high?',['Short sellers','Long buyers','Market makers','Nobody\'s'],'Short sellers place stop-losses above highs, and a stop on a short is a buy order.'),
   mcq('Where it sits','Whose stop-losses rest below a swing low?',['Long buyers','Short sellers','Breakout buyers','Nobody\'s'],'Long buyers place stops below lows, and a stop on a long is a sell order.'),
   mcq('Where it sits','How many separate sets of orders are stacked at each high or low?',['Two','One','Three','None'],'Breakout entries plus stop-losses: two stacked sets.'),

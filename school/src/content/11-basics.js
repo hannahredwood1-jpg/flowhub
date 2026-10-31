@@ -24,7 +24,7 @@ quick({id:'m37',o:.5,ph:0,t:'Market Basics',out:'Explain what a market is, what 
   ideas:['A market is where buyers and sellers meet; price is the last agreed level','More eager buyers push price up; more eager sellers push it down','Bid = best buyer, ask = best seller, spread = the gap','You buy at the ask and sell at the bid at the market','Volume is how much traded; liquidity is how easily you can trade','Leverage lets a small deposit (margin) control a big position','Leverage magnifies gains and losses, so the stop and size come first','Every trade has fees, spread and slippage, win or lose']},
  gens:[notional,spread,move,cost,side,lev],
  bank:BANKS('Market basics',[
-  ['What is a market?',['A place where buyers and sellers meet to trade','A type of news channel','A bank account','A chart indicator'],'Buyers and sellers meeting; the price is where they agree.'],
+  ['What is a market?',['A place where buyers and sellers meet to trade','A type of news channel','A bank account','A type of chart'],'Buyers and sellers meeting; the price is where they agree.'],
   ['What does a price represent?',['The last level where a buyer and a seller agreed','The fair value set by the exchange','The average of the day','A prediction'],'It is simply the last agreed trade.'],
   ['What is the bid?',['The highest price a buyer will currently pay','The lowest price a seller will accept','The last price','The daily high'],'Bid = buyers.'],
   ['What is the ask?',['The lowest price a seller will currently accept','The highest price a buyer will pay','The opening price','The stop price'],'Ask = sellers.'],
