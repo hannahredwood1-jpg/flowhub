@@ -1,5 +1,5 @@
 "use client";
-// Trading School progress for coaches: where a member is, exam scores, and manual unlocks.
+// Trading School progress for coaches: where a member is, module completions, and manual unlocks.
 import { useState } from "react";
 import { api } from "@/lib/api-client";
 import { SCHOOL_MODULES, schoolOpen } from "@/lib/school";
@@ -41,10 +41,10 @@ export function SchoolCard({ data, onChanged }: { data: DashboardData; onChanged
             );
           })}
           <ErrorLine error={error} />
-          <p className="text-xs text-ink-3">Unlock opens a module without requiring the previous exam.</p>
+          <p className="text-xs text-ink-3">Unlock opens a module without requiring the previous module.</p>
         </div>
         <div>
-          <div className="label mb-1.5">Recent exams</div>
+          <div className="label mb-1.5">Recent completions</div>
           {s?.attempts.length ? (
             <ul className="grid gap-1.5 text-sm">
               {s.attempts.map((a, i) => (
@@ -55,7 +55,7 @@ export function SchoolCard({ data, onChanged }: { data: DashboardData; onChanged
                 </li>
               ))}
             </ul>
-          ) : <p className="text-sm text-ink-3">No exam attempts yet.</p>}
+          ) : <p className="text-sm text-ink-3">No completions yet.</p>}
         </div>
       </div>
     </Panel>

@@ -73,7 +73,7 @@ export function summarizeSchool(state: SchoolState | null, unlocks: string[], at
   const passed = modules.filter((x) => x.passed).length;
   const unlocked = (i: number) => schoolOpen(modules, i);
   const cur = modules.findIndex((x, i) => !x.passed && unlocked(i));
-  const label = (ref: string) => { const d = SCHOOL_MODULES.find((x) => x.id === ref); return d ? `Module ${d.n} exam · ${d.title}` : ref; };
+  const label = (ref: string) => { const d = SCHOOL_MODULES.find((x) => x.id === ref); return d ? `Module ${d.n} · ${d.title}` : ref; };
   return {
     modules, passed, total: modules.length,
     current: passed === modules.length ? "Course complete" : cur >= 0 ? `Module ${modules[cur].n}` : "Not started",
