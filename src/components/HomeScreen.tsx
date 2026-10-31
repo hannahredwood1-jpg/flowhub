@@ -4,6 +4,7 @@ import type { PersonDTO } from "@/lib/types";
 import type { WeeklyWinRate } from "@/lib/weeklyWinRate";
 import { WeeklyWinRateCard } from "./WeeklyWinRate";
 import { Logo } from "./AppShell";
+import { MobileMenu } from "./MobileMenu";
 
 const SIGNAL = "255,106,0", ICE = "140,196,255";
 const mulberry = (a: number) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -171,13 +172,14 @@ export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: P
       <div className="relative z-10 mx-auto flex min-h-dvh max-w-[1100px] flex-col px-4 py-6 sm:px-8">
         <header className="flex items-center justify-between">
           <Logo />
-          <a href={signOutHref} className="text-sm text-ink-3 underline underline-offset-4 hover:text-ink-2">Sign out</a>
+          <MobileMenu signOutHref={signOutHref} items={[...ITEMS.map((i) => ({ href: i.href, label: i.t })), { href: "/signals-login", label: "Signals" }]} />
+          <a href={signOutHref} className="hidden text-sm text-ink-3 underline underline-offset-4 hover:text-ink-2 md:inline">Sign out</a>
         </header>
-        <div className="mt-auto pb-6 pt-[46vh] text-center">
+        <div className="mt-auto pb-6 pt-[34vh] text-center sm:pt-[46vh]">
           <div className="label !text-ice">Welcome back</div>
           <h1 className="mt-2 font-display text-[clamp(28px,5vw,46px)] font-extrabold leading-tight">{first}. Where to?</h1>
         </div>
-        <nav className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4" aria-label="FLOWHUB">
+        <nav className="hidden gap-3 pb-6 md:grid md:grid-cols-2 lg:grid-cols-4" aria-label="FLOWHUB">
           {ITEMS.map((i) => (
             <a key={i.href} href={i.href} className="group relative border border-line-2 bg-panel/80 p-4 backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-signal hover:bg-panel-2">
               <span className="font-mono text-[11px] text-ink-3 transition-colors group-hover:text-signal">{i.n}</span>

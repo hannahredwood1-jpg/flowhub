@@ -328,7 +328,7 @@ app.get("/public/weekly-win-rate", async (c) => {
   c.header("Vary", "Origin");
   c.header("Cache-Control", "public, max-age=300");
   const w = await signalsWeekly();
-  const pick = ({ label, wins, losses, breakeven, trades, pending, rate }: typeof w.current) => ({ label, wins, losses, breakeven, trades, pending, rate });
+  const pick = ({ label, wins, losses, breakeven, trades, pending, pts, rate }: typeof w.current) => ({ label, wins, losses, breakeven, trades, pending, pts, rate });
   return c.json({ current: pick(w.current), previous: pick(w.previous) });
 });
 
