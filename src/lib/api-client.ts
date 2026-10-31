@@ -54,6 +54,7 @@ export const api = {
   paceSet: (userId: string, body: { track?: string; perWeek?: number; reset?: boolean }) => call(`/api/coach/pace/${userId}`, send("POST", body)),
   pathList: () => call<{ rows: PathRow[]; unbuilt: number }>("/api/coach/paths"),
   pathReset: (userId: string) => call(`/api/coach/path/${userId}/reset`, send("POST", {})),
+  saveWinrateWebhook: (url: string) => call<{ ok: boolean; message: string }>("/api/winrate/discord", send("PUT", { url })),
   shareWeeklyWinRate: () => call<{ ok: boolean; message: string }>("/api/winrate/share", send("POST", {})),
   gexLatest: () => call<GexLatest>("/api/gex/latest"),
   gexRun: () => call<{ ok: boolean; message: string }>("/api/coach/gex/run", send("POST", {})),

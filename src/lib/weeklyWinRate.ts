@@ -7,9 +7,12 @@ export type WeekWinRate = {
   wins: number; losses: number; breakeven: number;
   trades: number;          // every signal/trade that week, including ones with no result yet
   pending: number;         // no result entered yet
+  days?: DayStat[];        // current week only: Monday to Sunday
   pts: number;             // net points won (stops count against), as entered in the Signals back end
   rate: number | null;     // 0..1, null when no win/loss trades
 };
+/** One day of the current week (Monday first), from the Signals back end. */
+export type DayStat = { date: string; wins: number; losses: number; be: number; pending: number; signals: number; pts: number };
 export type WeeklyWinRate = { current: WeekWinRate; previous: WeekWinRate; history: WeekWinRate[] }; // history: newest first, 8 weeks incl. current
 
 const DAY = 86400000;
@@ -49,12 +52,13 @@ export function shareText(w: WeekWinRate, name = "FLOWMTD") {
 
 /** The Signals site's own weekly numbers (entered by FLOWMTD in the back end). Break-even counts as a win (it is inside `wins`), only a stop is a loss, no result yet = pending. */
 export type SignalsWeek = { weekStart: string; wins: number; losses: number; be: number; pending: number; signals: number; pts?: number };
-export function fromSignalsWeeks(weeks: SignalsWeek[]): WeeklyWinRate {
+export function fromSignalsWeeks(weeks: SignalsWeek[], days?: DayStat[]): WeeklyWinRate {
   const history = [...weeks].sort((a, b) => b.weekStart.localeCompare(a.weekStart)).map<WeekWinRate>((w) => ({
     weekStart: w.weekStart, weekEnd: fmt(parse(w.weekStart) + 6 * DAY), label: `${short(w.weekStart)} – ${short(fmt(parse(w.weekStart) + 6 * DAY))}`,
     wins: w.wins, losses: w.losses, breakeven: w.be, trades: w.signals, pending: w.pending, pts: w.pts ?? 0,
     rate: w.wins + w.losses ? w.wins / (w.wins + w.losses) : null,
   }));
+  if (days?.length) history[0].days = days;
   return { current: history[0], previous: history[1] ?? history[0], history };
 }
 

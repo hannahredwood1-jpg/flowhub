@@ -19,7 +19,7 @@ function shareText(w, name = "FLOWMTD") {
   return `\u{1F4CA} ${name} \xB7 Weekly win rate (${w.label})
 ${pct} \xB7 ${w.wins}W / ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}${w.pts ? ` \xB7 ${w.pts > 0 ? "+" : "\u2212"}${Math.abs(Math.round(w.pts)).toLocaleString("en-US")} pts` : ""}`;
 }
-function fromSignalsWeeks(weeks) {
+function fromSignalsWeeks(weeks, days) {
   const history = [...weeks].sort((a, b) => b.weekStart.localeCompare(a.weekStart)).map((w) => ({
     weekStart: w.weekStart,
     weekEnd: fmt(parse(w.weekStart) + 6 * DAY),
@@ -32,6 +32,7 @@ function fromSignalsWeeks(weeks) {
     pts: w.pts ?? 0,
     rate: w.wins + w.losses ? w.wins / (w.wins + w.losses) : null
   }));
+  if (days?.length) history[0].days = days;
   return { current: history[0], previous: history[1] ?? history[0], history };
 }
 
@@ -1305,7 +1306,7 @@ async function signalsWeekly() {
   if (!r.ok) throw new HttpError(502, "Couldn't load the signal results right now.");
   const j = await r.json();
   if (!j.weeks?.length) throw new HttpError(502, "Couldn't load the signal results right now.");
-  weeklyCache = { at: Date.now(), v: fromSignalsWeeks(j.weeks) };
+  weeklyCache = { at: Date.now(), v: fromSignalsWeeks(j.weeks, j.days) };
   return weeklyCache.v;
 }
 var WINRATE_ORIGINS = ["https://www.flowmtd.com", "https://flowmtd.com"];
@@ -1499,19 +1500,39 @@ var staffOnly = (c) => {
 app.get("/api/dashboard", async (c) => c.json(await loadDashboard(c.get("user"), c.get("user").id)));
 app.get("/api/winrate", async (c) => c.json(await signalsWeekly()));
 app.get("/api/catalog", async (c) => c.json(await loadCatalog()));
+var WEBHOOK_RE = /^https:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[\w-]+$/;
+async function storedWebhook() {
+  const [r] = await sql`select value from "AppSetting" where key = 'winrate_webhook'`;
+  try {
+    return r ? decrypt(r.value) : "";
+  } catch {
+    return "";
+  }
+}
+var adminOnly = (c) => {
+  if (c.get("user").role !== "ADMIN") throw new HttpError(403, "Admin role required");
+};
+app.put("/api/winrate/discord", async (c) => {
+  adminOnly(c);
+  const url = String((await c.req.json().catch(() => ({}))).url ?? "").trim();
+  if (!WEBHOOK_RE.test(url)) throw new HttpError(400, "That doesn't look like a Discord webhook URL. It starts with https://discord.com/api/webhooks/");
+  await sql`insert into "AppSetting" (key, value) values ('winrate_webhook', ${encrypt(url)}) on conflict (key) do update set value = excluded.value, "updatedAt" = now()`;
+  await audit(c.get("user").id, "winrate.webhook.set");
+  return c.json({ ok: true, message: "Discord channel connected." });
+});
 app.post("/api/winrate/share", async (c) => {
+  adminOnly(c);
   const u = c.get("user");
-  if (u.role !== "ADMIN") throw new HttpError(403, "Admin role required");
   const w = (await signalsWeekly()).current;
   if (!(w.wins + w.losses)) throw new HttpError(400, "No results entered this week yet");
   const content = shareText(w);
-  const hook = env.WINRATE_DISCORD_WEBHOOK_URL, chan = env.WINRATE_CHANNEL_ID;
-  if (!hook && !(CFG.botToken && chan)) throw new HttpError(409, "Discord sharing isn't connected yet. Add WINRATE_DISCORD_WEBHOOK_URL in Railway (or WINRATE_CHANNEL_ID for the bot).");
+  const hook = env.WINRATE_DISCORD_WEBHOOK_URL || await storedWebhook(), chan = env.WINRATE_CHANNEL_ID;
+  if (!hook && !(CFG.botToken && chan)) throw new HttpError(409, "NOT_CONNECTED");
   const body = JSON.stringify({ content, allowed_mentions: { parse: [] } });
   const res = hook ? await fetch(hook, { method: "POST", headers: { "Content-Type": "application/json" }, body, signal: AbortSignal.timeout(15e3) }) : await fetch(`${DISCORD}/channels/${chan}/messages`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bot ${CFG.botToken}` }, body, signal: AbortSignal.timeout(15e3) });
   if (!res.ok) {
     console.error("winrate share", res.status, await res.text().catch(() => ""));
-    throw new HttpError(502, "Discord didn't accept the post. Check the webhook or channel permissions.");
+    throw new HttpError(502, "Discord didn't accept the post. Paste a fresh webhook URL and try again.");
   }
   await audit(u.id, "winrate.share", null, { week: w.weekStart });
   return c.json({ ok: true, message: "Posted to Discord." });
