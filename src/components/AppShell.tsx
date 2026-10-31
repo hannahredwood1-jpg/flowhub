@@ -1,6 +1,7 @@
 import type { PersonDTO } from "@/lib/types";
 import { Avatar, cx } from "./ui";
 import { IconLogout } from "./icons";
+import { MobileMenu } from "./MobileMenu";
 
 /** FLOWHUB wordmark in the FLOWMTD style: heavy white wordmark, orange F, small sub-line. */
 export function Logo({ size = "sm" }: { size?: "sm" | "lg" }) {
@@ -37,9 +38,9 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-30 border-b border-line bg-void/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-[1500px] items-center gap-x-6 px-4 py-3 sm:px-6">
           <Logo />
-          <nav className="flex items-center gap-1">
+          <nav className="hidden items-center gap-1 md:flex">
             {links.home && tab(links.home, "home", "Home")}
             {tab(links.dashboard, "dashboard", "My Dashboard")}
             {tab(links.plan, "plan", "Trading Plan")}
@@ -48,7 +49,16 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
             <a href="/signals-login" className="relative rounded-md px-3 py-2 text-[14px] font-medium text-ink-2 transition-colors hover:text-ink">Signals</a>
             {staff && tab(links.coach, "coach", "Coach Portal")}
           </nav>
-          <div className="ml-auto flex items-center gap-3">
+          <MobileMenu className="ml-auto" signOutHref={signOutHref} items={[
+            ...(links.home ? [{ href: links.home, label: "Home", active: active === "home" }] : []),
+            { href: links.dashboard, label: "My Dashboard", active: active === "dashboard" },
+            { href: links.plan, label: "Trading Plan", active: active === "plan" },
+            ...(links.school ? [{ href: links.school, label: "Trading Fundamentals" }] : []),
+            ...(links.practice ? [{ href: links.practice, label: "Practice" }] : []),
+            { href: "/signals-login", label: "Signals" },
+            ...(staff ? [{ href: links.coach, label: "Coach Portal", active: active === "coach" }] : []),
+          ]} />
+          <div className="ml-auto hidden items-center gap-3 md:flex">
             <div className="hidden text-right leading-tight sm:block">
               <div className="text-sm">{viewer.name}</div>
               <div className={cx("label !text-[12px]", staff && "!text-ice")}>{viewer.role === "ADMIN" ? "Admin" : viewer.role === "COACH" ? "Trading Coach" : "Member"}</div>

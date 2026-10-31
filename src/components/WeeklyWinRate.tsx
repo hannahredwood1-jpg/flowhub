@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api-client";
 import { pct } from "@/lib/format";
-import { shareText, type WeekWinRate, type WeeklyWinRate } from "@/lib/weeklyWinRate";
+import { ptsText, shareText, type WeekWinRate, type WeeklyWinRate } from "@/lib/weeklyWinRate";
 import { cx } from "./ui";
 
 const tone = (r: number | null) => (r == null ? "text-ink-3" : r >= 0.5 ? "text-win" : "text-loss");
@@ -33,6 +33,7 @@ export function WeeklyWinRateCard({ weekly, canShare, name, className = "" }: { 
             <span className={cx("text-4xl font-semibold tabular-nums", tone(w.rate))}>{pct(w.rate)}</span>
             <span className="text-sm text-ink-2">{w.wins + w.losses ? `${w.wins}W · ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}` : "no results entered yet this week"}</span>
           </div>
+          <div className="mt-2 text-lg font-semibold tabular-nums text-ink">{w.pts ? <span className={w.pts > 0 ? "text-win" : "text-loss"}>{ptsText(w.pts)}</span> : <span className="text-ink-3">0 pts</span>} <span className="text-sm font-normal text-ink-3">this week</span></div>
           <div className="mt-1 text-xs text-ink-3">{w.label} · last week {pct(p.rate)}{p.wins + p.losses ? ` (${p.wins}W · ${p.losses}L)` : ""}</div>
         </div>
         <div className="flex items-end gap-1" aria-hidden>

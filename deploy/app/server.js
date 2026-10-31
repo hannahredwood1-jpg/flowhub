@@ -17,7 +17,7 @@ var short = (ymd) => `${MON[+ymd.slice(5, 7) - 1]} ${+ymd.slice(8, 10)}`;
 function shareText(w, name = "FLOWMTD") {
   const pct = w.rate == null ? "\u2014" : `${Math.round(w.rate * 100)}%`;
   return `\u{1F4CA} ${name} \xB7 Weekly win rate (${w.label})
-${pct} \xB7 ${w.wins}W / ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}`;
+${pct} \xB7 ${w.wins}W / ${w.losses}L${w.breakeven ? ` (${w.breakeven} BE)` : ""}${w.pts ? ` \xB7 ${w.pts > 0 ? "+" : "\u2212"}${Math.abs(Math.round(w.pts)).toLocaleString("en-US")} pts` : ""}`;
 }
 function fromSignalsWeeks(weeks) {
   const history = [...weeks].sort((a, b) => b.weekStart.localeCompare(a.weekStart)).map((w) => ({
@@ -29,6 +29,7 @@ function fromSignalsWeeks(weeks) {
     breakeven: w.be,
     trades: w.signals,
     pending: w.pending,
+    pts: w.pts ?? 0,
     rate: w.wins + w.losses ? w.wins / (w.wins + w.losses) : null
   }));
   return { current: history[0], previous: history[1] ?? history[0], history };
@@ -1315,7 +1316,7 @@ app.get("/public/weekly-win-rate", async (c) => {
   c.header("Vary", "Origin");
   c.header("Cache-Control", "public, max-age=300");
   const w = await signalsWeekly();
-  const pick = ({ label, wins, losses, breakeven, trades, pending, rate }) => ({ label, wins, losses, breakeven, trades, pending, rate });
+  const pick = ({ label, wins, losses, breakeven, trades, pending, pts, rate }) => ({ label, wins, losses, breakeven, trades, pending, pts, rate });
   return c.json({ current: pick(w.current), previous: pick(w.previous) });
 });
 app.get("/auth/discord", (c) => {
