@@ -6,7 +6,7 @@
 /* the fundamentals have no exams, so a module takes much less time and the presets are faster there */
 const PACE_INFO=NOEX?[{id:'sprint',n:'Sprint',w:14,d:'Two modules a day'},{id:'steady',n:'Steady',w:7,d:'About a module a day'},{id:'relaxed',n:'Relaxed',w:3,d:'A few modules a week'}]:[{id:'sprint',n:'Sprint',w:10,d:'A module or two a day'},{id:'steady',n:'Steady',w:4,d:'A few sessions a week'},{id:'relaxed',n:'Relaxed',w:2,d:'A couple of modules a week'}];
 const PACE_PRESETS=Object.fromEntries(PACE_INFO.map(p=>[p.id,p.w]));
-let PACE=null,PACE_EMAIL=false,PACE_READY=false,PACE_OV=null;
+let PACE=null,PACE_EMAIL=false,PACE_READY=false,PACE_OV=null,PACE_STAFF=false;
 const paceOn=()=>!!TRACK;
 const paceClamp=n=>Math.max(1,Math.min(14,Math.round(+n||4)));
 const passedCount=()=>COURSE().filter(m=>pm(m.id).p).length;
@@ -26,7 +26,7 @@ function paceCard(){
   return`<div class="card pace-card"><div class="hud" style="display:flex;justify-content:space-between;align-items:center">Your pace <span class="chip ${c[0]}">${c[1]}</span></div>
   <div class="h" style="font-size:17px;margin:6px 0 2px">${paceName(PACE.perWeek)} · ${PACE.perWeek} a week</div>
   <p class="muted" style="font-size:13.5px">${left<=0?'You finished every module.':`${left} to go. At this pace you finish about <b>${fmtDay(paceDate(PACE.perWeek))}</b>.`}</p>
-  <button class="btn sm" data-pace-open style="margin-top:10px">Change pace</button></div>`}
+  ${PACE_STAFF?'<button class="btn sm" data-pace-open style="margin-top:10px">Change pace</button>':'<p class="muted" style="font-size:12.5px;margin-top:8px">This is the pace you set. A coach can change it if you need.</p>'}</div>`}
 document.addEventListener('click',e=>{if(e.target.closest('[data-pace-open]'))openPace('edit')});
 
 /* The journey: a path with one node per phase, and a comet that travels it faster the faster the pace. */
@@ -54,7 +54,7 @@ function openPace(mode){
       <div class="pace-out"><div><span class="hud">You finish around</span><div class="pace-date" id="paceD"></div></div><div class="pace-wk"><b id="paceW">0</b><span>weeks</span></div></div>
       <p class="pace-note" id="paceN"></p>
       ${PACE_EMAIL?`<label class="pace-mail"><input type="checkbox" id="paceM" ${email?'checked':''}> Email me a short nudge if I fall behind my pace</label>`:''}
-      <div class="pace-act"><button class="btn primary" id="paceGo">${first?'Start my journey →':'Save pace'}</button><button class="btn ghost" id="paceSkip">${first?'Set this later':'Cancel'}</button></div></div></div>`;
+      <div class="pace-act"><button class="btn primary" id="paceGo">${first?'Start my journey →':'Save pace'}</button>${first&&!PACE_STAFF?'':`<button class="btn ghost" id="paceSkip">${first?'Skip (staff)':'Cancel'}</button>`}</div></div></div>`;
   document.body.append(ov);PACE_OV=ov;document.body.style.overflow='hidden';
   const path=ov.querySelector('#ppDraw'),L=path.getTotalLength();path.style.strokeDasharray=L;if(!reduced)path.style.strokeDashoffset=L;
   ov.querySelectorAll('.pn').forEach((g,i)=>{const p=path.getPointAtLength(L*i/(paceNodes()-1));g.setAttribute('transform',`translate(${p.x} ${p.y})`);g.style.setProperty('--d',(reduced?0:.5+i*.2)+'s')});
@@ -74,21 +74,21 @@ function openPace(mode){
   ov.querySelectorAll('.pre').forEach(b=>b.onclick=()=>{w=+b.dataset.w;paint()});
   ov.querySelector('#paceR').oninput=e=>{w=paceClamp(e.target.value);paint()};
   const close=()=>{cancelAnimationFrame(raf);ov.classList.remove('on');document.body.style.overflow='';setTimeout(()=>{ov.remove();if(PACE_OV===ov)PACE_OV=null},320)};
-  const onKey=e=>{if(e.key==='Escape'){document.removeEventListener('keydown',onKey);skip()}};document.addEventListener('keydown',onKey);
-  const skip=()=>{try{sessionStorage.setItem('fh-pace-skip-'+TRACK.id,'1');if(first)localStorage.setItem('fh-pace-asked-'+TRACK.id,'1')}catch(e){}document.removeEventListener('keydown',onKey);close()};
-  ov.querySelector('#paceSkip').onclick=skip;
+  const onKey=e=>{if(e.key==='Escape'&&(!first||PACE_STAFF)){document.removeEventListener('keydown',onKey);skip()}};document.addEventListener('keydown',onKey);
+  const skip=()=>{try{sessionStorage.setItem('fh-pace-skip-'+TRACK.id,'1');}catch(e){}document.removeEventListener('keydown',onKey);close()};
+  const sk=ov.querySelector('#paceSkip');if(sk)sk.onclick=skip;
   ov.querySelector('#paceGo').onclick=async()=>{const b=ov.querySelector('#paceGo');b.disabled=true;
     const m=ov.querySelector('#paceM');
     try{const r=await fetch('/api/school/pace',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({track:TRACK.id,perWeek:w,preset:(PACE_INFO.find(p=>p.w===w)||{id:'custom'}).id,emails:m?m.checked:true})});
-      if(!r.ok)throw 0;const j=await r.json();PACE=j.pace;try{localStorage.setItem('fh-pace-asked-'+TRACK.id,'1')}catch(e){}document.removeEventListener('keydown',onKey);close();render();toast(first?'Pace set. Your first module is ready.':'Pace updated.')}
+      if(!r.ok)throw 0;const j=await r.json();PACE=j.pace;document.removeEventListener('keydown',onKey);close();render();toast(first?'Pace set. Your first module is ready.':'Pace updated.')}
     catch(e){b.disabled=false;toast('Could not save your pace. Try again.')}};
   paint();
 }
-function paceAfterPull(j){if(!paceOn())return;PACE=j.pace||null;PACE_EMAIL=!!j.hasEmail;PACE_READY=true}
+function paceAfterPull(j){if(!paceOn())return;PACE=j.pace||null;PACE_EMAIL=!!j.hasEmail;PACE_STAFF=!!j.staff;PACE_READY=true}
 /* The welcome only shows on the course map (called from renderMap), never on the GEX levels page or inside a lesson. */
 function paceMaybeFirst(){
   if(!paceOn()||!PACE_READY||PACE||PACE_OV)return;
-  /* asked once only: whether they set a pace or chose "later", the welcome never comes back on its own (the "Your pace" card is always there) */
-  let asked=false;try{asked=localStorage.getItem('fh-pace-asked-'+TRACK.id)==='1'||sessionStorage.getItem('fh-pace-skip-'+TRACK.id)==='1'}catch(e){}
-  if(!asked)openPace('first')}
+  /* a student sets their pace once, and it is saved on their account: there is no "later". Only staff can skip, for the session. */
+  let skipped=false;try{skipped=PACE_STAFF&&sessionStorage.getItem('fh-pace-skip-'+TRACK.id)==='1'}catch(e){}
+  if(!skipped)openPace('first')}
 function gexCard(){return gexOn()?`<div class="card pace-card"><div class="hud">Every morning</div><div class="h" style="font-size:17px;margin:4px 0 6px">Daily GEX levels</div><p class="muted" style="font-size:13.5px">Today's call wall, put wall and gamma flip for NQ, with a one-click copy for the indicator.</p><a class="btn sm" href="#/gex" style="margin-top:10px">Open today's levels →</a></div>`:''}
