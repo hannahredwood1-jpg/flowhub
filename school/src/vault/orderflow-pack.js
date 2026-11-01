@@ -1,6 +1,6 @@
 /* ============================================================
    Orderflow concepts for the vault. Sent only to members approved for the Orderflow room.
-   Concepts only: how flow is read, and how it could sit beside the ECHO X ORBIT checklist and its rejection blocks. More is coming.
+   Concepts only: how flow is read, and how it could sit beside the ECHO checklist and its rejection blocks. More is coming.
 ============================================================ */
 (()=>{
 const {tblx,key,warn,def,mcq,BANKS,rc,drillBank,pick}=window.OFLIB;
@@ -70,17 +70,17 @@ fill('o03',{task:'On any footprint or delta chart you have access to, find a can
   ['What is a point of control?',['The price where the most volume traded','The highest price','The open','The stop'],'It gives context.'],
   ['What tends to happen in a low-volume area?',['Price moves through it quickly','Price stops','The level is invalid','Nothing'],'Little traded there.'],
   ['Can delta and candle colour disagree?',['Yes: a green candle can have negative delta','No','Only on Fridays','Only in Asia'],'That disagreement is information.']])});
-fill('o04',{task:'Write your own orderflow look for ECHO X ORBIT in three lines: one thing you would want to see at the rejection wick that supports a setup, one thing that would make you skip, and what you will never let it change.',
- examDesc:'How orderflow can sit beside the ECHO X ORBIT checklist and what it never overrides.',
+fill('o04',{task:'Write your own orderflow look for ECHO in three lines: one thing you would want to see at the rejection wick that supports a setup, one thing that would make you skip, and what you will never let it change.',
+ examDesc:'How orderflow can sit beside the ECHO checklist and what it never overrides.',
  learn:[
-  {t:'An extra look, not a new rule',h:`<p>The ECHO X ORBIT checklist is price-based: a higher-timeframe gap behind the rejection, a valid rejection or a retested CISD, an open draw, a level that has not been closed through, and the daily limit. Orderflow is an <b>extra look</b> you can add beside it. More is coming: this room will grow.</p>`},
+  {t:'An extra look, not a new rule',h:`<p>The ECHO checklist is price-based: a higher-timeframe gap behind the rejection, a valid rejection or a retested CISD, an open draw, a level that has not been closed through, and the daily limit. Orderflow is an <b>extra look</b> you can add beside it. More is coming: this room will grow.</p>`},
   {t:'What supports the setup',h:`<ul><li>At the extreme of the rejection wick, heavy aggressive trading that does not move price (absorption).</li><li>The aggressive push fading just before the rejection candle closes (exhaustion).</li><li>Delta turning toward your direction on the rejection candle or the retest wick.</li><li>A stack of imbalances in your direction after the retest of a CISD level.</li></ul>`},
   {t:'What makes you skip',h:`<ul><li>Aggression keeps pushing <b>through</b> the level with no sign of it being absorbed.</li><li>A candle closes through your key level on heavy, one-sided flow: that is the hard-exit rule, and the flow only confirms it.</li><li>The flow looks the same before and after the rejection: nothing turned, only the price shape.</li></ul>`},
   {t:'What orderflow never overrides',h:key('<p>Orderflow can make you <b>skip</b> a setup. It never changes the stop, the target, the partial and break-even rules, the hard exit, or the daily rules. It can never turn a setup with no higher-timeframe gap or no draw into a trade.</p>','The rule')}],
  recall:rc('Stops, Targets, Partials and Break-even','When do you move to break-even?',['After the partial is taken','As soon as the trade is 10 points up','Before the fill','Never'],'The plan runs itself once you are in.'),
  steps:[['<b>Beside the checklist.</b>',tblx(['Price checklist','Orderflow look'],[['Level swept and rejected','Was the push beyond it aggressive, and did it run out?'],['Retest of a CISD level','Did delta turn on the retest wick?'],['Higher-timeframe gap behind it','Was the other side visibly waiting there?'],['Stop, partial, hard exit','Never changed by flow']])]],
  bank:bankOf([
-  ['What is the orderflow look in ECHO X ORBIT?',['An extra look beside the price checklist','A replacement for the checklist','A new stop rule','A news filter'],'More is coming.'],
+  ['What is the orderflow look in ECHO?',['An extra look beside the price checklist','A replacement for the checklist','A new stop rule','A news filter'],'More is coming.'],
   ['Which supports a setup?',['Absorption at the extreme of the rejection wick','Aggression pushing through with no response','No flow at all','A news release'],'Someone was waiting there.'],
   ['Which supports a setup?',['Delta turning toward your direction on the rejection or retest candle','Delta unchanged','Delta against you','Nothing'],'The flow changed with the price.'],
   ['Which makes you skip?',['Aggression keeps pushing through the level with no absorption','A stack in your direction','Exhaustion at the extreme','Delta turning'],'Nothing turned.'],

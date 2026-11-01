@@ -48,7 +48,6 @@ export function CoachPortal({ initial, today, isAdmin = false }: { initial: Coac
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
-      <LocalAccounts />
       <ActivityPanel />
       <GexPanel />
       <PathPanel />
@@ -94,6 +93,7 @@ export function CoachPortal({ initial, today, isAdmin = false }: { initial: Coac
             onToggle={() => setOpenId(openId === r.trader.id ? null : r.trader.id)} />
         ))}
       </div>
+      <LocalAccounts />
     </div>
   );
 }

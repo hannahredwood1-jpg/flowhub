@@ -75,12 +75,12 @@ function openPace(mode){
   ov.querySelector('#paceR').oninput=e=>{w=paceClamp(e.target.value);paint()};
   const close=()=>{cancelAnimationFrame(raf);ov.classList.remove('on');document.body.style.overflow='';setTimeout(()=>{ov.remove();if(PACE_OV===ov)PACE_OV=null},320)};
   const onKey=e=>{if(e.key==='Escape'){document.removeEventListener('keydown',onKey);skip()}};document.addEventListener('keydown',onKey);
-  const skip=()=>{try{sessionStorage.setItem('fh-pace-skip-'+TRACK.id,'1')}catch(e){}document.removeEventListener('keydown',onKey);close()};
+  const skip=()=>{try{sessionStorage.setItem('fh-pace-skip-'+TRACK.id,'1');if(first)localStorage.setItem('fh-pace-asked-'+TRACK.id,'1')}catch(e){}document.removeEventListener('keydown',onKey);close()};
   ov.querySelector('#paceSkip').onclick=skip;
   ov.querySelector('#paceGo').onclick=async()=>{const b=ov.querySelector('#paceGo');b.disabled=true;
     const m=ov.querySelector('#paceM');
     try{const r=await fetch('/api/school/pace',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({track:TRACK.id,perWeek:w,preset:(PACE_INFO.find(p=>p.w===w)||{id:'custom'}).id,emails:m?m.checked:true})});
-      if(!r.ok)throw 0;const j=await r.json();PACE=j.pace;document.removeEventListener('keydown',onKey);close();render();toast(first?'Pace set. Your first module is ready.':'Pace updated.')}
+      if(!r.ok)throw 0;const j=await r.json();PACE=j.pace;try{localStorage.setItem('fh-pace-asked-'+TRACK.id,'1')}catch(e){}document.removeEventListener('keydown',onKey);close();render();toast(first?'Pace set. Your first module is ready.':'Pace updated.')}
     catch(e){b.disabled=false;toast('Could not save your pace. Try again.')}};
   paint();
 }
@@ -88,6 +88,7 @@ function paceAfterPull(j){if(!paceOn())return;PACE=j.pace||null;PACE_EMAIL=!!j.h
 /* The welcome only shows on the course map (called from renderMap), never on the GEX levels page or inside a lesson. */
 function paceMaybeFirst(){
   if(!paceOn()||!PACE_READY||PACE||PACE_OV)return;
-  let skipped=false;try{skipped=sessionStorage.getItem('fh-pace-skip-'+TRACK.id)==='1'}catch(e){}
-  if(!skipped)openPace('first')}
+  /* asked once only: whether they set a pace or chose "later", the welcome never comes back on its own (the "Your pace" card is always there) */
+  let asked=false;try{asked=localStorage.getItem('fh-pace-asked-'+TRACK.id)==='1'||sessionStorage.getItem('fh-pace-skip-'+TRACK.id)==='1'}catch(e){}
+  if(!asked)openPace('first')}
 function gexCard(){return gexOn()?`<div class="card pace-card"><div class="hud">Every morning</div><div class="h" style="font-size:17px;margin:4px 0 6px">Daily GEX levels</div><p class="muted" style="font-size:13.5px">Today's call wall, put wall and gamma flip for NQ, with a one-click copy for the indicator.</p><a class="btn sm" href="#/gex" style="margin-top:10px">Open today's levels →</a></div>`:''}

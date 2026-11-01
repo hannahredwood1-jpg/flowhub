@@ -1,5 +1,5 @@
 "use client";
-// Coach portal: who can open the ECHO X ORBIT vault. Hannah issues a one-time code to a mentorship member; the code is shown once.
+// Coach portal: who can open the ECHO and ORBIT vault. Hannah issues a one-time code to a mentorship member; the code is shown once.
 import { useEffect, useState } from "react";
 import { api, type VaultRow } from "@/lib/api-client";
 import { ErrorLine, Panel, cx } from "./ui";
@@ -28,7 +28,7 @@ export function VaultPanel({ isAdmin }: { isAdmin: boolean }) {
   const label: Record<VaultRow["code"], string> = { none: "No code", issued: "Code issued", opened: "Opened", revoked: "Revoked" };
 
   return (
-    <Panel title="ECHO X ORBIT vault · access" right={<button className="btn btn-ghost !h-7 !px-2 text-xs" onClick={() => setShow(!show)}>{show ? "Hide" : "Show"}</button>}>
+    <Panel title="ECHO and ORBIT vault · access" right={<button className="btn btn-ghost !h-7 !px-2 text-xs" onClick={() => setShow(!show)}>{show ? "Hide" : "Show"}</button>}>
       {show && (
         <div className="grid gap-3 p-4">
           <p className="text-xs text-ink-3">The vault is its own page, served only to members you approve: a mentorship role (or the flag below) plus a one-time code you generate here. A code works once, only for that member, and only its hash is kept.</p>

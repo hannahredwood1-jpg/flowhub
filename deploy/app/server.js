@@ -950,12 +950,17 @@ var VAULT_MODULES = [
   { id: "x10", title: "Stops, Targets, Partials and Break-even" },
   { id: "x11", title: "Why Trades Lose, and Adapting to Conditions" },
   { id: "x12", title: "Daily Rules and the Pre-Trade Checklist" },
-  { id: "x13", title: "The Echo x Orbit Trade Plan" },
-  { id: "x14", title: "Make the Call: ECHO X ORBIT" },
+  { id: "x13", title: "The ECHO Trade Plan" },
+  { id: "x14", title: "Make the Call: ECHO" },
+  { id: "b01", title: "ORBIT: The Idea and the Order of Events" },
+  { id: "b02", title: "ORBIT: The Move and the Big OTE" },
+  { id: "b03", title: "ORBIT: The 5-Minute Inversion" },
+  { id: "b04", title: "ORBIT: The Internal OTE, Limit, Stop and Target" },
+  { id: "b05", title: "ORBIT: When a Setup Is Dead, and Your Routine" },
   { id: "o01", title: "What Orderflow Is and Why It Backs a Rejection" },
   { id: "o02", title: "Reading the Tape Around a Rejection" },
   { id: "o03", title: "Delta, Volume and Imbalance" },
-  { id: "o04", title: "Orderflow and the ECHO X ORBIT Checklist" },
+  { id: "o04", title: "Orderflow and the ECHO Checklist" },
   { id: "o05", title: "Gamma Levels as Orderflow Context" }
 ];
 var VAULT_MODULE_IDS = VAULT_MODULES.map((m) => m.id);
@@ -979,15 +984,18 @@ function vaultPassed(state) {
 
 // src/lib/tracks.ts
 var TRACK_IDS = ["fundamentals", "invertix", "exo"];
-var TRACK_NAME = { fundamentals: "Trading Fundamentals", invertix: "INVERTIX", exo: "ECHO X ORBIT" };
+var TRACK_NAME = { fundamentals: "Trading Fundamentals", invertix: "INVERTIX", exo: "ECHO and ORBIT" };
 var TRACK_URL = { fundamentals: "/school", invertix: "/invertix", exo: "/vault" };
 var isTrack = (t) => typeof t === "string" && TRACK_IDS.includes(t);
 var INVERTIX_MODULES = [
-  { id: "m43", n: 1, title: "INVERTIX: The Idea and the Pieces" },
+  { id: "m43", n: 1, title: "INVERTIX: The Idea and the Sections" },
   { id: "m44", n: 2, title: "INVERTIX: The Key Level" },
   { id: "m45", n: 3, title: "INVERTIX: The Flip, Entry and Stop" },
-  { id: "m46", n: 4, title: "INVERTIX: Targets, Windows and Size" },
-  { id: "m47", n: 5, title: "INVERTIX: The Daily Playbook" }
+  { id: "m46", n: 4, title: "INVERTIX: Target, Break-even and Size" },
+  { id: "m51", n: 5, title: "INVERTIX: PRIME Signals and EARLY" },
+  { id: "m52", n: 6, title: "INVERTIX: H/L and PO3" },
+  { id: "m53", n: 7, title: "INVERTIX: News Fade and FOMC Evening" },
+  { id: "m47", n: 8, title: "INVERTIX: The Daily Playbook" }
 ];
 var INVERTIX_MODULE_IDS = INVERTIX_MODULES.map((m) => m.id);
 var EXO_MODULES = VAULT_MODULES.filter((m) => m.id.startsWith("x"));
@@ -1020,7 +1028,7 @@ var CFG = {
   memberRoles: ids(env.DISCORD_MEMBER_ROLE_IDS),
   // roles allowed in once launched (empty = whole server)
   mentorshipRoles: ids(env.DISCORD_MENTORSHIP_ROLE_IDS),
-  // roles that count as mentorship for the ECHO X ORBIT vault (a role whose name contains "mentor" also counts)
+  // roles that count as mentorship for the vault (a role whose name contains "mentor" also counts)
   launched: (env.FLOWHUB_LAUNCHED ?? "").toLowerCase() === "true",
   // false = staff only
   botToken: env.DISCORD_BOT_TOKEN ?? "",
@@ -2128,7 +2136,7 @@ input:focus{outline:2px solid #ff6a00;outline-offset:1px}button{background:#ff6a
 .msg{min-height:22px;margin-top:14px;font-size:14px;color:#ff5d73}.fine{margin-top:26px;font-size:12.5px;color:#66717f}
 </style></head><body><a class="back" href="/">\u2190 FLOWHUB home</a>
 <div class="wrap" id="w"><div class="door" aria-hidden="true"><span class="bolts"><i style="transform:rotate(0)"></i><i style="transform:rotate(45deg)"></i><i style="transform:rotate(90deg)"></i><i style="transform:rotate(135deg)"></i><i style="transform:rotate(180deg)"></i><i style="transform:rotate(225deg)"></i><i style="transform:rotate(270deg)"></i><i style="transform:rotate(315deg)"></i></span><div class="dial"></div></div>
-<h1>ECHO X ORBIT</h1><p>The vault is by invitation: mentorship members only. Enter the code Hannah gave you.</p>
+<h1>ECHO and ORBIT</h1><p>The vault is by invitation: mentorship members only. Enter the code Hannah gave you.</p>
 <form id="f"><input id="c" placeholder="FH-XXXXX-XXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16" aria-label="Vault code"><button id="b" type="submit">Open</button></form>
 <div class="msg" id="m" role="status"></div><p class="fine">No code yet? If you are in mentorship, send Hannah a message on Discord. Everything in the vault stays inside it.</p></div>
 <script>

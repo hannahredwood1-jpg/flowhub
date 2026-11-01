@@ -1,5 +1,5 @@
 /* ============================================================
-   ECHO X ORBIT vault · overlays, worked-example steps and chart drills for the four scenes (narrative, Model 1, Model 2, Model 3).
+   ECHO vault · overlays, worked-example steps and chart drills for the four scenes (narrative, Model 1, Model 2, Model 3).
    Every drill states its own answer from the candles, and every one has a `why`.
 ============================================================ */
 const wd=e=>{const L=e.side==='long';return{L,lh:L?'low':'high',lows:L?'lows':'highs',wick:L?'lower wick':'upper wick',gap:L?'bullish':'bearish',opp:L?'bearish':'bullish',half:L?'discount':'premium',draw:L?'above':'below',dir:L?'long':'short',beyond:L?'below':'above',dirs:L?'longs':'shorts',up:L?'up':'down',hl:L?'high':'low'}};

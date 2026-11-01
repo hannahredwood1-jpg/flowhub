@@ -1,5 +1,5 @@
 /* ============================================================
-   ECHO X ORBIT vault · generated questions for the modules without a chart: vocabulary, directions, grading, stops and targets,
+   ECHO vault · generated questions for the modules without a chart: vocabulary, directions, grading, stops and targets,
    why trades lose, the daily rules and checklist, and the trade plan. Rule settings only: no results, no account sizes.
 ============================================================ */
 const mc=(topic,q,good,bad,why)=>mcq(topic,q,[good,...bad],why);
@@ -176,6 +176,19 @@ const ALERTS=[
  ['4 · Too late or no longer valid (with the reason)','Price ran about 5 points past the limit before filling, the swept level was closed through, the first draw was hit before the fill, or the limit expired. Remove the limit.'],
  ['Limit moved (sent at most twice per setup)','The rejection wick kept growing, so the midpoint moved. Move your order.']];
 const alertQ=r=>{const [a,b]=pick(r,ALERTS);return mcq('ExO · the order stages',`Your order is at this stage: ${a}. What does it mean for you?`,[b,...pickN(r,ALERTS.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}`)};
+const candleQ=r=>{const k=pick(r,[
+ ['When do you place a short limit?','Once a bearish candle in your direction has formed','During a run of bullish candles','Before any candle forms','At the open of the session','Place it once a candle in your direction has formed.'],
+ ['When do you place a long limit?','Once a bullish candle in your direction has formed','During a run of bearish candles','At the first tick','Only on news days','A bullish candle for a long, a bearish candle for a short.'],
+ ['The last three closed 5-minute candles all went against your trade. What do you do?','Wait: do not place the limit during that run','Place it now','Double the size','Move the stop','A run of candles against you means wait.']]);
+  return mcq('ExO · the candle rule',k[0],[k[1],k[2],k[3],k[4]],k[5])};
+const ENDS=[
+ ['A candle closes beyond the swept level (Model 1)',0],
+ ['The first draw trades before you are filled',0],
+ ['Price goes half-way to the target without filling you',0],
+ ['The limit\'s life runs out (Model 1: 4 hours, Model 2: 12 CISD candles, Model 3: 15 minutes)',1],
+ ['You are not filled and price runs 5 points your way',2]];
+const END_OPTS=['Cancelled: you stop watching it and do not chase','Expired: the limit\'s life ran out','Too late: do not chase it','Nothing: the setup is still live'];
+const endQ=r=>{const [a,k]=pick(r,ENDS);return mcq('ExO · when a setup ends',`${a}. What happens?`,[END_OPTS[k],...END_OPTS.filter((_,i)=>i!==k)],`${a}: ${END_OPTS[k]}.`)};
 const DRAW=[['The blue line','Your limit price'],['The red dashed line','The stop'],['The green dashed line','The target (40 points for Models 1 and 2, 30 for Model 3)'],['The grey dotted line','The first draw on liquidity, where you take the partial'],['Grey boxes','Open 1-hour and 4-hour gaps'],['Grey lines','Untaken liquidity levels']];
 const drawQ=r=>{const [a,b]=pick(r,DRAW);return mcq('ExO · what is drawn',`In your chart layout, what does ${a.toLowerCase()} stand for?`,[b,...pickN(r,DRAW.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}.`)};
 const SETT=[
@@ -199,7 +212,6 @@ const BESIDE=[
  ['ES on a second chart','divergence at a key level: a grade booster and a reason for a wider stop'],
  ['an economic calendar','when to stand aside or widen the stop (CPI, FOMC, 8:30 data)']];
 const besideQ=r=>{const [a,b]=pick(r,BESIDE);return mcq('ExO · on the chart',`You add "${a}" to the chart. What question does it answer?`,[b,...pickN(r,BESIDE.filter(x=>x[1]!==b),3).map(x=>x[1])],`${a}: ${b}.`)};
-const limitsQ=r=>mcq('ExO · honest limits',pick(r,['Can the rules judge your narrative?','Do the rules place the orders for you?','Do the rules tell you whether your draw has already been hit?']),['No: they cover the mechanical part of the method, and you build the narrative first','Yes: they read the draw and the news for you','Yes: they place and manage the orders','Yes: they know how the week is treating higher-timeframe levels'],'The rules cover the mechanical part of the method: the limit, stop and target. They cannot judge your narrative, whether the draw is already hit, how the week is behaving, or whether news is about to land.');
 
 /* ---------- x02 instruments, sessions and news ---------- */
 const INSTR=[

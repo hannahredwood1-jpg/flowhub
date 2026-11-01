@@ -391,3 +391,6 @@ dialog p{color:var(--ink2);margin:4px 0}
 .choose-c{padding:18px 20px;position:relative}
 .envelope-c .env-art{position:absolute;right:16px;top:14px;transform:scale(.62);transform-origin:top right;opacity:.9}
 @media(max-width:820px){.choose{grid-template-columns:1fr}.envelope-c .env-art{display:none}}
+
+.strat-h{margin:26px 0 10px;padding:18px 20px;border-color:color-mix(in srgb,var(--signal) 35%,var(--line))}
+.strat-h:first-child{margin-top:0}

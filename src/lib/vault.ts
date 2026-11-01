@@ -1,4 +1,4 @@
-// The ECHO X ORBIT vault: its module list (mirrors school/src/vault/*.js, a test keeps the two in step), access codes and the coach summary.
+// The vault (ECHO and ORBIT): its module list (mirrors school/src/vault/*.js, a test keeps the two in step), access codes and the coach summary.
 import { createHash } from "node:crypto";
 
 export { VAULT_MODULES, VAULT_MODULE_IDS } from "./vaultModules";

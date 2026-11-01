@@ -12,9 +12,9 @@ test("the INVERTIX module list matches the INVERTIX content", () => {
   assert.deepEqual(found.sort(), INVERTIX_MODULES.map((m) => [m.id, m.title]).sort());
 });
 
-test("fundamentals are 27 modules and INVERTIX is 5", () => {
+test("fundamentals are 27 modules and INVERTIX is 8", () => {
   assert.equal(trackTotal("fundamentals"), 27);
-  assert.equal(trackTotal("invertix"), 5);
+  assert.equal(trackTotal("invertix"), 8);
   assert.ok(!SCHOOL_MODULES.some((m) => (m.id as string) === "m16" || INVERTIX_MODULES.some((i) => (i.id as string) === (m.id as string))));
 });
 

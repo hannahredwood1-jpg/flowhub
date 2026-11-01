@@ -1,17 +1,17 @@
 /* ============================================================
-   ECHO X ORBIT vault · the curriculum, from the Echo x Orbit playbook: rejection blocks on NQ and MNQ, three entry models, one checklist.
-   Rule settings are taught. Results, win rates, profit claims and account-size examples are not. A valid setup can still lose.
+   ECHO vault · the curriculum, from the ECHO playbook: rejection blocks on NQ and MNQ, three entry models, one checklist.
+   Rule settings are taught. Results, win rates, profit claims and account-size examples are not.
 ============================================================ */
 const chartMod=c=>MODS.push({chart:true,...c,exam:c.exam||{bank:3,gen:c.drills.slice(0,6).map((_,i)=>[i,1])}});
 const xr=(from,q,o,why)=>rc(from,q,o,why);
 const T_VOCAB=tblx(['Term','Meaning'],VOCAB.map(([t,d])=>[`<b>${t}</b>`,d]));
 
 /* ---------- x01 · the idea ---------- */
-quick({id:'x01',o:1,ph:0,t:'The Idea in Plain Words and the Language',out:'Say what ECHO X ORBIT is looking for, the three rules that never bend, and what the key words mean.',
+quick({id:'x01',o:1,ph:0,t:'The Idea in Plain Words and the Language',out:'Say what ECHO is looking for, the three rules that never bend, and what the key words mean.',
  ls:['The idea in plain words','Three rules that never bend','The language','Three entry models, one checklist','What this is and is not'],
  task:'Write the idea in your own words in three sentences: what price does at an obvious high or low, what you put at the middle of the wick, and the two things that must be there before you trade.',
  learn:[
-  {t:'The idea in plain words',h:`<p>Price often pokes just past an obvious high or low to grab the orders sitting there, then fails to stay beyond it. That failed poke leaves a long wick, called a <b>rejection block</b>. You place a <b>limit order at the middle of that wick</b>, with a small stop just beyond the poke, and you aim for the next place price is being pulled to.</p><p>Everything in ECHO X ORBIT exists to answer one question: <b>is this the rejection that price has to respect?</b></p>`+key('<p>This is education. The rules keep each loss small and stop you trading after a win. A valid setup can still lose, and nothing here is a promise of results.</p>','Read this first')},
+  {t:'The idea in plain words',h:`<p>Price often pokes just past an obvious high or low to grab the orders sitting there, then fails to stay beyond it. That failed poke leaves a long wick, called a <b>rejection block</b>. You place a <b>limit order at the middle of that wick</b>, with a small stop just beyond the poke, and you aim for the next place price is being pulled to.</p><p>Everything in ECHO exists to answer one question: <b>is this the rejection that price has to respect?</b></p>`},
   {t:'Three rules that never bend',h:`<ol><li><b>The poke must come out of a higher-timeframe gap</b> (1-hour or 4-hour). No gap behind it, no trade.</li><li><b>There must be a place for price to go</b>, called a draw on liquidity. No draw, no trade.</li><li><b>You stop for the day after one win, or after two losses.</b></li></ol>`},
   {t:'The language',h:`<p>These words are used in every module. Learn them now and the rest reads easily.</p>${T_VOCAB}`},
   {t:'Three entry models, one checklist',h:tblx(['Model','What it is','When you use it'],[['<b>Model 1</b>','The external rejection block','The main model. A sweep of external liquidity, rejected out of a higher-timeframe gap'],['<b>Model 2</b>','The CISD rejection block','Price has flipped direction and you want confirmation, or you missed the Model 1 entry'],['<b>Model 3</b>','The 1-minute continuation','A quick trend-following scalp, only when there is no nearby draw to trade into']])+`<p>All three share one checklist (module 12) and one set of daily rules.</p>`},
@@ -20,14 +20,13 @@ quick({id:'x01',o:1,ph:0,t:'The Idea in Plain Words and the Language',out:'Say w
  steps:[['<b>The idea in one picture.</b>',tblx(['Step','What happens'],[['1','Price pokes past an obvious high or low'],['2','The candle fails to close beyond it, leaving a long wick'],['3','You put a limit at the middle of the wick'],['4','Stop just beyond the poke, target at the next place price is pulled to']])],['<b>The three rules.</b>',tblx(['Rule','If it is missing'],[['A higher-timeframe gap behind the poke','No trade'],['A draw on liquidity','No trade'],['One win or two losses today','Stop for the day']])],['<b>The three models.</b>',tblx(['Model','In one line'],[['1','Sweep, rejected out of a gap'],['2','A retested CISD'],['3','A 1-minute scalp when there is no draw nearby']])]],
  gens:[vocabQ,termQ],
  bank:BANKS('The idea',[
-  ['What does ECHO X ORBIT look for?',['A rejection price has to respect: a poke past a level that fails to hold','The first candle of the day','A news release','Any wick'],'The question behind every rule is whether this is the rejection price has to respect.'],
+  ['What does ECHO look for?',['A rejection price has to respect: a poke past a level that fails to hold','The first candle of the day','A news release','Any wick'],'The question behind every rule is whether this is the rejection price has to respect.'],
   ['Where does the limit order go?',['At the middle of the rejection wick','At the extreme of the wick','At the close of the candle','At a round number'],'The midpoint (CE) of the wick.'],
   ['What must the poke come out of?',['A higher-timeframe gap (1-hour or 4-hour)','A news candle','A 1-minute gap','The weekly open'],'No higher-timeframe gap behind it, no trade.'],
   ['What is a draw on liquidity?',['The price that is pulling the market: your target and your allowed direction','A type of order','A news event','The stop price'],'No draw, no trade.'],
   ['When do you stop trading for the day?',['After one win, or after two losses','After three trades','At noon','Only when you are up'],'One win or two losses.'],
   ['Which model is the main model?',['Model 1: the external rejection block','Model 2','Model 3','There is no main model'],'Models 2 and 3 are for confirmation, re-entry and scalps.'],
   ['When is Model 3 used?',['Only when there is no nearby draw to trade into','Always','Only on news days','Only in Asia'],'It is a quick trend-following scalp.'],
-  ['Is a valid setup guaranteed to win?',['No: a valid setup can still lose','Yes if it is graded A+','Yes if there is a draw','Yes in the morning'],'The rules keep losses small. They do not remove them.'],
   ['What do the rules cover?',['The mechanical part of the method: the limit, stop and target','Predicting the day','Placing the orders for you','Replacing your narrative'],'You build the narrative first.'],
   ['What is a rejection block?',['A wick that goes past a level holding liquidity while the candle does not close beyond it','A candle that closes beyond a level','A gap','A news candle'],'The wick is the block.']]),
  examDesc:'The idea, the three rules that never bend, the language, and the three entry models.'});
