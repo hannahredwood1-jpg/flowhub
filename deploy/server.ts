@@ -42,7 +42,7 @@ const CFG = {
   adminRoles: ids(env.DISCORD_ADMIN_ROLE_IDS),
   coachRoles: ids(env.DISCORD_COACH_ROLE_IDS),
   memberRoles: ids(env.DISCORD_MEMBER_ROLE_IDS), // roles allowed in once launched (empty = whole server)
-  mentorshipRoles: ids(env.DISCORD_MENTORSHIP_ROLE_IDS), // roles that count as mentorship for the ECHO X ORBIT vault (a role whose name contains "mentor" also counts)
+  mentorshipRoles: ids(env.DISCORD_MENTORSHIP_ROLE_IDS), // roles that count as mentorship for the vault (a role whose name contains "mentor" also counts)
   launched: (env.FLOWHUB_LAUNCHED ?? "").toLowerCase() === "true", // false = staff only
   botToken: env.DISCORD_BOT_TOKEN ?? "",
   signalsSecret: env.SIGNALS_HANDOFF_SECRET ?? "", // shared with the Signals site (signals.flowmtd.com); empty = Signals link switched off
@@ -1067,7 +1067,7 @@ app.get("/api/coach/usage/:id", async (c) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// The ECHO X ORBIT vault: its own page, served only to members Hannah approved (mentorship role + a code she issued).
+// The vault (ECHO and ORBIT): its own page, served only to members Hannah approved (mentorship role + a code she issued).
 // The lessons never reach the browser of anyone else: they are not in the school page, the practice page or any public asset.
 // ─────────────────────────────────────────────────────────────
 const rolesOf = (u: { guildRoleIds?: unknown }): string[] => {
@@ -1109,7 +1109,7 @@ input:focus{outline:2px solid #ff6a00;outline-offset:1px}button{background:#ff6a
 .msg{min-height:22px;margin-top:14px;font-size:14px;color:#ff5d73}.fine{margin-top:26px;font-size:12.5px;color:#66717f}
 </style></head><body><a class="back" href="/">← FLOWHUB home</a>
 <div class="wrap" id="w"><div class="door" aria-hidden="true"><span class="bolts"><i style="transform:rotate(0)"></i><i style="transform:rotate(45deg)"></i><i style="transform:rotate(90deg)"></i><i style="transform:rotate(135deg)"></i><i style="transform:rotate(180deg)"></i><i style="transform:rotate(225deg)"></i><i style="transform:rotate(270deg)"></i><i style="transform:rotate(315deg)"></i></span><div class="dial"></div></div>
-<h1>ECHO X ORBIT</h1><p>The vault is by invitation: mentorship members only. Enter the code Hannah gave you.</p>
+<h1>ECHO and ORBIT</h1><p>The vault is by invitation: mentorship members only. Enter the code Hannah gave you.</p>
 <form id="f"><input id="c" placeholder="FH-XXXXX-XXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16" aria-label="Vault code"><button id="b" type="submit">Open</button></form>
 <div class="msg" id="m" role="status"></div><p class="fine">No code yet? If you are in mentorship, send Hannah a message on Discord. Everything in the vault stays inside it.</p></div>
 <script>

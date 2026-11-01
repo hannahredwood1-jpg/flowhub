@@ -1,5 +1,5 @@
 /* ============================================================
-   ECHO X ORBIT vault · generated scenes. Every scene is built as a LONG (a swept low, a bullish rejection) and mirrored for shorts.
+   ECHO vault · generated scenes. Every scene is built as a LONG (a swept low, a bullish rejection) and mirrored for shorts.
    Narrative scene: a 1-hour chart with unfilled and filled gaps. Model 1: an external rejection block out of a higher-timeframe gap.
    Model 2: a CISD rejection block (a CISD level retested). Model 3: a 1-minute continuation. All numbers come from the candles.
 ============================================================ */

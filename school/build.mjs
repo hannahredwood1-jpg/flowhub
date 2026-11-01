@@ -45,10 +45,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 export function vaultShell(html) {
   const sub = (a, b2) => { if (!html.includes(a)) throw new Error("vault shell text not found: " + a.slice(0, 40)); html = html.replace(a, b2); };
   sub("<title>Trading School · FLOWHUB</title>", "<title>The Vault · FLOWHUB</title>");
-  sub('<span class="pill"><span class="dot"></span>Practice · no real money</span>', '<span class="pill vault-pill"><span class="dot"></span>ECHO X ORBIT · the vault</span>');
-  sub('<div class="hud" style="margin-bottom:8px">Trading School</div>', '<div class="hud" style="margin-bottom:8px">The Vault · ECHO X ORBIT</div>');
+  sub('<span class="pill"><span class="dot"></span>Practice · no real money</span>', '<span class="pill vault-pill"><span class="dot"></span>ECHO and ORBIT · the vault</span>');
+  sub('<div class="hud" style="margin-bottom:8px">Trading School</div>', '<div class="hud" style="margin-bottom:8px">The Vault · ECHO and ORBIT</div>');
   sub('Learn to trade, <span class="f">A to Z.</span>', 'You are <span class="f">inside.</span>');
-  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Everything about ECHO X ORBIT lives in this room: the model, the trade, the practice charts and the exams. Nothing here is shown outside it.");
+  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Two strategies live in this room, ECHO and ORBIT. Each has its own course, certificate and exams. Nothing here is shown outside it.");
   return html.replace("<script>", "<script>window.VAULT=1;</script><script>");
 }
 
@@ -59,6 +59,6 @@ export function invertixShell(html) {
   sub('<span class="pill"><span class="dot"></span>Practice · no real money</span>', '<span class="pill"><span class="dot"></span>INVERTIX · practice, no real money</span>');
   sub('<div class="hud" style="margin-bottom:8px">Trading School</div>', '<div class="hud" style="margin-bottom:8px">INVERTIX</div>');
   sub('Learn to trade, <span class="f">A to Z.</span>', 'Learn <span class="f">INVERTIX.</span>');
-  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Five modules take you from the key level to the daily playbook. Each one teaches one idea, makes you apply it on a chart, and then tests you. You move on by proving it, not by clicking through.");
+  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Eight modules take you from the key level to the daily playbook, with PRIME, EARLY, H/L, PO3, the news fade and the FOMC evening trade along the way. Each one teaches one idea, makes you apply it on a chart, and then tests you. You move on by proving it, not by clicking through.");
   return html.replace("<script>", "<script>window.INV=1;</script><script>");
 }

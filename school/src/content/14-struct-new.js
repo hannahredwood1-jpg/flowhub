@@ -1,6 +1,6 @@
 /* ============================================================
    Rejection Blocks and CISD: two chart modules in Structure & Imbalance
-   (built on the Echo chart scenarios, so the pictures are the same ones ECHO X ORBIT uses)
+   (built on the Echo chart scenarios, so the pictures are the same ones ECHO uses)
 ============================================================ */
 (()=>{
 const P=EXO_PARTS,sideOf=r=>pick(r,['long','short']);

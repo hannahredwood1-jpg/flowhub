@@ -8,7 +8,7 @@ test("vault module list matches the vault content", () => {
   const src = readdirSync(dir).filter((f) => f.endsWith(".js") && f !== "orderflow-pack.js").map((f) => readFileSync(new URL(f, dir), "utf8")).join("\n");
   const clean = (t: string) => t.replace(/\\'/g, "'");
   const found = [
-    ...[...src.matchAll(/(?:chartMod|quick)\(\{id:'([xo]\d+)',[^]*?\bt:'((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], clean(m[2])]),
+    ...[...src.matchAll(/(?:chartMod|quick)\(\{id:'([xbo]\d+)',[^]*?\bt:'((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], clean(m[2])]),
     ...[...src.matchAll(/\['(o\d+)','((?:[^'\\]|\\.)*)',\[/g)].map((m) => [m[1], clean(m[2])]),
   ];
   assert.deepEqual([...found].sort(), VAULT_MODULES.map((m) => [m.id, m.title]).sort());

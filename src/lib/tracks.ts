@@ -5,17 +5,20 @@ import { VAULT_MODULES } from "./vaultModules";
 
 export type TrackId = "fundamentals" | "invertix" | "exo";
 export const TRACK_IDS: TrackId[] = ["fundamentals", "invertix", "exo"];
-export const TRACK_NAME: Record<TrackId, string> = { fundamentals: "Trading Fundamentals", invertix: "INVERTIX", exo: "ECHO X ORBIT" };
+export const TRACK_NAME: Record<TrackId, string> = { fundamentals: "Trading Fundamentals", invertix: "INVERTIX", exo: "ECHO and ORBIT" };
 export const TRACK_URL: Record<TrackId, string> = { fundamentals: "/school", invertix: "/invertix", exo: "/vault" };
 export const isTrack = (t: unknown): t is TrackId => typeof t === "string" && (TRACK_IDS as string[]).includes(t);
 
 /** Mirrors school/src/content/11-invertix.js (a test keeps the two in step). */
 export const INVERTIX_MODULES = [
-  { id: "m43", n: 1, title: "INVERTIX: The Idea and the Pieces" },
+  { id: "m43", n: 1, title: "INVERTIX: The Idea and the Sections" },
   { id: "m44", n: 2, title: "INVERTIX: The Key Level" },
   { id: "m45", n: 3, title: "INVERTIX: The Flip, Entry and Stop" },
-  { id: "m46", n: 4, title: "INVERTIX: Targets, Windows and Size" },
-  { id: "m47", n: 5, title: "INVERTIX: The Daily Playbook" },
+  { id: "m46", n: 4, title: "INVERTIX: Target, Break-even and Size" },
+  { id: "m51", n: 5, title: "INVERTIX: PRIME Signals and EARLY" },
+  { id: "m52", n: 6, title: "INVERTIX: H/L and PO3" },
+  { id: "m53", n: 7, title: "INVERTIX: News Fade and FOMC Evening" },
+  { id: "m47", n: 8, title: "INVERTIX: The Daily Playbook" },
 ] as const;
 export const INVERTIX_MODULE_IDS = INVERTIX_MODULES.map((m) => m.id) as string[];
 

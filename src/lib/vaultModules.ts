@@ -1,4 +1,4 @@
-// The ECHO X ORBIT vault's module list, kept apart from vault.ts (which needs node:crypto) so the browser bundle can use it too.
+// The vault's module list (ECHO, ORBIT and the sealed Orderflow room), kept apart from vault.ts (which needs node:crypto) so the browser bundle can use it too.
 // Mirrors school/src/vault/*.js (a test keeps the two in step).
 export const VAULT_MODULES = [
   { id: "x01", title: "The Idea in Plain Words and the Language" },
@@ -13,12 +13,17 @@ export const VAULT_MODULES = [
   { id: "x10", title: "Stops, Targets, Partials and Break-even" },
   { id: "x11", title: "Why Trades Lose, and Adapting to Conditions" },
   { id: "x12", title: "Daily Rules and the Pre-Trade Checklist" },
-  { id: "x13", title: "The Echo x Orbit Trade Plan" },
-  { id: "x14", title: "Make the Call: ECHO X ORBIT" },
+  { id: "x13", title: "The ECHO Trade Plan" },
+  { id: "x14", title: "Make the Call: ECHO" },
+  { id: "b01", title: "ORBIT: The Idea and the Order of Events" },
+  { id: "b02", title: "ORBIT: The Move and the Big OTE" },
+  { id: "b03", title: "ORBIT: The 5-Minute Inversion" },
+  { id: "b04", title: "ORBIT: The Internal OTE, Limit, Stop and Target" },
+  { id: "b05", title: "ORBIT: When a Setup Is Dead, and Your Routine" },
   { id: "o01", title: "What Orderflow Is and Why It Backs a Rejection" },
   { id: "o02", title: "Reading the Tape Around a Rejection" },
   { id: "o03", title: "Delta, Volume and Imbalance" },
-  { id: "o04", title: "Orderflow and the ECHO X ORBIT Checklist" },
+  { id: "o04", title: "Orderflow and the ECHO Checklist" },
   { id: "o05", title: "Gamma Levels as Orderflow Context" },
 ] as const;
 export const VAULT_MODULE_IDS = VAULT_MODULES.map((m) => m.id) as string[];
