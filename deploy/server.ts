@@ -1395,7 +1395,10 @@ async function asset(path: string) {
   return a;
 }
 app.get("/assets/:name", async (c) => {
-  const a = await asset(c.req.param("name"));
+  const name = c.req.param("name");
+  // the Trading School and Practice pages are for signed-in members only, so their raw files need a session too
+  if ((name === "school.html" || name === "practice.html") && !(await currentUser(c))) return c.text("Not found", 404);
+  const a = await asset(name);
   if (!a) return c.text("Not found", 404);
   if (c.req.header("if-none-match") === a.etag) return c.body(null, 304);
   return c.body(a.body as unknown as ArrayBuffer, 200, {

@@ -8,4 +8,4 @@ const PH=[
  {n:'Context & Timing',d:'Cross-checking with a second index, and knowing when to look.'},
  {n:'Prop Firm Risk Management',d:'Funded accounts and their rules, sizing every trade, managing it after entry, and why the maths works.'},
  {n:'Gamma Levels',d:'What the daily GEX levels are and how to read them, so you know the backdrop before you choose a strategy to learn.'},
- {n:'INVERTIX',d:'The INVERTIX model: a key level, a manipulation leg, a flip and a defined entry, stop and target. It lives on its own page, so only the practice page loads it.'}];
+ {n:'INVERTIX',d:'The INVERTIX model: a key level, a manipulation leg, a flip and a defined entry, stop and target. It lives on its own gated page.'}];

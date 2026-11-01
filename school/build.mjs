@@ -17,8 +17,8 @@ export async function buildSchool(esbuild, { minify = true, practice = false, va
     ? [...engine, ...shared, ...list("vault", (f2) => f2 !== "orderflow-pack.js"), ...tail]
     : invertix
       ? [...engine, ...shared, "content/11-invertix.js", ...list("invertix"), ...tail]
-      // the fundamentals school leaves INVERTIX out (it has its own page); the practice page keeps it for its drills
-      : [...engine, ...list("content", (f2) => practice || f2 !== "11-invertix.js"), ...(practice ? [...list("data"), "lab.js"] : []), ...tail];
+      // the school and the practice page leave INVERTIX out: it has its own gated page
+      : [...engine, ...list("content", (f2) => f2 !== "11-invertix.js"), ...(practice ? [...list("data"), "lab.js"] : []), ...tail];
   let js = parts.map((p) => `/* ── ${p} ── */\n${src(p)}`).join("\n");
   let css = src("style.css");
   if (minify) {
