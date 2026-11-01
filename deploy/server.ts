@@ -830,6 +830,8 @@ app.put("/api/school/pace", async (c) => {
   const [old] = await sql`select "perWeek" from "SchoolPace" where "userId" = ${u.id} and track = ${track}`;
   if (b.perWeek == null && !old) throw new HttpError(400, "Pick a pace");
   const perWeek = b.perWeek == null ? Number(old.perWeek) : clampPace(b.perWeek);
+  // a student sets their pace once; after that only a coach can change it
+  if (old && Number(old.perWeek) !== perWeek && !isStaff(u)) throw new HttpError(403, "Your pace is already set. Ask a coach if it needs to change.");
   const preset = typeof b.preset === "string" && /^[a-z]{3,10}$/.test(b.preset) ? b.preset : "custom";
   const emails = b.emails !== false;
   const baseline = passedIn(await trackState(u.id, track), track);
