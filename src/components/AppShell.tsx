@@ -46,7 +46,6 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
             {tab(links.plan, "plan", "Trading Plan")}
             {links.school && tab(links.school, "school", "Trading School")}
             {links.practice && tab(links.practice, "practice", "Practice")}
-            <a href="/signals-login" className="relative rounded-md px-3 py-2 text-[14px] font-medium text-ink-2 transition-colors hover:text-ink">Signals</a>
             {staff && tab(links.coach, "coach", "Coach Portal")}
           </nav>
           <MobileMenu className="ml-auto" signOutHref={signOutHref} items={[
@@ -55,7 +54,6 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
             { href: links.plan, label: "Trading Plan", active: active === "plan" },
             ...(links.school ? [{ href: links.school, label: "Trading Fundamentals" }] : []),
             ...(links.practice ? [{ href: links.practice, label: "Practice" }] : []),
-            { href: "/signals-login", label: "Signals" },
             ...(staff ? [{ href: links.coach, label: "Coach Portal", active: active === "coach" }] : []),
           ]} />
           <div className="ml-auto hidden items-center gap-3 md:flex">

@@ -29,7 +29,7 @@ type State =
 
 function App() {
   const [state, setState] = useState<State>({ kind: "loading" });
-  const pickView = () => (location.hash === "#coach" ? "coach" : location.hash.startsWith("#plan") ? "plan" : location.hash.startsWith("#dashboard") ? "dashboard" : "home") as "home" | "dashboard" | "plan" | "coach";
+  const pickView = () => (location.hash === "#coach" || location.hash === "#coach-signals" ? "coach" : location.hash.startsWith("#plan") ? "plan" : location.hash.startsWith("#dashboard") ? "dashboard" : "home") as "home" | "dashboard" | "plan" | "coach";
   const [view, setView] = useState(pickView);
   const [directory, setDirectory] = useState<CoachDirectoryRow[] | null>(null);
 
