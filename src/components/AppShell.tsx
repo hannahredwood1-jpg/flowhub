@@ -19,7 +19,7 @@ export function Logo({ size = "sm" }: { size?: "sm" | "lg" }) {
 }
 
 export function AppShell({ viewer, active, children, links = { dashboard: "/dashboard", plan: "/plan", school: "/school.html", coach: "/coach" }, signOutHref = "/api/auth/signout" }: {
-  viewer: PersonDTO; active: "home" | "dashboard" | "plan" | "school" | "practice" | "coach"; children: React.ReactNode; links?: { home?: string; dashboard: string; plan: string; school?: string; practice?: string; coach: string }; signOutHref?: string;
+  viewer: PersonDTO; active: "home" | "dashboard" | "plan" | "school" | "practice" | "stats" | "coach"; children: React.ReactNode; links?: { home?: string; dashboard: string; plan: string; school?: string; practice?: string; stats?: string; coach: string }; signOutHref?: string;
 }) {
   const staff = viewer.role === "COACH" || viewer.role === "ADMIN";
   const tab = (href: string, key: typeof active, text: string) => (
@@ -46,6 +46,7 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
             {tab(links.plan, "plan", "Trading Plan")}
             {links.school && tab(links.school, "school", "Trading School")}
             {links.practice && tab(links.practice, "practice", "Practice")}
+            {links.stats && tab(links.stats, "stats", "Stats")}
             {staff && tab(links.coach, "coach", "Coach Portal")}
           </nav>
           <MobileMenu className="ml-auto" signOutHref={signOutHref} items={[
@@ -54,6 +55,7 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
             { href: links.plan, label: "Trading Plan", active: active === "plan" },
             ...(links.school ? [{ href: links.school, label: "Trading Fundamentals" }] : []),
             ...(links.practice ? [{ href: links.practice, label: "Practice" }] : []),
+            ...(links.stats ? [{ href: links.stats, label: "Stats", active: active === "stats" }] : []),
             ...(staff ? [{ href: links.coach, label: "Coach Portal", active: active === "coach" }] : []),
           ]} />
           <div className="ml-auto hidden items-center gap-3 md:flex">

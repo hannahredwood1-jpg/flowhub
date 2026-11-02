@@ -106,6 +106,7 @@ const ITEMS: { href: string; n: string; t: string; d: string }[] = [
   { href: "#plan", n: "02", t: "My Trading Plan", d: "Your plan, your numbers, your daily checklist." },
   { href: "/school", n: "03", t: "Trading Fundamentals", d: "Learn it, apply it on a chart, prove it." },
   { href: "/practice", n: "04", t: "Practice", d: "Endless generated charts with instant feedback." },
+  { href: "#stats", n: "05", t: "Stats", d: "Win rate, points and the breakdown of every signal." },
 ];
 
 type GexTabData = { current: { day: string; levels: { spot: number; export: string; all: { callWall: number | null; flip: number | null; putWall: number | null; regime: "positive" | "negative" | null } } } | null; today: string };
@@ -179,7 +180,7 @@ export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: P
           <div className="label !text-ice">Welcome back</div>
           <h1 className="mt-2 font-display text-[clamp(28px,5vw,46px)] font-extrabold leading-tight">{first}. Where to?</h1>
         </div>
-        <nav className="hidden gap-3 pb-6 md:grid md:grid-cols-2 lg:grid-cols-4" aria-label="FLOWHUB">
+        <nav className="hidden gap-3 pb-6 md:grid md:grid-cols-2 lg:grid-cols-5" aria-label="FLOWHUB">
           {ITEMS.map((i) => (
             <a key={i.href} href={i.href} className="group relative border border-line-2 bg-panel/80 p-4 backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-signal hover:bg-panel-2">
               <span className="font-mono text-[11px] text-ink-3 transition-colors group-hover:text-signal">{i.n}</span>

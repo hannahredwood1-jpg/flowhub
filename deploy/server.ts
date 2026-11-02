@@ -507,6 +507,16 @@ async function signalsCall(path: string, init: RequestInit = {}) {
   if (!r.ok) { console.error("signals-admin", r.status, await r.text().catch(() => "")); throw new HttpError(502, "Couldn't reach the signals data. Try again in a moment."); }
   return r.json();
 }
+// The Stats page every member sees: trade time, strategy, direction, session and result only (no prices).
+let statsCache: { at: number; rows: unknown[] } | null = null;
+app.get("/api/signals/stats", async (c) => {
+  if (!statsCache || Date.now() - statsCache.at > 60_000) {
+    const j = (await signalsCall("?days=120")) as { rows?: Record<string, unknown>[] };
+    const num = (v: unknown) => (v == null || v === "" ? null : Number(v));
+    statsCache = { at: Date.now(), rows: (j.rows ?? []).map((r) => ({ id: Number(r.id), received_at: r.received_at, indicator: r.indicator ?? null, direction: r.direction ?? null, session_key: r.session_key ?? null, result: r.result ?? null, result_pts: num(r.result_pts), entry_px: null, stop_px: null, target_px: null, headline: null })) };
+  }
+  return c.json({ rows: statsCache.rows });
+});
 app.get("/api/coach/signals", async (c) => {
   adminOnly(c);
   const days = Math.max(1, Math.min(400, Number(c.req.query("days")) || 120));
@@ -522,7 +532,7 @@ app.put("/api/coach/signals/:id/result", async (c) => {
   const pts = b.pts === undefined || b.pts === null || b.pts === "" ? null : Number(b.pts);
   if (pts !== null && !Number.isFinite(pts)) throw new HttpError(400, "Points must be a number");
   await signalsCall("/result", { method: "PUT", body: JSON.stringify({ id, result, pts }) });
-  weeklyCache = null; // the home screen card and the website pick the new result up straight away
+  weeklyCache = null; statsCache = null; // the home screen card, the Stats page and the website pick the new result up straight away
   await audit(c.get("user").id, "signals.result", String(id), { result, pts });
   return c.json({ ok: true });
 });
