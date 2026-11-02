@@ -9,6 +9,7 @@ import { TradingPlanCard } from "./Projections";
 import { PlanCard } from "./TradingPlan";
 import { SchoolCard } from "./SchoolCard";
 import { LocalAccounts } from "./LocalAccounts";
+import { SignalsPanel } from "./SignalsPanel";
 import { ActivityPanel } from "./Activity";
 import { VaultPanel } from "./VaultPanel";
 import { PacePanel } from "./PacePanel";
@@ -34,6 +35,8 @@ export function CoachPortal({ initial, today, isAdmin = false }: { initial: Coac
   const [openId, setOpenId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const first = useRef(true);
+  const [view, setView] = useState<"roster" | "signals">(() => (isAdmin && typeof location !== "undefined" && location.hash === "#coach-signals" ? "signals" : "roster"));
+  const show = (v: "roster" | "signals") => { setView(v); try { history.replaceState(null, "", v === "signals" ? "#coach-signals" : "#coach"); } catch { /* ignore */ } };
 
   useEffect(() => {
     if (first.current) { first.current = false; return; }
@@ -48,6 +51,16 @@ export function CoachPortal({ initial, today, isAdmin = false }: { initial: Coac
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      {isAdmin && (
+        <div className="flex border border-line-2 self-start justify-self-start" role="tablist" aria-label="Coach portal">
+          {([["roster", "Roster"], ["signals", "Signals"]] as const).map(([k, t]) => (
+            <button key={k} role="tab" aria-selected={view === k} onClick={() => show(k)} className={cx("relative h-[38px] px-5 font-hud text-[12.5px] transition-colors", view === k ? "bg-ice/10 text-ink" : "text-ink-3 hover:text-ink-2")}>
+              {t}{view === k && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-signal" />}
+            </button>
+          ))}
+        </div>
+      )}
+      {isAdmin && view === "signals" ? <SignalsPanel /> : <>
       <ActivityPanel />
       <GexPanel />
       <PathPanel />
@@ -94,6 +107,7 @@ export function CoachPortal({ initial, today, isAdmin = false }: { initial: Coac
         ))}
       </div>
       <LocalAccounts />
+      </>}
     </div>
   );
 }

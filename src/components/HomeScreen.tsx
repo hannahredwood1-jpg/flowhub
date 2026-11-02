@@ -172,7 +172,7 @@ export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: P
       <div className="relative z-10 mx-auto flex min-h-dvh max-w-[1100px] flex-col px-4 py-6 sm:px-8">
         <header className="flex items-center justify-between">
           <Logo />
-          <MobileMenu signOutHref={signOutHref} items={[...ITEMS.map((i) => ({ href: i.href, label: i.t })), { href: "/signals-login", label: "Signals" }]} />
+          <MobileMenu signOutHref={signOutHref} items={ITEMS.map((i) => ({ href: i.href, label: i.t }))} />
           <a href={signOutHref} className="hidden text-sm text-ink-3 underline underline-offset-4 hover:text-ink-2 md:inline">Sign out</a>
         </header>
         <div className="mt-auto pb-6 pt-[34vh] text-center sm:pt-[46vh]">

@@ -1032,8 +1032,6 @@ var CFG = {
   launched: (env.FLOWHUB_LAUNCHED ?? "").toLowerCase() === "true",
   // false = staff only
   botToken: env.DISCORD_BOT_TOKEN ?? "",
-  signalsSecret: env.SIGNALS_HANDOFF_SECRET ?? "",
-  // shared with the Signals site (signals.flowmtd.com); empty = Signals link switched off
   sessionSecret: env.SESSION_SECRET ?? "",
   encKey: Buffer.from(env.TOKEN_ENCRYPTION_KEY ?? "", "base64")
 };
@@ -1371,37 +1369,11 @@ app.get("/auth/callback", async (c) => {
     returning id`;
   const jwt = await sign({ uid: u.id, exp: Math.floor(Date.now() / 1e3) + SESSION_DAYS * 86400 }, CFG.sessionSecret, "HS256");
   setCookie(c, "fh_session", jwt, { ...cookieOpts, maxAge: SESSION_DAYS * 86400 });
-  if (getCookie(c, "fh_next") === "signals") {
-    deleteCookie(c, "fh_next", { path: "/" });
-    return c.redirect("/signals-login");
-  }
   return c.redirect("/#home");
 });
 app.get("/auth/logout", (c) => {
   deleteCookie(c, "fh_session", { path: "/" });
   return c.redirect("/");
-});
-var SIGNALS_ORIGIN = "https://signals.flowmtd.com";
-app.get("/signals-login", async (c) => {
-  if (!CFG.signalsSecret) return c.text("Signals is not switched on yet.", 503);
-  const u = await currentUser(c);
-  if (!u) {
-    setCookie(c, "fh_next", "signals", { ...cookieOpts, maxAge: 600 });
-    return c.redirect("/auth/discord");
-  }
-  const local = String(u.discordId).startsWith("local:");
-  const payload = {
-    did: String(u.discordId),
-    name: u.globalName ?? u.username,
-    avatar: avatarUrl(u.discordId, u.avatarHash),
-    role: u.role,
-    tier: isStaff(u) ? "staff" : hasMentorRole(u) ? "mentorship" : "premium",
-    access: !local || isStaff(u),
-    exp: Math.floor(Date.now() / 1e3) + 120
-  };
-  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const pass = `${body}.${createHmac("sha256", CFG.signalsSecret).update(body).digest("base64url")}`;
-  return c.redirect(`${SIGNALS_ORIGIN}/?pass=${pass}`);
 });
 var loginFails = /* @__PURE__ */ new Map();
 app.post("/auth/local", async (c) => {
@@ -1520,6 +1492,36 @@ async function storedWebhook() {
 var adminOnly = (c) => {
   if (c.get("user").role !== "ADMIN") throw new HttpError(403, "Admin role required");
 };
+var SIGNALS_ADMIN = "https://gtzwxamwnuxjnamwmtyn.supabase.co/functions/v1/signals-admin";
+async function signalsCall(path, init = {}) {
+  const secret = env.SIGNALS_ADMIN_SECRET;
+  if (!secret) throw new HttpError(503, "Signals isn't connected yet.");
+  const r = await fetch(SIGNALS_ADMIN + path, { ...init, headers: { "Content-Type": "application/json", "x-flowhub-secret": secret }, signal: AbortSignal.timeout(2e4) });
+  if (!r.ok) {
+    console.error("signals-admin", r.status, await r.text().catch(() => ""));
+    throw new HttpError(502, "Couldn't reach the signals data. Try again in a moment.");
+  }
+  return r.json();
+}
+app.get("/api/coach/signals", async (c) => {
+  adminOnly(c);
+  const days = Math.max(1, Math.min(400, Number(c.req.query("days")) || 120));
+  const j = await signalsCall(`?days=${days}`);
+  const num = (v) => v == null || v === "" ? null : Number(v);
+  return c.json({ rows: (j.rows ?? []).map((r) => ({ ...r, id: Number(r.id), entry_px: num(r.entry_px), stop_px: num(r.stop_px), target_px: num(r.target_px), result_pts: num(r.result_pts) })) });
+});
+app.put("/api/coach/signals/:id/result", async (c) => {
+  adminOnly(c);
+  const id = Number(c.req.param("id")), b = await c.req.json().catch(() => ({}));
+  const result = b.result === null || b.result === "" ? null : String(b.result);
+  if (!Number.isInteger(id) || id < 1 || result !== null && !["target", "stopped", "be", "manual"].includes(result)) throw new HttpError(400, "Bad result");
+  const pts = b.pts === void 0 || b.pts === null || b.pts === "" ? null : Number(b.pts);
+  if (pts !== null && !Number.isFinite(pts)) throw new HttpError(400, "Points must be a number");
+  await signalsCall("/result", { method: "PUT", body: JSON.stringify({ id, result, pts }) });
+  weeklyCache = null;
+  await audit(c.get("user").id, "signals.result", String(id), { result, pts });
+  return c.json({ ok: true });
+});
 app.put("/api/winrate/discord", async (c) => {
   adminOnly(c);
   const url = String((await c.req.json().catch(() => ({}))).url ?? "").trim();
