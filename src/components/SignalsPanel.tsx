@@ -67,7 +67,7 @@ export function StatsPage() {
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <section className="hud animate-rise px-4 py-3">
         <div className="label !text-ice">Stats</div>
-        <div className="mt-0.5 text-sm text-ink-3">How the signals have done, from the results FLOWMTD enters each day. Past results do not guarantee future results.</div>
+        <div className="mt-0.5 text-sm text-ink-3">These are the trades taken from the signals.</div>
       </section>
       {error && <p className="text-sm text-loss">{error}</p>}
       {!rows && !error && <p className="hud p-8 text-center text-ink-3">Loading the stats…</p>}
