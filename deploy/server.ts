@@ -528,8 +528,8 @@ app.put("/api/coach/signals/:id/result", async (c) => {
   adminOnly(c);
   const id = Number(c.req.param("id")), b = (await c.req.json().catch(() => ({}))) as { result?: unknown; pts?: unknown };
   const result = b.result === null || b.result === "" ? null : String(b.result);
-  if (!Number.isInteger(id) || id < 1 || (result !== null && !["target", "stopped", "be", "manual"].includes(result))) throw new HttpError(400, "Bad result");
-  const pts = b.pts === undefined || b.pts === null || b.pts === "" ? null : Number(b.pts);
+  if (!Number.isInteger(id) || id < 1 || (result !== null && !["target", "stopped", "be", "manual", "skipped"].includes(result))) throw new HttpError(400, "Bad result");
+  const pts = result === "skipped" || b.pts === undefined || b.pts === null || b.pts === "" ? null : Number(b.pts);
   if (pts !== null && !Number.isFinite(pts)) throw new HttpError(400, "Points must be a number");
   await signalsCall("/result", { method: "PUT", body: JSON.stringify({ id, result, pts }) });
   weeklyCache = null; statsCache = null; // the home screen card, the Stats page and the website pick the new result up straight away

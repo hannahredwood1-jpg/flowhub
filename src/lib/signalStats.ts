@@ -1,11 +1,11 @@
 // Signal stats for the coach portal: every number comes from the results Hannah enters for each trade entry.
 // Same rules as the weekly win rate: a target, a break-even or a manual close at 0 or better is a win, a stop (or a manual close below 0) is a loss,
-// and an entry with no result yet is "open" and counts nowhere. Points: wins add their size, stops count against.
+// an entry with no result yet is "open", and a "skipped" entry (a trade that was not taken) counts nowhere either. Points: wins add their size, stops count against.
 export type SigRow = {
   id: number; received_at: string; indicator: string | null; direction: string | null; entry_px: number | null; stop_px: number | null;
   target_px: number | null; session_key: string | null; result: string | null; result_pts: number | null; headline: string | null;
 };
-export type Outcome = { kind: "win" | "loss" | "open"; pts: number };
+export type Outcome = { kind: "win" | "loss" | "open" | "skipped"; pts: number };
 
 export const STRATEGY_LABEL: Record<string, string> = { INVERTIX: "INVERTIX", RB: "ECHO", ORBIT: "ORBIT", EXO: "ECHO X ORBIT (earlier)", HL: "H/L", PO3: "PO3", NEWS: "News fade" };
 export const SESSION_LABEL: Record<string, string> = { asia: "Asia", london: "London", ny_am: "NY morning", ny_pm: "NY afternoon", other: "Other times" };
@@ -17,6 +17,7 @@ export function outcomeOf(r: Pick<SigRow, "result" | "result_pts">): Outcome {
   const p = Number(r.result_pts) || 0;
   const res = r.result === "manual" ? (Number(r.result_pts) >= 0 ? "target" : "stopped") : r.result;
   if (!res) return { kind: "open", pts: 0 };
+  if (res === "skipped") return { kind: "skipped", pts: 0 };
   if (res === "stopped") return { kind: "loss", pts: -Math.abs(p) };
   return { kind: "win", pts: res === "be" ? p : Math.abs(p) };
 }
@@ -31,11 +32,11 @@ export const mondayOf = (ymd: string) => addDays(ymd, -((new Date(noon(ymd)).get
 export const weekdayIdx = (ymd: string) => (new Date(noon(ymd)).getUTCDay() + 6) % 7;
 export const WEEKDAY = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export type Tally = { entries: number; wins: number; losses: number; open: number; pts: number; rate: number | null; avgWin: number | null; avgLoss: number | null };
+export type Tally = { entries: number; wins: number; losses: number; open: number; skipped: number; pts: number; rate: number | null; avgWin: number | null; avgLoss: number | null };
 export function tally(rows: SigRow[]): Tally {
-  let wins = 0, losses = 0, open = 0, pts = 0, wp = 0, lp = 0;
-  for (const r of rows) { const o = outcomeOf(r); if (o.kind === "open") open++; else if (o.kind === "win") { wins++; wp += o.pts; pts += o.pts; } else { losses++; lp += o.pts; pts += o.pts; } }
-  return { entries: rows.length, wins, losses, open, pts, rate: wins + losses ? wins / (wins + losses) : null, avgWin: wins ? wp / wins : null, avgLoss: losses ? lp / losses : null };
+  let wins = 0, losses = 0, open = 0, skipped = 0, pts = 0, wp = 0, lp = 0;
+  for (const r of rows) { const o = outcomeOf(r); if (o.kind === "open") open++; else if (o.kind === "skipped") skipped++; else if (o.kind === "win") { wins++; wp += o.pts; pts += o.pts; } else { losses++; lp += o.pts; pts += o.pts; } }
+  return { entries: rows.length, wins, losses, open, skipped, pts, rate: wins + losses ? wins / (wins + losses) : null, avgWin: wins ? wp / wins : null, avgLoss: losses ? lp / losses : null };
 }
 
 export type Group = Tally & { key: string; label: string };
@@ -59,13 +60,13 @@ export function byDay(rows: SigRow[], from: string, to: string): DayRow[] {
 
 /** Cumulative points after each decided trade, oldest first. */
 export function equityCurve(rows: SigRow[]) {
-  const dec = rows.filter((r) => outcomeOf(r).kind !== "open").sort((a, b) => a.received_at.localeCompare(b.received_at));
+  const dec = rows.filter((r) => { const k = outcomeOf(r).kind; return k === "win" || k === "loss"; }).sort((a, b) => a.received_at.localeCompare(b.received_at));
   let c = 0; return dec.map((r) => ({ id: r.id, at: r.received_at, pts: (c += outcomeOf(r).pts) }));
 }
 
 /** The win streak that is running now (newest decided trades first). */
 export function currentStreak(rows: SigRow[]) {
-  const dec = rows.filter((r) => outcomeOf(r).kind !== "open").sort((a, b) => b.received_at.localeCompare(a.received_at));
+  const dec = rows.filter((r) => { const k = outcomeOf(r).kind; return k === "win" || k === "loss"; }).sort((a, b) => b.received_at.localeCompare(a.received_at));
   const kind = dec[0] ? outcomeOf(dec[0]).kind : null; let n = 0;
   for (const r of dec) { if (outcomeOf(r).kind === kind) n++; else break; }
   return { kind: kind as "win" | "loss" | null, n };

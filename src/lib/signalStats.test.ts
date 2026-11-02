@@ -13,6 +13,7 @@ test("outcomes follow the Signals rules", () => {
   assert.deepEqual(outcomeOf({ result: "manual", result_pts: 15 }), { kind: "win", pts: 15 });
   assert.deepEqual(outcomeOf({ result: "manual", result_pts: -12 }), { kind: "loss", pts: -12 });
   assert.deepEqual(outcomeOf({ result: null, result_pts: null }), { kind: "open", pts: 0 });
+  assert.deepEqual(outcomeOf({ result: "skipped", result_pts: null }), { kind: "skipped", pts: 0 });
 });
 
 test("tally counts wins over wins + losses and leaves open entries out", () => {
@@ -46,4 +47,12 @@ test("groups, equity and streak", () => {
   assert.equal(strategyOf(rows[0]), "ECHO"); assert.equal(strategyOf(rows[1]), "INVERTIX");
   assert.deepEqual(equityCurve(rows).map((x) => x.pts), [40, 20, 50, 62]);
   assert.deepEqual(currentStreak(rows), { kind: "win", n: 2 });
+});
+
+test("skipped trades are not open, not wins or losses, and stay out of streaks and the running total", () => {
+  const rows = [row("2026-10-26", { result: "target", result_pts: 40 }), row("2026-10-27", { result: "skipped" }), row("2026-10-28")];
+  const t = tally(rows);
+  assert.equal(t.skipped, 1); assert.equal(t.open, 1); assert.equal(t.wins, 1); assert.equal(t.losses, 0); assert.equal(t.entries, 3); assert.equal(t.rate, 1);
+  assert.deepEqual(equityCurve(rows).map((x) => x.pts), [40]);
+  assert.deepEqual(currentStreak(rows), { kind: "win", n: 1 });
 });
