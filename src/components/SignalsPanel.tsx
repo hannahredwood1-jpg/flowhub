@@ -35,33 +35,43 @@ function useGrow(key: unknown) {
   return on;
 }
 
+/** Coach portal → trade results (admin only): enter the result of each trade the indicators sent. The stats everyone sees live on the Stats page. */
 export function SignalsPanel() {
   const [rows, setRows] = useState<SigRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(120);
-  const [tab, setTab] = useState<"stats" | "results">("stats");
   const load = useCallback((d: number) => api.signalsRows(d).then((r) => { setRows(r.rows); setError(null); }, (e) => setError(e instanceof Error ? e.message : "Couldn't load")), []);
   useEffect(() => { load(days); }, [days, load]);
-  const open = rows?.filter((r) => outcomeOf(r).kind === "open").length ?? 0;
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <section className="hud animate-rise flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div>
-          <div className="label !text-ice">Signals</div>
-          <div className="mt-0.5 text-sm text-ink-3">Every trade the indicators send lands here. You enter the result; the stats work themselves out.</div>
+          <div className="label !text-ice">Trade results</div>
+          <div className="mt-0.5 text-sm text-ink-3">Every trade the indicators send lands here. You enter the result; the member Stats page works itself out.</div>
         </div>
-        <div className="flex border border-line-2" role="tablist" aria-label="Signals views">
-          {([["stats", "Stats"], ["results", open ? `Enter results · ${open}` : "Enter results"]] as const).map(([k, t]) => (
-            <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cx("relative h-[36px] px-4 font-hud text-[12px] transition-colors", tab === k ? "bg-ice/10 text-ink" : "text-ink-3 hover:text-ink-2")}>
-              {t}{tab === k && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-ice" />}
-            </button>
-          ))}
-        </div>
+        <a className="btn" href="#stats">View the Stats page →</a>
       </section>
       {error && <p className="text-sm text-loss">{error}</p>}
       {!rows && !error && <p className="hud p-8 text-center text-ink-3">Loading the trades…</p>}
-      {rows && tab === "stats" && <Stats rows={rows} />}
-      {rows && tab === "results" && <Results rows={rows} days={days} onMore={() => setDays((d) => Math.min(400, d + 60))} onSaved={(id, patch) => setRows((rs) => rs && rs.map((r) => (r.id === id ? { ...r, ...patch } : r)))} />}
+      {rows && <Results rows={rows} days={days} onMore={() => setDays((d) => Math.min(400, d + 60))} onSaved={(id, patch) => setRows((rs) => rs && rs.map((r) => (r.id === id ? { ...r, ...patch } : r)))} />}
+    </div>
+  );
+}
+
+/** The Stats page every member sees: the same animated numbers, read-only. */
+export function StatsPage() {
+  const [rows, setRows] = useState<SigRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { api.signalsStats().then((r) => setRows(r.rows), (e) => setError(e instanceof Error ? e.message : "Couldn't load")); }, []);
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      <section className="hud animate-rise px-4 py-3">
+        <div className="label !text-ice">Stats</div>
+        <div className="mt-0.5 text-sm text-ink-3">How the signals have done, from the results FLOWMTD enters each day. Past results do not guarantee future results.</div>
+      </section>
+      {error && <p className="text-sm text-loss">{error}</p>}
+      {!rows && !error && <p className="hud p-8 text-center text-ink-3">Loading the stats…</p>}
+      {rows && <Stats rows={rows} />}
     </div>
   );
 }

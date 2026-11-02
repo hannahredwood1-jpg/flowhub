@@ -53,7 +53,7 @@ export function CoachPortal({ initial, today, isAdmin = false }: { initial: Coac
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       {isAdmin && (
         <div className="flex border border-line-2 self-start justify-self-start" role="tablist" aria-label="Coach portal">
-          {([["roster", "Roster"], ["signals", "Signals"]] as const).map(([k, t]) => (
+          {([["roster", "Roster"], ["signals", "Trade results"]] as const).map(([k, t]) => (
             <button key={k} role="tab" aria-selected={view === k} onClick={() => show(k)} className={cx("relative h-[38px] px-5 font-hud text-[12.5px] transition-colors", view === k ? "bg-ice/10 text-ink" : "text-ink-3 hover:text-ink-2")}>
               {t}{view === k && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-signal" />}
             </button>

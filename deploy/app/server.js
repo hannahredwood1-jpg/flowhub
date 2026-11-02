@@ -1503,6 +1503,15 @@ async function signalsCall(path, init = {}) {
   }
   return r.json();
 }
+var statsCache = null;
+app.get("/api/signals/stats", async (c) => {
+  if (!statsCache || Date.now() - statsCache.at > 6e4) {
+    const j = await signalsCall("?days=120");
+    const num = (v) => v == null || v === "" ? null : Number(v);
+    statsCache = { at: Date.now(), rows: (j.rows ?? []).map((r) => ({ id: Number(r.id), received_at: r.received_at, indicator: r.indicator ?? null, direction: r.direction ?? null, session_key: r.session_key ?? null, result: r.result ?? null, result_pts: num(r.result_pts), entry_px: null, stop_px: null, target_px: null, headline: null })) };
+  }
+  return c.json({ rows: statsCache.rows });
+});
 app.get("/api/coach/signals", async (c) => {
   adminOnly(c);
   const days = Math.max(1, Math.min(400, Number(c.req.query("days")) || 120));
@@ -1519,6 +1528,7 @@ app.put("/api/coach/signals/:id/result", async (c) => {
   if (pts !== null && !Number.isFinite(pts)) throw new HttpError(400, "Points must be a number");
   await signalsCall("/result", { method: "PUT", body: JSON.stringify({ id, result, pts }) });
   weeklyCache = null;
+  statsCache = null;
   await audit(c.get("user").id, "signals.result", String(id), { result, pts });
   return c.json({ ok: true });
 });
