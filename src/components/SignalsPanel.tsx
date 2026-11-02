@@ -136,7 +136,7 @@ function Hero({ t, range, k, inR }: { t: ReturnType<typeof tally>; range: Range;
           <Big label="Waiting on a result" value={String(t.open)} tone={t.open ? "text-lag" : "text-ink-2"} />
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-ink-3">
-          <span>{RANGE_LABEL[range]} · {t.entries} entr{t.entries === 1 ? "y" : "ies"}</span>
+          <span>{RANGE_LABEL[range]} · {t.entries} entr{t.entries === 1 ? "y" : "ies"}{t.skipped ? ` · ${t.skipped} skipped` : ""}</span>
           {streak.kind && <span>Running streak: <b className={streak.kind === "win" ? "text-win" : "text-loss"}>{streak.n} {streak.kind === "win" ? "win" : "loss"}{streak.n > 1 ? (streak.kind === "win" ? "s" : "es") : ""}</b></span>}
           {best.best && best.best.pts > 0 && <span>Best day: <b className="text-win">{dayShort(best.best.key)} {ptsText(best.best.pts)}</b></span>}
           {best.worst && best.worst.pts < 0 && <span>Toughest day: <b className="text-loss">{dayShort(best.worst.key)} {ptsText(best.worst.pts)}</b></span>}
@@ -161,13 +161,13 @@ function PointsPerDay({ days, selected, onPick, k }: { days: ReturnType<typeof b
         <div className="mt-2 overflow-x-auto"><svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: W }} role="img" aria-label="Net points for each day">
           <line x1="10" x2={W - 10} y1={mid} y2={mid} stroke="var(--color-line-2)" strokeDasharray="3 4" />
           {days.map((d, i) => {
-            const h = Math.max(d.entries && d.pts === 0 ? 2 : 0, (Math.abs(d.pts) / max) * half), up = d.pts >= 0, sel = d.date === selected;
+            const h = Math.max(d.wins + d.losses > 0 && d.pts === 0 ? 2 : 0, (Math.abs(d.pts) / max) * half), up = d.pts >= 0, sel = d.date === selected;
             return (
               <g key={d.date} onClick={() => onPick(d.date)} className="cursor-pointer" tabIndex={0} role="button" aria-label={`${dayLong(d.date)}: ${d.entries ? ptsText(d.pts) : "no trades"}`} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onPick(d.date); }}>
                 <rect x={x(i) - bw / 2 - 5} y={padT - 6} width={bw + 10} height={H - padT - padB + 12} fill={sel ? "var(--color-ice)" : "transparent"} opacity={sel ? 0.07 : 0} />
-                <rect x={x(i) - bw / 2} y={up ? mid - h : mid} width={bw} height={h} rx="2" fill={d.entries === 0 ? "var(--color-line)" : up ? "var(--color-win)" : "var(--color-loss)"}
+                <rect x={x(i) - bw / 2} y={up ? mid - h : mid} width={bw} height={h} rx="2" fill={d.wins + d.losses === 0 ? "var(--color-line)" : up ? "var(--color-win)" : "var(--color-loss)"}
                   style={{ transformOrigin: `${x(i)}px ${mid}px`, transform: on ? "scaleY(1)" : "scaleY(0)", transition: reduced() ? "none" : `transform .7s cubic-bezier(.2,.8,.2,1) ${i * 55}ms` }} />
-                {d.entries > 0 && <text x={x(i)} y={up ? mid - h - 6 : mid + h + 14} textAnchor="middle" fontSize="11" fontFamily="var(--font-jetbrains), monospace" fill={up ? "var(--color-win)" : "var(--color-loss)"} style={{ opacity: on ? 1 : 0, transition: reduced() ? "none" : `opacity .4s ${300 + i * 55}ms` }}>{d.pts > 0 ? "+" : d.pts < 0 ? "−" : ""}{Math.abs(Math.round(d.pts))}</text>}
+                {d.wins + d.losses > 0 && <text x={x(i)} y={up ? mid - h - 6 : mid + h + 14} textAnchor="middle" fontSize="11" fontFamily="var(--font-jetbrains), monospace" fill={up ? "var(--color-win)" : "var(--color-loss)"} style={{ opacity: on ? 1 : 0, transition: reduced() ? "none" : `opacity .4s ${300 + i * 55}ms` }}>{d.pts > 0 ? "+" : d.pts < 0 ? "−" : ""}{Math.abs(Math.round(d.pts))}</text>}
                 <text x={x(i)} y={H - 16} textAnchor="middle" fontSize="11" fill={sel ? "var(--color-ink)" : "var(--color-ink-3)"}>{WEEKDAY[weekdayIdx(d.date)]}</text>
                 <text x={x(i)} y={H - 3} textAnchor="middle" fontSize="9.5" fill="var(--color-ink-3)">{dayShort(d.date)}</text>
               </g>
@@ -183,7 +183,7 @@ function DayDetail({ rows, date }: { rows: SigRow[]; date: string }) {
   const t = tally(rows);
   return (
     <section className="hud animate-rise px-4 py-4">
-      <div className="flex items-baseline justify-between gap-3"><div className="label">{dayLong(date)}</div><div className="text-xs text-ink-3">{t.entries ? `${t.wins}W · ${t.losses}L${t.open ? ` · ${t.open} open` : ""} · ` : ""}<b className={t.pts > 0 ? "text-win" : t.pts < 0 ? "text-loss" : ""}>{t.entries ? ptsText(t.pts) : "no trades"}</b></div></div>
+      <div className="flex items-baseline justify-between gap-3"><div className="label">{dayLong(date)}</div><div className="text-xs text-ink-3">{t.entries ? `${t.wins}W · ${t.losses}L${t.open ? ` · ${t.open} open` : ""}${t.skipped ? ` · ${t.skipped} skipped` : ""} · ` : ""}<b className={t.pts > 0 ? "text-win" : t.pts < 0 ? "text-loss" : ""}>{t.entries ? ptsText(t.pts) : "no trades"}</b></div></div>
       <ul className="mt-3 grid max-h-[220px] gap-1.5 overflow-auto pr-1">
         {rows.length === 0 && <li className="text-sm text-ink-3">Nothing came in that day.</li>}
         {[...rows].sort((a, b) => a.received_at.localeCompare(b.received_at)).map((r) => {
@@ -192,7 +192,7 @@ function DayDetail({ rows, date }: { rows: SigRow[]; date: string }) {
             <li key={r.id} className="flex items-center gap-2 text-[13px]">
               <span className="num w-[62px] shrink-0 text-ink-3">{timeET(r.received_at)}</span>
               <span className="min-w-0 flex-1 truncate">{strategyOf(r)} <span className="text-ink-3">{(r.direction ?? "").toLowerCase()} · {SESSION_LABEL[sessionOf(r)]}</span></span>
-              <span className={cx("num w-[64px] shrink-0 text-right", o.kind === "win" ? "text-win" : o.kind === "loss" ? "text-loss" : "text-ink-3")}>{o.kind === "open" ? "open" : ptsText(o.pts)}</span>
+              <span className={cx("num w-[64px] shrink-0 text-right", o.kind === "win" ? "text-win" : o.kind === "loss" ? "text-loss" : "text-ink-3")}>{o.kind === "open" ? "open" : o.kind === "skipped" ? "skipped" : ptsText(o.pts)}</span>
             </li>
           );
         })}
@@ -232,7 +232,7 @@ function Breakdown({ title, groups, k }: { title: string; groups: Group[]; k: st
         {groups.length === 0 && <p className="text-sm text-ink-3">Nothing to show yet.</p>}
         {groups.map((g, i) => (
           <div key={g.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-3 gap-y-1.5">
-            <div className="flex min-w-0 items-baseline gap-2"><span className="truncate text-[13.5px]">{g.label}</span><span className="shrink-0 text-xs text-ink-3">{g.wins}W · {g.losses}L{g.open ? ` · ${g.open} open` : ""}</span></div>
+            <div className="flex min-w-0 items-baseline gap-2"><span className="truncate text-[13.5px]">{g.label}</span><span className="shrink-0 text-xs text-ink-3">{g.wins}W · {g.losses}L{g.open ? ` · ${g.open} open` : ""}{g.skipped ? ` · ${g.skipped} skipped` : ""}</span></div>
             <div className="text-right"><span className="num text-[13px] text-ink-2">{pctText(g.rate)}</span> <span className={cx("num ml-2 text-[13px] font-semibold", g.pts > 0 ? "text-win" : g.pts < 0 ? "text-loss" : "text-ink-3")}>{g.pts ? ptsText(g.pts) : "0 pts"}</span></div>
             <div className="col-span-2 h-[6px] overflow-hidden bg-line" role="img" aria-label={`${g.label}: ${pctText(g.rate)} win rate, ${ptsText(g.pts)}`}>
               <div className={cx("h-full", g.pts < 0 ? "bg-loss" : "bg-win")} style={{ width: on ? `${Math.max(g.pts ? 4 : 0, (Math.abs(g.pts) / maxAbs) * 100)}%` : "0%", transition: reduced() ? "none" : `width .8s cubic-bezier(.2,.8,.2,1) ${i * 90}ms` }} />
@@ -245,7 +245,7 @@ function Breakdown({ title, groups, k }: { title: string; groups: Group[]; k: st
 }
 
 /* ───────────────────────────── Enter results ───────────────────────────── */
-const RESULTS: [string, string][] = [["target", "Target"], ["stopped", "Stopped"], ["be", "Break-even"], ["manual", "Closed manually"]];
+const RESULTS: [string, string][] = [["target", "Target"], ["stopped", "Stopped"], ["be", "Break-even"], ["manual", "Closed manually"], ["skipped", "Skipped"]];
 
 function Results({ rows, days, onMore, onSaved }: { rows: SigRow[]; days: number; onMore: () => void; onSaved: (id: number, patch: Partial<SigRow>) => void }) {
   const [onlyOpen, setOnlyOpen] = useState(false);
@@ -280,7 +280,7 @@ function ResultRow({ r, onSaved }: { r: SigRow; onSaved: (id: number, patch: Par
   const dirty = res !== (r.result ?? "") || pts !== (r.result_pts == null ? "" : String(r.result_pts));
   const save = async () => {
     setBusy(true); setMsg(null);
-    try { await api.signalsSave(r.id, res || null, res ? pts : null); onSaved(r.id, { result: res || null, result_pts: res && pts !== "" ? Number(pts) : null }); setMsg({ ok: true, t: "Saved" }); setTimeout(() => setMsg(null), 1600); }
+    try { const p = res && res !== "skipped" && pts !== "" ? pts : null; await api.signalsSave(r.id, res || null, p); onSaved(r.id, { result: res || null, result_pts: p == null ? null : Number(p) }); if (res === "skipped") setPts(""); setMsg({ ok: true, t: "Saved" }); setTimeout(() => setMsg(null), 1600); }
     catch (e) { setMsg({ ok: false, t: e instanceof Error ? e.message : "Couldn't save" }); }
     setBusy(false);
   };
@@ -288,7 +288,7 @@ function ResultRow({ r, onSaved }: { r: SigRow; onSaved: (id: number, patch: Par
     <div className="grid grid-cols-1 items-center gap-2 border border-line px-3 py-2 sm:grid-cols-[minmax(0,1.3fr)_auto_auto_auto]">
       <div className="min-w-0"><div className="truncate text-[14px]"><b>{strategyOf(r)}</b> {(r.direction ?? "").toLowerCase()} <span className="num text-ink-2">{r.entry_px ?? ""}</span></div><div className="text-xs text-ink-3">{timeET(r.received_at)} · {SESSION_LABEL[sessionOf(r)]}</div></div>
       <select className="field !h-9" value={res} onChange={(e) => setRes(e.target.value)} aria-label="Result"><option value="">No result yet</option>{RESULTS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select>
-      <input className="field num !h-9 w-[92px]" type="number" step="0.25" placeholder="points" value={pts} disabled={!res} onChange={(e) => setPts(e.target.value)} aria-label="Points" />
+      <input className="field num !h-9 w-[92px]" type="number" step="0.25" placeholder="points" value={pts} disabled={!res || res === "skipped"} onChange={(e) => setPts(e.target.value)} aria-label="Points" />
       <div className="flex items-center gap-2"><button className={cx("btn !h-9 !px-3 text-xs", dirty && "btn-primary")} disabled={busy || !dirty} onClick={save}>{busy ? "Saving…" : "Save"}</button>{msg && <span className={cx("text-xs", msg.ok ? "text-win" : "text-loss")} role="status">{msg.t}</span>}</div>
     </div>
   );
