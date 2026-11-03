@@ -11,10 +11,10 @@ const provableMod=m=>!NO_PROOF.includes(m.id);
 const pathGate=()=>pathOn()&&LIVE&&PATH_READY&&!PATH&&!PATH_STAFF;
 const proofPending=m=>false;
 /* express: the lesson is skipped, the practice tasks still have to be passed */
-const expressMod=m=>pathOn()&&!!PATH&&PATH.modes[m.id]==='prove'&&!pm(m.id).p;
+const expressMod=m=>!m.lite&&pathOn()&&!!PATH&&PATH.modes[m.id]==='prove'&&!pm(m.id).p;
 const EXPRESS_MIN=5;
 const wordsOf=m=>(m.learn||[]).reduce((a,l)=>a+String(l.h||'').replace(/<[^>]+>/g,' ').split(/\s+/).filter(Boolean).length,0);
-const teachMin=m=>Math.max(15,Math.round((wordsOf(m)/220+11)/5)*5);
+const teachMin=m=>m.lite?Math.max(5,Math.round((m.learn.length*1.1+1)/5)*5):Math.max(15,Math.round((wordsOf(m)/220+11)/5)*5);
 const modMin=m=>pm(m.id).p?0:expressMod(m)&&!stepsDone(m)?EXPRESS_MIN:Math.max(5,Math.round(teachMin(m)*(1-stepsDone(m)/3)/5)*5);
 const minsLeft=()=>MODS.reduce((a,m)=>a+modMin(m),0);
 const fmtHrs=n=>n<90?n+' min':(n/60).toFixed(1).replace(/\.0$/,'')+' hours';
@@ -54,7 +54,7 @@ function openPath(mode){
   const fullN=MODS.filter(m=>NO_PROOF.includes(m.id)).length;
   const build=()=>{
     const nP=rem.filter(m=>modes[m.id]==='prove').length,nL=rem.length-nP;
-    const mins=MODS.filter(m=>!pm(m.id).p).reduce((a,m)=>a+(modes[m.id]==='prove'&&!stepsDone(m)?EXPRESS_MIN:teachMin(m)),0);
+    const mins=MODS.filter(m=>!pm(m.id).p).reduce((a,m)=>a+(modes[m.id]==='prove'&&!m.lite&&!stepsDone(m)?EXPRESS_MIN:teachMin(m)),0);
     ov.innerHTML=`<div class="pace-in pb-in">
     <div class="pace-hero"><div class="hud pace-k">${first?'Welcome to the Trading School':view?'Your path':'Edit your path'}</div>
       <h2 class="h pace-h" style="opacity:1;transform:none">Where are you starting?</h2>
