@@ -17,6 +17,9 @@ const TRACK=window.PRACTICE?null:window.INV?TRACKS.invertix:window.VAULT?TRACKS.
 /* NOEX: the fundamentals have no exams. A module is finished by Learn, See it and Mark it (three chart tasks, each right the first time). */
 const NOEX=!!TRACK&&TRACK.id==='fundamentals';
 const SIDE=!!(window.VAULT||window.INV);
+/* LITE: concept lessons with nothing to mark on a chart. One card at a time, one easy check, done. The chart-skill modules keep See it and Mark it. Saved progress is not touched. */
+const LITE=['m37','m38','m19','m20','m39','m41','m42','m01','m15','m25','m12','m14','m24','m50'];
+if(NOEX)MODS.forEach(m=>{if(LITE.includes(m.id))m.lite=1});
 /* The modules that count toward a track's certificate and pace (the vault's sealed Orderflow room is not part of the course). */
 const COURSE=()=>TRACK&&TRACK.id==='exo'?MODS.filter(m=>m.id[0]==='x'||m.id[0]==='b'):MODS;
 /* The vault holds two separate strategies, each with its own course, progress and certificate. */

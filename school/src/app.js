@@ -55,7 +55,7 @@ function route(){
 }
 const nav=p=>{location.hash=p};
 /* the furthest step a student may open: every earlier step has to be done (express modules go straight to the practice tasks) */
-const reachable=(m,want)=>{if(!NOEX||expressMod(m))return want;const s=pm(m.id).s;for(let i=0;i<want;i++)if(!s[i])return i;return want};
+const reachable=(m,want)=>{if(m.lite)return 0;if(!NOEX||expressMod(m))return want;const s=pm(m.id).s;for(let i=0;i<want;i++)if(!s[i])return i;return want};
 function render(){
   $$('main.view').forEach(m=>m.hidden=m.id!=='v-'+VIEW);window.scrollTo(0,0);
   if(VIEW!=='exam')stopExam();
@@ -91,7 +91,7 @@ function renderMap(){if(NOEX)noexShell();
     <a class="btn primary" href="#/${m.id}">${fin?'Review lessons':proofPending(m)?'Take the proof exam':stepsDone(m)?'Continue':expressMod(m)?'Start express':'Start'} →</a></div>`;
   const nexts=SPLIT?STRATS.map(st=>{const ms=stratMods(st),i=ms.findIndex(m=>!pm(m.id).p&&modUnlocked(MODS.indexOf(m))),fin=ms.every(m=>pm(m.id).p),m=fin?ms[ms.length-1]:ms[i<0?0:i];return nextCard(m,fin?st.name+' complete':'Up next · '+st.name,fin)}).join(''):nextCard(cur,finished?(NOEX?'All modules complete':'All modules passed'):'Up next',finished);
   $('#aside').innerHTML=nexts+`
-  ${pathCard()}${gexCard()}${paceCard()}${NOEX?'<div class="card"><h3 class="h">How a module is completed</h3><ul><li><b>Learn:</b> read the lesson and answer the recall question</li><li><b>See it:</b> step through a worked example</li><li><b>Mark it:</b> three chart tasks, each right the first time</li><li>No exams. You cannot click past the practice tasks</li></ul></div>':'<div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of '+(PASS*100)+'% or better on a set you\'ve never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>'}
+  ${pathCard()}${gexCard()}${paceCard()}${NOEX?'<div class="card"><h3 class="h">How a module is completed</h3><ul><li><b>Idea lessons:</b> short cards, then one easy check</li><li><b>Chart lessons:</b> learn it, see it worked, then mark three chart tasks right the first time</li><li>No exams</li></ul></div>':'<div class="card"><h3 class="h">What a pass means</h3><ul><li>Every lesson step completed, including a chart task you did yourself</li><li>An exam of '+(PASS*100)+'% or better on a set you\'ve never seen</li><li>Every lesson opens with a recall question from an earlier module</li></ul></div>'}
   <div class="card"><h3 class="h">Practice, not real money</h3><p class="muted" style="font-size:13.5px">Nothing in the school uses real money. Before real or funded capital, the strategy gets proven on a demo account, in your journal, with your own numbers.</p></div>`;
   if(pathMaybeFirst())return;
   paceMaybeFirst();
@@ -99,7 +99,7 @@ function renderMap(){if(NOEX)noexShell();
 function modRow(m,i){
   const st=modStatus(i),P=PH[m.ph],open=OPEN===m.id,p=pm(m.id);let chip;
   if(st==='done')chip=NOEX?`<span class="chip ok">✓ Complete</span>`:`<span class="chip ok">✓ ${p.t?'Tested out':'Passed'} · ${p.sc}%</span>`;
-  else if(st==='active')chip=NOEX&&expressMod(m)&&!stepsDone(m)?`<span class="chip live">Express</span>`:proofPending(m)?`<span class="chip live">Prove it</span>`:`<span class="chip live">${p.po&&!stepsDone(m)?'Learn it · ':p.a>1&&!stepsDone(m)?'Restarted · ':''}${stepsDone(m)}/3 steps</span>`;
+  else if(st==='active')chip=NOEX&&expressMod(m)&&!stepsDone(m)?`<span class="chip live">Express</span>`:proofPending(m)?`<span class="chip live">Prove it</span>`:`<span class="chip live">${p.po&&!stepsDone(m)?'Learn it · ':p.a>1&&!stepsDone(m)?'Restarted · ':''}${m.lite?'In progress':stepsDone(m)+'/3 steps'}</span>`;
   else chip=`<span class="chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${m.sealed&&!window.OF_OK?'Sealed':'Locked'}</span>`;
   const prev=MODS[i-1]?MODS[i-1].t:'';let act;
   if(st==='locked')act=m.sealed&&!window.OF_OK?`<div class="pcheck"><b>Sealed.</b> This room opens only when Hannah approves you for it. Nothing in it is shown until then.</div>`:pathGate()?`<div class="pcheck">Build your path to open the school.</div>`:m.id==='m43'?`<div class="pcheck">Unlocks when every module before INVERTIX is learned or proved.</div>`:`<div class="pcheck">Unlocks when you ${NOEX?'complete':'pass the exam for'} Module ${MODS[i-1].n} (${esc(prev)}).</div>`;
@@ -122,7 +122,7 @@ $('#v-map').addEventListener('click',e=>{const b=e.target.closest('[data-tog]');
 ============================================================ */
 let LAB=null,CH=null,CH2=null,TB=null;
 const firstOpenStep=m=>{const s=pm(m.id).s,i=s.findIndex(x=>!x);return i<0?STEPS.length-1:i};
-function newLab(m,step){const t=TXT[m.id]||{};return{m,step,see:0,recall:null,dn:0,dd:0,drill:null,t:t.t||['',''],sub:!!t.sub,ticks:t.ticks||{},tf:1,sc:null}}
+function newLab(m,step){const t=TXT[m.id]||{};return{ci:0,chk:null,bad:[],m,step,see:0,recall:null,dn:0,dd:0,drill:null,t:t.t||['',''],sub:!!t.sub,ticks:t.ticks||{},tf:1,sc:null}}
 const storeTxt=()=>{TXT[LAB.m.id]={t:LAB.t,sub:LAB.sub,ticks:LAB.ticks};saveTxt()};
 function ensureCharts(){
   if(CH)return;
@@ -168,11 +168,25 @@ function paintChart(refit){
 }
 const seeSteps=(m,sc)=>{if(!m._see)m._see=m.see(sc).map(s=>({...s,cap:refx(s.cap),html:refx(s.html)}));return m._see};
 
-function stepper(){const m=LAB.m,s=pm(m.id).s;return `<div class="steps">${STEPS.map((x,i)=>`<button type="button" data-step="${i}" class="${LAB.step===i?'on':''} ${i<3&&s[i]?'done':''}"><i></i>${x}</button>`).join('')}</div>`}
+function stepper(){const m=LAB.m,s=pm(m.id).s;if(m.lite)return '';return `<div class="steps">${STEPS.map((x,i)=>`<button type="button" data-step="${i}" class="${LAB.step===i?'on':''} ${i<3&&s[i]?'done':''}"><i></i>${x}</button>`).join('')}</div>`}
+/* lite modules: one card at a time, then one easy check. Wrong answers can try again; nothing is timed or scored. */
+function liteCheck(m){const bk=(m.bank||[]).filter(b=>b&&b.o&&b.o.length>1&&(!b.kind||b.kind==='mcq'));if(!bk.length)return null;
+  const b=bk[[...m.id].reduce((a,c)=>a+c.charCodeAt(0),0)%bk.length],ord=b.o.map((_,k)=>k);for(let i=ord.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ord[i],ord[j]]=[ord[j],ord[i]]}
+  return{q:b.q,o:b.o,why:b.why||'',order:ord}}
+function liteView(L){const m=L.m,p=pm(m.id),n=m.learn.length,i=Math.min(L.ci,n),last=i>=n;let body,foot;
+  const dots=`<div class="ldots">${Array.from({length:n+1},(_,k)=>`<i class="${k<i?'on':k===i?'cur':''}"></i>`).join('')}</div><div class="lmeta"><span>${last?'Quick check':'Part '+(i+1)+' of '+n}</span><span>About ${teachMin(m)} min</span></div>`;
+  if(!last){const s=m.learn[i];body=`${dots}<div class="lcard" key="${i}"><h3 class="lc-t">${s.t}</h3><div class="lc-b">${s.h}</div></div>`;
+    foot=`<button class="btn" data-lprev ${i===0?'disabled':''}>← Back</button><button class="btn primary" data-lnext>${i===n-1?'One quick check':'Next'} →</button>`}
+  else{if(!L.chk)L.chk=liteCheck(m);const c=L.chk;
+    body=`${dots}<div class="lcard" key="chk"><h3 class="lc-t">One quick check</h3>${c?`<p class="lc-q"><b>${c.q}</b></p><div class="opts">${c.order.map(k=>`<button class="opt ${L.got&&k===0?'right':L.bad.includes(k)?'wrong':''}" data-lck="${k}" ${L.got||L.bad.includes(k)?'disabled':''}>${c.o[k]}</button>`).join('')}</div>
+      ${L.got?`<div class="fb ok"><b>Right.</b><p>${c.why}</p></div>`:L.bad.length?`<div class="fb no"><b>Not quite.</b><p>Look again and pick another. You can try as many times as you like.</p></div>`:''}`:'<p>You have read everything. That is the whole module.</p>'}</div>`;
+    const can=p.p||L.got||!c;foot=`<button class="btn" data-lprev>← Back</button><button class="btn primary" data-lfin ${can?'':'disabled'}>${p.p?'Back to the course map':'Finish module'} →</button>`}
+  return{body,foot}}
 function renderLesson(){
   const L=LAB,m=L.m,p=pm(m.id);let body='',foot='';
   const learnDone=p.s[0];
-  if(L.step===0){
+  if(m.lite){const v=liteView(L);body=v.body;foot=v.foot}
+  else if(L.step===0){
     const rc=m.recall;
     body=(rc?`<div class="callout key"><span class="hud">Recall · ${rc.from}</span><p><b>${rc.q}</b></p><div class="opts" id="rc">${rc.order.map(k=>`<button class="opt ${L.recall==null?'':k===0?'right':k===L.recall?'wrong':''}" data-rc="${k}" ${L.recall!=null?'disabled':''}>${rc.o[k]}</button>`).join('')}</div>
       ${L.recall==null?'':`<div class="fb ${L.recall===0?'ok':'no'}"><b>${L.recall===0?'Right.':'Not quite.'}</b><p>${rc.why}</p></div>`}</div>`:'')+m.learn.map(s=>`<h3>${s.t}</h3>${s.h}`).join('');
@@ -254,6 +268,12 @@ function complete(i,msg){const p=pm(LAB.m.id);if(!p.s[i]){p.s[i]=1;persist();toa
 function go(step){if(NOEX){if(step>=STEPS.length)return;const r=reachable(LAB.m,step);if(r<step){toast(r===0?'Read the lesson and answer the recall question first.':'Finish the worked example first.');step=r}}LAB.step=step;if(step===2&&!LAB.drill&&LAB.dd<3)newDrill();renderLesson();paintChart(true);history.replaceState(null,'',`#/${LAB.m.id}/${STEP_KEYS[step]}`);$('.les-b').scrollTop=0}
 $('#lesson').addEventListener('click',e=>{
   const L=LAB,t=e.target;let b;if(!L)return;const m=L.m,p=pm(m.id);
+  if(m.lite){
+    if(t.closest('[data-lnext]')){L.ci++;renderLesson();$('.les-b').scrollTop=0;return}
+    if(t.closest('[data-lprev]')){if(L.ci>0)L.ci--;else return nav('/');renderLesson();$('.les-b').scrollTop=0;return}
+    if((b=t.closest('[data-lck]'))){const k=+b.dataset.lck;if(k===0)L.got=1;else if(!L.bad.includes(k))L.bad.push(k);return renderLesson()}
+    if(t.closest('[data-lfin]')){if(!p.p)finishModule(m);const i=modIdx(m.id),nx=MODS[i+1];return nav(nx&&modUnlocked(i+1)&&!pm(nx.id).p?'/'+nx.id:'/')}
+    return}
   if((b=t.closest('[data-step]')))return go(+b.dataset.step);
   if((b=t.closest('[data-rc]'))){L.recall=+b.dataset.rc;return renderLesson()}
   if(t.closest('[data-next]')){if(L.step===0)complete(0,'Lesson read');return go(L.step+1)}
