@@ -74,5 +74,7 @@ export function orderflowShell(html) {
   sub('<div class="hud" style="margin-bottom:8px">Trading School</div>', '<div class="hud" style="margin-bottom:8px">Orderflow</div>');
   sub('Learn to trade, <span class="f">A to Z.</span>', 'Learn <span class="f">Orderflow.</span>');
   sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Ten modules take you from the tape and the footprint to how orderflow sits beside ECHO, ORBIT and INVERTIX. Each one teaches one idea, has you apply it, and then tests you. Pass every test and all three strategies open. You move on by proving it, not by clicking through.");
+  sub("One concept, built from the one before it, with a worked example on a live chart.", "One concept, built from the one before it, with a worked example you can step through.");
+  sub("Do it yourself on the chart with drawing tools. Tasks count when you get them right on the first check.", "Do it yourself: three tasks with fresh numbers. Tasks count when you get them right on the first check.");
   return html.replace("<script>", "<script>window.OFL=1;</script><script>");
 }
