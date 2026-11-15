@@ -10,14 +10,15 @@ const STAGES: { v: Stage; t: string }[] = [
   { v: "LIVE", t: "Live" }, { v: "FAILED", t: "Failed" }, { v: "ARCHIVED", t: "Archived" },
 ];
 
-export function AccountModal({ open, onClose, catalog, editing, today, onSaved }: {
-  open: boolean; onClose: () => void; catalog: CatalogFirm[]; editing: AccountDTO | null; today: string; onSaved: () => Promise<void>;
+export function AccountModal({ open, onClose, catalog, editing, today, onSaved, initialTemplateId }: {
+  open: boolean; onClose: () => void; catalog: CatalogFirm[]; editing: AccountDTO | null; today: string; onSaved: () => Promise<void>; initialTemplateId?: string;
 }) {
-  const [firm, setFirm] = useState(editing?.rules.firm ?? catalog[0]?.firm ?? "");
+  const pre = initialTemplateId ? catalog.flatMap((f) => f.plans.flatMap((p) => p.sizes.map((s) => ({ firm: f.firm, plan: p.plan, id: s.id })))).find((x) => x.id === initialTemplateId) : undefined;
+  const [firm, setFirm] = useState(editing?.rules.firm ?? pre?.firm ?? catalog[0]?.firm ?? "");
   const plans = useMemo(() => catalog.find((f) => f.firm === firm)?.plans ?? [], [catalog, firm]);
-  const [plan, setPlan] = useState(editing?.rules.planName ?? plans[0]?.plan ?? "");
+  const [plan, setPlan] = useState(editing?.rules.planName ?? pre?.plan ?? plans[0]?.plan ?? "");
   const sizes = plans.find((p) => p.plan === plan)?.sizes ?? [];
-  const [templateId, setTemplateId] = useState(editing?.templateId ?? sizes[0]?.id ?? "");
+  const [templateId, setTemplateId] = useState(editing?.templateId ?? pre?.id ?? sizes[0]?.id ?? "");
   const tpl = sizes.find((s) => s.id === templateId);
 
   const [form, setForm] = useState({

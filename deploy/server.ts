@@ -202,6 +202,8 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
   const jsonOf = <T,>(v: unknown): T => unwrapState(v) as T;
   const passRefs = new Set(((await sql`select distinct ref from "SchoolAttempt" where "userId" = ${traderId} and kind = 'ex' and pass = true`) as { ref: string }[]).map((r) => r.ref));
   const schoolState = withPasses(sp?.state, SCHOOL_MODULE_IDS.filter((id) => passRefs.has(id)));
+  // the goal planner's win-rate assumption (set by the member in the Trading Plan page) replaces the strategy catalog's number in this member's plan maths
+  const goalWin = (() => { try { const g = tp ? jsonOf<{ goal?: { winRate?: number } }>(tp.plan)?.goal?.winRate : undefined; return typeof g === "number" ? g : undefined; } catch { return undefined; } })();
   const strategies = ((rm?.strategies ?? []) as StrategyKey[]).filter((k) => !RETIRED_STRATEGIES.includes(k)); // retired NYFLOW / ASIAFLOW setups
   return buildDashboard({
     viewer: person(viewer),
@@ -211,7 +213,7 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
       ? {
           monthlyIncomeGoal: n(rm.monthlyIncomeGoal)!, tradingDaysPerWeek: rm.tradingDaysPerWeek, strategyMode: rm.strategyMode,
           multiSession: rm.multiSession, strategies,
-          winRate: blendedWinRate({ mode: rm.strategyMode, multiSession: rm.multiSession, strategies }),
+          winRate: goalWin ?? blendedWinRate({ mode: rm.strategyMode, multiSession: rm.multiSession, strategies }),
           avgRR: n(rm.avgRR)!, tradesPerDay: n(rm.tradesPerDay)!, primaryInstrument: rm.primaryInstrument as Instrument, avgStopPoints: n(rm.avgStopPoints)!,
         }
       : null,
@@ -1178,7 +1180,7 @@ app.get("/vault", async (c) => {
   if (!gz) return c.text("The vault is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!vaultHtml || vaultHtml.etag !== etag) vaultHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(vaultHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.post("/api/vault/redeem", async (c) => {
@@ -1244,7 +1246,7 @@ app.get("/orderflow", async (c) => {
   if (!gz) return c.text("Orderflow is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!ofHtml || ofHtml.etag !== etag) ofHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(ofHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/orderflow/status", async (c) => {
@@ -1298,7 +1300,7 @@ app.get("/invertix", async (c) => {
   if (!gz) return c.text("INVERTIX is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!invHtml || invHtml.etag !== etag) invHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(invHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 // what the home screen shows: the open door, or the locked door with how far along the fundamentals are
@@ -1345,7 +1347,7 @@ app.get("/lumen", async (c) => {
   if (!gz) return c.text("LUMEN is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!lumHtml || lumHtml.etag !== etag) lumHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(lumHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/lumen/status", async (c) => {
@@ -1606,7 +1608,7 @@ const SHELL = `<!doctype html>
 // Trading School + Practice: their own pages, members only, with the FLOWHUB tabs filled in.
 const pageHtml = new Map<string, string>();
 const fhNav = (user: UserRow, current: "school" | "practice") =>
-  `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>` +
+  `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>` +
   `${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
 const PAGES: [asset: string, route: string, current: "school" | "practice"][] = [["school", "/school", "school"], ["practice", "/practice", "practice"]];
 for (const [name, route, current] of PAGES) {

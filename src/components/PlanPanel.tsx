@@ -12,9 +12,10 @@ type Props = {
   onAddAccount?: () => void;
   onEditAccount?: (a: AccountDTO) => void;
   onEditRoadmap?: () => void;
+  hideIncome?: boolean;
 };
 
-export function PlanPanel({ data, readOnly, onAddAccount, onEditAccount, onEditRoadmap }: Props) {
+export function PlanPanel({ data, readOnly, onAddAccount, onEditAccount, onEditRoadmap, hideIncome }: Props) {
   const active = data.accounts.filter((a) => a.stage !== "ARCHIVED");
   const [selectedId, setSelectedId] = useState(active[0]?.id ?? null);
   const selected = active.find((a) => a.id === selectedId) ?? active[0];
@@ -52,7 +53,7 @@ export function PlanPanel({ data, readOnly, onAddAccount, onEditAccount, onEditR
           </>
         )}
       </Panel>
-      <IncomeCard data={data} readOnly={readOnly} onEdit={onEditRoadmap} />
+      {!hideIncome && <IncomeCard data={data} readOnly={readOnly} onEdit={onEditRoadmap} />}
     </div>
   );
 }

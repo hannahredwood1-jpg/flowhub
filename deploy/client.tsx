@@ -7,9 +7,8 @@ import { todayET } from "../src/lib/types";
 import { AppShell } from "../src/components/AppShell";
 import { LoginScreen } from "../src/components/LoginScreen";
 import { StatsPage } from "../src/components/SignalsPanel";
-import { MemberDashboard } from "../src/components/MemberDashboard";
 import { CoachPortal } from "../src/components/CoachPortal";
-import { TradingPlanPage } from "../src/components/TradingPlan";
+import { PlanHub } from "../src/components/PlanHub";
 import { startUsageTracker } from "../src/lib/usageTracker";
 
 const NOTICES: Record<string, string> = {
@@ -29,7 +28,7 @@ type State =
 
 function App() {
   const [state, setState] = useState<State>({ kind: "loading" });
-  const pickView = () => (location.hash === "#coach" || location.hash === "#coach-signals" ? "coach" : location.hash === "#stats" ? "stats" : location.hash.startsWith("#plan") ? "plan" : location.hash.startsWith("#dashboard") ? "dashboard" : "home") as "home" | "dashboard" | "plan" | "coach" | "stats";
+  const pickView = () => (location.hash === "#coach" || location.hash === "#coach-signals" ? "coach" : location.hash === "#stats" ? "stats" : location.hash.startsWith("#plan") || location.hash.startsWith("#dashboard") ? "plan" : "home") as "home" | "plan" | "coach" | "stats";
   const [view, setView] = useState(pickView);
   const [directory, setDirectory] = useState<CoachDirectoryRow[] | null>(null);
 
@@ -65,7 +64,7 @@ function App() {
   const signedIn = state.kind === "app";
   useEffect(() => {
     if (!signedIn) return;
-    const names: Record<string, string> = { home: "Home", dashboard: "Dashboard", plan: "Trading Plan", coach: "Coach portal", stats: "Stats" };
+    const names: Record<string, string> = { home: "Home", plan: "Trading Plan", coach: "Coach portal", stats: "Stats" };
     return startUsageTracker(() => names[viewRef.current] ?? "Dashboard");
   }, [signedIn]);
 
@@ -76,18 +75,15 @@ function App() {
 
   const active = view === "coach" && !staff ? "home" : view;
   if (active === "home") { location.replace("/school"); return <div id="boot">Opening Trading School…</div>; }
-  const reload = async () => { const data = await api.dashboard(); setState((s) => (s.kind === "app" ? { ...s, data } : s)); };
   return (
-    <AppShell viewer={state.data.viewer} active={active} links={{ dashboard: "#dashboard", plan: "#plan", school: "/school", practice: "/practice", stats: "#stats", coach: "#coach" }} signOutHref="/auth/logout">
+    <AppShell viewer={state.data.viewer} active={active} links={{ plan: "#plan", school: "/school", practice: "/practice", stats: "#stats", coach: "#coach" }} signOutHref="/auth/logout">
       {active === "coach"
         ? directory
           ? <CoachPortal key="c" initial={directory} today={todayET()} isAdmin={state.data.viewer.role === "ADMIN"} />
           : <div id="boot">Loading roster…</div>
         : active === "stats"
           ? <StatsPage key="s" />
-        : active === "plan"
-          ? <TradingPlanPage key="p" data={state.data} catalog={state.catalog} onSaved={reload} />
-          : <MemberDashboard key={`d${state.data.projection?.updatedAt ?? ""}`} initial={state.data} catalog={state.catalog} planHref="#plan" />}
+        : <PlanHub key="p" initial={state.data} catalog={state.catalog} />}
     </AppShell>
   );
 }
