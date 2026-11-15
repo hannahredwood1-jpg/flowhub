@@ -2119,6 +2119,7 @@ app.get("/api/coach/usage/:id", async (c) => {
     sections: sections.map((s) => ({ area: s.area, section: s.section, minutes: Math.round(Number(s.seconds) / 60 * 10) / 10, lastDay: String(s.lastDay).slice(0, 10) }))
   });
 });
+var staffCourseLinks = (u) => isStaff(u) ? '<a href="/orderflow">Orderflow</a><a href="/invertix">INVERTIX</a><a href="/lumen">LUMEN</a><a href="/vault">ECHO x ORBIT</a>' : "";
 var rolesOf = (u) => {
   const gr = u.guildRoleIds;
   return Array.isArray(gr) ? gr.map(String) : typeof gr === "string" ? gr.replace(/[{}"]/g, "").split(",").filter(Boolean) : [];
@@ -2180,7 +2181,7 @@ app.get("/vault", async (c) => {
   if (!gz) return c.text("The vault is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!vaultHtml || vaultHtml.etag !== etag) vaultHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a></nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a>${staffCourseLinks(user)}</nav>`;
   return c.html(vaultHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.post("/api/vault/redeem", async (c) => {
@@ -2212,7 +2213,7 @@ app.get("/api/vault/progress", async (c) => {
   if (acc.level !== "open") throw new HttpError(403, "Not open");
   const [row] = acc.row ? await sql`select state from "VaultAccess" where "userId" = ${u.id}` : [];
   const state = row?.state ? normState(row.state, "exo") : null;
-  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, orderflow: acc.orderflow, ...await paceFor(u.id, "exo") });
+  return c.json({ state, unlocks: isStaff(u) ? ["all"] : [], name: u.globalName ?? u.username, orderflow: acc.orderflow, ...await paceFor(u.id, "exo") });
 });
 app.put("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
@@ -2225,7 +2226,7 @@ app.put("/api/vault/progress", async (c) => {
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const mv = normalizeOrder(EXO_MODULE_IDS, m, 0);
+  const mv = isStaff(u) ? m : normalizeOrder(EXO_MODULE_IDS, m, 0);
   await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m: mv } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
   return c.json({ ok: true });
 });
@@ -2244,7 +2245,7 @@ app.get("/orderflow", async (c) => {
   if (!gz) return c.text("Orderflow is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!ofHtml || ofHtml.etag !== etag) ofHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a></nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a>${staffCourseLinks(user)}</nav>`;
   return c.html(ofHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/orderflow/status", async (c) => {
@@ -2254,8 +2255,8 @@ app.get("/api/orderflow/status", async (c) => {
 app.get("/api/orderflow/progress", async (c) => {
   const u = c.get("user"), acc = await orderflowAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const state = acc.state ? normState(acc.state, "orderflow") : null;
-  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, ...await paceFor(u.id, "orderflow") });
+  const state = acc.state ? isStaff(u) ? acc.state : normState(acc.state, "orderflow") : null;
+  return c.json({ state, unlocks: isStaff(u) ? ["all"] : [], name: u.globalName ?? u.username, ...await paceFor(u.id, "orderflow") });
 });
 app.put("/api/orderflow/progress", async (c) => {
   const u = c.get("user"), acc = await orderflowAccess(u);
@@ -2272,7 +2273,7 @@ app.put("/api/orderflow/progress", async (c) => {
   const [old] = await sql`select state from "TrackProgress" where "userId" = ${u.id} and track = 'orderflow'`;
   const prev = old?.state ? typeof old.state === "string" ? JSON.parse(old.state) : old.state : null;
   for (const [k, v] of Object.entries(prev?.v2?.m ?? {})) if (set.has(k) && v?.p === 1 && m[k]?.p !== 1) m[k] = { ...m[k] ?? { s: "111", a: 1, n: 1, at: 0 }, ...v };
-  const mo = normalizeOrder(ORDERFLOW_MODULE_IDS, m, 0);
+  const mo = isStaff(u) ? m : normalizeOrder(ORDERFLOW_MODULE_IDS, m, 0);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'orderflow', ${JSON.stringify({ v2: { m: mo } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
@@ -2292,7 +2293,7 @@ app.get("/invertix", async (c) => {
   if (!gz) return c.text("INVERTIX is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!invHtml || invHtml.etag !== etag) invHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a></nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a>${staffCourseLinks(user)}</nav>`;
   return c.html(invHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/invertix/status", async (c) => {
@@ -2303,7 +2304,7 @@ app.get("/api/invertix/progress", async (c) => {
   const u = c.get("user"), acc = await invertixAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
   const state = acc.state ? normState(acc.state, "invertix") : null;
-  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, ...await paceFor(u.id, "invertix") });
+  return c.json({ state, unlocks: isStaff(u) ? ["all"] : [], name: u.globalName ?? u.username, ...await paceFor(u.id, "invertix") });
 });
 app.put("/api/invertix/progress", async (c) => {
   const u = c.get("user"), acc = await invertixAccess(u);
@@ -2315,7 +2316,7 @@ app.put("/api/invertix/progress", async (c) => {
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const mi = normalizeOrder(INVERTIX_MODULE_IDS, m, 0);
+  const mi = isStaff(u) ? m : normalizeOrder(INVERTIX_MODULE_IDS, m, 0);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'invertix', ${JSON.stringify({ v2: { m: mi } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
@@ -2335,7 +2336,7 @@ app.get("/lumen", async (c) => {
   if (!gz) return c.text("LUMEN is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!lumHtml || lumHtml.etag !== etag) lumHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a></nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a>${staffCourseLinks(user)}</nav>`;
   return c.html(lumHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/lumen/status", async (c) => {
@@ -2346,7 +2347,7 @@ app.get("/api/lumen/progress", async (c) => {
   const u = c.get("user"), acc = await lumenAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
   const state = acc.state ? normState(acc.state, "lumen") : null;
-  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, ...await paceFor(u.id, "lumen") });
+  return c.json({ state, unlocks: isStaff(u) ? ["all"] : [], name: u.globalName ?? u.username, ...await paceFor(u.id, "lumen") });
 });
 app.put("/api/lumen/progress", async (c) => {
   const u = c.get("user"), acc = await lumenAccess(u);
@@ -2358,7 +2359,7 @@ app.put("/api/lumen/progress", async (c) => {
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const ml = normalizeOrder(LUMEN_MODULE_IDS, m, 0);
+  const ml = isStaff(u) ? m : normalizeOrder(LUMEN_MODULE_IDS, m, 0);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'lumen', ${JSON.stringify({ v2: { m: ml } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
@@ -2576,7 +2577,7 @@ var SHELL = `<!doctype html>
 <script type="module" src="/assets/app.js?v=__V__"></script>
 </body></html>`;
 var pageHtml = /* @__PURE__ */ new Map();
-var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">Home</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">Home</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>${staffCourseLinks(user)}${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
 var PAGES = [["school", "/school", "school"], ["practice", "/practice", "practice"]];
 for (const [name, route, current] of PAGES) {
   app.get(route, async (c) => {
