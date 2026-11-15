@@ -2,17 +2,19 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Trading School · FLOWHUB</title>
-<meta name="robots" content="noindex"><meta name="theme-color" content="#030405">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#0b0d10">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23030405'/%3E%3Ctext x='16' y='25' font-family='Arial Black,Arial' font-weight='900' font-size='24' text-anchor='middle' fill='%23ff6a00'%3EF%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("fh-theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
 <style>/*CSS*/</style>
 </head><body>
 <header class="top">
   <a class="brand" href="/" aria-label="FLOWHUB home"><span class="logo"><b>F</b>LOWHUB</span><small>by FLOWMTD Trading</small></a>
   <!--FH_NAV-->
-  <div class="top-r"><a class="btn sm" id="gexNav" href="#/gex">GEX levels</a><button type="button" class="btn sm" id="glossBtn" aria-haspopup="dialog">Glossary</button><span class="pill"><span class="dot"></span>Practice · no real money</span><span id="who" class="dim" style="font-size:13px"></span></div>
+  <div class="top-r"><a class="btn sm" id="gexNav" href="#/gex">GEX levels</a><button type="button" class="btn sm" id="glossBtn" aria-haspopup="dialog">Glossary</button><button type="button" class="theme-btn" id="themeBtn" aria-label="Switch light or dark theme" title="Light / dark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button><span class="pill"><span class="dot"></span>Practice · no real money</span><span id="who" class="dim" style="font-size:13px"></span></div>
 </header>
+<nav class="coursebar" id="coursebar" aria-label="Courses" hidden></nav>
 
 <main id="v-map" class="view">
   <section class="hero">
@@ -51,6 +53,7 @@
     <span class="tz">New York · ET</span>
   </div>
   <div class="lab-grid">
+    <aside class="syl" id="syl" aria-label="Lessons in this course"></aside>
     <div id="tvLeft"></div>
     <section class="chartcol"><div id="chartHost" class="tvc"></div><div id="chartHost2" class="tvc" hidden style="border-top:1px solid var(--line)"></div>
       <div class="tvfoot"><span id="chartHint">Drag to pan · scroll to zoom · double-click to reset</span><span class="sp"></span><span id="chartTf">5m candles</span></div>

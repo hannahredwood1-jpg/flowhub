@@ -139,8 +139,13 @@ function renderLab(){
   const m=LAB.m;ensureCharts();
   $('#v-lab').classList.toggle('nochart',!m.chart);
   $('#crumb').innerHTML=`<a href="#/" class="btn ghost sm">← Course map</a><span>Module ${m.n} of ${STRATS.length&&stratOf(m)?stratMods(stratOf(m)).length:COURSE().length}${STRATS.length&&stratOf(m)?' · '+stratOf(m).name:''}</span><b>${m.t}</b>`;
-  renderLesson();if(m.chart)setTimeout(()=>{CH.size();CH2.size();paintChart(true)},20);
+  renderSyl();renderLesson();if(m.chart)setTimeout(()=>{CH.size();CH2.size();paintChart(true)},20);
 }
+/* syllabus sidebar on reading lessons: every lesson of the course in order, with where you are */
+function renderSyl(){const el=$('#syl');if(!el)return;const m=LAB.m;if(m.chart){el.innerHTML='';return}
+  const course=COURSE(),done=course.filter(x=>pm(x.id).p).length;let h=`<div class="hud">${TRACK?TRACK.short:'Course'}</div><div class="pbar" style="margin:8px 0 5px"><i style="width:${course.length?done/course.length*100:0}%"></i></div><div class="dim" style="font-size:12.5px">${done} of ${course.length} lessons</div>`,ph=-1;
+  MODS.forEach((x,i)=>{if(x.sealed&&!window.OF_OK)return;if(x.ph!==ph){ph=x.ph;h+=`<div class="syl-u">${PH[ph]?PH[ph].n:''}</div>`}const st=modStatus(i);h+=st==='locked'?`<div class="syl-l lk"><span class="d"></span>${x.n}. ${x.t}</div>`:`<a class="syl-l ${st==='done'?'dn':''} ${x.id===m.id?'on':''}" href="#/${x.id}"><span class="d"></span>${x.n}. ${x.t}</a>`});
+  el.innerHTML=h}
 function paintChart(refit){
   const L=LAB,m=L.m;if(!m.chart)return;const sc=scenarioOf(m);let it=null;
   const mark=L.step===2&&L.drill&&chartsOf(L.drill.item).length;

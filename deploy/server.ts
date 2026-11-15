@@ -1171,7 +1171,7 @@ app.get("/vault", async (c) => {
   if (!gz) return c.text("The vault is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!vaultHtml || vaultHtml.etag !== etag) vaultHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">← FLOWHUB home</a><a href="/school">Trading School</a>${staffCourseLinks(user)}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(vaultHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.post("/api/vault/redeem", async (c) => {
@@ -1237,7 +1237,7 @@ app.get("/orderflow", async (c) => {
   if (!gz) return c.text("Orderflow is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!ofHtml || ofHtml.etag !== etag) ofHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">← FLOWHUB home</a><a href="/school">Trading School</a>${staffCourseLinks(user)}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(ofHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/orderflow/status", async (c) => {
@@ -1291,7 +1291,7 @@ app.get("/invertix", async (c) => {
   if (!gz) return c.text("INVERTIX is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!invHtml || invHtml.etag !== etag) invHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">← FLOWHUB home</a><a href="/school">Trading School</a>${staffCourseLinks(user)}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(invHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 // what the home screen shows: the open door, or the locked door with how far along the fundamentals are
@@ -1338,7 +1338,7 @@ app.get("/lumen", async (c) => {
   if (!gz) return c.text("LUMEN is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!lumHtml || lumHtml.etag !== etag) lumHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">← FLOWHUB home</a><a href="/school">Trading School</a>${staffCourseLinks(user)}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(lumHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/lumen/status", async (c) => {
@@ -1556,13 +1556,14 @@ const SHELL = `<!doctype html>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FLOWHUB · FLOWMTD Trading</title>
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#030405">
+<meta name="theme-color" content="#0b0d10">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23030405'/%3E%3Ctext x='16' y='25' font-family='Arial Black,Arial' font-weight='900' font-size='24' text-anchor='middle' fill='%23ff6a00'%3EF%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,700..900;1,100..125,700..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap">
-<style>:root{color-scheme:dark;--font-archivo:"Archivo";--font-orbitron:"Orbitron";--font-rajdhani:"Rajdhani";--font-inter:"Inter";--font-jetbrains:"JetBrains Mono"}html,body{margin:0;background:#030405;color:#e6ebf2}#boot{font:12px/1.4 monospace;letter-spacing:.2em;color:#58626f;padding:40px 16px;text-align:center}</style>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("fh-theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
+<style>:root{color-scheme:light;--font-archivo:"Archivo";--font-orbitron:"Orbitron";--font-rajdhani:"Rajdhani";--font-inter:"Inter";--font-jetbrains:"JetBrains Mono"}html,body{margin:0;background:#f4f6f9;color:#0e1319}html[data-theme=dark],html[data-theme=dark] body{background:#07090c;color:#eaeef3}#boot{font:14px/1.4 Inter,system-ui,sans-serif;color:#7b8696;padding:40px 16px;text-align:center}</style>
 <link rel="stylesheet" href="/assets/app.css?v=__V__">
-</head><body><div id="root"><div id="boot">FLOWHUB // BOOTING</div></div>
+</head><body><div id="root"><div id="boot">Loading…</div></div>
 <script type="importmap">{"imports":{
   "react":"https://esm.sh/react@19.1.1",
   "react/jsx-runtime":"https://esm.sh/react@19.1.1/jsx-runtime",
@@ -1574,9 +1575,8 @@ const SHELL = `<!doctype html>
 // Trading School + Practice: their own pages, members only, with the FLOWHUB tabs filled in.
 const pageHtml = new Map<string, string>();
 const fhNav = (user: UserRow, current: "school" | "practice") =>
-  `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">Home</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a>` +
-  `<a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a>` +
-  `${staffCourseLinks(user)}${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+  `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>` +
+  `${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
 const PAGES: [asset: string, route: string, current: "school" | "practice"][] = [["school", "/school", "school"], ["practice", "/practice", "practice"]];
 for (const [name, route, current] of PAGES) {
   app.get(route, async (c) => {
