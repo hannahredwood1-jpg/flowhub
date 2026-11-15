@@ -24,4 +24,16 @@
     {n:'Beginner Basics',open:true,d:'Open from the start, in any order: what a market is, how to read a chart, your platform, and what futures and NQ are.'},
     {n:'Your First Trades',d:'Orders, your demo account, and when the market is busy. Unlocks one module at a time.'},
     {n:'Risk and Habits',d:'Sizing every trade, how funded accounts work, and the habits that keep you in the game.'});
+  /* every Foundations lesson opens with one plain-words card, so a complete beginner knows what the lesson is for before the detail starts */
+  const PW={m37:'A market is where buyers and sellers meet. The price is just the latest deal between them. Every trade has a cost, and trading is a skill, not a shortcut to money.',
+    m02:'A candle is a small picture of what price did in one stretch of time. Learn to read one candle and you can read any chart.',
+    m19:'TradingView is the free website where you look at charts and practise. This lesson sets it up the way the whole course uses it.',
+    m20:'A futures contract is what you trade here. NQ and MNQ move in small steps called ticks, and every step is worth a set amount of money.',
+    m21:'An order is an instruction to buy or sell. Before you click, every order gets a stop (the most you will lose) and a target (where you take profit).',
+    m39:'A demo account is practice with pretend money on real prices. It is where you make your first mistakes cheaply.',
+    m41:'The market is not equally busy all day, and big news makes price jump. You plan for both before they happen.',
+    m12:'A prop firm lets you trade its money after you pass a test. Read the rules first: the rules decide whether you keep the account.',
+    m14:'Risk management means sizing every trade small enough that a bad streak cannot end you. You can lose often and still do well if your losses stay small.',
+    m01:'Good trading is mostly discipline: follow your plan, risk a little, take one good trade a session, and learn from every result.'};
+  Object.entries(PW).forEach(([id,t])=>{const m=by(id);if(m&&!m.learn.some(x=>x.t==='In plain words'))m.learn.unshift({t:'In plain words',h:key('<p>'+t+'</p>','In plain words')})});
 })();

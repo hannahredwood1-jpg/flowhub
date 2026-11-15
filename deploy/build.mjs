@@ -57,11 +57,11 @@ const decls = [...body.replace(kfRe, "").matchAll(/--([\w-]+):\s*([^;]+);/g)].ma
 src = src.slice(0, start) + src.slice(end);
 const colors = {}, animation = {}, ff = {};
 for (const [k, v] of decls) {
-  if (k.startsWith("color-")) colors[k.slice(6)] = v;
+  if (k.startsWith("color-")) colors[k.slice(6)] = `rgb(var(--ch-${k.slice(6)}) / <alpha-value>)`;
   if (k.startsWith("animate-")) animation[k.slice(8)] = v;
   if (k.startsWith("font-")) ff[k.slice(5)] = [`var(--${k})`];
 }
-const cssIn = `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n:root{${decls.map(([k, v]) => `--${k}:${v};`).join("")}}\n${keyframes.join("\n")}\n${src}`;
+const cssIn = `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n:root{${decls.map(([k, v]) => k.startsWith("color-") ? `--${k}:rgb(var(--ch-${k.slice(6)}));` : `--${k}:${v};`).join("")}}\n${keyframes.join("\n")}\n${src}`;
 const css = (await postcss([tailwind({ content: [{ raw: js, extension: "js" }], theme: { extend: { colors, animation, fontFamily: ff } } })]).process(cssIn, { from: undefined })).css;
 
 // 4) Trading School (built from school/src)

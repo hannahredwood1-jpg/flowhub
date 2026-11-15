@@ -23,14 +23,15 @@ export function MobileMenu({ items, signOutHref, className }: { items: MenuItem[
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true" className={cx("transition-transform", open && "rotate-180")}><path d="M2 4.5 6 8.5 10 4.5" /></svg>
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(15rem,calc(100vw-2rem))] border border-line-2 bg-panel p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.6)]">
+        <div role="menu" className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(15rem,calc(100vw-2rem))] border border-line-2 bg-panel p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.25)]">
           {items.map((i) => (
             <a key={i.href} role="menuitem" href={i.href} onClick={() => setOpen(false)} aria-current={i.active ? "page" : undefined}
               className={cx("flex items-center justify-between px-3 py-3 text-[15px]", i.active ? "bg-panel-2 text-ink" : "text-ink-2 active:bg-panel-2")}>
               {i.label}{i.active && <span className="h-1.5 w-1.5 rounded-full bg-signal" />}
             </a>
           ))}
-          <a role="menuitem" href={signOutHref} className="mt-1 flex border-t border-line px-3 py-3 text-[15px] text-ink-3">Sign out</a>
+          <button type="button" role="menuitem" className="mt-1 flex w-full border-t border-line px-3 py-3 text-left text-[15px] text-ink-3" onClick={() => { const n = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n; try { localStorage.setItem("fh-theme", n); } catch { /* ignore */ } }}>Switch light / dark</button>
+          <a role="menuitem" href={signOutHref} className="flex border-t border-line px-3 py-3 text-[15px] text-ink-3">Sign out</a>
         </div>
       )}
     </div>

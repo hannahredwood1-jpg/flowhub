@@ -25,6 +25,9 @@ export const ORDERFLOW_MODULES = [
   { id: "f10", n: 11, title: "Putting Flow Beside the Strategies" },
 ] as const;
 export const ORDERFLOW_MODULE_IDS = ORDERFLOW_MODULES.map((m) => m.id) as string[];
+/** Lessons added to the Orderflow course after it opened. A student already past one is not held up by it, and it is not needed for the certificate or to open the strategies. */
+export const ORDERFLOW_OPTIONAL_MODULES = [{ id: "f11", title: "Volume Analysis" }] as const;
+export const ORDERFLOW_OPTIONAL_IDS = ORDERFLOW_OPTIONAL_MODULES.map((m) => m.id) as string[];
 
 /** Mirrors school/src/content/11-invertix.js (a test keeps the two in step). */
 export const INVERTIX_MODULES = [

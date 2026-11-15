@@ -16,7 +16,7 @@ function mergeServer(v2){
   persist(false)}
 /* Progress is kept in order: the first module after the open basics is open, and every later module only counts as passed if the one before it is. An old save is brought to where the student really is. */
 function normalizeOrder(){if(UNLOCKS.includes('all'))return;const first=MODS.findIndex(m=>!PH[m.ph].open),o=first<0?0:first;
-  for(let i=o+1;i<MODS.length;i++){const m=MODS[i],p=PROG.m[m.id];if(!p||!p.p||m.first||UNLOCKS.includes(m.id))continue;const prev=PROG.m[MODS[i-1].id];if(!prev||!prev.p){p.p=0;p.s=[0,0,0];p.sc=0}}}
+  for(let i=o+1;i<MODS.length;i++){const m=MODS[i],p=PROG.m[m.id];if(!p||!p.p||m.first||UNLOCKS.includes(m.id))continue;const prev=PROG.m[MODS[pred(i)].id];if(!prev||!prev.p){p.p=0;p.s=[0,0,0];p.sc=0}}}
 function persist(sync=true){normalizeOrder();try{localStorage.setItem(LS,JSON.stringify(PROG))}catch(e){}if(sync)syncSoon()}
 function saveTxt(){try{localStorage.setItem(LSX,JSON.stringify(TXT))}catch(e){}}
 let syncT=null;
@@ -31,10 +31,14 @@ const modIdx=id=>MODS.findIndex(m=>m.id===id);
 const FIRST_CORE=MODS.findIndex(m=>!PH[m.ph].open);
 /* Beginner Basics (phase 1) are open from the start in any order. Everything after them unlocks one module at a time, starting with the first Foundations module. INVERTIX needs every earlier module learned or proved. */
 const modUnlocked=i=>{const m=MODS[i];if(m.sealed&&!window.OF_OK)return false;if(pathGate())return false;if(UNLOCKS.includes(m.id)||UNLOCKS.includes('all'))return true;
-  if(PH[m.ph].open||i===FIRST_CORE||m.first)return true;return !!pm(MODS[i-1].id).p};
+  if(PH[m.ph].open||i===FIRST_CORE||m.first)return true;return !!pm(MODS[pred(i)].id).p};
+/* an optional lesson added later (Volume analysis): a student already past it is not held up by it, and it does not count against their course */
+const progressed=x=>{const p=pm(x.id);return !!(p.p||(p.s&&p.s.some(Boolean)))};
+const optSkip=m=>!!m.opt&&!pm(m.id).p&&MODS.slice(MODS.indexOf(m)+1).some(x=>!x.opt&&progressed(x));
+const pred=i=>{let j=i-1;while(j>0&&MODS[j].opt&&optSkip(MODS[j]))j--;return j};
 const modStatus=i=>pm(MODS[i].id).p?'done':modUnlocked(i)?'active':'locked';
 const stepsDone=m=>pm(m.id).s.filter(Boolean).length;
-const currentIdx=()=>{const i=MODS.findIndex((m,k)=>!pm(m.id).p&&modUnlocked(k));return i<0?MODS.length-1:i};
+const currentIdx=()=>{const i=MODS.findIndex((m,k)=>!pm(m.id).p&&modUnlocked(k)&&!optSkip(m));return i<0?MODS.length-1:i};
 const STEPS=NOEX?['Learn','See it','Mark it']:['Learn','See it','Mark it','Exam'],STEP_KEYS=['learn','see','mark','ready'];
 const PASS=.8;
 const passNeeded=n=>Math.ceil(n*PASS-1e-9);
@@ -139,8 +143,13 @@ function renderLab(){
   const m=LAB.m;ensureCharts();
   $('#v-lab').classList.toggle('nochart',!m.chart);
   $('#crumb').innerHTML=`<a href="#/" class="btn ghost sm">← Course map</a><span>Module ${m.n} of ${STRATS.length&&stratOf(m)?stratMods(stratOf(m)).length:COURSE().length}${STRATS.length&&stratOf(m)?' · '+stratOf(m).name:''}</span><b>${m.t}</b>`;
-  renderLesson();if(m.chart)setTimeout(()=>{CH.size();CH2.size();paintChart(true)},20);
+  renderSyl();renderLesson();if(m.chart)setTimeout(()=>{CH.size();CH2.size();paintChart(true)},20);
 }
+/* syllabus sidebar on reading lessons: every lesson of the course in order, with where you are */
+function renderSyl(){const el=$('#syl');if(!el)return;const m=LAB.m;if(m.chart){el.innerHTML='';return}
+  const course=COURSE(),done=course.filter(x=>pm(x.id).p).length;let h=`<div class="hud">${TRACK?TRACK.short:'Course'}</div><div class="pbar" style="margin:8px 0 5px"><i style="width:${course.length?done/course.length*100:0}%"></i></div><div class="dim" style="font-size:12.5px">${done} of ${course.length} lessons</div>`,ph=-1;
+  MODS.forEach((x,i)=>{if(x.sealed&&!window.OF_OK)return;if(x.ph!==ph){ph=x.ph;h+=`<div class="syl-u">${PH[ph]?PH[ph].n:''}</div>`}const st=modStatus(i);h+=st==='locked'?`<div class="syl-l lk"><span class="d"></span>${x.n}. ${x.t}</div>`:`<a class="syl-l ${st==='done'?'dn':''} ${x.id===m.id?'on':''}" href="#/${x.id}"><span class="d"></span>${x.n}. ${x.t}</a>`});
+  el.innerHTML=h}
 function paintChart(refit){
   const L=LAB,m=L.m;if(!m.chart)return;const sc=scenarioOf(m);let it=null;
   const mark=L.step===2&&L.drill&&chartsOf(L.drill.item).length;
@@ -442,7 +451,7 @@ function drawCertificate(name,st){const T=st||TRACK;
 /* After the fundamentals comes Orderflow. Its tests unlock every strategy. */
 function orderflowCard(){
   return `<div class="hud" style="margin:22px 0 8px">Next up</div><div class="card" style="padding:18px 20px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><span class="chip live">Opens now</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">Orderflow</h3>
-   <p class="muted" style="font-size:14px;max-width:62ch">How to read what the market is doing, not only where it went. Eleven modules, and every one has a test. <b>Pass them all and INVERTIX, ECHO and ORBIT open.</b></p>
+   <p class="muted" style="font-size:14px;max-width:62ch">How to read what the market is doing, not only where it went. Twelve modules, and every one has a test. <b>Pass them all and INVERTIX, ECHO and ORBIT open.</b></p>
    <a class="btn primary" href="/orderflow" style="margin-top:12px">Open Orderflow →</a></div>`}
 /* After Orderflow the strategies open, in this order: INVERTIX, LUMEN, then ECHO x ORBIT (mentorship, with a code). Each has its own certificate. */
 const stratCard=(name,tag,href,btn)=>`<div class="card choose-c"><span class="chip ok">Open now</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">${name}</h3><p class="muted" style="font-size:14px">${tag}</p><a class="btn primary" href="${href}" style="margin-top:12px">${btn} →</a></div>`;

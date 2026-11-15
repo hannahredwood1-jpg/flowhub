@@ -42,11 +42,11 @@ src = src.slice(0, start) + src.slice(end);
 
 const colors = {}, animation = {}, fontFamily = {};
 for (const [k, v] of decls) {
-  if (k.startsWith("color-")) colors[k.slice(6)] = v;
+  if (k.startsWith("color-")) colors[k.slice(6)] = `rgb(var(--ch-${k.slice(6)}) / <alpha-value>)`;
   if (k.startsWith("animate-")) animation[k.slice(8)] = v;
   if (k.startsWith("font-")) fontFamily[k.slice(5)] = `var(--${k})`;
 }
-const input = `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n:root{${decls.map(([k, v]) => `--${k}:${v};`).join("")}}\n${keyframes.join("\n")}\n${src}`;
+const input = `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n:root{${decls.map(([k, v]) => k.startsWith("color-") ? `--${k}:rgb(var(--ch-${k.slice(6)}));` : `--${k}:${v};`).join("")}}\n${keyframes.join("\n")}\n${src}`;
 const config = {
   content: [{ raw: js, extension: "js" }],
   theme: { extend: { colors, animation, fontFamily: Object.fromEntries(Object.entries(fontFamily).map(([k, v]) => [k, [v]])) } },
@@ -59,9 +59,10 @@ writeFileSync(out, `<title>FLOWHUB Preview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100..125,700..900;1,100..125,700..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap">
-<style>:root{color-scheme:dark;--font-archivo:"Archivo";--font-orbitron:"Orbitron";--font-rajdhani:"Rajdhani";--font-inter:"Inter";--font-jetbrains:"JetBrains Mono"}html,body{background:#030405;color:#e6ebf2}#boot{font:12px/1.4 monospace;letter-spacing:.2em;color:#56667e;padding:40px 16px;text-align:center}</style>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("fh-theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
+<style>:root{color-scheme:light;--font-archivo:"Archivo";--font-orbitron:"Orbitron";--font-rajdhani:"Rajdhani";--font-inter:"Inter";--font-jetbrains:"JetBrains Mono"}html,body{background:#f4f6f9;color:#0e1319}html[data-theme=dark],html[data-theme=dark] body{background:#07090c;color:#eaeef3}#boot{font:12px/1.4 monospace;letter-spacing:.2em;color:#56667e;padding:40px 16px;text-align:center}</style>
 <style>${css}</style>
-<div id="root"><div id="boot">FLOWHUB // BOOTING</div></div>
+<div id="root"><div id="boot">Loading…</div></div>
 <script>${js.replace(/<\/script/gi, "<\\/script")}</script>
 `);
 console.log(`wrote ${out} — ${Math.round(js.length / 1024)}KB js, ${Math.round(css.length / 1024)}KB css`);

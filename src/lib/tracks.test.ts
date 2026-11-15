@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { EXO_MODULES, fundamentalsComplete, INVERTIX_MODULES, invertixOpen, LUMEN_MODULES, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULES, orderflowComplete, orderflowOpen, passedIn, trackTotal, vaultStrategiesOpen } from "./tracks";
+import { EXO_MODULES, fundamentalsComplete, INVERTIX_MODULES, invertixOpen, LUMEN_MODULES, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_MODULES, ORDERFLOW_OPTIONAL_IDS, ORDERFLOW_OPTIONAL_MODULES, orderflowComplete, orderflowOpen, passedIn, trackTotal, vaultStrategiesOpen } from "./tracks";
 import { SCHOOL_MODULES } from "./school";
 
 const all = (ids: readonly { id: string }[]) => ({ v2: { m: Object.fromEntries(ids.map((m) => [m.id, { p: 1 }])) } });
@@ -21,8 +21,15 @@ test("Foundations are 10 modules and INVERTIX is 3", () => {
 test("the Orderflow module list matches the Orderflow content", () => {
   const src = readFileSync(new URL("../../school/src/content/12-orderflow.js", import.meta.url), "utf8");
   const found = [...src.matchAll(/quick\(\{id:'(f\d+)',[^]*?\bt:'((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], m[2].replace(/\\'/g, "'")]);
-  assert.deepEqual(found.sort(), ORDERFLOW_MODULES.map((m) => [m.id, m.title]).sort());
+  assert.deepEqual(found.sort(), [...ORDERFLOW_MODULES, ...ORDERFLOW_OPTIONAL_MODULES].map((m) => [m.id, m.title]).sort());
   assert.equal(trackTotal("orderflow"), 11);
+});
+
+test("a lesson added later (Volume Analysis) never holds back a student or the certificate", () => {
+  assert.ok(ORDERFLOW_OPTIONAL_IDS.includes("f11") && !ORDERFLOW_MODULE_IDS.includes("f11"));
+  assert.equal(orderflowComplete(all(ORDERFLOW_MODULES)), true); // the original 11 are still the whole certificate
+  const m = normalizeOrder(ORDERFLOW_MODULE_IDS, { ...all(ORDERFLOW_MODULES).v2.m, f11: { p: 0, s: "000" } }, 0);
+  assert.equal(Object.values(m).filter((x) => x?.p === 1).length, 11); // nothing is taken back
 });
 
 test("Orderflow opens with the Foundations certificate", () => {

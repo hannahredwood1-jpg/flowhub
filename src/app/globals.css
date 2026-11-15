@@ -4,46 +4,43 @@
    Brand: black, heavy white type, one orange F. Orange is used in small doses:
    the F mark, the primary button, the active tab. */
 @theme {
-  --color-void: #030405;
-  --color-abyss: #07090c;
-  --color-panel: #0a0d12;
-  --color-panel-2: #0e1219;
-  --color-line: #1a2029;
-  --color-line-2: #28313e;
-  --color-ink: #e6ebf2;
-  --color-ink-2: #929fb2;
-  --color-ink-3: #58626f;
-  --color-ice: #9ccbff;
-  --color-ice-dim: #3b5f86;
+  --color-void: #f4f6f9;
+  --color-abyss: #ffffff;
+  --color-panel: #ffffff;
+  --color-panel-2: #f1f4f8;
+  --color-line: #e2e6ec;
+  --color-line-2: #cfd5de;
+  --color-ink: #0e1319;
+  --color-ink-2: #4b5666;
+  --color-ink-3: #7b8696;
+  --color-ice: #1b66c2;
+  --color-ice-dim: #9dbfe8;
   --color-signal: #ff6a00;
-  --color-win: #3ee0a1;
-  --color-loss: #ff4f6d;
-  --color-lag: #b69cff;
+  --color-win: #12805c;
+  --color-loss: #d1304a;
+  --color-lag: #6b4fd1;
 
   --font-display: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-hud: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-login-display: var(--font-archivo), "Arial Black", "Helvetica Neue", system-ui, sans-serif;
-  --font-login-hud: var(--font-orbitron), "Eurostile", "Bank Gothic", system-ui, sans-serif;
-  --font-login-sans: var(--font-rajdhani), "Barlow Semi Condensed", system-ui, sans-serif;
+  --font-login-display: var(--font-inter), system-ui, sans-serif;
+  --font-login-hud: var(--font-inter), system-ui, sans-serif;
+  --font-login-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
 
   --animate-rise: rise 0.35s ease both;
-  --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
-  --animate-scan: scan 7s linear infinite;
-  --animate-sweep: sweep 2.4s ease-in-out infinite;
-  --animate-grid: grid-drift 40s linear infinite;
 
   @keyframes rise { from { opacity: 0.001; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-  @keyframes pulse-dot { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgb(255 106 0 / 0.55); } 50% { opacity: 0.6; box-shadow: 0 0 0 5px rgb(255 106 0 / 0); } }
-  @keyframes scan { from { transform: translateY(-100%); } to { transform: translateY(100vh); } }
-  @keyframes sweep { 0% { transform: translateX(-120%); } 100% { transform: translateX(220%); } }
-  @keyframes grid-drift { from { background-position: 0 0, 0 0; } to { background-position: 0 480px, 480px 0; } }
 }
 
 
+/* Theme channels: the deploy build maps every colour token to rgb(var(--ch-x) / alpha) so light and dark swap here. */
+:root{--ch-void:244 246 249;--ch-abyss:255 255 255;--ch-panel:255 255 255;--ch-panel-2:241 244 248;--ch-line:226 230 236;--ch-line-2:207 213 222;--ch-ink:14 19 25;--ch-ink-2:75 86 102;--ch-ink-3:123 134 150;--ch-ice:27 102 194;--ch-ice-dim:157 191 232;--ch-signal:255 106 0;--ch-win:18 128 92;--ch-loss:209 48 74;--ch-lag:107 79 209}
+html[data-theme="dark"]{--ch-void:7 9 12;--ch-abyss:10 12 16;--ch-panel:13 16 20;--ch-panel-2:18 22 28;--ch-line:27 33 41;--ch-line-2:42 50 61;--ch-ink:234 238 243;--ch-ink-2:163 173 186;--ch-ink-3:107 118 132;--ch-ice:140 196 255;--ch-ice-dim:59 95 134;--ch-signal:255 106 0;--ch-win:62 224 161;--ch-loss:255 93 115;--ch-lag:182 156 255}
+
 @layer base {
-  html { color-scheme: dark; background: var(--color-void); }
+  html { color-scheme: light; background: var(--color-void); }
+  html[data-theme="dark"] { color-scheme: dark; }
   body {
     background: var(--color-void);
     color: var(--color-ink);
@@ -55,37 +52,15 @@
   }
   h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
   :focus-visible { outline: 2px solid var(--color-ice); outline-offset: 2px; }
-  ::selection { background: rgb(142 197 255 / 0.3); }
+  ::selection { background: rgb(var(--ch-ice) / 0.25); }
   input, select, textarea { font: inherit; }
 }
 
 @layer components {
-  /* Animated perspective grid behind the whole app */
-  .grid-bg {
-    position: fixed; inset: 0; z-index: -2; pointer-events: none;
-    background-image:
-      linear-gradient(to bottom, rgb(142 197 255 / 0.045) 1px, transparent 1px),
-      linear-gradient(to right, rgb(142 197 255 / 0.045) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 30%, transparent 85%);
-    animation: var(--animate-grid);
-  }
-  .vignette {
-    position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background:
-      radial-gradient(900px 400px at 15% -10%, rgb(59 95 134 / 0.18), transparent 70%),
-      radial-gradient(700px 500px at 110% 10%, rgb(156 203 255 / 0.05), transparent 70%);
-  }
-  /* One slow scanline sweeping the screen */
-  .scanline {
-    position: fixed; left: 0; right: 0; top: 0; height: 120px; z-index: 50; pointer-events: none;
-    background: linear-gradient(to bottom, transparent, rgb(142 197 255 / 0.035), transparent);
-    animation: var(--animate-scan);
-  }
-
   /* Panel */
   .hud {
     position: relative;
+    box-shadow: 0 1px 2px rgb(14 19 25 / 0.04);
     background: var(--color-panel);
     border: 1px solid var(--color-line);
     border-radius: 12px;
@@ -108,27 +83,27 @@
   .btn-primary { border-color: var(--color-signal); background: var(--color-signal); color: #160a00; }
   .btn-primary:hover { border-color: #ff8a3a; background: #ff7a1a; }
   .btn-ghost { background: transparent; border-color: transparent; }
-  .btn-ghost:hover { background: rgb(142 197 255 / 0.07); border-color: var(--color-line); }
+  .btn-ghost:hover { background: rgb(var(--ch-ink) / 0.06); border-color: var(--color-line); }
 
   .field {
     width: 100%; height: 38px; padding-inline: 11px; background: var(--color-abyss); color: var(--color-ink);
     border: 1px solid var(--color-line-2); border-radius: 8px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
   }
   textarea.field { height: auto; padding-block: 8px; }
-  .field:focus { border-color: var(--color-ice); box-shadow: 0 0 0 3px rgb(142 197 255 / 0.14); }
+  .field:focus { border-color: var(--color-ice); box-shadow: 0 0 0 3px rgb(var(--ch-ice) / 0.18); }
 
   .chip {
     display: inline-flex; align-items: center; gap: 6px; height: 22px; padding-inline: 9px; border-radius: 99px;
     font-size: 12px; font-weight: 550;
     border: 1px solid color-mix(in oklab, currentColor 45%, transparent); background: color-mix(in oklab, currentColor 9%, transparent);
   }
-  .live-dot { width: 6px; height: 6px; border-radius: 99px; background: var(--color-signal); animation: var(--animate-pulse-dot); }
+  .live-dot { width: 6px; height: 6px; border-radius: 99px; background: var(--color-signal); }
 
   .tbl { width: 100%; border-collapse: collapse; }
   .tbl th { font-size: 12.5px; color: var(--color-ink-3); text-align: left; font-weight: 500; padding: 10px 10px; border-bottom: 1px solid var(--color-line); white-space: nowrap; }
-  .tbl td { padding: 10px 10px; border-bottom: 1px solid rgb(26 36 52 / 0.7); white-space: nowrap; }
+  .tbl td { padding: 10px 10px; border-bottom: 1px solid rgb(var(--ch-line)); white-space: nowrap; }
   .tbl tbody tr { transition: background 0.12s; }
-  .tbl tbody tr:hover { background: rgb(142 197 255 / 0.04); }
+  .tbl tbody tr:hover { background: rgb(var(--ch-ink) / 0.04); }
 }
 
 /* Brand mark */
@@ -138,68 +113,6 @@
   .brand-sub { font-family: var(--font-sans); font-weight: 600; letter-spacing: 0.02em; }
 }
 
-/* ── Login: "uplink" scene ──────────────────────────────────── */
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes spin-rev { to { transform: rotate(-360deg); } }
-@keyframes travel { 0% { left: 0; opacity: 0; } 12%, 88% { opacity: 1; } 100% { left: calc(100% - 6px); opacity: 0; } }
-@keyframes blink { 50% { opacity: 0; } }
-@keyframes type-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
-@keyframes glitch-x {
-  0%, 92%, 100% { transform: none; text-shadow: none; }
-  93% { transform: translateX(-2px); text-shadow: 2px 0 rgb(156 203 255 / 0.7), -2px 0 rgb(255 106 0 / 0.5); }
-  95% { transform: translateX(2px); text-shadow: -2px 0 rgb(156 203 255 / 0.7); }
-  97% { transform: translateX(-1px); }
-}
-@keyframes breathe { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.8; } }
-@keyframes horizon { from { background-position: 0 0; } to { background-position: 0 64px; } }
-
-@layer components {
-  .spin-slow { animation: spin 38s linear infinite; transform-origin: center; transform-box: fill-box; }
-  .spin-mid { animation: spin-rev 22s linear infinite; transform-origin: center; transform-box: fill-box; }
-  .spin-fast { animation: spin 9s linear infinite; transform-origin: center; transform-box: fill-box; }
-  .sweep-arm { animation: spin 4.5s linear infinite; transform-origin: center; transform-box: view-box; }
-  .breathe { animation: breathe 3.2s ease-in-out infinite; }
-  .caret::after { content: "_"; margin-left: 2px; animation: blink 1s steps(1) infinite; }
-  .type-line { animation: type-in 0.7s steps(28) both; }
-  .glitch-hard { animation: glitch-x 4s linear infinite; }
-  .packet { position: absolute; top: 50%; left: 0; width: 6px; height: 6px; margin-top: -3px; background: var(--color-ice); box-shadow: 0 0 10px var(--color-ice); animation: travel 2.4s cubic-bezier(.6,0,.4,1) infinite; }
-  .fast .spin-slow { animation-duration: 6s; } .fast .spin-mid { animation-duration: 3s; } .fast .spin-fast { animation-duration: 1.2s; } .fast .sweep-arm { animation-duration: 0.9s; } .fast .packet { animation-duration: 0.8s; }
-  .horizon {
-    position: absolute; left: -50%; right: -50%; bottom: 0; height: 46vh; pointer-events: none;
-    background-image:
-      linear-gradient(to bottom, rgb(156 203 255 / 0.10) 1px, transparent 1px),
-      linear-gradient(to right, rgb(156 203 255 / 0.08) 1px, transparent 1px);
-    background-size: 64px 64px;
-    transform: perspective(420px) rotateX(62deg); transform-origin: bottom;
-    mask-image: linear-gradient(to top, #000 10%, transparent 90%);
-    animation: horizon 3s linear infinite;
-  }
-  .connect-btn {
-    position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 12px;
-    height: 56px; padding-inline: 28px; width: 100%;
-    font-family: var(--font-login-hud); font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; color: #fff;
-    background: linear-gradient(180deg, #151c27, #0c1119); border: 1px solid var(--color-ice-dim);
-    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
-    transition: border-color .2s, box-shadow .2s, transform .1s; overflow: hidden; cursor: pointer;
-  }
-  .connect-btn::before { content: ""; position: absolute; inset: 0; width: 45%; background: linear-gradient(90deg, transparent, rgb(156 203 255 / 0.22), transparent); animation: var(--animate-sweep); }
-  .connect-btn::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 22%; background: var(--color-signal); transition: width .35s cubic-bezier(.2,.8,.2,1); }
-  .connect-btn:hover { border-color: var(--color-ice); box-shadow: 0 0 32px -6px rgb(156 203 255 / 0.45); }
-  .connect-btn:hover::after { width: 100%; }
-  .connect-btn:active { transform: translateY(1px); }
-  .connect-btn:disabled { cursor: wait; }
-}
-
-/* Sign-in screen keeps its original look: its own fonts for labels, brand and body */
-@layer components {
-  .login-scope { font-family: var(--font-login-sans); font-weight: 500; }
-  .login-scope .label { font-family: var(--font-login-hud); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 400; color: var(--color-ink-3); }
-  .login-scope .brand { font-family: var(--font-login-display); font-weight: 900; font-stretch: 112%; letter-spacing: -0.01em; line-height: 0.9; text-transform: uppercase; }
-  .login-scope .brand-sub { font-family: var(--font-login-display); font-weight: 800; font-style: italic; letter-spacing: 0.02em; text-transform: uppercase; }
-  .login-scope .live-dot { box-shadow: 0 0 0 0 rgb(255 106 0 / 0.55); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
-  .scanline { display: none; }
 }
