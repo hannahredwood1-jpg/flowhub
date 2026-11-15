@@ -55,14 +55,33 @@ export const trackModules = (t: TrackId): readonly { id: string; title: string }
 export const trackTotal = (t: TrackId) => trackModules(t).length;
 export const trackFinishText = (t: TrackId) => (t === "fundamentals" ? "your Fundamentals certificate" : t === "orderflow" ? "your Orderflow certificate" : t === "invertix" ? "your INVERTIX certificate" : t === "lumen" ? "your LUMEN certificate" : "your ECHO x ORBIT certificate");
 
+/** Saved progress can come back as an object, a JSON string, or (from older saves) a list of JSON strings, one per save. Returns the real object, later saves winning. */
+export function unwrapState(raw: unknown): Record<string, unknown> | null {
+  let v = raw;
+  for (let i = 0; i < 3 && typeof v === "string"; i++) { try { v = JSON.parse(v); } catch { return null; } }
+  if (Array.isArray(v)) {
+    const out: Record<string, unknown> = {};
+    for (const e of v) { const o = unwrapState(e); if (o) Object.assign(out, o); }
+    return Object.keys(out).length ? out : null;
+  }
+  return v && typeof v === "object" ? (v as Record<string, unknown>) : null;
+}
+type Mods = { v2?: { m?: Record<string, { p?: number; s?: string; sc?: number }> } };
+/** A saved state with every module that has a passing exam attempt on record marked passed (the attempt log is the server's proof, so a lost or stale save cannot hide a pass). */
+export function withPasses(state: unknown, refs: Iterable<string> | undefined): Record<string, unknown> {
+  const st = (unwrapState(state) ?? {}) as Mods & Record<string, unknown>;
+  const m = { ...(st.v2?.m ?? {}) };
+  for (const r of refs ?? []) if (m[r]?.p !== 1) m[r] = { s: "111", sc: 100, ...(m[r] ?? {}), p: 1 };
+  return { ...st, v2: { ...(st.v2 ?? {}), m } };
+}
 /** Counts passed modules (p = 1) of a saved `state.v2.m` for the given module ids. */
 export function passedIn(state: unknown, ids: ReadonlySet<string>): number {
-  const st = state ? ((typeof state === "string" ? JSON.parse(state) : state) as { v2?: { m?: Record<string, { p?: number }> } }) : null;
+  const st = unwrapState(state) as Mods | null;
   return Object.entries(st?.v2?.m ?? {}).filter(([k, v]) => ids.has(k) && v?.p === 1).length;
 }
 /** The first module of a track that has not been passed yet (or the first one if everything is passed). */
 export function nextModule(t: TrackId, state: unknown) {
-  const st = state ? ((typeof state === "string" ? JSON.parse(state) : state) as { v2?: { m?: Record<string, { p?: number }> } }) : null;
+  const st = unwrapState(state) as Mods | null;
   const mods = trackModules(t);
   const i = mods.findIndex((m) => st?.v2?.m?.[m.id]?.p !== 1);
   return { n: (i < 0 ? 0 : i) + 1, title: mods[i < 0 ? 0 : i].title };

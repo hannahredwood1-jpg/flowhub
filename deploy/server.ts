@@ -27,7 +27,7 @@ import { clampPace, expectedPassed, nudgeGapDays, paceStatus, PACE_MAX_NUDGES } 
 import { SCHOOL_MODULES, SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
 import { cleanPlanModels, type TradingPlanDTO } from "../src/lib/tradingPlan";
 import { VAULT_MODULE_IDS, hashCode, makeCode, vaultPassed } from "../src/lib/vault";
-import { EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, LUMEN_MODULE_IDS, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_OPTIONAL_IDS, orderflowComplete, orderflowOpen, vaultStrategiesOpen, passedIn as passedInSet, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
+import { EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, LUMEN_MODULE_IDS, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_OPTIONAL_IDS, orderflowComplete, orderflowOpen, vaultStrategiesOpen, passedIn as passedInSet, unwrapState, withPasses, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
 
 // ─────────────────────────────────────────────────────────────
 // Config
@@ -199,7 +199,9 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
     sql`select kind, ref, score, total, pass, "createdAt" from "SchoolAttempt" where "userId" = ${traderId} order by "createdAt" desc limit 12`,
     sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${traderId}`,
   ]);
-  const jsonOf = <T,>(v: unknown): T => (typeof v === "string" ? JSON.parse(v) : v) as T;
+  const jsonOf = <T,>(v: unknown): T => unwrapState(v) as T;
+  const passRefs = new Set(((await sql`select distinct ref from "SchoolAttempt" where "userId" = ${traderId} and kind = 'ex' and pass = true`) as { ref: string }[]).map((r) => r.ref));
+  const schoolState = withPasses(sp?.state, SCHOOL_MODULE_IDS.filter((id) => passRefs.has(id)));
   const strategies = ((rm?.strategies ?? []) as StrategyKey[]).filter((k) => !RETIRED_STRATEGIES.includes(k)); // retired NYFLOW / ASIAFLOW setups
   return buildDashboard({
     viewer: person(viewer),
@@ -228,7 +230,7 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
       journalEntryId: f.journalEntryId, memberAccountId: f.memberAccountId,
       createdAt: new Date(f.createdAt).toISOString(), readAt: f.readAt ? new Date(f.readAt).toISOString() : null,
     })),
-    school: sp || attempts.length ? summarizeSchool(sp ? jsonOf<SchoolState>(sp.state) : null, sp?.unlocks ?? [], attempts as SchoolAttemptRow[]) : null,
+    school: sp || attempts.length ? summarizeSchool(sp || passRefs.size ? (schoolState as SchoolState) : null, sp?.unlocks ?? [], attempts as SchoolAttemptRow[]) : null,
     tradingPlan: tp ? { ...jsonOf<TradingPlanDTO>(tp.plan), models: cleanPlanModels(jsonOf<TradingPlanDTO>(tp.plan).models as string[]), done: true, updatedAt: new Date(tp.updatedAt).toISOString() } : null,
     practice: summarizePractice(practiceRows as { model: string; drill: string; ok: boolean; tags: string[]; createdAt: Date }[]),
     projection: pj
@@ -669,7 +671,7 @@ app.get("/api/practice", async (c) => {
     sql`select state from "PracticeState" where "userId" = ${uid}`,
     sql`select model, drill, ok, tags, "createdAt" from "PracticeRep" where "userId" = ${uid} and "createdAt" > now() - interval '120 days' order by "createdAt" desc limit 1500`,
   ]);
-  const state = st ? (typeof st.state === "string" ? JSON.parse(st.state) : st.state) : null;
+  const state = st ? unwrapState(st.state) : null;
   return c.json({ state, reps: (reps as { model: string; drill: string; ok: boolean; tags: string[]; createdAt: Date }[]).reverse().map((r) => ({ t: new Date(r.createdAt).getTime(), m: r.model, d: r.drill, ok: r.ok, tags: r.tags ?? [] })) });
 });
 app.post("/api/practice/rep", async (c) => {
@@ -740,7 +742,7 @@ app.get("/api/school", async (c) => {
   const proofs: Record<string, { pass: boolean; sc: number; at: number }> = {};
   for (const r of proofRows as Record<string, any>[]) proofs[r.ref] = { pass: !!r.pass, sc: Math.round((r.score / r.total) * 100), at: new Date(r.createdAt).getTime() };
   return c.json({
-    state: row ? (isStaff(u) ? js(row.state) : normState(js(row.state), "fundamentals", new Set((row.unlocks ?? []) as string[]))) : null, unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username,
+    state: row ? (isStaff(u) ? unwrapState(row.state) : normState(unwrapState(row.state), "fundamentals", new Set((row.unlocks ?? []) as string[]))) : null, unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username,
     pace: pace ? { perWeek: Number(pace.perWeek), preset: pace.preset, baseline: pace.baseline, startedAt: new Date(pace.startedAt).toISOString(), emails: pace.emails } : null,
     hasEmail: !!acct,
     path: path ? { modes: js(path.modes), answers: js(path.answers), committedAt: new Date(path.committedAt).toISOString(), locked: !!path.lockedAt } : null,
@@ -765,8 +767,9 @@ app.put("/api/school", async (c) => {
   }
   const json = JSON.stringify(clean);
   if (json.length > 20000) throw new HttpError(400, "Too long");
-  await sql`insert into "SchoolProgress" ("userId", state) values (${c.get("user").id}, ${json}::jsonb)
-            on conflict ("userId") do update set state = coalesce("SchoolProgress".state, '{}'::jsonb) || excluded.state, "updatedAt" = now()`;
+  // stored as one real object per member (the text cast makes it an object, not a JSON string); an older odd shape is replaced by this save
+  await sql`insert into "SchoolProgress" ("userId", state) values (${c.get("user").id}, (${json}::text)::jsonb)
+            on conflict ("userId") do update set state = case when jsonb_typeof("SchoolProgress".state) = 'object' then "SchoolProgress".state || excluded.state else excluded.state end, "updatedAt" = now()`;
   return c.json({ ok: true });
 });
 app.post("/api/school/attempt", async (c) => {
@@ -800,7 +803,7 @@ app.post("/api/school/attempt", async (c) => {
 app.put("/api/school/path", async (c) => {
   const u = c.get("user"), b = (await c.req.json().catch(() => ({}))) as { modes?: unknown; answers?: unknown };
   const [sp] = await sql`select state from "SchoolProgress" where "userId" = ${u.id}`;
-  const st = sp?.state ? ((typeof sp.state === "string" ? JSON.parse(sp.state) : sp.state) as SchoolState) : null;
+  const st = sp?.state ? (unwrapState(sp.state) as SchoolState | null) : null;
   const passed = new Set(Object.entries(st?.v2?.m ?? {}).filter(([, v]) => (v as { p?: number })?.p === 1).map(([k]) => k));
   const used = new Set(((await sql`select ref from "SchoolAttempt" where "userId" = ${u.id} and kind = 'po'`) as { ref: string }[]).map((r) => r.ref));
   const modes = cleanModes(b.modes, passed, used), answers = cleanAnswers(b.answers);
@@ -847,7 +850,7 @@ async function trackState(userId: string, track: TrackId): Promise<unknown> {
 /** A saved state with its passes put back in order (nobody skips ahead). Used when state is read and written. */
 function normState(state: unknown, track: TrackId, skip: ReadonlySet<string> = new Set()): unknown {
   if (!state) return state;
-  const st = (typeof state === "string" ? JSON.parse(state) : state) as { v2?: { m?: Record<string, ModuleProgress> } };
+  const st = unwrapState(state) as { v2?: { m?: Record<string, ModuleProgress> } } | null;
   if (!st?.v2?.m) return st;
   return { ...st, v2: { ...st.v2, m: normalizeOrder(trackModules(track).map((x) => x.id), st.v2.m, OPEN_FIRST[track], skip) } };
 }
@@ -897,8 +900,12 @@ app.get("/api/coach/pace", async (c) => {
     from "SchoolPace" p join "User" u on u.id = p."userId" left join "SchoolProgress" sp on sp."userId" = u.id
       left join "TrackProgress" tp on tp."userId" = u.id and tp.track = 'invertix' left join "TrackProgress" tf on tf."userId" = u.id and tf.track = 'orderflow' left join "TrackProgress" tl on tl."userId" = u.id and tl.track = 'lumen' left join "VaultAccess" v on v."userId" = u.id left join "LocalAccount" a on a."userId" = u.id order by p."setAt" desc limit 500`;
   const [{ n: unset }] = await sql`select count(*)::int as n from "SchoolProgress" sp join "User" u on u.id = sp."userId" where u."isGuildMember" and not exists (select 1 from "SchoolPace" p where p."userId" = sp."userId" and p.track = 'fundamentals')`;
+  const okRows = (await sql`select "userId", ref from "SchoolAttempt" where kind = 'ex' and pass = true group by "userId", ref`) as { userId: string; ref: string }[];
+  const passBy = new Map<string, string[]>();
+  for (const a of okRows) if (SCHOOL_MODULE_SET.has(a.ref)) passBy.set(a.userId, [...(passBy.get(a.userId) ?? []), a.ref]);
   const out = rows.map((r: Record<string, any>) => {
-    const track = trackOf(r.track), total = trackTotal(track), state = rowState(r, track), active = rowActive(r, track);
+    const track = trackOf(r.track), total = trackTotal(track), active = rowActive(r, track);
+    const state = track === "fundamentals" ? withPasses(rowState(r, track), passBy.get(r.id)) : rowState(r, track);
     const passed = passedIn(state, track), perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
     const left = total - passed, fin = passed >= total ? null : new Date(now.getTime() + (left / perWeek) * 7 * 86400_000).toISOString();
     const act = active ? new Date(active).toISOString() : null;
@@ -1265,7 +1272,7 @@ app.put("/api/orderflow/progress", async (c) => {
   }
   // a saved pass is never taken back by a stale page
   const [old] = await sql`select state from "TrackProgress" where "userId" = ${u.id} and track = 'orderflow'`;
-  const prev = old?.state ? ((typeof old.state === "string" ? JSON.parse(old.state) : old.state) as { v2?: { m?: Record<string, ModuleProgress> } }) : null;
+  const prev = old?.state ? (unwrapState(old.state) as { v2?: { m?: Record<string, ModuleProgress> } } | null) : null;
   for (const [k, v] of Object.entries(prev?.v2?.m ?? {})) if (set.has(k) && v?.p === 1 && m[k]?.p !== 1) m[k] = { ...(m[k] ?? { s: "111", a: 1, n: 1, at: 0 }), ...v };
   const mo = isStaff(u) ? m : normalizeOrder(ORDERFLOW_MODULE_IDS, m, 0);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'orderflow', ${JSON.stringify({ v2: { m: mo } })}::jsonb)
@@ -1399,9 +1406,13 @@ app.get("/api/coach/members", async (c) => {
   for (const r of tp as Record<string, any>[]) put(r.userId, r.track, r.state);
   for (const r of va as Record<string, any>[]) put(r.userId, "exo", r.state);
   const seen = new Map((us as Record<string, any>[]).map((r) => [r.userId as string, r.seen ? new Date(r.seen).toISOString() : null]));
+  const ok = (await sql`select "userId", ref from "SchoolAttempt" where kind = 'ex' and pass = true and "userId" = any(${ids}::text[]) group by "userId", ref`) as { userId: string; ref: string }[];
+  const passBy = new Map<string, string[]>();
+  for (const r of ok) if (SCHOOL_MODULE_SET.has(r.ref)) passBy.set(r.userId, [...(passBy.get(r.userId) ?? []), r.ref]);
   const COURSES: [TrackId, string][] = [["fundamentals", "Foundations"], ["orderflow", "Orderflow"], ["invertix", "INVERTIX"], ["lumen", "LUMEN"], ["exo", "ECHO x ORBIT"]];
   for (const r of rows) {
-    const mine = st.get(r.trader.id) ?? {};
+    const mine = { ...(st.get(r.trader.id) ?? {}) };
+    mine.fundamentals = withPasses(mine.fundamentals, passBy.get(r.trader.id));
     r.path = COURSES.map(([id, name]) => ({ id, name, passed: passedIn(mine[id], id), total: trackTotal(id), next: nextModule(id, mine[id]).title }));
     r.lastActive = seen.get(r.trader.id) ?? null;
   }
@@ -1436,7 +1447,7 @@ app.get("/api/coach/vault", async (c) => {
   return c.json(rows.map((r: Record<string, unknown>) => ({
     id: r.id, name: r.name, role: r.role, mentorship: hasMentorRole(r as { guildRoleIds?: unknown }), override: !!r.mentorshipOverride,
     code: r.issuedAt ? (r.revokedAt ? "revoked" : r.redeemedAt ? "opened" : "issued") : "none", hint: r.codeHint ?? null, issuedAt: iso(r.issuedAt), redeemedAt: iso(r.redeemedAt),
-    orderflow: !!r.orderflow, passed: vaultPassed(r.state ? (typeof r.state === "string" ? JSON.parse(r.state) : r.state) : null),
+    orderflow: !!r.orderflow, passed: vaultPassed(r.state ? unwrapState(r.state) : null),
   })));
 });
 app.post("/api/coach/vault/:id/code", async (c) => {

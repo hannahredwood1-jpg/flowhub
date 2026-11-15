@@ -985,12 +985,37 @@ var EXO_MODULES = VAULT_MODULES.filter((m) => m.id.startsWith("e"));
 var EXO_MODULE_IDS = EXO_MODULES.map((m) => m.id);
 var trackModules = (t) => t === "fundamentals" ? SCHOOL_MODULES : t === "orderflow" ? ORDERFLOW_MODULES : t === "invertix" ? INVERTIX_MODULES : t === "lumen" ? LUMEN_MODULES : EXO_MODULES;
 var trackTotal = (t) => trackModules(t).length;
+function unwrapState(raw) {
+  let v = raw;
+  for (let i = 0; i < 3 && typeof v === "string"; i++) {
+    try {
+      v = JSON.parse(v);
+    } catch {
+      return null;
+    }
+  }
+  if (Array.isArray(v)) {
+    const out = {};
+    for (const e of v) {
+      const o = unwrapState(e);
+      if (o) Object.assign(out, o);
+    }
+    return Object.keys(out).length ? out : null;
+  }
+  return v && typeof v === "object" ? v : null;
+}
+function withPasses(state, refs) {
+  const st = unwrapState(state) ?? {};
+  const m = { ...st.v2?.m ?? {} };
+  for (const r of refs ?? []) if (m[r]?.p !== 1) m[r] = { s: "111", sc: 100, ...m[r] ?? {}, p: 1 };
+  return { ...st, v2: { ...st.v2 ?? {}, m } };
+}
 function passedIn(state, ids2) {
-  const st = state ? typeof state === "string" ? JSON.parse(state) : state : null;
+  const st = unwrapState(state);
   return Object.entries(st?.v2?.m ?? {}).filter(([k, v]) => ids2.has(k) && v?.p === 1).length;
 }
 function nextModule(t, state) {
-  const st = state ? typeof state === "string" ? JSON.parse(state) : state : null;
+  const st = unwrapState(state);
   const mods = trackModules(t);
   const i = mods.findIndex((m) => st?.v2?.m?.[m.id]?.p !== 1);
   return { n: (i < 0 ? 0 : i) + 1, title: mods[i < 0 ? 0 : i].title };
@@ -1166,7 +1191,9 @@ async function loadDashboard(viewer, traderId) {
     sql`select kind, ref, score, total, pass, "createdAt" from "SchoolAttempt" where "userId" = ${traderId} order by "createdAt" desc limit 12`,
     sql`select plan, "updatedAt" from "TradingPlan" where "userId" = ${traderId}`
   ]);
-  const jsonOf = (v) => typeof v === "string" ? JSON.parse(v) : v;
+  const jsonOf = (v) => unwrapState(v);
+  const passRefs = new Set((await sql`select distinct ref from "SchoolAttempt" where "userId" = ${traderId} and kind = 'ex' and pass = true`).map((r) => r.ref));
+  const schoolState = withPasses(sp?.state, SCHOOL_MODULE_IDS.filter((id) => passRefs.has(id)));
   const strategies = (rm?.strategies ?? []).filter((k) => !RETIRED_STRATEGIES.includes(k));
   return buildDashboard({
     viewer: person(viewer),
@@ -1226,7 +1253,7 @@ async function loadDashboard(viewer, traderId) {
       createdAt: new Date(f.createdAt).toISOString(),
       readAt: f.readAt ? new Date(f.readAt).toISOString() : null
     })),
-    school: sp || attempts.length ? summarizeSchool(sp ? jsonOf(sp.state) : null, sp?.unlocks ?? [], attempts) : null,
+    school: sp || attempts.length ? summarizeSchool(sp || passRefs.size ? schoolState : null, sp?.unlocks ?? [], attempts) : null,
     tradingPlan: tp ? { ...jsonOf(tp.plan), models: cleanPlanModels(jsonOf(tp.plan).models), done: true, updatedAt: new Date(tp.updatedAt).toISOString() } : null,
     practice: summarizePractice(practiceRows),
     projection: pj ? { ...typeof pj.config === "string" ? JSON.parse(pj.config) : pj.config, name: pj.name, updatedAt: new Date(pj.updatedAt).toISOString() } : null
@@ -1668,7 +1695,7 @@ app.get("/api/practice", async (c) => {
     sql`select state from "PracticeState" where "userId" = ${uid}`,
     sql`select model, drill, ok, tags, "createdAt" from "PracticeRep" where "userId" = ${uid} and "createdAt" > now() - interval '120 days' order by "createdAt" desc limit 1500`
   ]);
-  const state = st ? typeof st.state === "string" ? JSON.parse(st.state) : st.state : null;
+  const state = st ? unwrapState(st.state) : null;
   return c.json({ state, reps: reps.reverse().map((r) => ({ t: new Date(r.createdAt).getTime(), m: r.model, d: r.drill, ok: r.ok, tags: r.tags ?? [] })) });
 });
 app.post("/api/practice/rep", async (c) => {
@@ -1735,7 +1762,7 @@ app.get("/api/school", async (c) => {
   const proofs = {};
   for (const r of proofRows) proofs[r.ref] = { pass: !!r.pass, sc: Math.round(r.score / r.total * 100), at: new Date(r.createdAt).getTime() };
   return c.json({
-    state: row ? isStaff(u) ? js(row.state) : normState(js(row.state), "fundamentals", new Set(row.unlocks ?? [])) : null,
+    state: row ? isStaff(u) ? unwrapState(row.state) : normState(unwrapState(row.state), "fundamentals", new Set(row.unlocks ?? [])) : null,
     unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [],
     staff: isStaff(u),
     name: u.globalName ?? u.username,
@@ -1765,8 +1792,8 @@ app.put("/api/school", async (c) => {
   }
   const json = JSON.stringify(clean);
   if (json.length > 2e4) throw new HttpError(400, "Too long");
-  await sql`insert into "SchoolProgress" ("userId", state) values (${c.get("user").id}, ${json}::jsonb)
-            on conflict ("userId") do update set state = coalesce("SchoolProgress".state, '{}'::jsonb) || excluded.state, "updatedAt" = now()`;
+  await sql`insert into "SchoolProgress" ("userId", state) values (${c.get("user").id}, (${json}::text)::jsonb)
+            on conflict ("userId") do update set state = case when jsonb_typeof("SchoolProgress".state) = 'object' then "SchoolProgress".state || excluded.state else excluded.state end, "updatedAt" = now()`;
   return c.json({ ok: true });
 });
 app.post("/api/school/attempt", async (c) => {
@@ -1797,7 +1824,7 @@ app.post("/api/school/attempt", async (c) => {
 app.put("/api/school/path", async (c) => {
   const u = c.get("user"), b = await c.req.json().catch(() => ({}));
   const [sp] = await sql`select state from "SchoolProgress" where "userId" = ${u.id}`;
-  const st = sp?.state ? typeof sp.state === "string" ? JSON.parse(sp.state) : sp.state : null;
+  const st = sp?.state ? unwrapState(sp.state) : null;
   const passed = new Set(Object.entries(st?.v2?.m ?? {}).filter(([, v]) => v?.p === 1).map(([k]) => k));
   const used = new Set((await sql`select ref from "SchoolAttempt" where "userId" = ${u.id} and kind = 'po'`).map((r) => r.ref));
   const modes = cleanModes(b.modes, passed, used), answers = cleanAnswers(b.answers);
@@ -1851,7 +1878,7 @@ async function trackState(userId, track) {
 }
 function normState(state, track, skip = /* @__PURE__ */ new Set()) {
   if (!state) return state;
-  const st = typeof state === "string" ? JSON.parse(state) : state;
+  const st = unwrapState(state);
   if (!st?.v2?.m) return st;
   return { ...st, v2: { ...st.v2, m: normalizeOrder(trackModules(track).map((x) => x.id), st.v2.m, OPEN_FIRST[track], skip) } };
 }
@@ -1896,8 +1923,12 @@ app.get("/api/coach/pace", async (c) => {
     from "SchoolPace" p join "User" u on u.id = p."userId" left join "SchoolProgress" sp on sp."userId" = u.id
       left join "TrackProgress" tp on tp."userId" = u.id and tp.track = 'invertix' left join "TrackProgress" tf on tf."userId" = u.id and tf.track = 'orderflow' left join "TrackProgress" tl on tl."userId" = u.id and tl.track = 'lumen' left join "VaultAccess" v on v."userId" = u.id left join "LocalAccount" a on a."userId" = u.id order by p."setAt" desc limit 500`;
   const [{ n: unset }] = await sql`select count(*)::int as n from "SchoolProgress" sp join "User" u on u.id = sp."userId" where u."isGuildMember" and not exists (select 1 from "SchoolPace" p where p."userId" = sp."userId" and p.track = 'fundamentals')`;
+  const okRows = await sql`select "userId", ref from "SchoolAttempt" where kind = 'ex' and pass = true group by "userId", ref`;
+  const passBy = /* @__PURE__ */ new Map();
+  for (const a of okRows) if (SCHOOL_MODULE_SET.has(a.ref)) passBy.set(a.userId, [...passBy.get(a.userId) ?? [], a.ref]);
   const out = rows.map((r) => {
-    const track = trackOf(r.track), total = trackTotal(track), state = rowState(r, track), active = rowActive(r, track);
+    const track = trackOf(r.track), total = trackTotal(track), active = rowActive(r, track);
+    const state = track === "fundamentals" ? withPasses(rowState(r, track), passBy.get(r.id)) : rowState(r, track);
     const passed = passedIn2(state, track), perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
     const left = total - passed, fin = passed >= total ? null : new Date(now.getTime() + left / perWeek * 7 * 864e5).toISOString();
     const act = active ? new Date(active).toISOString() : null;
@@ -2272,7 +2303,7 @@ app.put("/api/orderflow/progress", async (c) => {
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p, sc: p ? clampInt(v.sc, 0, 100) : 0, a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
   const [old] = await sql`select state from "TrackProgress" where "userId" = ${u.id} and track = 'orderflow'`;
-  const prev = old?.state ? typeof old.state === "string" ? JSON.parse(old.state) : old.state : null;
+  const prev = old?.state ? unwrapState(old.state) : null;
   for (const [k, v] of Object.entries(prev?.v2?.m ?? {})) if (set.has(k) && v?.p === 1 && m[k]?.p !== 1) m[k] = { ...m[k] ?? { s: "111", a: 1, n: 1, at: 0 }, ...v };
   const mo = isStaff(u) ? m : normalizeOrder(ORDERFLOW_MODULE_IDS, m, 0);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'orderflow', ${JSON.stringify({ v2: { m: mo } })}::jsonb)
@@ -2394,9 +2425,13 @@ app.get("/api/coach/members", async (c) => {
   for (const r of tp) put(r.userId, r.track, r.state);
   for (const r of va) put(r.userId, "exo", r.state);
   const seen = new Map(us.map((r) => [r.userId, r.seen ? new Date(r.seen).toISOString() : null]));
+  const ok = await sql`select "userId", ref from "SchoolAttempt" where kind = 'ex' and pass = true and "userId" = any(${ids2}::text[]) group by "userId", ref`;
+  const passBy = /* @__PURE__ */ new Map();
+  for (const r of ok) if (SCHOOL_MODULE_SET.has(r.ref)) passBy.set(r.userId, [...passBy.get(r.userId) ?? [], r.ref]);
   const COURSES = [["fundamentals", "Foundations"], ["orderflow", "Orderflow"], ["invertix", "INVERTIX"], ["lumen", "LUMEN"], ["exo", "ECHO x ORBIT"]];
   for (const r of rows) {
-    const mine = st.get(r.trader.id) ?? {};
+    const mine = { ...st.get(r.trader.id) ?? {} };
+    mine.fundamentals = withPasses(mine.fundamentals, passBy.get(r.trader.id));
     r.path = COURSES.map(([id, name]) => ({ id, name, passed: passedIn2(mine[id], id), total: trackTotal(id), next: nextModule(id, mine[id]).title }));
     r.lastActive = seen.get(r.trader.id) ?? null;
   }
@@ -2438,7 +2473,7 @@ app.get("/api/coach/vault", async (c) => {
     issuedAt: iso(r.issuedAt),
     redeemedAt: iso(r.redeemedAt),
     orderflow: !!r.orderflow,
-    passed: vaultPassed(r.state ? typeof r.state === "string" ? JSON.parse(r.state) : r.state : null)
+    passed: vaultPassed(r.state ? unwrapState(r.state) : null)
   })));
 });
 app.post("/api/coach/vault/:id/code", async (c) => {
