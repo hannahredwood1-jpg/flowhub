@@ -72,7 +72,7 @@ class Chart{
   wh(e){e.preventDefault();const g=this.G(),{x}=this.pos(e),a=this.from+x/g.bw-.5,f=e.deltaY>0?1.12:.89;
     this.count=Math.max(8,Math.min(160,this.count*f));const g2=this.G();this.from=a-x/g2.bw+.5;this.draw()}
   draw(){
-    const cx=this.cx,W=this.W,H=this.H,css=getComputedStyle(document.documentElement),col=n=>css.getPropertyValue(n).trim();
+    const cx=this.cx,W=this.W,H=this.H,css=getComputedStyle(this.cv),col=n=>css.getPropertyValue(n).trim();
     cx.clearRect(0,0,W,H);cx.fillStyle=col('--chart');cx.fillRect(0,0,W,H);
     if(!this.C.length)return;
     const g=this.G(),{PR,PB,PT,pw,ph,bw,mn,mx}=g,X=i=>this.X(i,g),Y=p=>this.Y(p,g),k=this.k;

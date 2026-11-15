@@ -27,7 +27,7 @@ import { clampPace, expectedPassed, nudgeGapDays, paceStatus, PACE_MAX_NUDGES } 
 import { SCHOOL_MODULES, SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
 import { cleanPlanModels, type TradingPlanDTO } from "../src/lib/tradingPlan";
 import { VAULT_MODULE_IDS, hashCode, makeCode, vaultPassed } from "../src/lib/vault";
-import { EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, LUMEN_MODULE_IDS, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, orderflowComplete, orderflowOpen, vaultStrategiesOpen, passedIn as passedInSet, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
+import { EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, LUMEN_MODULE_IDS, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_OPTIONAL_IDS, orderflowComplete, orderflowOpen, vaultStrategiesOpen, passedIn as passedInSet, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
 
 // ─────────────────────────────────────────────────────────────
 // Config
@@ -775,7 +775,7 @@ app.post("/api/school/attempt", async (c) => {
   if ((b.kind !== "ck" && b.kind !== "ex" && b.kind !== "po") || !b.ref || !ID_RE.test(b.ref) || !(total > 0 && total <= 50) || !(score >= 0 && score <= total) || typeof b.pass !== "boolean")
     throw new HttpError(400, "Bad attempt");
   const u = c.get("user"), secs = Math.max(0, Math.min(7200, Math.round(Number(b.secs) || 0)));
-  if (b.kind === "ex" && b.pass && (SCHOOL_MODULE_SET.has(b.ref) || ORDERFLOW_MODULE_IDS.includes(b.ref)) && score < Math.ceil(total * 0.8 - 1e-9)) throw new HttpError(400, "Bad attempt");
+  if (b.kind === "ex" && b.pass && (SCHOOL_MODULE_SET.has(b.ref) || [...ORDERFLOW_MODULE_IDS, ...ORDERFLOW_OPTIONAL_IDS].includes(b.ref)) && score < Math.ceil(total * 0.8 - 1e-9)) throw new HttpError(400, "Bad attempt");
   if (b.kind === "po") {
     // A proof exam: only for a module on the student's own prove-it list, once, and never for GEX, INVERTIX or the final read.
     if (!isProvable(b.ref)) throw new HttpError(400, "This module cannot be tested out");
@@ -1253,7 +1253,7 @@ app.get("/api/orderflow/progress", async (c) => {
 app.put("/api/orderflow/progress", async (c) => {
   const u = c.get("user"), acc = await orderflowAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const set = new Set(ORDERFLOW_MODULE_IDS), o = (await c.req.json().catch(() => ({}))) as { v2?: { m?: Record<string, Record<string, unknown>> } };
+  const set = new Set([...ORDERFLOW_MODULE_IDS, ...ORDERFLOW_OPTIONAL_IDS]), o = (await c.req.json().catch(() => ({}))) as { v2?: { m?: Record<string, Record<string, unknown>> } };
   // These exams are the key to every strategy, so a module only counts as passed if a passing exam attempt (80% or better) was logged for it on the server.
   const rows = (await sql`select distinct ref from "SchoolAttempt" where "userId" = ${u.id} and kind = 'ex' and pass = true`) as { ref: string }[];
   const passedRefs = new Set(rows.map((r) => r.ref));

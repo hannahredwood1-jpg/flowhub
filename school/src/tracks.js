@@ -27,7 +27,7 @@ const SIDE=!!(window.VAULT||window.INV||window.LUMEN);
 const LITE=['m37','m38','m19','m20','m39','m41','m42','m01','m15','m25','m12','m14','m24','m50'];
 if(NOEX)MODS.forEach(m=>{if(LITE.includes(m.id))m.lite=1});
 /* The modules that count toward a track's certificate and pace (the vault's sealed Orderflow room is not part of the course). */
-const COURSE=()=>MODS;
+const COURSE=()=>MODS.filter(m=>!optSkip(m));
 /* The vault is one course now (ECHO x ORBIT), so there are no separate strategy sections. */
 const STRATS=[];
 const stratOf=m=>STRATS.find(s=>s.ids(m));

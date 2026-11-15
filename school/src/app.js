@@ -16,7 +16,7 @@ function mergeServer(v2){
   persist(false)}
 /* Progress is kept in order: the first module after the open basics is open, and every later module only counts as passed if the one before it is. An old save is brought to where the student really is. */
 function normalizeOrder(){if(UNLOCKS.includes('all'))return;const first=MODS.findIndex(m=>!PH[m.ph].open),o=first<0?0:first;
-  for(let i=o+1;i<MODS.length;i++){const m=MODS[i],p=PROG.m[m.id];if(!p||!p.p||m.first||UNLOCKS.includes(m.id))continue;const prev=PROG.m[MODS[i-1].id];if(!prev||!prev.p){p.p=0;p.s=[0,0,0];p.sc=0}}}
+  for(let i=o+1;i<MODS.length;i++){const m=MODS[i],p=PROG.m[m.id];if(!p||!p.p||m.first||UNLOCKS.includes(m.id))continue;const prev=PROG.m[MODS[pred(i)].id];if(!prev||!prev.p){p.p=0;p.s=[0,0,0];p.sc=0}}}
 function persist(sync=true){normalizeOrder();try{localStorage.setItem(LS,JSON.stringify(PROG))}catch(e){}if(sync)syncSoon()}
 function saveTxt(){try{localStorage.setItem(LSX,JSON.stringify(TXT))}catch(e){}}
 let syncT=null;
@@ -31,10 +31,14 @@ const modIdx=id=>MODS.findIndex(m=>m.id===id);
 const FIRST_CORE=MODS.findIndex(m=>!PH[m.ph].open);
 /* Beginner Basics (phase 1) are open from the start in any order. Everything after them unlocks one module at a time, starting with the first Foundations module. INVERTIX needs every earlier module learned or proved. */
 const modUnlocked=i=>{const m=MODS[i];if(m.sealed&&!window.OF_OK)return false;if(pathGate())return false;if(UNLOCKS.includes(m.id)||UNLOCKS.includes('all'))return true;
-  if(PH[m.ph].open||i===FIRST_CORE||m.first)return true;return !!pm(MODS[i-1].id).p};
+  if(PH[m.ph].open||i===FIRST_CORE||m.first)return true;return !!pm(MODS[pred(i)].id).p};
+/* an optional lesson added later (Volume analysis): a student already past it is not held up by it, and it does not count against their course */
+const progressed=x=>{const p=pm(x.id);return !!(p.p||(p.s&&p.s.some(Boolean)))};
+const optSkip=m=>!!m.opt&&!pm(m.id).p&&MODS.slice(MODS.indexOf(m)+1).some(x=>!x.opt&&progressed(x));
+const pred=i=>{let j=i-1;while(j>0&&MODS[j].opt&&optSkip(MODS[j]))j--;return j};
 const modStatus=i=>pm(MODS[i].id).p?'done':modUnlocked(i)?'active':'locked';
 const stepsDone=m=>pm(m.id).s.filter(Boolean).length;
-const currentIdx=()=>{const i=MODS.findIndex((m,k)=>!pm(m.id).p&&modUnlocked(k));return i<0?MODS.length-1:i};
+const currentIdx=()=>{const i=MODS.findIndex((m,k)=>!pm(m.id).p&&modUnlocked(k)&&!optSkip(m));return i<0?MODS.length-1:i};
 const STEPS=NOEX?['Learn','See it','Mark it']:['Learn','See it','Mark it','Exam'],STEP_KEYS=['learn','see','mark','ready'];
 const PASS=.8;
 const passNeeded=n=>Math.ceil(n*PASS-1e-9);
