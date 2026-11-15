@@ -2381,6 +2381,25 @@ app.get("/api/coach/members", async (c) => {
   const members = await sql`select id from "User" where "isGuildMember" and (${q} = '' or username ilike ${like} or "globalName" ilike ${like}) limit 500`;
   const rows = [];
   for (const m of members) rows.push(buildDirectoryRow(await loadDashboard(c.get("user"), m.id)));
+  const ids2 = pgArray(members.map((m) => m.id));
+  const [sp, tp, va, us] = await Promise.all([
+    sql`select "userId", state from "SchoolProgress" where "userId" = any(${ids2}::text[])`,
+    sql`select "userId", track, state from "TrackProgress" where "userId" = any(${ids2}::text[])`,
+    sql`select "userId", state from "VaultAccess" where "userId" = any(${ids2}::text[])`,
+    sql`select "userId", max("lastSeenAt") as seen from "UsageSession" where "userId" = any(${ids2}::text[]) group by "userId"`
+  ]);
+  const st = /* @__PURE__ */ new Map();
+  const put = (uid, t, state) => st.set(uid, { ...st.get(uid) ?? {}, [t]: state });
+  for (const r of sp) put(r.userId, "fundamentals", r.state);
+  for (const r of tp) put(r.userId, r.track, r.state);
+  for (const r of va) put(r.userId, "exo", r.state);
+  const seen = new Map(us.map((r) => [r.userId, r.seen ? new Date(r.seen).toISOString() : null]));
+  const COURSES = [["fundamentals", "Foundations"], ["orderflow", "Orderflow"], ["invertix", "INVERTIX"], ["lumen", "LUMEN"], ["exo", "ECHO x ORBIT"]];
+  for (const r of rows) {
+    const mine = st.get(r.trader.id) ?? {};
+    r.path = COURSES.map(([id, name]) => ({ id, name, passed: passedIn2(mine[id], id), total: trackTotal(id), next: nextModule(id, mine[id]).title }));
+    r.lastActive = seen.get(r.trader.id) ?? null;
+  }
   return c.json(sortDirectory(rows, sort));
 });
 app.get("/api/coach/members/:id", async (c) => {

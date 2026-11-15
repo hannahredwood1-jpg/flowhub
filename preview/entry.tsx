@@ -138,6 +138,11 @@ const dash = (viewerId: string, traderId: string) => {
   return d;
 };
 
+const withProgress = (r: ReturnType<typeof buildDirectoryRow>, i: number) => {
+  const NEXT = ["Orders and your first trade", "The footprint chart", "What is INVERTIX", "The zone tap", "The rejection wick"];
+  const prog = [[10, 12, 3, 1, 0], [10, 5, 0, 0, 0], [4, 0, 0, 0, 0], [0, 0, 0, 0, 0], [10, 12, 3, 5, 5], [10, 12, 2, 0, 0]], tot = [10, 12, 3, 5, 5], nm = ["Foundations", "Orderflow", "INVERTIX", "LUMEN", "ECHO x ORBIT"];
+  return { ...r, path: nm.map((n, k) => ({ id: n, name: n, passed: prog[i % prog.length][k], total: tot[k], next: NEXT[k] })), lastActive: new Date(Date.now() - [0, 1, 2, 12, 0, 4][i % 6] * 864e5).toISOString() };
+};
 // ── Mock API (replaces fetch) ──────────────────────────────
 const ok = (body: unknown, status = 200) => Promise.resolve(new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } }));
 const ME = "u-coach";
@@ -202,7 +207,7 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   }
   if (path === "/api/coach/members") {
     const q = (url.searchParams.get("q") ?? "").toLowerCase();
-    const list = [...db.keys()].map((id) => buildDirectoryRow(dash(ME, id))).filter((r) => r.trader.name.toLowerCase().includes(q));
+    const list = [...db.keys()].map((id, i) => withProgress(buildDirectoryRow(dash(ME, id)), i)).filter((r) => r.trader.name.toLowerCase().includes(q));
     return ok(sortDirectory(list, (url.searchParams.get("sort") ?? "drawdown") as DirectorySort));
   }
   if ((m = path.match(/^\/api\/coach\/members\/(.+)$/))) return ok(dash(ME, m[1]));
@@ -227,7 +232,7 @@ function App() {
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
   }, []);
-  const initialDir = sortDirectory([...db.keys()].map((id) => buildDirectoryRow(dash(ME, id))), "drawdown");
+  const initialDir = sortDirectory([...db.keys()].map((id, i) => withProgress(buildDirectoryRow(dash(ME, id)), i)), "drawdown");
   if (view === "login")
     return <LoginScreen action={async () => { await new Promise((r) => setTimeout(r, 2200)); location.hash = "dashboard"; }} />;
   if (view === "home") return <HomeScreen viewer={coach} />;
