@@ -995,8 +995,8 @@ var ORDERFLOW_MODULES = [
   { id: "f05", n: 5, title: "Imbalances and Stacks" },
   { id: "f06", n: 6, title: "Absorption, Exhaustion and Trapped Traders" },
   { id: "f07", n: 7, title: "Auction Theory, Value and the Volume Profile" },
-  { id: "f08", n: 8, title: "Orderflow at Sweeps: Where ECHO and ORBIT Begin" },
-  { id: "f09", n: 9, title: "Orderflow at Gaps and Levels: Where INVERTIX Begins" },
+  { id: "f09", n: 8, title: "Orderflow at Gaps and Levels: Where INVERTIX Begins" },
+  { id: "f08", n: 9, title: "Orderflow at Sweeps: Where ECHO and ORBIT Begin" },
   { id: "f10", n: 10, title: "Putting Flow Beside the Strategies" }
 ];
 var ORDERFLOW_MODULE_IDS = ORDERFLOW_MODULES.map((m) => m.id);
