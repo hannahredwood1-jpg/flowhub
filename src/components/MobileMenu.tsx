@@ -18,7 +18,7 @@ export function MobileMenu({ items, signOutHref, className }: { items: MenuItem[
   const here = items.find((i) => i.active)?.label;
   return (
     <div ref={box} className={cx("relative md:hidden", className)}>
-      <button type="button" className="btn !h-9 gap-2 !px-3" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="btn !h-9 gap-2 !border-[#2a323d] !bg-transparent !px-3 !text-white" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <span className="max-w-[9.5rem] truncate text-[13px]">{here ?? "Menu"}</span>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true" className={cx("transition-transform", open && "rotate-180")}><path d="M2 4.5 6 8.5 10 4.5" /></svg>
       </button>

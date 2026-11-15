@@ -1385,6 +1385,26 @@ app.get("/api/coach/members", async (c) => {
   const members = await sql`select id from "User" where "isGuildMember" and (${q} = '' or username ilike ${like} or "globalName" ilike ${like}) limit 500`;
   const rows = [];
   for (const m of members) rows.push(buildDirectoryRow(await loadDashboard(c.get("user"), m.id)));
+  // where each member is on the five-course path, and when they were last in FLOWHUB
+  const ids = pgArray(members.map((m: Record<string, any>) => m.id as string));
+  const [sp, tp, va, us] = await Promise.all([
+    sql`select "userId", state from "SchoolProgress" where "userId" = any(${ids}::text[])`,
+    sql`select "userId", track, state from "TrackProgress" where "userId" = any(${ids}::text[])`,
+    sql`select "userId", state from "VaultAccess" where "userId" = any(${ids}::text[])`,
+    sql`select "userId", max("lastSeenAt") as seen from "UsageSession" where "userId" = any(${ids}::text[]) group by "userId"`,
+  ]);
+  const st = new Map<string, Record<string, unknown>>();
+  const put = (uid: string, t: string, state: unknown) => st.set(uid, { ...(st.get(uid) ?? {}), [t]: state });
+  for (const r of sp as Record<string, any>[]) put(r.userId, "fundamentals", r.state);
+  for (const r of tp as Record<string, any>[]) put(r.userId, r.track, r.state);
+  for (const r of va as Record<string, any>[]) put(r.userId, "exo", r.state);
+  const seen = new Map((us as Record<string, any>[]).map((r) => [r.userId as string, r.seen ? new Date(r.seen).toISOString() : null]));
+  const COURSES: [TrackId, string][] = [["fundamentals", "Foundations"], ["orderflow", "Orderflow"], ["invertix", "INVERTIX"], ["lumen", "LUMEN"], ["exo", "ECHO x ORBIT"]];
+  for (const r of rows) {
+    const mine = st.get(r.trader.id) ?? {};
+    r.path = COURSES.map(([id, name]) => ({ id, name, passed: passedIn(mine[id], id), total: trackTotal(id), next: nextModule(id, mine[id]).title }));
+    r.lastActive = seen.get(r.trader.id) ?? null;
+  }
   return c.json(sortDirectory(rows, sort));
 });
 app.get("/api/coach/members/:id", async (c) => {

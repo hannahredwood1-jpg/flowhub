@@ -147,6 +147,9 @@ export type CoachDirectoryRow = {
   unreadFeedback: number;
   statuses: { label: string; status: AccountPace["status"] }[];
   school: { current: string; pct: number; certified: boolean } | null; // Trading School progress
+  /** Progress on each of the five courses (added by the server's coach directory). */
+  path?: { id: string; name: string; passed: number; total: number; next: string }[];
+  lastActive?: string | null; // last time they were in FLOWHUB
 };
 
 /** Trading day in New York time (futures session dates). */
