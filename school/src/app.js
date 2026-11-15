@@ -451,7 +451,7 @@ function drawCertificate(name,st){const T=st||TRACK;
 /* After the fundamentals comes Orderflow. Its tests unlock every strategy. */
 function orderflowCard(){
   return `<div class="hud" style="margin:22px 0 8px">Next up</div><div class="card" style="padding:18px 20px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><span class="chip live">Opens now</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">Orderflow</h3>
-   <p class="muted" style="font-size:14px;max-width:62ch">How to read what the market is doing, not only where it went. Eleven modules, and every one has a test. <b>Pass them all and INVERTIX, ECHO and ORBIT open.</b></p>
+   <p class="muted" style="font-size:14px;max-width:62ch">How to read what the market is doing, not only where it went. Twelve modules, and every one has a test. <b>Pass them all and INVERTIX, ECHO and ORBIT open.</b></p>
    <a class="btn primary" href="/orderflow" style="margin-top:12px">Open Orderflow →</a></div>`}
 /* After Orderflow the strategies open, in this order: INVERTIX, LUMEN, then ECHO x ORBIT (mentorship, with a code). Each has its own certificate. */
 const stratCard=(name,tag,href,btn)=>`<div class="card choose-c"><span class="chip ok">Open now</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">${name}</h3><p class="muted" style="font-size:14px">${tag}</p><a class="btn primary" href="${href}" style="margin-top:12px">${btn} →</a></div>`;

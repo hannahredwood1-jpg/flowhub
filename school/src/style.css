@@ -468,7 +468,7 @@ dialog p{color:var(--ink2);margin:4px 0}
 .of-bar{transform-box:fill-box;transform-origin:0% 50%;animation:ofBarX .8s cubic-bezier(.2,.8,.2,1) both}
 @keyframes ofBarX{from{transform:scaleX(0)}}
 .of-fo{font:9.5px/1.35 var(--f-body);color:var(--ink2)}
-.ofv-q{display:block;margin-top:10px}.ofv-q svg{width:100%;max-width:560px;height:auto;display:block;background:#05070a;border:1px solid var(--line2);border-radius:8px}
+.ofv-q{display:block;margin-top:10px}.ofv-q svg{width:100%;max-width:760px;height:auto;display:block;background:#05070a;border:1px solid var(--line2);border-radius:8px}
 
 .choose.three{grid-template-columns:1fr 1fr 1.3fr}@media(max-width:900px){.choose.three{grid-template-columns:1fr}}
 
@@ -527,3 +527,18 @@ a.syl-l:hover{background:var(--panel2);color:var(--ink)}
 .ofv .of-replay:hover{border-color:#868993}
 .ofv-q{--ink:#d1d4dc}
 .fp td.imb{background:rgba(38,166,154,.22)}
+.prac .lab.nochart .lab-grid{grid-template-columns:minmax(0,1fr)}
+.prac .syl{display:none!important}
+.prac .lab.nochart .lesson{margin:0 auto}
+select{height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:var(--field);color:var(--ink);font:inherit;font-size:14px}
+@media(max-width:760px){
+  .top{gap:0 14px;padding:0 14px;min-height:52px}
+  .pill{display:none}
+  .fh-nav{order:3;width:calc(100% + 28px);margin:0 -14px;padding:0 6px;overflow-x:auto;flex-wrap:nowrap;border-top:1px solid #1d232b;scrollbar-width:none}
+  .fh-nav::-webkit-scrollbar{display:none}
+  .fh-nav a{white-space:nowrap;min-height:44px;padding:0 12px}
+  .fh-nav a[aria-current=page]::after{left:12px;right:12px}
+  .top-r{gap:6px}.top-r .btn.sm{padding:5px 9px}
+  .ex-svg{overflow-x:auto}.ex-svg svg{min-width:620px}
+  .coursebar{padding:0 14px}
+}

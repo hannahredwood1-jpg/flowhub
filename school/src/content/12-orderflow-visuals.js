@@ -313,7 +313,7 @@ const exMono='font-family="JetBrains Mono, ui-monospace, monospace"';
 const exT=(x,y,t,o={})=>`<text x="${x}" y="${y}" fill="${o.c||EXC.axis}" font-size="${o.s||11}" ${exMono} text-anchor="${o.a||'start'}"${o.w?` font-weight="${o.w}"`:''}${o.cls?` class="${o.cls}"`:''}>${t}</text>`;
 const exTime=i=>{const m=9*60+30+i;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
 /* the whole figure: toolbar (layers, play, scrub), a TradingView-style legend line, the chart, one plain sentence about what you are looking at, a caption */
-const exFig=(kind,layers,n,cap)=>`<figure class="ofv ex" data-ex="${kind}" data-n="${n}"><div class="ex-tb"><div class="ex-tg" role="group" aria-label="Layers">${layers.map(l=>`<button type="button" class="${l[2]===0?'':'on'}" data-ly="${l[0]}" aria-pressed="${l[2]===0?'false':'true'}">${l[1]}</button>`).join('')}</div>
+const exFig=(kind,layers,n,cap,attrs='')=>`<figure class="ofv ex" data-ex="${kind}" data-n="${n}" ${attrs}><div class="ex-tb"><div class="ex-tg" role="group" aria-label="Layers">${layers.map(l=>`<button type="button" class="${l[2]===0?'':'on'}" data-ly="${l[0]}" aria-pressed="${l[2]===0?'false':'true'}">${l[1]}</button>`).join('')}</div>
   <div class="ex-pl"><button type="button" class="ex-play" data-act="play">▶ Play</button><input type="range" class="ex-sc" min="1" max="${n}" value="${n}" aria-label="Move through time"><button type="button" class="ex-rs" data-act="reset" aria-label="Back to the start">↺</button></div></div>
   <div class="ex-leg" aria-live="polite"></div><div class="ex-svg"></div><div class="ex-take"></div><figcaption>${cap}</figcaption></figure>`;
 
@@ -373,9 +373,9 @@ function exFpData(){const r=exRng(11),R=9,spec=[
 function exFpStats(cs){const R=cs[0].rows.length;let cvd=0;return cs.map(c=>{const bid=c.rows.reduce((a,x)=>a+x[0],0),ask=c.rows.reduce((a,x)=>a+x[1],0),tot=c.rows.map(x=>x[0]+x[1]);cvd+=ask-bid;
   const buy=c.rows.map((x,i)=>i<R-1&&c.rows[i+1][0]>0&&x[1]>=3*c.rows[i+1][0]&&x[1]>=12),sell=c.rows.map((x,i)=>i>0&&c.rows[i-1][1]>0&&x[0]>=3*c.rows[i-1][1]&&x[0]>=12);
   return{bid,ask,vol:bid+ask,delta:ask-bid,cvd,poc:tot.indexOf(Math.max(...tot)),buy,sell}})}
-const exFpSay=i=>['Candle 1: a gentle push. Both sides trade, nothing stands out yet.','Candle 2: buyers are aggressive. Green cells stacked on top of each other are a stacked buy imbalance.','Candle 3: huge volume at the high but price barely moves. Sellers are absorbing the buyers: look at the biggest cell (the outlined POC).','Candle 4: now sellers take over. Red imbalances appear and delta turns negative.','Candle 5: the selling continues and the cumulative delta line keeps falling. The move is driven by real selling.','Candle 6: a small bounce on little volume. Buyers are not convinced.'][i];
+const exFpSay=(i,basic)=>(basic?['Candle 1: each cell shows sellers on the left and buyers on the right, at that price.','Candle 2: buyers outnumber sellers at most prices, so the candle moves up.','Candle 3: a lot of business at the top. The outlined cell is the busiest price in the candle.','Candle 4: now sellers outnumber buyers at most prices, and price moves down.','Candle 5: the sellers stay in control.','Candle 6: a small candle with little business.']:['Candle 1: a gentle push. Both sides trade, nothing stands out yet.','Candle 2: buyers are aggressive. Green cells stacked on top of each other are a stacked buy imbalance.','Candle 3: huge volume at the high, but price barely moves higher. Something is holding it back. The Absorption lesson explains what.','Candle 4: now sellers take over. Red imbalances appear and delta turns negative.','Candle 5: the selling continues and the cumulative delta line keeps falling. The move is driven by real selling.','Candle 6: a small bounce on little volume. Buyers are not convinced.'])[i];
 function exFpDraw(fig,step,hover){
-  const cs=fig._d,st=fig._st,n=cs.length,R=9,W=800,H=470,off=fig._off,Lx=74,profW=off.prof?0:140,cw=(W-Lx-profW-70)/n,rh=29,top=34,gy=top+R*rh,base=21470;
+  const cs=fig._d,st=fig._st,n=cs.length,R=9,W=800,off=fig._off,Lx=74,profW=off.prof?0:140,cw=(W-Lx-profW-70)/n,rh=29,top=34,gy=top+R*rh,base=21470,H=gy+(off.delta?10:62)+(off.cvd?0:90)+16;
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="A footprint chart with six candles">`+`<rect width="${W}" height="${H}" fill="${EXC.bg}"/>`;
   for(let i=0;i<R;i++)s+=`<line x1="${Lx}" x2="${Lx+n*cw}" y1="${top+i*rh}" y2="${top+i*rh}" stroke="${EXC.grid}"/>`+exT(Lx-8,top+i*rh+rh*.65,exN(base-i),{a:'end',s:11});
   const mx=Math.max(...cs.flatMap(c=>c.rows.map(x=>x[0]+x[1])));
@@ -386,7 +386,7 @@ function exFpDraw(fig,step,hover){
         exT(x0+cw/2+2,y+rh*.66,`<tspan fill="${si?'#ff8a85':EXC.txt}"${si?' font-weight="700"':''}>${x[0]}</tspan><tspan fill="${EXC.dim}"> × </tspan><tspan fill="${bi?'#6ee0cf':EXC.txt}"${bi?' font-weight="700"':''}>${x[1]}</tspan>`,{a:'middle',s:11.5})+`</g>`})}
   if(!off.delta){const ty=gy+14;s+=exT(Lx-8,ty+14,'Volume',{a:'end',s:10,c:EXC.dim})+exT(Lx-8,ty+36,'Delta',{a:'end',s:10,c:EXC.dim})+`<line x1="${Lx}" x2="${Lx+n*cw}" y1="${ty}" y2="${ty}" stroke="${EXC.line}"/>`;
     for(let k=0;k<step;k++){const q=st[k],x=Lx+k*cw+cw/2;s+=exT(x,ty+14,exN(q.vol),{a:'middle',s:11.5,c:EXC.txt})+`<rect x="${x-cw*.36}" y="${ty+23}" width="${cw*.72}" height="18" rx="2" fill="${q.delta>=0?EXC.up:EXC.dn}" fill-opacity=".85"/>`+exT(x,ty+36,(q.delta>0?'+':'')+q.delta,{a:'middle',s:11.5,c:'#fff',w:600})}}
-  if(!off.cvd){const cy0=gy+78,ch=64,cv=st.map(q=>q.cvd),mxa=Math.max(1,...cv.map(Math.abs)),CY=v=>cy0+ch/2-v/mxa*(ch/2-6);
+  if(!off.cvd){const cy0=gy+(off.delta?20:78),ch=64,cv=st.map(q=>q.cvd),mxa=Math.max(1,...cv.map(Math.abs)),CY=v=>cy0+ch/2-v/mxa*(ch/2-6);
     s+=exT(Lx-8,cy0+ch/2+4,'CVD',{a:'end',s:10,c:EXC.dim})+`<line x1="${Lx}" x2="${Lx+n*cw}" y1="${CY(0)}" y2="${CY(0)}" stroke="${EXC.line}" stroke-dasharray="3 3"/>`;
     if(step>1)s+=`<polyline fill="none" stroke="${EXC.gold}" stroke-width="2" points="${cv.slice(0,step).map((v,k)=>`${Lx+k*cw+cw/2},${CY(v)}`).join(' ')}"/>`;
     cv.slice(0,step).forEach((v,k)=>{s+=`<circle cx="${Lx+k*cw+cw/2}" cy="${CY(v)}" r="3.5" fill="${EXC.gold}"/>`})}
@@ -395,10 +395,11 @@ function exFpDraw(fig,step,hover){
   s+=`<rect class="ex-hit" x="0" y="0" width="${W}" height="${H}" fill="transparent"/></svg>`;
   fig.querySelector('.ex-svg').innerHTML=s;fig._geo={Lx,cw,top,rh,n,R};
   const k=Math.min(hover&&hover.k!=null&&hover.k<step?hover.k:step-1,step-1);exFpLeg(fig,hover&&hover.k<step?hover:{k,r:null});
-  fig.querySelector('.ex-take').textContent=exFpSay(step-1)}
+  fig.querySelector('.ex-take').textContent=exFpSay(step-1,fig.dataset.mode==='basic')}
 function exFpLeg(fig,h){const k=h.k,q=fig._st[k],c=fig._d[k];
-  if(h.r!=null&&c.rows[h.r][0]+c.rows[h.r][1]){const x=c.rows[h.r],R=c.rows.length,below=h.r<R-1?c.rows[h.r+1][0]:0,above=h.r>0?c.rows[h.r-1][1]:0,im=q.buy[h.r]?`Buy imbalance: buyers here (${x[1]}) are at least 3× the sellers one row below (${below}).`:q.sell[h.r]?`Sell imbalance: sellers here (${x[0]}) are at least 3× the buyers one row above (${above}).`:'No imbalance at this price.';
+  if(h.r!=null&&c.rows[h.r][0]+c.rows[h.r][1]){const x=c.rows[h.r],R=c.rows.length,below=h.r<R-1?c.rows[h.r+1][0]:0,above=h.r>0?c.rows[h.r-1][1]:0,im=fig.dataset.mode==='basic'?'':q.buy[h.r]?`Buy imbalance: buyers here (${x[1]}) are at least 3× the sellers one row below (${below}).`:q.sell[h.r]?`Sell imbalance: sellers here (${x[0]}) are at least 3× the buyers one row above (${above}).`:'No imbalance at this price.';
     fig.querySelector('.ex-leg').innerHTML=`<b>NQ</b> · candle ${k+1} · <i>${exN(21470-h.r)}</i> &nbsp;Sellers <i style="color:${EXC.dn}">${x[0]}</i> · Buyers <i style="color:${EXC.up}">${x[1]}</i> · Total <i>${x[0]+x[1]}</i> &nbsp;— ${im}`}
+  else if(fig.dataset.mode==='basic')fig.querySelector('.ex-leg').innerHTML=`<b>NQ</b> · candle ${k+1} &nbsp;Volume <i>${exN(q.vol)}</i> &nbsp;<span style="color:${EXC.dim}">(hover a cell for its numbers)</span>`;
   else fig.querySelector('.ex-leg').innerHTML=`<b>NQ</b> · candle ${k+1} &nbsp;Volume <i>${exN(q.vol)}</i> · Delta <i style="color:${q.delta>=0?EXC.up:EXC.dn}">${q.delta>0?'+':''}${q.delta}</i> · Cumulative delta <i style="color:${q.cvd>=0?EXC.up:EXC.dn}">${q.cvd>0?'+':''}${q.cvd}</i> &nbsp;<span style="color:${EXC.dim}">(hover a cell for its numbers)</span>`}
 
 /* ---------- 3. liquidity heatmap with trade bubbles (Bookmap style) ---------- */
@@ -439,7 +440,7 @@ const EXK={vol:{n:48,draw:exVolDraw,init(f){f._d=exVolData();f._avg=f._d.map((c,
   fp:{n:6,draw:exFpDraw,init(f){f._d=exFpData();f._st=exFpStats(f._d)}},
   heat:{n:84,draw:exHeatDraw,init(f){f._d=exHeatData()}}};
 (()=>{if(typeof document==='undefined')return;let uid=0;
-  const mount=f=>{f.dataset.m=1;const k=EXK[f.dataset.ex];f._k=k;f._id=++uid;f._off={};f._step=k.n;f._tm=null;k.init(f);f.querySelectorAll('.ex-tg button:not(.on)').forEach(b=>{f._off[b.dataset.ly]=1});f.classList.add('on');k.draw(f,f._step)};
+  const mount=f=>{f.dataset.m=1;const k=EXK[f.dataset.ex];f._k=k;f._id=++uid;f._off={};f._step=k.n;f._tm=null;k.init(f);f.querySelectorAll('.ex-tg button:not(.on)').forEach(b=>{f._off[b.dataset.ly]=1});(f.dataset.off||'').split(',').filter(Boolean).forEach(k=>{f._off[k]=1});f.classList.add('on');k.draw(f,f._step)};
   const stop=f=>{clearInterval(f._tm);f._tm=null;const b=f.querySelector('.ex-play');if(b)b.textContent='▶ Play'};
   const setStep=(f,n,h)=>{f._step=Math.max(1,Math.min(f._k.n,n));f.querySelector('.ex-sc').value=f._step;f._k.draw(f,f._step,h)};
   const play=f=>{if(f._tm)return stop(f);if(f._step>=f._k.n)setStep(f,1);f.querySelector('.ex-play').textContent='❚❚ Pause';const ms=f.dataset.ex==='fp'?1300:f.dataset.ex==='heat'?110:260;f._tm=setInterval(()=>{if(f._step>=f._k.n)return stop(f);setStep(f,f._step+1)},ms)};
@@ -457,5 +458,5 @@ const EXK={vol:{n:48,draw:exVolDraw,init(f){f._d=exVolData();f._avg=f._d.map((c,
   document.addEventListener('pointerleave',()=>{},true)})();
 /* the three explorers, as lesson figures */
 OFV.volX=()=>exFig('vol',[['vol','Volume bars'],['avg','Average line'],['rv','Busy tags'],['prof','Profile'],['val','Value area'],['nodes','HVN / LVN']],48,'Press Play to watch the session unfold, or drag the slider. Switch layers on and off. Hover the chart to read any candle. Made-up data for learning.');
-OFV.fpX=()=>exFig('fp',[['imb','Imbalances'],['poc','POC outline'],['delta','Delta table'],['cvd','Cumulative delta'],['prof','Profile']],6,'Each cell is sellers × buyers at one price. Press Play to build it candle by candle, and hover any cell. Made-up data for learning.');
+OFV.fpX=(mode)=>mode==='basic'?exFig('fp',[['poc','Biggest cell'],['prof','Profile']],6,'Each cell is sellers × buyers at one price. Press Play to build it candle by candle, and hover any cell. Made-up data for learning.','data-mode="basic" data-off="imb,delta,cvd"'):exFig('fp',[['imb','Imbalances'],['poc','Biggest cell'],['delta','Delta table'],['cvd','Cumulative delta'],['prof','Profile']],6,'Each cell is sellers × buyers at one price. Press Play to build it candle by candle, switch layers on and off, and hover any cell. Made-up data for learning.');
 OFV.heatX=()=>exFig('heat',[['heat','Resting orders'],['price','Price line'],['bub','Trade bubbles'],['vol','Volume']],84,'Press Play and watch price meet a big resting order. Colours show how many orders are waiting at each price. Hover the map to read them. Made-up data for learning.');

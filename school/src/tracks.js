@@ -34,7 +34,7 @@ const stratOf=m=>STRATS.find(s=>s.ids(m));
 const stratMods=s=>MODS.filter(m=>s.ids(m));
 
 /* Course path strip: the order the school is taken in, with the page you are on marked. */
-(()=>{const bar=document.getElementById('coursebar');if(bar&&TRACK){
+(()=>{if(window.PRACTICE)document.body.classList.add('prac');const bar=document.getElementById('coursebar');if(bar&&TRACK){
  const C=[['fundamentals','Foundations','/school'],['orderflow','Orderflow','/orderflow'],['invertix','INVERTIX','/invertix'],['lumen','LUMEN','/lumen'],['exo','ECHO x ORBIT','/vault']];
  bar.innerHTML=C.map((c,i)=>`<a href="${c[2]}"${c[0]===TRACK.id?' class="on" aria-current="page"':''}><i>${i+1}</i>${c[1]}</a>`).join('');bar.hidden=false}
  const tb=document.getElementById('themeBtn');if(tb)tb.addEventListener('click',()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;try{localStorage.setItem('fh-theme',n)}catch(e){}})})();
