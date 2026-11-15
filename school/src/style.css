@@ -407,3 +407,6 @@ dialog p{color:var(--ink2);margin:4px 0}
 .lc-b tr{animation:lcIn .5s ease both}.lc-b tr:nth-child(2){animation-delay:.15s}.lc-b tr:nth-child(3){animation-delay:.25s}.lc-b tr:nth-child(4){animation-delay:.35s}.lc-b tr:nth-child(n+5){animation-delay:.45s}
 @keyframes lcIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .lcard .opt.right{animation:lcPop .4s ease}@keyframes lcPop{50%{transform:scale(1.03)}}
+
+/* orderflow footprint ladders */
+.fp td{font-variant-numeric:tabular-nums}.fp td.imb{background:rgba(62,224,161,.18);font-weight:700}

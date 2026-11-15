@@ -163,7 +163,7 @@ function WinRateTab({ viewer }: { viewer: PersonDTO }) {
 export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: PersonDTO; signOutHref?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useBrain(ref);
-  const [vault, setVault] = useState<"open" | "code" | "restricted">("restricted");
+  const [vault, setVault] = useState<"open" | "code" | "orderflow" | "restricted">("restricted");
   useEffect(() => { fetch("/api/vault/status", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.status) setVault(j.status); }).catch(() => {}); }, []);
   const first = (viewer.name || "").split(/\s+/)[0] || "trader";
   return (
@@ -196,9 +196,9 @@ export function HomeScreen({ viewer, signOutHref = "/auth/logout" }: { viewer: P
             <span><span className="block text-[15px] font-semibold text-ink-2">The Vault · ECHO and ORBIT</span><span className="block text-[13px] text-ink-3">Restricted. By invitation, for mentorship members.</span></span>
           </div>
         ) : (
-          <a href="/vault" className="group relative mb-8 flex items-center gap-4 border border-signal/60 bg-panel/80 p-4 shadow-[0_0_32px_rgba(255,106,0,0.12)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:bg-panel-2">
+          <a href={vault === "orderflow" ? "/orderflow" : "/vault"} className="group relative mb-8 flex items-center gap-4 border border-signal/60 bg-panel/80 p-4 shadow-[0_0_32px_rgba(255,106,0,0.12)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:bg-panel-2">
             <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border border-signal/70"><span className="h-5 w-5 rounded-full border border-signal/80" /><span className="absolute h-2 w-[2px] -translate-y-3 bg-signal" /></span>
-            <span className="flex-1"><span className="block text-[17px] font-semibold text-ink">The Vault · ECHO and ORBIT</span><span className="block text-[13px] text-ink-2">{vault === "open" ? "You are in. Step inside." : "Your code is waiting. Open the door."}</span></span>
+            <span className="flex-1"><span className="block text-[17px] font-semibold text-ink">The Vault · ECHO and ORBIT</span><span className="block text-[13px] text-ink-2">{vault === "open" ? "You are in. Step inside." : vault === "orderflow" ? "Your code is in. Pass the Orderflow tests to open it." : "Your code is waiting. Open the door."}</span></span>
             <span aria-hidden="true" className="text-ink-3 transition-all group-hover:translate-x-1 group-hover:text-signal">→</span>
           </a>
         )}

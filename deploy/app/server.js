@@ -983,10 +983,23 @@ function vaultPassed(state) {
 }
 
 // src/lib/tracks.ts
-var TRACK_IDS = ["fundamentals", "invertix", "exo"];
-var TRACK_NAME = { fundamentals: "Trading Fundamentals", invertix: "INVERTIX", exo: "ECHO and ORBIT" };
-var TRACK_URL = { fundamentals: "/school", invertix: "/invertix", exo: "/vault" };
+var TRACK_IDS = ["fundamentals", "orderflow", "invertix", "exo"];
+var TRACK_NAME = { fundamentals: "Trading Fundamentals", orderflow: "Orderflow", invertix: "INVERTIX", exo: "ECHO and ORBIT" };
+var TRACK_URL = { fundamentals: "/school", orderflow: "/orderflow", invertix: "/invertix", exo: "/vault" };
 var isTrack = (t) => typeof t === "string" && TRACK_IDS.includes(t);
+var ORDERFLOW_MODULES = [
+  { id: "f01", n: 1, title: "What Orderflow Is" },
+  { id: "f02", n: 2, title: "The Tape and the DOM" },
+  { id: "f03", n: 3, title: "The Footprint Chart" },
+  { id: "f04", n: 4, title: "Delta and Cumulative Delta" },
+  { id: "f05", n: 5, title: "Imbalances and Stacks" },
+  { id: "f06", n: 6, title: "Absorption, Exhaustion and Trapped Traders" },
+  { id: "f07", n: 7, title: "Auction Theory, Value and the Volume Profile" },
+  { id: "f08", n: 8, title: "Orderflow at Sweeps: Where ECHO and ORBIT Begin" },
+  { id: "f09", n: 9, title: "Orderflow at Gaps and Levels: Where INVERTIX Begins" },
+  { id: "f10", n: 10, title: "Putting Flow Beside the Strategies" }
+];
+var ORDERFLOW_MODULE_IDS = ORDERFLOW_MODULES.map((m) => m.id);
 var INVERTIX_MODULES = [
   { id: "m43", n: 1, title: "INVERTIX: The Idea and the Sections" },
   { id: "m44", n: 2, title: "INVERTIX: The Key Level" },
@@ -998,9 +1011,9 @@ var INVERTIX_MODULES = [
   { id: "m47", n: 8, title: "INVERTIX: The Daily Playbook" }
 ];
 var INVERTIX_MODULE_IDS = INVERTIX_MODULES.map((m) => m.id);
-var EXO_MODULES = VAULT_MODULES.filter((m) => m.id.startsWith("x"));
+var EXO_MODULES = VAULT_MODULES.filter((m) => m.id.startsWith("x") || m.id.startsWith("b"));
 var EXO_MODULE_IDS = EXO_MODULES.map((m) => m.id);
-var trackModules = (t) => t === "fundamentals" ? SCHOOL_MODULES : t === "invertix" ? INVERTIX_MODULES : EXO_MODULES;
+var trackModules = (t) => t === "fundamentals" ? SCHOOL_MODULES : t === "orderflow" ? ORDERFLOW_MODULES : t === "invertix" ? INVERTIX_MODULES : EXO_MODULES;
 var trackTotal = (t) => trackModules(t).length;
 function passedIn(state, ids2) {
   const st = state ? typeof state === "string" ? JSON.parse(state) : state : null;
@@ -1013,7 +1026,10 @@ function nextModule(t, state) {
   return { n: (i < 0 ? 0 : i) + 1, title: mods[i < 0 ? 0 : i].title };
 }
 var fundamentalsComplete = (fundState) => passedIn(fundState, new Set(SCHOOL_MODULES.map((m) => m.id))) >= SCHOOL_MODULES.length;
-var invertixOpen = (fundState, invState) => fundamentalsComplete(fundState) || passedIn(invState, new Set(INVERTIX_MODULE_IDS)) > 0;
+var orderflowOpen = (fundState) => fundamentalsComplete(fundState);
+var orderflowComplete = (ofState) => passedIn(ofState, new Set(ORDERFLOW_MODULE_IDS)) >= ORDERFLOW_MODULE_IDS.length;
+var invertixOpen = (ofState, invState) => orderflowComplete(ofState) || passedIn(invState, new Set(INVERTIX_MODULE_IDS)) > 0;
+var vaultStrategiesOpen = (ofState, vaultState) => orderflowComplete(ofState) || passedIn(vaultState, new Set(EXO_MODULE_IDS)) > 0;
 
 // deploy/server.ts
 var env = Bun.env;
@@ -1774,7 +1790,7 @@ app.post("/api/school/attempt", async (c) => {
   if (b.kind !== "ck" && b.kind !== "ex" && b.kind !== "po" || !b.ref || !ID_RE.test(b.ref) || !(total > 0 && total <= 50) || !(score >= 0 && score <= total) || typeof b.pass !== "boolean")
     throw new HttpError(400, "Bad attempt");
   const u = c.get("user"), secs = Math.max(0, Math.min(7200, Math.round(Number(b.secs) || 0)));
-  if (b.kind === "ex" && b.pass && SCHOOL_MODULE_SET.has(b.ref) && score < Math.ceil(total * 0.8 - 1e-9)) throw new HttpError(400, "Bad attempt");
+  if (b.kind === "ex" && b.pass && (SCHOOL_MODULE_SET.has(b.ref) || ORDERFLOW_MODULE_IDS.includes(b.ref)) && score < Math.ceil(total * 0.8 - 1e-9)) throw new HttpError(400, "Bad attempt");
   if (b.kind === "po") {
     if (!isProvable(b.ref)) throw new HttpError(400, "This module cannot be tested out");
     if (b.pass && score < proofNeeded(total)) throw new HttpError(400, "Bad attempt");
@@ -1842,13 +1858,15 @@ app.post("/api/coach/path/:id/reset", async (c) => {
   await sql`delete from "SchoolPath" where "userId" = ${c.req.param("id")}`;
   return c.json({ ok: true });
 });
-var SETS = { fundamentals: SCHOOL_MODULE_SET, invertix: new Set(INVERTIX_MODULE_IDS), exo: new Set(EXO_MODULE_IDS) };
+var SETS = { fundamentals: SCHOOL_MODULE_SET, orderflow: new Set(ORDERFLOW_MODULE_IDS), invertix: new Set(INVERTIX_MODULE_IDS), exo: new Set(EXO_MODULE_IDS) };
 var passedIn2 = (state, track = "fundamentals") => passedIn(state, SETS[track]);
 async function trackState(userId, track) {
-  const [r] = track === "fundamentals" ? await sql`select state from "SchoolProgress" where "userId" = ${userId}` : track === "invertix" ? await sql`select state from "TrackProgress" where "userId" = ${userId} and track = 'invertix'` : await sql`select state from "VaultAccess" where "userId" = ${userId}`;
+  const [r] = track === "fundamentals" ? await sql`select state from "SchoolProgress" where "userId" = ${userId}` : track === "invertix" || track === "orderflow" ? await sql`select state from "TrackProgress" where "userId" = ${userId} and track = ${track}` : await sql`select state from "VaultAccess" where "userId" = ${userId}`;
   return r?.state ?? null;
 }
 var trackOf = (v) => isTrack(v) ? v : "fundamentals";
+var rowState = (r, t) => t === "fundamentals" ? r.fstate : t === "orderflow" ? r.ostate : t === "invertix" ? r.istate : r.xstate;
+var rowActive = (r, t) => t === "fundamentals" ? r.factive : t === "orderflow" ? r.oactive : t === "invertix" ? r.iactive : r.xactive;
 var paceOut = (p) => ({ perWeek: Number(p.perWeek), preset: p.preset ?? null, baseline: p.baseline, startedAt: new Date(p.startedAt).toISOString(), emails: !!p.emails });
 app.put("/api/school/pace", async (c) => {
   const u = c.get("user"), b = await c.req.json().catch(() => ({}));
@@ -1883,12 +1901,12 @@ app.get("/api/coach/pace", async (c) => {
   staffOnly(c);
   const now = /* @__PURE__ */ new Date();
   const rows = await sql`select u.id, coalesce(u."globalName", u.username) as name, p.track, p."perWeek", p.preset, p.baseline, p."startedAt", p."setAt", p.changes, p.emails, p."lastNudgeAt", p."nudgeCount",
-      sp.state as fstate, sp."updatedAt" as factive, tp.state as istate, tp."updatedAt" as iactive, v.state as xstate, v."updatedAt" as xactive, (a.email is not null and not a.disabled) as "hasEmail"
+      sp.state as fstate, sp."updatedAt" as factive, tp.state as istate, tp."updatedAt" as iactive, tf.state as ostate, tf."updatedAt" as oactive, v.state as xstate, v."updatedAt" as xactive, (a.email is not null and not a.disabled) as "hasEmail"
     from "SchoolPace" p join "User" u on u.id = p."userId" left join "SchoolProgress" sp on sp."userId" = u.id
-      left join "TrackProgress" tp on tp."userId" = u.id and tp.track = 'invertix' left join "VaultAccess" v on v."userId" = u.id left join "LocalAccount" a on a."userId" = u.id order by p."setAt" desc limit 500`;
+      left join "TrackProgress" tp on tp."userId" = u.id and tp.track = 'invertix' left join "TrackProgress" tf on tf."userId" = u.id and tf.track = 'orderflow' left join "VaultAccess" v on v."userId" = u.id left join "LocalAccount" a on a."userId" = u.id order by p."setAt" desc limit 500`;
   const [{ n: unset }] = await sql`select count(*)::int as n from "SchoolProgress" sp join "User" u on u.id = sp."userId" where u."isGuildMember" and not exists (select 1 from "SchoolPace" p where p."userId" = sp."userId" and p.track = 'fundamentals')`;
   const out = rows.map((r) => {
-    const track = trackOf(r.track), total = trackTotal(track), state = track === "fundamentals" ? r.fstate : track === "invertix" ? r.istate : r.xstate, active = track === "fundamentals" ? r.factive : track === "invertix" ? r.iactive : r.xactive;
+    const track = trackOf(r.track), total = trackTotal(track), state = rowState(r, track), active = rowActive(r, track);
     const passed = passedIn2(state, track), perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
     const left = total - passed, fin = passed >= total ? null : new Date(now.getTime() + left / perWeek * 7 * 864e5).toISOString();
     const act = active ? new Date(active).toISOString() : null;
@@ -1935,13 +1953,13 @@ async function runPaceNudges(now = /* @__PURE__ */ new Date()) {
   const h = now.getUTCHours();
   if (h < NUDGE_FROM_UTC || h >= NUDGE_TO_UTC || !process.env.RESEND_API_KEY) return 0;
   const rows = await sql`select p."userId", p.track, p."perWeek", p.baseline, p."startedAt", p."lastNudgeAt", p."nudgeStreak", u."globalName" as name, a.email,
-      sp.state as fstate, sp."updatedAt" as factive, tp.state as istate, tp."updatedAt" as iactive, v.state as xstate, v."updatedAt" as xactive
+      sp.state as fstate, sp."updatedAt" as factive, tp.state as istate, tp."updatedAt" as iactive, tf.state as ostate, tf."updatedAt" as oactive, v.state as xstate, v."updatedAt" as xactive
     from "SchoolPace" p join "User" u on u.id = p."userId" join "LocalAccount" a on a."userId" = p."userId" and a.email is not null and not a.disabled and (a."expiresAt" is null or a."expiresAt" > now())
-    left join "SchoolProgress" sp on sp."userId" = p."userId" left join "TrackProgress" tp on tp."userId" = p."userId" and tp.track = 'invertix' left join "VaultAccess" v on v."userId" = p."userId"
+    left join "SchoolProgress" sp on sp."userId" = p."userId" left join "TrackProgress" tp on tp."userId" = p."userId" and tp.track = 'invertix' left join "TrackProgress" tf on tf."userId" = p."userId" and tf.track = 'orderflow' left join "VaultAccess" v on v."userId" = p."userId"
     where p.emails and u.role = 'MEMBER'::"Role" limit 1000`;
   let sent = 0;
   for (const r of rows) {
-    const track = trackOf(r.track), total = trackTotal(track), state = track === "fundamentals" ? r.fstate : track === "invertix" ? r.istate : r.xstate, activeAt = track === "fundamentals" ? r.factive : track === "invertix" ? r.iactive : r.xactive;
+    const track = trackOf(r.track), total = trackTotal(track), state = rowState(r, track), activeAt = rowActive(r, track);
     const passed = passedIn2(state, track);
     if (passed >= total) continue;
     const perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
@@ -2071,7 +2089,7 @@ app.post("/api/feedback/:id/read", async (c) => {
   if (!r.length) throw new HttpError(404, "Not found");
   return c.json({ ok: true });
 });
-var USAGE_AREAS = /* @__PURE__ */ new Set(["dashboard", "school", "practice", "vault", "invertix"]);
+var USAGE_AREAS = /* @__PURE__ */ new Set(["dashboard", "school", "practice", "vault", "invertix", "orderflow"]);
 app.post("/api/usage", async (c) => {
   const b = await c.req.json().catch(() => ({}));
   if (!b.sid || !/^[A-Za-z0-9-]{8,48}$/.test(b.sid) || !b.area || !USAGE_AREAS.has(b.area)) throw new HttpError(400, "Bad usage ping");
@@ -2122,6 +2140,7 @@ async function vaultAccess(u) {
   const [row] = await sql`select * from "VaultAccess" where "userId" = ${u.id}`;
   if (!row || row.revokedAt || !(hasMentorRole(u) || row.mentorshipOverride)) return { level: "none", orderflow: false, row: row ?? null };
   if (!row.redeemedAt) return { level: "code", orderflow: false, row };
+  if (!vaultStrategiesOpen(await trackState(u.id, "orderflow"), row.state)) return { level: "orderflow", orderflow: false, row };
   return { level: "open", orderflow: !!row.orderflow, row };
 }
 var readPrivate = async (name) => {
@@ -2163,6 +2182,10 @@ app.get("/vault", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await vaultAccess(user);
+  if (acc.level === "orderflow") {
+    const os = await trackState(user.id, "orderflow");
+    return c.html(pageShell(`<h1>ECHO and ORBIT open with your Orderflow certificate</h1><p>Your vault code is in. Pass every Orderflow test to open the strategies. You have passed <b>${passedIn2(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  }
   if (acc.level !== "open") return c.html(LOCK_PAGE, 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("vault.html.gz");
   if (!gz) return c.text("The vault is not installed yet.", 404);
@@ -2193,7 +2216,7 @@ app.post("/api/vault/redeem", async (c) => {
 });
 app.get("/api/vault/status", async (c) => {
   const acc = await vaultAccess(c.get("user"));
-  return c.json({ status: acc.level === "open" ? "open" : acc.level === "code" ? "code" : "restricted" });
+  return c.json({ status: acc.level === "open" ? "open" : acc.level === "code" ? "code" : acc.level === "orderflow" ? "orderflow" : "restricted" });
 });
 app.get("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
@@ -2216,17 +2239,64 @@ app.put("/api/vault/progress", async (c) => {
   await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
   return c.json({ ok: true });
 });
+async function orderflowAccess(u) {
+  const [fs, os] = await Promise.all([trackState(u.id, "fundamentals"), trackState(u.id, "orderflow")]);
+  const earned = orderflowOpen(fs);
+  return { open: isStaff(u) || earned, earned, staff: isStaff(u), fPassed: passedIn2(fs, "fundamentals"), fTotal: trackTotal("fundamentals"), oPassed: passedIn2(os, "orderflow"), oTotal: trackTotal("orderflow"), state: os };
+}
+var ofHtml = null;
+app.get("/orderflow", async (c) => {
+  const user = await currentUser(c);
+  if (!user) return c.redirect("/");
+  const acc = await orderflowAccess(user);
+  if (!acc.open) return c.html(pageShell(`<h1>Orderflow opens with your fundamentals certificate</h1><p>Finish the Trading Fundamentals to open Orderflow. You have passed <b>${acc.fPassed} of ${acc.fTotal}</b> modules.</p><p><a href="/school" style="color:#8cc4ff">Continue the fundamentals \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  const gz = await readPrivate("orderflow.html.gz");
+  if (!gz) return c.text("Orderflow is not installed yet.", 404);
+  const etag = String(Bun.hash(gz));
+  if (!ofHtml || ofHtml.etag !== etag) ofHtml = { etag, html: gunzipSync(gz).toString("utf8") };
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a></nav>`;
+  return c.html(ofHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+});
+app.get("/api/orderflow/status", async (c) => {
+  const acc = await orderflowAccess(c.get("user"));
+  return c.json({ status: acc.earned ? "open" : "locked", staffBypass: acc.staff && !acc.earned, fundamentals: { passed: acc.fPassed, total: acc.fTotal }, orderflow: { passed: acc.oPassed, total: acc.oTotal } });
+});
+app.get("/api/orderflow/progress", async (c) => {
+  const u = c.get("user"), acc = await orderflowAccess(u);
+  if (!acc.open) throw new HttpError(403, "Not open");
+  const state = acc.state ? typeof acc.state === "string" ? JSON.parse(acc.state) : acc.state : null;
+  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, ...await paceFor(u.id, "orderflow") });
+});
+app.put("/api/orderflow/progress", async (c) => {
+  const u = c.get("user"), acc = await orderflowAccess(u);
+  if (!acc.open) throw new HttpError(403, "Not open");
+  const set = new Set(ORDERFLOW_MODULE_IDS), o = await c.req.json().catch(() => ({}));
+  const rows = await sql`select distinct ref from "SchoolAttempt" where "userId" = ${u.id} and kind = 'ex' and pass = true`;
+  const passedRefs = new Set(rows.map((r) => r.ref));
+  const m = {};
+  for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
+    if (!set.has(k) || !v || typeof v !== "object") continue;
+    const s = String(v.s ?? "000"), p = v.p && passedRefs.has(k) ? 1 : 0;
+    m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p, sc: p ? clampInt(v.sc, 0, 100) : 0, a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+  }
+  const [old] = await sql`select state from "TrackProgress" where "userId" = ${u.id} and track = 'orderflow'`;
+  const prev = old?.state ? typeof old.state === "string" ? JSON.parse(old.state) : old.state : null;
+  for (const [k, v] of Object.entries(prev?.v2?.m ?? {})) if (set.has(k) && v?.p === 1 && m[k]?.p !== 1) m[k] = { ...m[k] ?? { s: "111", a: 1, n: 1, at: 0 }, ...v };
+  await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'orderflow', ${JSON.stringify({ v2: { m } })}::jsonb)
+            on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
+  return c.json({ ok: true });
+});
 async function invertixAccess(u) {
-  const [fs, is] = await Promise.all([trackState(u.id, "fundamentals"), trackState(u.id, "invertix")]);
-  const earned = invertixOpen(fs, is);
-  return { open: isStaff(u) || earned, earned, staff: isStaff(u), fPassed: passedIn2(fs, "fundamentals"), fTotal: trackTotal("fundamentals"), iPassed: passedIn2(is, "invertix"), iTotal: trackTotal("invertix"), state: is };
+  const [os, is] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "invertix")]);
+  const earned = invertixOpen(os, is);
+  return { open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn2(os, "orderflow"), oTotal: trackTotal("orderflow"), iPassed: passedIn2(is, "invertix"), iTotal: trackTotal("invertix"), state: is };
 }
 var invHtml = null;
 app.get("/invertix", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await invertixAccess(user);
-  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens with your fundamentals certificate</h1><p>Finish the Trading Fundamentals to open INVERTIX. You have passed <b>${acc.fPassed} of ${acc.fTotal}</b> modules.</p><p><a href="/school" style="color:#8cc4ff">Continue the fundamentals \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens with your Orderflow certificate</h1><p>Pass every Orderflow test to open INVERTIX. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("invertix.html.gz");
   if (!gz) return c.text("INVERTIX is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
@@ -2236,7 +2306,7 @@ app.get("/invertix", async (c) => {
 });
 app.get("/api/invertix/status", async (c) => {
   const acc = await invertixAccess(c.get("user"));
-  return c.json({ status: acc.earned ? "open" : "locked", staffBypass: acc.staff && !acc.earned, fundamentals: { passed: acc.fPassed, total: acc.fTotal }, invertix: { passed: acc.iPassed, total: acc.iTotal } });
+  return c.json({ status: acc.earned ? "open" : "locked", staffBypass: acc.staff && !acc.earned, orderflow: { passed: acc.oPassed, total: acc.oTotal }, invertix: { passed: acc.iPassed, total: acc.iTotal } });
 });
 app.get("/api/invertix/progress", async (c) => {
   const u = c.get("user"), acc = await invertixAccess(u);
