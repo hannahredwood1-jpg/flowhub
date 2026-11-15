@@ -1,6 +1,6 @@
 /* Orderflow track order: ten modules in the order they are taught, numbered 1 to 10. */
 const byId=id=>MODS.find(m=>m.id===id);
-const ORDER=['f01','f02','f03','f04','f05','f06','f07','f09','f08','f10'];
+const ORDER=['f00','f01','f02','f03','f04','f05','f06','f07','f09','f08','f10'];
 ORDER.forEach((id,i)=>{const m=byId(id);if(!m)throw new Error('missing module '+id);m.ph=0;m.n=i+1});
 MODS.forEach(m=>{if(!ORDER.includes(m.id))throw new Error('module not in the Orderflow order: '+m.id)});
 MODS.sort((a,b)=>ORDER.indexOf(a.id)-ORDER.indexOf(b.id));

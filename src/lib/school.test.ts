@@ -5,16 +5,16 @@ import { summarizeSchool, SCHOOL_MODULES } from "./school";
 import { planChecklist, planRiskPerTrade, type TradingPlanInput } from "./tradingPlan";
 
 test("school summary counts steps, passed modules and exam attempts", () => {
-  const s = summarizeSchool({ v2: { m: { m01: { s: "1111", p: 1, sc: 92, n: 2 }, m19: { s: "110" } } } }, ["m05"],
+  const s = summarizeSchool({ v2: { m: { m01: { s: "1111", p: 1, sc: 92, n: 2 }, m19: { s: "110" } } } }, ["m20"],
     [{ kind: "ex", ref: "m01", score: 23, total: 25, pass: true, createdAt: "2026-10-01T10:00:00Z" }, { kind: "ck", ref: "b1", score: 1, total: 1, pass: true, createdAt: "2026-10-01T10:00:00Z" }]);
   assert.equal(s.passed, 1);
   assert.equal(s.total, SCHOOL_MODULES.length);
   assert.equal(s.modules.find((x) => x.id === "m01")!.best, 92);
   assert.equal(s.modules.find((x) => x.id === "m19")!.stepsDone, 2);
-  assert.equal(s.modules.find((x) => x.id === "m05")!.manualUnlock, true);
+  assert.equal(s.modules.find((x) => x.id === "m20")!.manualUnlock, true);
   assert.equal(s.current, "Module 1");
   assert.equal(s.attempts.length, 1);
-  assert.equal(s.attempts[0].label, "Module 11 · Trading Mindset");
+  assert.equal(s.attempts[0].label, "Module 10 · Mindset and One Trade Per Session");
 });
 
 test("module list matches the school page content", () => {
@@ -22,8 +22,10 @@ test("module list matches the school page content", () => {
   const src = readdirSync(dir).filter((f) => f.endsWith(".js") && f !== "11-invertix.js").map((f) => readFileSync(new URL(f, dir), "utf8")).join("\n");
   const clean = (t: string) => t.replace(/\\'/g, "'");
   const RETIRED = ["m08", "m09", "m40"]; // merged into other modules, or folded into a lesson
+  // lessons that left the Foundations (still in the content for the practice page), or were folded into another Foundations module
+  const LEFT = ["m38", "m15", "m42", "m24", "m13", "m25", "m03", "m04", "m05", "m06", "m48", "m49", "m07", "m10", "m11", "m23", "m50"];
   const found = [...[...src.matchAll(/(?:MODS\.push|quick)\(\{id:'(m\d+)',[^]*?\bt:'((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], clean(m[2])]), ...[...src.matchAll(/common\('(m\d+)',\d+,\d+,'((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], clean(m[2])])];
-  assert.deepEqual([...found].filter((f) => !RETIRED.includes(f[0])).sort(), SCHOOL_MODULES.map((m) => [m.id, m.title]).sort());
+  assert.deepEqual([...found].filter((f) => !RETIRED.includes(f[0]) && !LEFT.includes(f[0])).sort(), SCHOOL_MODULES.map((m) => [m.id, m.title]).sort());
 });
 
 test("trading plan validates and drives the checklist", () => {

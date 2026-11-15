@@ -4,18 +4,18 @@ import { readFileSync } from "node:fs";
 import { cleanAnswers, cleanModes, isProvable, proofFast, proofNeeded } from "./schoolPath";
 import { SCHOOL_MODULE_IDS, SCHOOL_NO_PROOF, SCHOOL_PROVABLE_IDS } from "./school";
 
-test("Understanding GEX Levels can never be proved, and INVERTIX is not part of the fundamentals at all", () => {
+test("INVERTIX and the lessons that left the Foundations are not part of the Foundations at all", () => {
   for (const id of ["m50", "m43", "m44", "m45", "m46", "m47", "m16"]) assert.equal(isProvable(id), false, id);
   assert.equal(SCHOOL_PROVABLE_IDS.length + SCHOOL_NO_PROOF.length, SCHOOL_MODULE_IDS.length);
-  assert.ok(isProvable("m37") && isProvable("m24"));
+  assert.ok(isProvable("m37") && isProvable("m14"));
 });
 
 test("modes: only provable, unpassed, unused modules can be 'prove'", () => {
-  const raw = { m37: "prove", m02: "prove", m38: "prove", m50: "prove", m43: "prove", bogus: "prove", m19: "nonsense" };
-  const out = cleanModes(raw, new Set(["m02"]), new Set(["m38"]));
+  const raw = { m37: "prove", m02: "prove", m20: "prove", m50: "prove", m43: "prove", bogus: "prove", m19: "nonsense" };
+  const out = cleanModes(raw, new Set(["m02"]), new Set(["m20"]));
   assert.equal(out.m37, "prove");
   assert.equal(out.m02, "learn"); // already passed
-  assert.equal(out.m38, "learn"); // proof attempt already used
+  assert.equal(out.m20, "learn"); // proof attempt already used
   assert.equal(out.m19, "learn");
   assert.equal("m50" in out, false);
   assert.equal("m43" in out, false);

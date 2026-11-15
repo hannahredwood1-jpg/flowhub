@@ -676,8 +676,8 @@ var tradingPlanInput = z.object({
 });
 
 // src/lib/practice.ts
-var PRACTICE_MODELS = ["inv", "exo"];
-var PRACTICE_MODEL_LABEL = { inv: "INVERTIX", exo: "Rejection blocks & CISD" };
+var PRACTICE_MODELS = ["of", "inv", "exo"];
+var PRACTICE_MODEL_LABEL = { of: "Orderflow", inv: "INVERTIX (earlier)", exo: "Rejection blocks & CISD (earlier)" };
 var PRACTICE_TAGS = {
   "early-entry": "Enters before the flip closes",
   "traded-range": "Trades while the range is still building",
@@ -741,34 +741,17 @@ function summarizePractice(rows, now = Date.now()) {
 var SCHOOL_MODULES = [
   { id: "m37", n: 1, title: "Market Basics" },
   { id: "m02", n: 2, title: "Chart Reading Basics" },
-  { id: "m38", n: 3, title: "Your First 20 Minutes on a Chart" },
-  { id: "m19", n: 4, title: "TradingView & Platform Setup" },
-  { id: "m20", n: 5, title: "How Futures & NQ Work" },
+  { id: "m19", n: 3, title: "TradingView & Platform Setup" },
+  { id: "m20", n: 4, title: "How Futures & NQ Work" },
+  { id: "m21", n: 5, title: "Orders & Your First Trade" },
   { id: "m39", n: 6, title: "Your Demo Account: Open It and Use It" },
-  { id: "m21", n: 7, title: "Orders & Your First Trade" },
-  { id: "m41", n: 8, title: "Sessions & Economic News" },
-  { id: "m13", n: 9, title: "Building Daily Bias" },
-  { id: "m42", n: 10, title: "One Trade Per Session" },
-  { id: "m01", n: 11, title: "Trading Mindset" },
-  { id: "m15", n: 12, title: "Trading Psychology & Discipline" },
-  { id: "m25", n: 13, title: "A Day in the Life & Your Trading Plan" },
-  { id: "m03", n: 14, title: "Liquidity Explained" },
-  { id: "m04", n: 15, title: "Advanced Liquidity Concepts" },
-  { id: "m05", n: 16, title: "Break of Structure" },
-  { id: "m06", n: 17, title: "Fair Value Gaps & Inverse Fair Value Gaps" },
-  { id: "m48", n: 18, title: "Rejection Blocks" },
-  { id: "m49", n: 19, title: "CISD: Change in State of Delivery" },
-  { id: "m07", n: 20, title: "Advanced Imbalance & Equilibrium" },
-  { id: "m10", n: 21, title: "SMT Divergence" },
-  { id: "m11", n: 22, title: "Time Theory & Session Timing" },
-  { id: "m12", n: 23, title: "Funded Accounts & Prop Firms" },
-  { id: "m14", n: 24, title: "Risk Management" },
-  { id: "m23", n: 25, title: "Trade Management & Spot the Mistake" },
-  { id: "m24", n: 26, title: "Why the Math Works" },
-  { id: "m50", n: 27, title: "Understanding GEX Levels" }
+  { id: "m41", n: 7, title: "Sessions & Economic News" },
+  { id: "m12", n: 8, title: "Funded Accounts & Prop Firms" },
+  { id: "m14", n: 9, title: "Risk Management" },
+  { id: "m01", n: 10, title: "Mindset and One Trade Per Session" }
 ];
 var SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id);
-var SCHOOL_NO_PROOF = ["m50"];
+var SCHOOL_NO_PROOF = [];
 var SCHOOL_PROVABLE_IDS = SCHOOL_MODULE_IDS.filter((id) => !SCHOOL_NO_PROOF.includes(id));
 var SCHOOL_FIRST_CORE = 5;
 function schoolOpen(modules, i) {
@@ -938,30 +921,11 @@ import { createHash } from "node:crypto";
 
 // src/lib/vaultModules.ts
 var VAULT_MODULES = [
-  { id: "x01", title: "The Idea in Plain Words and the Language" },
-  { id: "x02", title: "Instruments, Sessions and News" },
-  { id: "x03", title: "Step 1: Build the Narrative" },
-  { id: "x04", title: "Rejection Blocks and CISD" },
-  { id: "x05", title: "Gaps by Timeframe, Order Blocks, SMT and Key Opens" },
-  { id: "x06", title: "Model 1: The External Rejection Block" },
-  { id: "x07", title: "Model 2: The CISD Rejection Block" },
-  { id: "x08", title: "Model 3: The 1-Minute Continuation" },
-  { id: "x09", title: "Grading: Is It Worth the Risk?" },
-  { id: "x10", title: "Stops, Targets, Partials and Break-even" },
-  { id: "x11", title: "Why Trades Lose, and Adapting to Conditions" },
-  { id: "x12", title: "Daily Rules and the Pre-Trade Checklist" },
-  { id: "x13", title: "The ECHO Trade Plan" },
-  { id: "x14", title: "Make the Call: ECHO" },
-  { id: "b01", title: "ORBIT: The Idea and the Order of Events" },
-  { id: "b02", title: "ORBIT: The Move and the Big OTE" },
-  { id: "b03", title: "ORBIT: The 5-Minute Inversion" },
-  { id: "b04", title: "ORBIT: The Internal OTE, Limit, Stop and Target" },
-  { id: "b05", title: "ORBIT: When a Setup Is Dead, and Your Routine" },
-  { id: "o01", title: "What Orderflow Is and Why It Backs a Rejection" },
-  { id: "o02", title: "Reading the Tape Around a Rejection" },
-  { id: "o03", title: "Delta, Volume and Imbalance" },
-  { id: "o04", title: "Orderflow and the ECHO Checklist" },
-  { id: "o05", title: "Gamma Levels as Orderflow Context" }
+  { id: "e01", title: "Two Strategies, One Flow of Messages" },
+  { id: "e02", title: "Echo: Is the Rejection Real?" },
+  { id: "e03", title: "When Price Returns to Your Limit" },
+  { id: "e04", title: "Orbit: The Tap, the Inversion and the Limit" },
+  { id: "e05", title: "Using Them Together, and the Rules That Never Change" }
 ];
 var VAULT_MODULE_IDS = VAULT_MODULES.map((m) => m.id);
 
@@ -983,37 +947,41 @@ function vaultPassed(state) {
 }
 
 // src/lib/tracks.ts
-var TRACK_IDS = ["fundamentals", "orderflow", "invertix", "exo"];
-var TRACK_NAME = { fundamentals: "Trading Fundamentals", orderflow: "Orderflow", invertix: "INVERTIX", exo: "ECHO and ORBIT" };
-var TRACK_URL = { fundamentals: "/school", orderflow: "/orderflow", invertix: "/invertix", exo: "/vault" };
+var TRACK_IDS = ["fundamentals", "orderflow", "invertix", "lumen", "exo"];
+var TRACK_NAME = { fundamentals: "Trading Fundamentals", orderflow: "Orderflow", invertix: "INVERTIX", lumen: "LUMEN", exo: "ECHO x ORBIT" };
+var TRACK_URL = { fundamentals: "/school", orderflow: "/orderflow", invertix: "/invertix", lumen: "/lumen", exo: "/vault" };
 var isTrack = (t) => typeof t === "string" && TRACK_IDS.includes(t);
 var ORDERFLOW_MODULES = [
-  { id: "f01", n: 1, title: "What Orderflow Is" },
-  { id: "f02", n: 2, title: "The Tape and the DOM" },
-  { id: "f03", n: 3, title: "The Footprint Chart" },
-  { id: "f04", n: 4, title: "Delta and Cumulative Delta" },
-  { id: "f05", n: 5, title: "Imbalances and Stacks" },
-  { id: "f06", n: 6, title: "Absorption, Exhaustion and Trapped Traders" },
-  { id: "f07", n: 7, title: "Auction Theory, Value and the Volume Profile" },
-  { id: "f09", n: 8, title: "Orderflow at Gaps and Levels: Where INVERTIX Begins" },
-  { id: "f08", n: 9, title: "Orderflow at Sweeps: Where ECHO and ORBIT Begin" },
-  { id: "f10", n: 10, title: "Putting Flow Beside the Strategies" }
+  { id: "f00", n: 1, title: "Price in Plain Words" },
+  { id: "f01", n: 2, title: "What Orderflow Is" },
+  { id: "f02", n: 3, title: "The Tape and the DOM" },
+  { id: "f03", n: 4, title: "The Footprint Chart" },
+  { id: "f04", n: 5, title: "Delta and Cumulative Delta" },
+  { id: "f05", n: 6, title: "Imbalances and Stacks" },
+  { id: "f06", n: 7, title: "Absorption, Exhaustion and Trapped Traders" },
+  { id: "f07", n: 8, title: "Auction Theory, Value and the Volume Profile" },
+  { id: "f09", n: 9, title: "Orderflow on News: Where INVERTIX Begins" },
+  { id: "f08", n: 10, title: "Orderflow at Highs, Lows and Zones: Where LUMEN and ECHO x ORBIT Begin" },
+  { id: "f10", n: 11, title: "Putting Flow Beside the Strategies" }
 ];
 var ORDERFLOW_MODULE_IDS = ORDERFLOW_MODULES.map((m) => m.id);
 var INVERTIX_MODULES = [
-  { id: "m43", n: 1, title: "INVERTIX: The Idea and the Sections" },
-  { id: "m44", n: 2, title: "INVERTIX: The Key Level" },
-  { id: "m45", n: 3, title: "INVERTIX: The Flip, Entry and Stop" },
-  { id: "m46", n: 4, title: "INVERTIX: Target, Break-even and Size" },
-  { id: "m51", n: 5, title: "INVERTIX: PRIME Signals and EARLY" },
-  { id: "m52", n: 6, title: "INVERTIX: H/L and PO3" },
-  { id: "m53", n: 7, title: "INVERTIX: News Fade and FOMC Evening" },
-  { id: "m47", n: 8, title: "INVERTIX: The Daily Playbook" }
+  { id: "n01", n: 1, title: "The News Fade: Just Enough to Know the Trade" },
+  { id: "n02", n: 2, title: "Reading the Rush: The 60-Second Flow Check" },
+  { id: "n03", n: 3, title: "Size Small, Then the Routine" }
 ];
 var INVERTIX_MODULE_IDS = INVERTIX_MODULES.map((m) => m.id);
-var EXO_MODULES = VAULT_MODULES.filter((m) => m.id.startsWith("x") || m.id.startsWith("b"));
+var LUMEN_MODULES = [
+  { id: "l01", n: 1, title: "LUMEN in Plain Words" },
+  { id: "l02", n: 2, title: "Moment 1: The Zone Tap" },
+  { id: "l03", n: 3, title: "Moment 2: The Break Candle" },
+  { id: "l04", n: 4, title: "Moment 3: After You Are In" },
+  { id: "l05", n: 5, title: "How to Act, and Your Routine" }
+];
+var LUMEN_MODULE_IDS = LUMEN_MODULES.map((m) => m.id);
+var EXO_MODULES = VAULT_MODULES.filter((m) => m.id.startsWith("e"));
 var EXO_MODULE_IDS = EXO_MODULES.map((m) => m.id);
-var trackModules = (t) => t === "fundamentals" ? SCHOOL_MODULES : t === "orderflow" ? ORDERFLOW_MODULES : t === "invertix" ? INVERTIX_MODULES : EXO_MODULES;
+var trackModules = (t) => t === "fundamentals" ? SCHOOL_MODULES : t === "orderflow" ? ORDERFLOW_MODULES : t === "invertix" ? INVERTIX_MODULES : t === "lumen" ? LUMEN_MODULES : EXO_MODULES;
 var trackTotal = (t) => trackModules(t).length;
 function passedIn(state, ids2) {
   const st = state ? typeof state === "string" ? JSON.parse(state) : state : null;
@@ -1028,8 +996,19 @@ function nextModule(t, state) {
 var fundamentalsComplete = (fundState) => passedIn(fundState, new Set(SCHOOL_MODULES.map((m) => m.id))) >= SCHOOL_MODULES.length;
 var orderflowOpen = (fundState) => fundamentalsComplete(fundState);
 var orderflowComplete = (ofState) => passedIn(ofState, new Set(ORDERFLOW_MODULE_IDS)) >= ORDERFLOW_MODULE_IDS.length;
-var invertixOpen = (ofState, invState) => orderflowComplete(ofState) || passedIn(invState, new Set(INVERTIX_MODULE_IDS)) > 0;
-var vaultStrategiesOpen = (ofState, vaultState) => orderflowComplete(ofState) || passedIn(vaultState, new Set(EXO_MODULE_IDS)) > 0;
+var invertixOpen = (ofState) => orderflowComplete(ofState);
+var lumenOpen = (ofState) => orderflowComplete(ofState);
+var vaultStrategiesOpen = (ofState) => orderflowComplete(ofState);
+function normalizeOrder(ids2, m, open = 0, skip = /* @__PURE__ */ new Set()) {
+  const out = { ...m };
+  for (let i = open + 1; i < ids2.length; i++) {
+    if (skip.has(ids2[i])) continue;
+    const prev = out[ids2[i - 1]];
+    if (!(prev && prev.p === 1) && out[ids2[i]]?.p === 1) out[ids2[i]] = { ...out[ids2[i]], p: 0, s: "000" };
+  }
+  return out;
+}
+var OPEN_FIRST = { fundamentals: 4, orderflow: 0, invertix: 0, lumen: 0, exo: 0 };
 
 // deploy/server.ts
 var env = Bun.env;
@@ -1754,7 +1733,7 @@ app.get("/api/school", async (c) => {
   const proofs = {};
   for (const r of proofRows) proofs[r.ref] = { pass: !!r.pass, sc: Math.round(r.score / r.total * 100), at: new Date(r.createdAt).getTime() };
   return c.json({
-    state: row ? js(row.state) : null,
+    state: row ? isStaff(u) ? js(row.state) : normState(js(row.state), "fundamentals", new Set(row.unlocks ?? [])) : null,
     unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [],
     staff: isStaff(u),
     name: u.globalName ?? u.username,
@@ -1777,6 +1756,10 @@ app.put("/api/school", async (c) => {
         x.sc = 0;
       }
     }
+  }
+  if (clean.v2?.m && !isStaff(c.get("user"))) {
+    const [ur] = await sql`select unlocks from "SchoolProgress" where "userId" = ${c.get("user").id}`;
+    clean.v2.m = normalizeOrder(SCHOOL_MODULES.map((x) => x.id), clean.v2.m, OPEN_FIRST.fundamentals, new Set(ur?.unlocks ?? []));
   }
   const json = JSON.stringify(clean);
   if (json.length > 2e4) throw new HttpError(400, "Too long");
@@ -1858,15 +1841,21 @@ app.post("/api/coach/path/:id/reset", async (c) => {
   await sql`delete from "SchoolPath" where "userId" = ${c.req.param("id")}`;
   return c.json({ ok: true });
 });
-var SETS = { fundamentals: SCHOOL_MODULE_SET, orderflow: new Set(ORDERFLOW_MODULE_IDS), invertix: new Set(INVERTIX_MODULE_IDS), exo: new Set(EXO_MODULE_IDS) };
+var SETS = { fundamentals: SCHOOL_MODULE_SET, orderflow: new Set(ORDERFLOW_MODULE_IDS), invertix: new Set(INVERTIX_MODULE_IDS), lumen: new Set(LUMEN_MODULE_IDS), exo: new Set(EXO_MODULE_IDS) };
 var passedIn2 = (state, track = "fundamentals") => passedIn(state, SETS[track]);
 async function trackState(userId, track) {
-  const [r] = track === "fundamentals" ? await sql`select state from "SchoolProgress" where "userId" = ${userId}` : track === "invertix" || track === "orderflow" ? await sql`select state from "TrackProgress" where "userId" = ${userId} and track = ${track}` : await sql`select state from "VaultAccess" where "userId" = ${userId}`;
+  const [r] = track === "fundamentals" ? await sql`select state from "SchoolProgress" where "userId" = ${userId}` : track === "invertix" || track === "orderflow" || track === "lumen" ? await sql`select state from "TrackProgress" where "userId" = ${userId} and track = ${track}` : await sql`select state from "VaultAccess" where "userId" = ${userId}`;
   return r?.state ?? null;
 }
+function normState(state, track, skip = /* @__PURE__ */ new Set()) {
+  if (!state) return state;
+  const st = typeof state === "string" ? JSON.parse(state) : state;
+  if (!st?.v2?.m) return st;
+  return { ...st, v2: { ...st.v2, m: normalizeOrder(trackModules(track).map((x) => x.id), st.v2.m, OPEN_FIRST[track], skip) } };
+}
 var trackOf = (v) => isTrack(v) ? v : "fundamentals";
-var rowState = (r, t) => t === "fundamentals" ? r.fstate : t === "orderflow" ? r.ostate : t === "invertix" ? r.istate : r.xstate;
-var rowActive = (r, t) => t === "fundamentals" ? r.factive : t === "orderflow" ? r.oactive : t === "invertix" ? r.iactive : r.xactive;
+var rowState = (r, t) => t === "fundamentals" ? r.fstate : t === "orderflow" ? r.ostate : t === "invertix" ? r.istate : t === "lumen" ? r.lstate : r.xstate;
+var rowActive = (r, t) => t === "fundamentals" ? r.factive : t === "orderflow" ? r.oactive : t === "invertix" ? r.iactive : t === "lumen" ? r.lactive : r.xactive;
 var paceOut = (p) => ({ perWeek: Number(p.perWeek), preset: p.preset ?? null, baseline: p.baseline, startedAt: new Date(p.startedAt).toISOString(), emails: !!p.emails });
 app.put("/api/school/pace", async (c) => {
   const u = c.get("user"), b = await c.req.json().catch(() => ({}));
@@ -1901,9 +1890,9 @@ app.get("/api/coach/pace", async (c) => {
   staffOnly(c);
   const now = /* @__PURE__ */ new Date();
   const rows = await sql`select u.id, coalesce(u."globalName", u.username) as name, p.track, p."perWeek", p.preset, p.baseline, p."startedAt", p."setAt", p.changes, p.emails, p."lastNudgeAt", p."nudgeCount",
-      sp.state as fstate, sp."updatedAt" as factive, tp.state as istate, tp."updatedAt" as iactive, tf.state as ostate, tf."updatedAt" as oactive, v.state as xstate, v."updatedAt" as xactive, (a.email is not null and not a.disabled) as "hasEmail"
+      sp.state as fstate, sp."updatedAt" as factive, tp.state as istate, tp."updatedAt" as iactive, tf.state as ostate, tf."updatedAt" as oactive, tl.state as lstate, tl."updatedAt" as lactive, v.state as xstate, v."updatedAt" as xactive, (a.email is not null and not a.disabled) as "hasEmail"
     from "SchoolPace" p join "User" u on u.id = p."userId" left join "SchoolProgress" sp on sp."userId" = u.id
-      left join "TrackProgress" tp on tp."userId" = u.id and tp.track = 'invertix' left join "TrackProgress" tf on tf."userId" = u.id and tf.track = 'orderflow' left join "VaultAccess" v on v."userId" = u.id left join "LocalAccount" a on a."userId" = u.id order by p."setAt" desc limit 500`;
+      left join "TrackProgress" tp on tp."userId" = u.id and tp.track = 'invertix' left join "TrackProgress" tf on tf."userId" = u.id and tf.track = 'orderflow' left join "TrackProgress" tl on tl."userId" = u.id and tl.track = 'lumen' left join "VaultAccess" v on v."userId" = u.id left join "LocalAccount" a on a."userId" = u.id order by p."setAt" desc limit 500`;
   const [{ n: unset }] = await sql`select count(*)::int as n from "SchoolProgress" sp join "User" u on u.id = sp."userId" where u."isGuildMember" and not exists (select 1 from "SchoolPace" p where p."userId" = sp."userId" and p.track = 'fundamentals')`;
   const out = rows.map((r) => {
     const track = trackOf(r.track), total = trackTotal(track), state = rowState(r, track), active = rowActive(r, track);
@@ -1953,9 +1942,9 @@ async function runPaceNudges(now = /* @__PURE__ */ new Date()) {
   const h = now.getUTCHours();
   if (h < NUDGE_FROM_UTC || h >= NUDGE_TO_UTC || !process.env.RESEND_API_KEY) return 0;
   const rows = await sql`select p."userId", p.track, p."perWeek", p.baseline, p."startedAt", p."lastNudgeAt", p."nudgeStreak", u."globalName" as name, a.email,
-      sp.state as fstate, sp."updatedAt" as factive, tp.state as istate, tp."updatedAt" as iactive, tf.state as ostate, tf."updatedAt" as oactive, v.state as xstate, v."updatedAt" as xactive
+      sp.state as fstate, sp."updatedAt" as factive, tp.state as istate, tp."updatedAt" as iactive, tf.state as ostate, tf."updatedAt" as oactive, tl.state as lstate, tl."updatedAt" as lactive, v.state as xstate, v."updatedAt" as xactive
     from "SchoolPace" p join "User" u on u.id = p."userId" join "LocalAccount" a on a."userId" = p."userId" and a.email is not null and not a.disabled and (a."expiresAt" is null or a."expiresAt" > now())
-    left join "SchoolProgress" sp on sp."userId" = p."userId" left join "TrackProgress" tp on tp."userId" = p."userId" and tp.track = 'invertix' left join "TrackProgress" tf on tf."userId" = p."userId" and tf.track = 'orderflow' left join "VaultAccess" v on v."userId" = p."userId"
+    left join "SchoolProgress" sp on sp."userId" = p."userId" left join "TrackProgress" tp on tp."userId" = p."userId" and tp.track = 'invertix' left join "TrackProgress" tf on tf."userId" = p."userId" and tf.track = 'orderflow' left join "TrackProgress" tl on tl."userId" = p."userId" and tl.track = 'lumen' left join "VaultAccess" v on v."userId" = p."userId"
     where p.emails and u.role = 'MEMBER'::"Role" limit 1000`;
   let sent = 0;
   for (const r of rows) {
@@ -2089,7 +2078,7 @@ app.post("/api/feedback/:id/read", async (c) => {
   if (!r.length) throw new HttpError(404, "Not found");
   return c.json({ ok: true });
 });
-var USAGE_AREAS = /* @__PURE__ */ new Set(["dashboard", "school", "practice", "vault", "invertix", "orderflow"]);
+var USAGE_AREAS = /* @__PURE__ */ new Set(["dashboard", "school", "practice", "vault", "invertix", "orderflow", "lumen"]);
 app.post("/api/usage", async (c) => {
   const b = await c.req.json().catch(() => ({}));
   if (!b.sid || !/^[A-Za-z0-9-]{8,48}$/.test(b.sid) || !b.area || !USAGE_AREAS.has(b.area)) throw new HttpError(400, "Bad usage ping");
@@ -2140,7 +2129,7 @@ async function vaultAccess(u) {
   const [row] = await sql`select * from "VaultAccess" where "userId" = ${u.id}`;
   if (!row || row.revokedAt || !(hasMentorRole(u) || row.mentorshipOverride)) return { level: "none", orderflow: false, row: row ?? null };
   if (!row.redeemedAt) return { level: "code", orderflow: false, row };
-  if (!vaultStrategiesOpen(await trackState(u.id, "orderflow"), row.state)) return { level: "orderflow", orderflow: false, row };
+  if (!vaultStrategiesOpen(await trackState(u.id, "orderflow"))) return { level: "orderflow", orderflow: false, row };
   return { level: "open", orderflow: !!row.orderflow, row };
 }
 var readPrivate = async (name) => {
@@ -2222,7 +2211,7 @@ app.get("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
   if (acc.level !== "open") throw new HttpError(403, "Not open");
   const [row] = acc.row ? await sql`select state from "VaultAccess" where "userId" = ${u.id}` : [];
-  const state = row?.state ? typeof row.state === "string" ? JSON.parse(row.state) : row.state : null;
+  const state = row?.state ? normState(row.state, "exo") : null;
   return c.json({ state, unlocks: [], name: u.globalName ?? u.username, orderflow: acc.orderflow, ...await paceFor(u.id, "exo") });
 });
 app.put("/api/vault/progress", async (c) => {
@@ -2236,7 +2225,8 @@ app.put("/api/vault/progress", async (c) => {
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
+  const mv = normalizeOrder(EXO_MODULE_IDS, m, 0);
+  await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m: mv } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
   return c.json({ ok: true });
 });
 async function orderflowAccess(u) {
@@ -2264,7 +2254,7 @@ app.get("/api/orderflow/status", async (c) => {
 app.get("/api/orderflow/progress", async (c) => {
   const u = c.get("user"), acc = await orderflowAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const state = acc.state ? typeof acc.state === "string" ? JSON.parse(acc.state) : acc.state : null;
+  const state = acc.state ? normState(acc.state, "orderflow") : null;
   return c.json({ state, unlocks: [], name: u.globalName ?? u.username, ...await paceFor(u.id, "orderflow") });
 });
 app.put("/api/orderflow/progress", async (c) => {
@@ -2282,13 +2272,14 @@ app.put("/api/orderflow/progress", async (c) => {
   const [old] = await sql`select state from "TrackProgress" where "userId" = ${u.id} and track = 'orderflow'`;
   const prev = old?.state ? typeof old.state === "string" ? JSON.parse(old.state) : old.state : null;
   for (const [k, v] of Object.entries(prev?.v2?.m ?? {})) if (set.has(k) && v?.p === 1 && m[k]?.p !== 1) m[k] = { ...m[k] ?? { s: "111", a: 1, n: 1, at: 0 }, ...v };
-  await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'orderflow', ${JSON.stringify({ v2: { m } })}::jsonb)
+  const mo = normalizeOrder(ORDERFLOW_MODULE_IDS, m, 0);
+  await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'orderflow', ${JSON.stringify({ v2: { m: mo } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
 });
 async function invertixAccess(u) {
   const [os, is] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "invertix")]);
-  const earned = invertixOpen(os, is);
+  const earned = invertixOpen(os);
   return { open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn2(os, "orderflow"), oTotal: trackTotal("orderflow"), iPassed: passedIn2(is, "invertix"), iTotal: trackTotal("invertix"), state: is };
 }
 var invHtml = null;
@@ -2311,7 +2302,7 @@ app.get("/api/invertix/status", async (c) => {
 app.get("/api/invertix/progress", async (c) => {
   const u = c.get("user"), acc = await invertixAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const state = acc.state ? typeof acc.state === "string" ? JSON.parse(acc.state) : acc.state : null;
+  const state = acc.state ? normState(acc.state, "invertix") : null;
   return c.json({ state, unlocks: [], name: u.globalName ?? u.username, ...await paceFor(u.id, "invertix") });
 });
 app.put("/api/invertix/progress", async (c) => {
@@ -2324,7 +2315,51 @@ app.put("/api/invertix/progress", async (c) => {
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'invertix', ${JSON.stringify({ v2: { m } })}::jsonb)
+  const mi = normalizeOrder(INVERTIX_MODULE_IDS, m, 0);
+  await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'invertix', ${JSON.stringify({ v2: { m: mi } })}::jsonb)
+            on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
+  return c.json({ ok: true });
+});
+async function lumenAccess(u) {
+  const [os, ls] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "lumen")]);
+  const earned = lumenOpen(os);
+  return { open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn2(os, "orderflow"), oTotal: trackTotal("orderflow"), lPassed: passedIn2(ls, "lumen"), lTotal: trackTotal("lumen"), state: ls };
+}
+var lumHtml = null;
+app.get("/lumen", async (c) => {
+  const user = await currentUser(c);
+  if (!user) return c.redirect("/");
+  const acc = await lumenAccess(user);
+  if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens with your Orderflow certificate</h1><p>Pass every Orderflow test to open LUMEN. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  const gz = await readPrivate("lumen.html.gz");
+  if (!gz) return c.text("LUMEN is not installed yet.", 404);
+  const etag = String(Bun.hash(gz));
+  if (!lumHtml || lumHtml.etag !== etag) lumHtml = { etag, html: gunzipSync(gz).toString("utf8") };
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/#home">\u2190 FLOWHUB home</a><a href="/school">Trading School</a></nav>`;
+  return c.html(lumHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+});
+app.get("/api/lumen/status", async (c) => {
+  const acc = await lumenAccess(c.get("user"));
+  return c.json({ status: acc.earned ? "open" : "locked", staffBypass: acc.staff && !acc.earned, orderflow: { passed: acc.oPassed, total: acc.oTotal }, lumen: { passed: acc.lPassed, total: acc.lTotal } });
+});
+app.get("/api/lumen/progress", async (c) => {
+  const u = c.get("user"), acc = await lumenAccess(u);
+  if (!acc.open) throw new HttpError(403, "Not open");
+  const state = acc.state ? normState(acc.state, "lumen") : null;
+  return c.json({ state, unlocks: [], name: u.globalName ?? u.username, ...await paceFor(u.id, "lumen") });
+});
+app.put("/api/lumen/progress", async (c) => {
+  const u = c.get("user"), acc = await lumenAccess(u);
+  if (!acc.open) throw new HttpError(403, "Not open");
+  const set = new Set(LUMEN_MODULE_IDS), o = await c.req.json().catch(() => ({}));
+  const m = {};
+  for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
+    if (!set.has(k) || !v || typeof v !== "object") continue;
+    const s = String(v.s ?? "000");
+    m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
+  }
+  const ml = normalizeOrder(LUMEN_MODULE_IDS, m, 0);
+  await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'lumen', ${JSON.stringify({ v2: { m: ml } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
 });

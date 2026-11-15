@@ -1,7 +1,7 @@
 /* ============================================================
    progress: saved in this browser and synced to your FLOWHUB account
 ============================================================ */
-const LS=window.OFL?'fh-orderflow-v1':window.INV?'fh-invertix-v1':window.VAULT?'fh-vault-v1':'fh-school-v2',LSX=window.OFL?'fh-orderflow-v1-txt':window.INV?'fh-invertix-v1-txt':window.VAULT?'fh-vault-v1-txt':'fh-school-v2-txt';
+const LS=window.LUMEN?'fh-lumen-v1':window.OFL?'fh-orderflow-v1':window.INV?'fh-invertix-v1':window.VAULT?'fh-vault-v1':'fh-school-v2',LSX=window.LUMEN?'fh-lumen-v1-txt':window.OFL?'fh-orderflow-v1-txt':window.INV?'fh-invertix-v1-txt':window.VAULT?'fh-vault-v1-txt':'fh-school-v2-txt';
 let PROG={m:{}},TXT={},UNLOCKS=[],LIVE=false,WHO='';
 const BLANK=()=>({s:[0,0,0],p:0,sc:0,a:1,n:0,at:0,t:0,po:0});
 const pm=id=>PROG.m[id]||(PROG.m[id]=BLANK());
@@ -14,7 +14,10 @@ function mergeServer(v2){
     if(a>l.a){l.a=a;l.s=bits;l.n=Math.max(l.n,s.n|0)}else if(a===l.a){l.s=l.s.map((x,i)=>x||bits[i]||0);l.n=Math.max(l.n,s.n|0)}
     if(s.p&&!l.p){l.p=1;l.sc=s.sc|0;l.at=s.at|0}else if(s.p&&l.p){l.sc=Math.max(l.sc,s.sc|0)}if(s.t&&s.p)l.t=1}
   persist(false)}
-function persist(sync=true){try{localStorage.setItem(LS,JSON.stringify(PROG))}catch(e){}if(sync)syncSoon()}
+/* Progress is kept in order: the first module after the open basics is open, and every later module only counts as passed if the one before it is. An old save is brought to where the student really is. */
+function normalizeOrder(){if(UNLOCKS.includes('all'))return;const first=MODS.findIndex(m=>!PH[m.ph].open),o=first<0?0:first;
+  for(let i=o+1;i<MODS.length;i++){const m=MODS[i],p=PROG.m[m.id];if(!p||!p.p||m.first||UNLOCKS.includes(m.id))continue;const prev=PROG.m[MODS[i-1].id];if(!prev||!prev.p){p.p=0;p.s=[0,0,0];p.sc=0}}}
+function persist(sync=true){normalizeOrder();try{localStorage.setItem(LS,JSON.stringify(PROG))}catch(e){}if(sync)syncSoon()}
 function saveTxt(){try{localStorage.setItem(LSX,JSON.stringify(TXT))}catch(e){}}
 let syncT=null;
 const syncSoon=()=>{clearTimeout(syncT);syncT=setTimeout(push,900)};
@@ -263,7 +266,7 @@ function updateMarkPanel(){
 const renderStepsOnly=()=>{const s=$('.steps');if(s)s.outerHTML=stepper()};
 /* No exams in the fundamentals: the three steps finish the module. The attempt log is what lets the server keep the completion. */
 function finishModule(m){const p=pm(m.id);p.s=[1,1,1];if(!p.p){p.p=1;p.sc=100;p.at=Date.now();p.n=(p.n|0)+1;logAttempt(m.id,3,3,true,'ex')}persist();toast('Module complete');
-  if(MODS.every(x=>pm(x.id).p))setTimeout(()=>toast('Fundamentals complete. Your certificate is on the course map.'),1800)}
+  if(MODS.every(x=>pm(x.id).p))setTimeout(()=>toast('Foundations complete. Your certificate is on the course map.'),1800)}
 function complete(i,msg){const p=pm(LAB.m.id);if(!p.s[i]){p.s[i]=1;persist();toast(msg)}renderStepsOnly()}
 function go(step){if(NOEX){if(step>=STEPS.length)return;const r=reachable(LAB.m,step);if(r<step){toast(r===0?'Read the lesson and answer the recall question first.':'Finish the worked example first.');step=r}}LAB.step=step;if(step===2&&!LAB.drill&&LAB.dd<3)newDrill();renderLesson();paintChart(true);history.replaceState(null,'',`#/${LAB.m.id}/${STEP_KEYS[step]}`);$('.les-b').scrollTop=0}
 $('#lesson').addEventListener('click',e=>{
@@ -439,19 +442,18 @@ function drawCertificate(name,st){const T=st||TRACK;
 /* After the fundamentals comes Orderflow. Its tests unlock every strategy. */
 function orderflowCard(){
   return `<div class="hud" style="margin:22px 0 8px">Next up</div><div class="card" style="padding:18px 20px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><span class="chip live">Opens now</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">Orderflow</h3>
-   <p class="muted" style="font-size:14px;max-width:62ch">How to read what the market is doing, not only where it went. Ten modules, and every one has a test. <b>Pass them all and INVERTIX, ECHO and ORBIT open.</b></p>
+   <p class="muted" style="font-size:14px;max-width:62ch">How to read what the market is doing, not only where it went. Eleven modules, and every one has a test. <b>Pass them all and INVERTIX, ECHO and ORBIT open.</b></p>
    <a class="btn primary" href="/orderflow" style="margin-top:12px">Open Orderflow →</a></div>`}
-/* After Orderflow the student chooses a strategy: INVERTIX opens at once, ECHO and ORBIT are in the mentorship vault. */
-function chooseCard(){
-  return `<div class="hud" style="margin:22px 0 8px">Choose your path</div><div class="choose">
-   <div class="card choose-c"><span class="chip ok">Open now</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">INVERTIX</h3>
-    <p class="muted" style="font-size:14px">A complete strategy course: the key level, the manipulation leg, the flip, and a defined entry, stop and target. It has its own page, its own pace and its own certificate.</p>
-    <a class="btn primary" href="/invertix" style="margin-top:12px">Open INVERTIX →</a></div>
-   <div class="card choose-c envelope-c"><div class="env-art" aria-hidden="true"><i class="env-flap"></i><i class="env-seal"></i></div><span class="chip">By invitation</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">ECHO and ORBIT</h3>
-    <p class="muted" style="font-size:14px">The mentorship strategy, in a separate vault with its own door. <b>Mentorship members only</b>, opened with a code from Hannah.</p>
+/* After Orderflow the strategies open, in this order: INVERTIX, LUMEN, then ECHO x ORBIT (mentorship, with a code). Each has its own certificate. */
+const stratCard=(name,tag,href,btn)=>`<div class="card choose-c"><span class="chip ok">Open now</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">${name}</h3><p class="muted" style="font-size:14px">${tag}</p><a class="btn primary" href="${href}" style="margin-top:12px">${btn} →</a></div>`;
+const ST_INV=['INVERTIX','Red-folder news days only, and a quick one: about 30 minutes. How to read the rush in the order flow and size a news trade.','/invertix','Open INVERTIX'],ST_LUM=['LUMEN','A zone tap, a break, and the order-flow check at each moment. Valid in every session.','/lumen','Open LUMEN'];
+function exoCard(){return `<div class="card choose-c envelope-c"><div class="env-art" aria-hidden="true"><i class="env-flap"></i><i class="env-seal"></i></div><span class="chip">By invitation</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">ECHO x ORBIT</h3>
+    <p class="muted" style="font-size:14px">The mentorship strategies, in a separate vault with its own door. <b>Mentorship members only</b>, opened with a code from Hannah.</p>
     <p style="margin-top:8px;font-size:13.5px"><b>If you are in mentorship:</b> send Hannah a DM on Discord with this message, then enter your code at the vault door.</p>
     <textarea class="in" id="bookMsg" readonly rows="4" style="margin-top:6px">${esc(BOOK_MSG)}</textarea>
-    <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a><a class="btn" href="/vault">Vault door →</a></div></div></div>`}
+    <div class="row" style="margin-top:8px"><button class="btn" id="copyBook">Copy message</button><a class="btn" href="https://discord.com/channels/@me" target="_blank" rel="noopener">Open Discord</a><a class="btn" href="/vault">Vault door →</a></div></div>`}
+function chooseCard(){return `<div class="hud" style="margin:22px 0 8px">Your strategies, in this order</div><div class="choose three">${stratCard(...ST_INV)}${stratCard(...ST_LUM)}${exoCard()}</div>`}
+function nextStratCard(id){return id==='invertix'?`<div class="hud" style="margin:22px 0 8px">Next up</div><div class="choose three">${stratCard(...ST_LUM)}</div>`:id==='lumen'?`<div class="hud" style="margin:22px 0 8px">Next up</div><div class="choose three">${exoCard()}</div>`:''}
 /* the vault's strategy banner: its name, progress and, once every module is passed, its own certificate */
 function stratHead(st){const ms=stratMods(st),n=ms.filter(m=>pm(m.id).p).length,fin=n===ms.length;
   return `<div class="strat-h card"><div class="hud" style="color:var(--signal)">${st.name}</div><h2 class="h" style="font-size:24px;margin:4px 0 4px">${st.name}</h2><p class="muted" style="margin:0 0 8px;max-width:62ch">${st.tag}</p>
@@ -460,9 +462,9 @@ function stratHead(st){const ms=stratMods(st),n=ms.filter(m=>pm(m.id).p).length,
 function gradCard(){
   const fund=TRACK.id==='fundamentals',ofl=TRACK.id==='orderflow';
   return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">${TRACK.doneTitle}</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You ${fund?'completed':'passed'} every module. Your ${TRACK.certName} certificate is ready.</h2>
-   <p class="muted" style="max-width:62ch">A certificate of ${fund?'learning':'understanding'}: ${fund?'you worked through the fundamentals of trading NQ futures, from how a market works to the daily levels, and passed every practice task.':`you learned ${TRACK.name} from the first idea to the end, and proved it on every exam.`}</p>
+   <p class="muted" style="max-width:62ch">A certificate of ${fund?'learning':'understanding'}: ${fund?'you worked through the foundations of trading NQ futures, from how a market works to your first order and your risk rules, and passed every practice task.':`you learned ${TRACK.name} from the first idea to the end, and proved it on every exam.`}</p>
    <div class="row" style="align-items:center;margin-top:14px"><input class="in" id="certName" placeholder="Your name for the certificate" maxlength="40" value="${esc(WHO||'')}" style="max-width:300px"><button class="btn primary" id="certBtn">Download certificate</button></div>
-   ${fund?orderflowCard():ofl?chooseCard():`<p class="muted" style="margin-top:14px;font-size:14px"><a href="/" style="color:var(--ice)">Back to FLOWHUB home</a></p>`}</div>`}
+   ${fund?orderflowCard():ofl?chooseCard():nextStratCard(TRACK.id)+`<p class="muted" style="margin-top:14px;font-size:14px"><a href="/" style="color:var(--ice)">Back to FLOWHUB home</a></p>`}</div>`}
 document.addEventListener('click',e=>{
   const c2=e.target.closest('[data-cert2]');if(c2){const st=STRATS.find(x=>x.id===c2.dataset.cert2),inp=$('.certName2[data-st="'+st.id+'"]'),n=((inp&&inp.value)||'').trim();if(!n){toast('Type your name for the certificate.');return}
     const run=()=>{const a=document.createElement('a');a.download='FLOWMTD-'+st.id+'-certificate-'+n.replace(/[^a-z0-9]+/gi,'-')+'.png';a.href=drawCertificate(n,st).toDataURL('image/png');document.body.append(a);a.click();a.remove()};
@@ -514,14 +516,14 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape')$$('dialog[open]').for
 /* ============================================================
    PRACTICE: the same generated charts and tasks as the modules, endless, with instant feedback and no exam
 ============================================================ */
-const PM={inv:['m43','m44','m45','m46','m51','m52','m53','m47']};
+const PM={of:['f00','f01','f02','f03','f04','f05','f06','f07','f09','f08','f10','px1']};
 let PV='tasks';
 const PR={topic:'mixed',item:null,m:null,st:{},fb:null,checked:false,revealed:false,n:0,ok:0};
 const pracModel=id=>Object.keys(PM).find(k=>PM[k].includes(id));
 async function pracRep(ok){const m=pracModel(PR.m.id);if(!m)return;try{await fetch('/api/practice/rep',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({m,d:'school',ok,tags:[]})})}catch(e){}}
 function pracNext(){
   const pool=PR.topic==='mixed'?MODS:PM[PR.topic]?MODS.filter(m=>PM[PR.topic].includes(m.id)):MODS.filter(m=>m.id===PR.topic),cand=pool.filter(m=>m.drills&&m.drills.length);
-  const m=pick(Math.random,cand),f=pick(Math.random,m.drills),r=mulberry(Math.floor(Math.random()*1e9));
+  const px=PR.topic==='mixed'?cand.find(x=>x.id==='px1'):null,m=px&&Math.random()<.55?px:pick(Math.random,cand),f=pick(Math.random,m.drills),r=mulberry(Math.floor(Math.random()*1e9));
   PR.m=m;PR.item=fin(f(r),r);PR.st={};PR.fb=null;PR.checked=false;PR.revealed=false;PR.hint=false;pracPaint();pracPanel();
 }
 function pracPaint(){

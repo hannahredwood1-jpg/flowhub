@@ -1,3 +1,3 @@
-/* The INVERTIX page's own phase list (the fundamentals school and the vault have theirs). */
+/* The INVERTIX page's own phase list. */
 const PH=[
- {n:'INVERTIX',d:'The INVERTIX strategy from the first idea to the daily playbook: the key-level flip, PRIME and EARLY signals, H/L, PO3, the news fade and the FOMC evening trade.'}];
+ {n:'INVERTIX · News',d:'Red-folder news days on NQ and MNQ: the news fade, how to read the rush in the order flow, and how to size and run a news day. About 30 minutes.'}];

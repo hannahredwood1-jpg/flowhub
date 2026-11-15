@@ -4,35 +4,18 @@
 export const SCHOOL_MODULES = [
   { id: "m37", n: 1, title: "Market Basics" },
   { id: "m02", n: 2, title: "Chart Reading Basics" },
-  { id: "m38", n: 3, title: "Your First 20 Minutes on a Chart" },
-  { id: "m19", n: 4, title: "TradingView & Platform Setup" },
-  { id: "m20", n: 5, title: "How Futures & NQ Work" },
+  { id: "m19", n: 3, title: "TradingView & Platform Setup" },
+  { id: "m20", n: 4, title: "How Futures & NQ Work" },
+  { id: "m21", n: 5, title: "Orders & Your First Trade" },
   { id: "m39", n: 6, title: "Your Demo Account: Open It and Use It" },
-  { id: "m21", n: 7, title: "Orders & Your First Trade" },
-  { id: "m41", n: 8, title: "Sessions & Economic News" },
-  { id: "m13", n: 9, title: "Building Daily Bias" },
-  { id: "m42", n: 10, title: "One Trade Per Session" },
-  { id: "m01", n: 11, title: "Trading Mindset" },
-  { id: "m15", n: 12, title: "Trading Psychology & Discipline" },
-  { id: "m25", n: 13, title: "A Day in the Life & Your Trading Plan" },
-  { id: "m03", n: 14, title: "Liquidity Explained" },
-  { id: "m04", n: 15, title: "Advanced Liquidity Concepts" },
-  { id: "m05", n: 16, title: "Break of Structure" },
-  { id: "m06", n: 17, title: "Fair Value Gaps & Inverse Fair Value Gaps" },
-  { id: "m48", n: 18, title: "Rejection Blocks" },
-  { id: "m49", n: 19, title: "CISD: Change in State of Delivery" },
-  { id: "m07", n: 20, title: "Advanced Imbalance & Equilibrium" },
-  { id: "m10", n: 21, title: "SMT Divergence" },
-  { id: "m11", n: 22, title: "Time Theory & Session Timing" },
-  { id: "m12", n: 23, title: "Funded Accounts & Prop Firms" },
-  { id: "m14", n: 24, title: "Risk Management" },
-  { id: "m23", n: 25, title: "Trade Management & Spot the Mistake" },
-  { id: "m24", n: 26, title: "Why the Math Works" },
-  { id: "m50", n: 27, title: "Understanding GEX Levels" },
+  { id: "m41", n: 7, title: "Sessions & Economic News" },
+  { id: "m12", n: 8, title: "Funded Accounts & Prop Firms" },
+  { id: "m14", n: 9, title: "Risk Management" },
+  { id: "m01", n: 10, title: "Mindset and One Trade Per Session" },
 ] as const;
 export const SCHOOL_MODULE_IDS = SCHOOL_MODULES.map((m) => m.id) as string[];
-/** The one module that can never be tested out: Understanding GEX Levels. Everything else in the fundamentals can be proved with one exam. */
-export const SCHOOL_NO_PROOF = ["m50"] as string[];
+/** Every Foundations module can be proved with one exam (the GEX lesson, the only exception, has left the Foundations). */
+export const SCHOOL_NO_PROOF = [] as string[];
 export const SCHOOL_PROVABLE_IDS = SCHOOL_MODULE_IDS.filter((id) => !SCHOOL_NO_PROOF.includes(id));
 
 /** What the school page saves for each module: steps done ("1101"), passed, best score %, attempt number, exam tries, last attempt time. */

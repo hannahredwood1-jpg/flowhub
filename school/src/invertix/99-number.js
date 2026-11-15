@@ -1,6 +1,6 @@
-/* INVERTIX track order: the eight modules in the order they are taught, numbered 1 to 8. */
+/* INVERTIX track order: three modules, numbered 1 to 3. */
 const byId=id=>MODS.find(m=>m.id===id);
-const ORDER=['m43','m44','m45','m46','m51','m52','m53','m47'];
+const ORDER=['n01','n02','n03'];
 ORDER.forEach((id,i)=>{const m=byId(id);if(!m)throw new Error('missing module '+id);m.ph=0;m.n=i+1});
 MODS.forEach(m=>{if(!ORDER.includes(m.id))throw new Error('module not in the INVERTIX order: '+m.id)});
 MODS.sort((a,b)=>ORDER.indexOf(a.id)-ORDER.indexOf(b.id));
