@@ -6,13 +6,16 @@ const TRACKS={
  fundamentals:{id:'fundamentals',name:'Trading Fundamentals',short:'Fundamentals',api:'/api/school',cert:'Certificate of Learning · Trading Fundamentals',
   certA:'has completed the FLOWMTD Trading Fundamentals course and passed every practice task,',certB:'and demonstrated an understanding of the fundamentals of trading NQ futures.',
   endText:'from your first chart to your Fundamentals certificate',doneTitle:'Fundamentals complete',certName:'Trading Fundamentals'},
+ orderflow:{id:'orderflow',name:'Orderflow',short:'Orderflow',api:'/api/orderflow/progress',cert:'Certificate of understanding · Orderflow',
+  certA:'has completed the FLOWMTD Orderflow course, passed every module exam,',certB:'and demonstrated an understanding of how orderflow sits beside the strategies.',
+  endText:'from the tape and the footprint to your Orderflow certificate',doneTitle:'Orderflow complete',certName:'Orderflow'},
  invertix:{id:'invertix',name:'INVERTIX',short:'INVERTIX',api:'/api/invertix/progress',cert:'Certificate of understanding · INVERTIX',
   certA:'has completed the FLOWMTD INVERTIX course, passed every module exam,',certB:'and demonstrated an understanding of the INVERTIX model.',
   endText:'from the key level to your INVERTIX certificate',doneTitle:'INVERTIX complete',certName:'INVERTIX'},
  exo:{id:'exo',name:'ECHO and ORBIT',short:'ECHO and ORBIT',api:'/api/vault/progress',cert:'Certificate of understanding · ECHO and ORBIT',
   certA:'has completed the FLOWMTD ECHO and ORBIT courses, passed every module exam,',certB:'and demonstrated an understanding of both methods.',
   endText:'across ECHO and ORBIT, from the idea to your two certificates',doneTitle:'ECHO and ORBIT complete',certName:'ECHO and ORBIT'}};
-const TRACK=window.PRACTICE?null:window.INV?TRACKS.invertix:window.VAULT?TRACKS.exo:TRACKS.fundamentals;
+const TRACK=window.PRACTICE?null:window.OFL?TRACKS.orderflow:window.INV?TRACKS.invertix:window.VAULT?TRACKS.exo:TRACKS.fundamentals;
 /* SIDE: one of the separate pages (INVERTIX or the vault), not the fundamentals school */
 /* NOEX: the fundamentals have no exams. A module is finished by Learn, See it and Mark it (three chart tasks, each right the first time). */
 const NOEX=!!TRACK&&TRACK.id==='fundamentals';

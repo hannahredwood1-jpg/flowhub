@@ -96,6 +96,10 @@ writeFileSync(path.join(appDir, "assets/vault.html.gz"), gzipSync(Buffer.from(va
 const invertixHtml = await buildSchool(esbuild, { invertix: true });
 writeFileSync(path.join(appDir, "assets/invertix.html.gz"), gzipSync(Buffer.from(invertixHtml), { level: 9 }));
 console.log(`invertix ${(invertixHtml.length / 1024).toFixed(0)}KB`);
+// Orderflow: its own page, a private file served to students who finished the fundamentals. Its tests open every strategy.
+const orderflowHtml = await buildSchool(esbuild, { orderflow: true });
+writeFileSync(path.join(appDir, "assets/orderflow.html.gz"), gzipSync(Buffer.from(orderflowHtml), { level: 9 }));
+console.log(`orderflow ${(orderflowHtml.length / 1024).toFixed(0)}KB`);
 const orderflow = (await esbuild.transform(readFileSync(path.join(root, "school/src/vault/orderflow-pack.js"), "utf8"), { minify: true, target: "es2020", legalComments: "none" })).code;
 writeFileSync(path.join(appDir, "assets/vault-orderflow.js.gz"), gzipSync(Buffer.from(orderflow), { level: 9 }));
 console.log(`vault ${(vaultHtml.length / 1024).toFixed(0)}KB · orderflow pack ${(orderflow.length / 1024).toFixed(0)}KB`);

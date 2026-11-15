@@ -1,7 +1,7 @@
 /* ============================================================
    progress: saved in this browser and synced to your FLOWHUB account
 ============================================================ */
-const LS=window.INV?'fh-invertix-v1':window.VAULT?'fh-vault-v1':'fh-school-v2',LSX=window.INV?'fh-invertix-v1-txt':window.VAULT?'fh-vault-v1-txt':'fh-school-v2-txt';
+const LS=window.OFL?'fh-orderflow-v1':window.INV?'fh-invertix-v1':window.VAULT?'fh-vault-v1':'fh-school-v2',LSX=window.OFL?'fh-orderflow-v1-txt':window.INV?'fh-invertix-v1-txt':window.VAULT?'fh-vault-v1-txt':'fh-school-v2-txt';
 let PROG={m:{}},TXT={},UNLOCKS=[],LIVE=false,WHO='';
 const BLANK=()=>({s:[0,0,0],p:0,sc:0,a:1,n:0,at:0,t:0,po:0});
 const pm=id=>PROG.m[id]||(PROG.m[id]=BLANK());
@@ -84,7 +84,7 @@ function renderMap(){if(NOEX)noexShell();
     if(m.ph!==ph){if(ph>=0)html+='</div></section>';ph=m.ph;const P=PH[ph],pn=SPLIT?(P.s==='of'?'SEALED ROOM':'PHASE '+PH.filter((x,k)=>x.s===P.s&&k<=ph).length):'PHASE '+(ph+1);html+=`<section class="phase"><div class="phase-h"><span class="pn">${pn}</span><h2 class="h">${P.n}</h2><p>${P.d}</p></div><div class="mods">`}
     html+=modRow(m,i)});
   html+='</div></section>';
-  $('#phases').innerHTML=(!SPLIT&&TRACK&&finished?gradCard():'')+(!SPLIT&&finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">${TRACK?TRACK.doneTitle+'.':'Course complete.'}</h2><p class="muted">${TRACK&&TRACK.id==='fundamentals'?'You completed every module. Next, choose the strategy you want to learn first: INVERTIX or ECHO and ORBIT. Each has its own page, pace and certificate.':'You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.'}</p></div>`:'')+html;
+  $('#phases').innerHTML=(!SPLIT&&TRACK&&finished?gradCard():'')+(!SPLIT&&finished?`<div class="finish"><h2 class="h" style="font-size:22px;margin-bottom:6px">${TRACK?TRACK.doneTitle+'.':'Course complete.'}</h2><p class="muted">${TRACK&&TRACK.id==='fundamentals'?'You completed every module. Next is Orderflow: pass its tests and INVERTIX, ECHO and ORBIT all open.':TRACK&&TRACK.id==='orderflow'?'You passed every Orderflow test. All three strategies are open: choose the one you want to learn first.':'You passed every module exam. The next step is a demo account: apply the full model, journal every trade, and let your own numbers show whether the strategy and your risk plan hold up before any real or funded capital.'}</p></div>`:'')+html;
   const nextCard=(m,label,fin)=>`<div class="card next-card"><div class="hud">${label}</div><div class="h">${m.n}. ${m.t}</div>
     <p class="muted" style="font-size:14px">${fin?'You can review any lesson.':proofPending(m)?'Proof exam: one attempt, no lesson':expressMod(m)&&!stepsDone(m)?'Express: the three practice tasks':`Step <b>${Math.min(stepsDone(m)+1,STEPS.length)}</b> of ${STEPS.length}: ${STEPS[Math.min(stepsDone(m),STEPS.length-1)]}`}</p>
     <div class="pbar" style="margin:10px 0 14px"><i style="width:${fin?100:proofPending(m)?0:stepsDone(m)/STEPS.length*100}%"></i></div>
@@ -423,7 +423,7 @@ async function planCheck(){
     fb.innerHTML=j&&j.plan&&j.plan.done?'<div class="fb ok"><b>Plan found.</b> Your plan card is saved. It shows on your dashboard and feeds your pre-trade checklist.</div>':'<div class="fb no"><b>No plan yet.</b> Finish all 6 steps in Trading Plan, save it, then check again.</div>'}
   catch(e){fb.innerHTML='<div class="fb no"><b>Could not check.</b> Try again in a moment.</div>'}
 }
-const BOOK_MSG='Hi Hannah! I finished the FLOWMTD Trading Fundamentals and earned my certificate. I\'m a mentorship member and I\'d like a code for the ECHO and ORBIT vault.\n\nMy name: ';
+const BOOK_MSG='Hi Hannah! I finished the FLOWMTD Orderflow course and earned my certificate. I\'m a mentorship member and I\'d like a code for the ECHO and ORBIT vault.\n\nMy name: ';
 function drawCertificate(name,st){const T=st||TRACK;
   const W=1600,H=1130,cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');
   c.fillStyle='#030405';c.fillRect(0,0,W,H);c.strokeStyle='#28313e';c.lineWidth=2;c.strokeRect(48,48,W-96,H-96);c.strokeStyle='#ff6a00';c.lineWidth=4;c.beginPath();c.moveTo(48,120);c.lineTo(48,48);c.lineTo(120,48);c.stroke();c.beginPath();c.moveTo(W-48,H-120);c.lineTo(W-48,H-48);c.lineTo(W-120,H-48);c.stroke();
@@ -436,7 +436,12 @@ function drawCertificate(name,st){const T=st||TRACK;
   c.textAlign='left';c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('DATE',150,930);c.fillStyle='#e6ebf2';c.font='500 26px JetBrains Mono, monospace';c.fillText(d,150,968);c.fillStyle='#66717f';c.font='500 18px JetBrains Mono, monospace';c.fillText('CERTIFICATE ID',W-150-340,930);c.fillStyle='#e6ebf2';c.font='500 26px JetBrains Mono, monospace';c.fillText('FH-'+h.toString(36).toUpperCase().padStart(7,'0').slice(0,7),W-150-340,968);
   c.textAlign='center';c.fillStyle='#66717f';c.font='400 15px Inter, sans-serif';c.fillText('Educational certificate of course completion. Not a trading license, qualification or financial advice.',W/2,H-72);
   return cv}
-/* After the fundamentals the student chooses a strategy: INVERTIX opens at once, ECHO and ORBIT are in the mentorship vault. */
+/* After the fundamentals comes Orderflow. Its tests unlock every strategy. */
+function orderflowCard(){
+  return `<div class="hud" style="margin:22px 0 8px">Next up</div><div class="card" style="padding:18px 20px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><span class="chip live">Opens now</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">Orderflow</h3>
+   <p class="muted" style="font-size:14px;max-width:62ch">How to read what the market is doing, not only where it went. Ten modules, and every one has a test. <b>Pass them all and INVERTIX, ECHO and ORBIT open.</b></p>
+   <a class="btn primary" href="/orderflow" style="margin-top:12px">Open Orderflow →</a></div>`}
+/* After Orderflow the student chooses a strategy: INVERTIX opens at once, ECHO and ORBIT are in the mentorship vault. */
 function chooseCard(){
   return `<div class="hud" style="margin:22px 0 8px">Choose your path</div><div class="choose">
    <div class="card choose-c"><span class="chip ok">Open now</span><h3 class="h" style="font-size:19px;margin:8px 0 6px">INVERTIX</h3>
@@ -453,11 +458,11 @@ function stratHead(st){const ms=stratMods(st),n=ms.filter(m=>pm(m.id).p).length,
    <div class="pbar"><i style="width:${n/ms.length*100}%"></i></div><p class="muted" style="font-size:13.5px;margin-top:8px"><b>${n} of ${ms.length}</b> modules passed${fin?' · course complete':''}</p>
    ${fin?`<div class="row" style="align-items:center;margin-top:12px"><input class="in certName2" data-st="${st.id}" placeholder="Your name for the certificate" maxlength="40" value="${esc(WHO||'')}" style="max-width:300px"><button class="btn primary" data-cert2="${st.id}">Download ${st.name} certificate</button></div>`:''}</div>`}
 function gradCard(){
-  const fund=TRACK.id==='fundamentals';
+  const fund=TRACK.id==='fundamentals',ofl=TRACK.id==='orderflow';
   return `<div class="card" style="padding:22px 24px;margin-bottom:24px;border-color:color-mix(in srgb,var(--signal) 40%,var(--line))"><div class="hud" style="color:var(--signal)">${TRACK.doneTitle}</div><h2 class="h" style="font-size:24px;margin:6px 0 8px">You ${fund?'completed':'passed'} every module. Your ${TRACK.certName} certificate is ready.</h2>
    <p class="muted" style="max-width:62ch">A certificate of ${fund?'learning':'understanding'}: ${fund?'you worked through the fundamentals of trading NQ futures, from how a market works to the daily levels, and passed every practice task.':`you learned ${TRACK.name} from the first idea to the end, and proved it on every exam.`}</p>
    <div class="row" style="align-items:center;margin-top:14px"><input class="in" id="certName" placeholder="Your name for the certificate" maxlength="40" value="${esc(WHO||'')}" style="max-width:300px"><button class="btn primary" id="certBtn">Download certificate</button></div>
-   ${fund?chooseCard():`<p class="muted" style="margin-top:14px;font-size:14px"><a href="/" style="color:var(--ice)">Back to FLOWHUB home</a></p>`}</div>`}
+   ${fund?orderflowCard():ofl?chooseCard():`<p class="muted" style="margin-top:14px;font-size:14px"><a href="/" style="color:var(--ice)">Back to FLOWHUB home</a></p>`}</div>`}
 document.addEventListener('click',e=>{
   const c2=e.target.closest('[data-cert2]');if(c2){const st=STRATS.find(x=>x.id===c2.dataset.cert2),inp=$('.certName2[data-st="'+st.id+'"]'),n=((inp&&inp.value)||'').trim();if(!n){toast('Type your name for the certificate.');return}
     const run=()=>{const a=document.createElement('a');a.download='FLOWMTD-'+st.id+'-certificate-'+n.replace(/[^a-z0-9]+/gi,'-')+'.png';a.href=drawCertificate(n,st).toDataURL('image/png');document.body.append(a);a.click();a.remove()};
