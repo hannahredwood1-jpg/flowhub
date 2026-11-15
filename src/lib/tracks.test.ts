@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { EXO_MODULES, fundamentalsComplete, INVERTIX_MODULES, invertixOpen, LUMEN_MODULES, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_MODULES, ORDERFLOW_OPTIONAL_IDS, ORDERFLOW_OPTIONAL_MODULES, orderflowComplete, orderflowOpen, passedIn, trackTotal, vaultStrategiesOpen } from "./tracks";
+import { EXO_MODULES, fundamentalsComplete, INVERTIX_MODULES, invertixOpen, LUMEN_MODULES, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_MODULES, ORDERFLOW_OPTIONAL_IDS, ORDERFLOW_OPTIONAL_MODULES, orderflowComplete, withPasses, orderflowOpen, passedIn, trackTotal, vaultStrategiesOpen } from "./tracks";
 import { SCHOOL_MODULES } from "./school";
 
 const all = (ids: readonly { id: string }[]) => ({ v2: { m: Object.fromEntries(ids.map((m) => [m.id, { p: 1 }])) } });
@@ -87,4 +87,19 @@ test("progress is kept in order: nobody skips ahead", () => {
 test("next module picks the first one not passed", () => {
   assert.deepEqual(nextModule("invertix", { v2: { m: { n01: { p: 1 } } } }), { n: 2, title: "Reading the Rush: The 60-Second Flow Check" });
   assert.equal(nextModule("fundamentals", null).n, 1);
+});
+
+test("saved progress is read whether it is an object, a JSON string, or a list of saves", () => {
+  const v2 = { v2: { m: { m37: { p: 1 }, m02: { p: 1 } } } };
+  for (const raw of [v2, JSON.stringify(v2), [JSON.stringify({ ch: [] }), JSON.stringify({ v2: { m: { m37: { p: 0 } } } }), JSON.stringify(v2)], [JSON.stringify(v2)]]) {
+    assert.equal(passedIn(raw, new Set(["m37", "m02", "m19"])), 2);
+  }
+  assert.equal(passedIn(null, new Set(["m37"])), 0);
+  assert.equal(passedIn("not json", new Set(["m37"])), 0);
+});
+
+test("a passing exam attempt on record counts as a pass even if the save lost it", () => {
+  const s = withPasses([JSON.stringify({ v2: { m: { m37: { p: 1 } } } })], ["m02", "m39"]);
+  assert.equal(passedIn(s, new Set(["m37", "m02", "m39", "m41"])), 3);
+  assert.equal(passedIn(withPasses(null, undefined), new Set(["m37"])), 0);
 });
