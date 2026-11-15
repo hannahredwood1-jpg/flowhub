@@ -14,13 +14,13 @@ export async function buildSchool(esbuild, { minify = true, practice = false, va
   const shared = ["content/00-core.js", "content/00-glossary.js", "content/08-helpers.js"];
   const engine = ["util.js", "gen.js", "gen2.js", "chart.js", "items.js"], tail = ["tracks.js", "path.js", "pace.js", "gex.js", "app.js", "track.js"];
   const parts = orderflow
-    ? [...engine, ...shared, "content/12-orderflow.js", ...list("orderflow"), ...tail]
+    ? [...engine, ...shared, "content/12-orderflow-visuals.js", "content/12-orderflow.js", ...list("orderflow"), ...tail]
     : vault
     ? [...engine, ...shared, ...list("vault", (f2) => f2 !== "orderflow-pack.js"), ...tail]
     : invertix
       ? [...engine, ...shared, "content/11-invertix.js", ...list("invertix"), ...tail]
       // the school and the practice page leave INVERTIX out: it has its own gated page
-      : [...engine, ...list("content", (f2) => f2 !== "11-invertix.js" && f2 !== "12-orderflow.js"), ...(practice ? [...list("data"), "lab.js"] : []), ...tail];
+      : [...engine, ...list("content", (f2) => f2 !== "11-invertix.js" && !f2.startsWith("12-orderflow")), ...(practice ? [...list("data"), "lab.js"] : []), ...tail];
   let js = parts.map((p) => `/* ── ${p} ── */\n${src(p)}`).join("\n");
   let css = src("style.css");
   if (minify) {
