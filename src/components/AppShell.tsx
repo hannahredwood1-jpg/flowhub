@@ -37,8 +37,8 @@ export function ThemeToggle({ className }: { className?: string }) {
   );
 }
 
-export function AppShell({ viewer, active, children, links = { dashboard: "/dashboard", plan: "/plan", school: "/school.html", coach: "/coach" }, signOutHref = "/api/auth/signout" }: {
-  viewer: PersonDTO; active: "home" | "dashboard" | "plan" | "school" | "practice" | "stats" | "coach"; children: React.ReactNode; links?: { home?: string; dashboard: string; plan: string; school?: string; practice?: string; stats?: string; coach: string }; signOutHref?: string;
+export function AppShell({ viewer, active, children, links = { plan: "/plan", school: "/school.html", coach: "/coach" }, signOutHref = "/api/auth/signout" }: {
+  viewer: PersonDTO; active: "home" | "dashboard" | "plan" | "school" | "practice" | "stats" | "coach"; children: React.ReactNode; links?: { home?: string; dashboard?: string; plan: string; school?: string; practice?: string; stats?: string; coach: string }; signOutHref?: string;
 }) {
   const staff = viewer.role === "COACH" || viewer.role === "ADMIN";
   const tab = (href: string, key: typeof active, text: string) => (
@@ -54,7 +54,6 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
   const items = [
     ...(links.school ? [{ href: links.school, label: "Trading School", active: active === "school" }] : []),
     ...(links.practice ? [{ href: links.practice, label: "Practice", active: active === "practice" }] : []),
-    { href: links.dashboard, label: "My Dashboard", active: active === "dashboard" },
     { href: links.plan, label: "Trading Plan", active: active === "plan" },
     ...(links.stats ? [{ href: links.stats, label: "Stats", active: active === "stats" }] : []),
     ...(staff ? [{ href: links.coach, label: "Coach Portal", active: active === "coach" }] : []),
@@ -65,7 +64,7 @@ export function AppShell({ viewer, active, children, links = { dashboard: "/dash
         <div className="mx-auto flex h-14 max-w-[1500px] items-center gap-x-8 px-4 sm:px-6">
           <a href={links.school ?? "/"} aria-label="FLOWHUB, Trading School"><Logo onDark /></a>
           <nav className="hidden h-full items-center md:flex">
-            {items.map((i) => <span key={i.label} className="h-full">{tab(i.href, ({ "Trading School": "school", Practice: "practice", "My Dashboard": "dashboard", "Trading Plan": "plan", Stats: "stats", "Coach Portal": "coach" } as const)[i.label as "Stats"], i.label)}</span>)}
+            {items.map((i) => <span key={i.label} className="h-full">{tab(i.href, ({ "Trading School": "school", Practice: "practice", "Trading Plan": "plan", Stats: "stats", "Coach Portal": "coach" } as const)[i.label as "Stats"], i.label)}</span>)}
           </nav>
           <MobileMenu className="ml-auto" signOutHref={signOutHref} items={items} />
           <div className="ml-auto hidden items-center gap-3 md:flex">

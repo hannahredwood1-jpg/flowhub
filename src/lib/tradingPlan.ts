@@ -15,6 +15,7 @@ export const PLAN_ENTRY = { limit: "Limit at the level when it qualifies", confi
 export type PlanSession = keyof typeof PLAN_SESSIONS;
 export type PlanModel = keyof typeof PLAN_MODELS;
 
+import type { GoalAnswers } from "./goalPlan";
 export type TradingPlanInput = {
   schedule: { days: (typeof PLAN_DAYS)[number][]; sessions: PlanSession[]; start: string; end: string; windows?: Partial<Record<PlanSession, { start: string; end: string }>> };
   models: PlanModel[];
@@ -22,6 +23,8 @@ export type TradingPlanInput = {
   risk: { instrument: "MNQ" | "NQ"; contracts: number; maxLossesPerDay: number; maxTradesPerDay: number; dailyProfitStop: number | null; noNews: boolean };
   numbers: { monthlyGoal: number; tradingDays: number };
   rules: string[];
+  /** The goal planner's answers and assumptions (Trading Plan page). */
+  goal?: GoalAnswers;
 };
 export type TradingPlanDTO = TradingPlanInput & { done: true; updatedAt: string };
 

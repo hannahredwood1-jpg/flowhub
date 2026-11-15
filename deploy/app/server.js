@@ -672,7 +672,22 @@ var tradingPlanInput = z.object({
     monthlyGoal: z.coerce.number().min(0).max(1e6),
     tradingDays: z.coerce.number().int().min(1).max(23)
   }),
-  rules: z.array(z.string().trim().min(1).max(140)).max(5)
+  rules: z.array(z.string().trim().min(1).max(140)).max(5),
+  goal: z.object({
+    monthlyGoal: z.coerce.number().min(0).max(1e6),
+    daysPerWeek: z.coerce.number().int().min(1).max(5),
+    experience: z.enum(["new", "some", "experienced"]),
+    style: z.enum(["steady", "balanced", "faster"]),
+    maxLossDay: z.coerce.number().min(0).max(1e5),
+    budget: z.coerce.number().min(0).max(1e6),
+    evalFee: z.coerce.number().min(0).max(5e3),
+    sessions: z.array(z.enum(["ASIA", "LONDON", "NY"])).min(1).max(3),
+    tradesPerDay: z.coerce.number().min(0.5).max(10),
+    winRate: z.coerce.number().min(0.1).max(0.95),
+    stopPts: z.coerce.number().min(1).max(200),
+    targetPts: z.coerce.number().min(1).max(500),
+    instrument: z.enum(["MNQ", "NQ"])
+  }).optional()
 });
 
 // src/lib/practice.ts
@@ -1194,6 +1209,14 @@ async function loadDashboard(viewer, traderId) {
   const jsonOf = (v) => unwrapState(v);
   const passRefs = new Set((await sql`select distinct ref from "SchoolAttempt" where "userId" = ${traderId} and kind = 'ex' and pass = true`).map((r) => r.ref));
   const schoolState = withPasses(sp?.state, SCHOOL_MODULE_IDS.filter((id) => passRefs.has(id)));
+  const goalWin = (() => {
+    try {
+      const g = tp ? jsonOf(tp.plan)?.goal?.winRate : void 0;
+      return typeof g === "number" ? g : void 0;
+    } catch {
+      return void 0;
+    }
+  })();
   const strategies = (rm?.strategies ?? []).filter((k) => !RETIRED_STRATEGIES.includes(k));
   return buildDashboard({
     viewer: person(viewer),
@@ -1205,7 +1228,7 @@ async function loadDashboard(viewer, traderId) {
       strategyMode: rm.strategyMode,
       multiSession: rm.multiSession,
       strategies,
-      winRate: blendedWinRate({ mode: rm.strategyMode, multiSession: rm.multiSession, strategies }),
+      winRate: goalWin ?? blendedWinRate({ mode: rm.strategyMode, multiSession: rm.multiSession, strategies }),
       avgRR: n(rm.avgRR),
       tradesPerDay: n(rm.tradesPerDay),
       primaryInstrument: rm.primaryInstrument,
@@ -2213,7 +2236,7 @@ app.get("/vault", async (c) => {
   if (!gz) return c.text("The vault is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!vaultHtml || vaultHtml.etag !== etag) vaultHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(vaultHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.post("/api/vault/redeem", async (c) => {
@@ -2277,7 +2300,7 @@ app.get("/orderflow", async (c) => {
   if (!gz) return c.text("Orderflow is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!ofHtml || ofHtml.etag !== etag) ofHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(ofHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/orderflow/status", async (c) => {
@@ -2325,7 +2348,7 @@ app.get("/invertix", async (c) => {
   if (!gz) return c.text("INVERTIX is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!invHtml || invHtml.etag !== etag) invHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(invHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/invertix/status", async (c) => {
@@ -2368,7 +2391,7 @@ app.get("/lumen", async (c) => {
   if (!gz) return c.text("LUMEN is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!lumHtml || lumHtml.etag !== etag) lumHtml = { etag, html: gunzipSync(gz).toString("utf8") };
-  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+  const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
   return c.html(lumHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/lumen/status", async (c) => {
@@ -2633,7 +2656,7 @@ var SHELL = `<!doctype html>
 <script type="module" src="/assets/app.js?v=__V__"></script>
 </body></html>`;
 var pageHtml = /* @__PURE__ */ new Map();
-var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a><a href="/#dashboard">My Dashboard</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
+var fhNav = (user, current) => `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school"${current === "school" ? ' aria-current="page"' : ""}>Trading School</a><a href="/practice"${current === "practice" ? ' aria-current="page"' : ""}>Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
 var PAGES = [["school", "/school", "school"], ["practice", "/practice", "practice"]];
 for (const [name, route, current] of PAGES) {
   app.get(route, async (c) => {
