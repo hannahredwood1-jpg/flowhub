@@ -444,7 +444,7 @@ dialog p{color:var(--ink2);margin:4px 0}
 .ofs-c>b{display:block;color:var(--signal);font-size:14px;margin-bottom:6px}
 .ofs-t,.ofs-f{margin-top:6px}.ofs-t span,.ofs-f span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.04em;margin-bottom:2px}.ofs-t span{color:var(--ice)}.ofs-f span{color:var(--win)}
 @media(max-width:640px){.of2{grid-template-columns:1fr}.oft-h,.oft-r{grid-template-columns:70px 80px 36px 1fr;font-size:11px}}
-.ofv-steps{margin:10px 0 0;padding:0;list-style:none;font-size:13px;color:var(--ink2)}.ofv-steps li{margin:4px 0}.ofv-steps b{display:inline-block;width:18px}
+.ofv-steps{margin:10px 0 0;padding:0;list-style:none;font-size:13px;color:var(--ink2)}.ofv-steps li{margin:4px 0}.ofv-steps li>b:first-child{display:inline-block;width:18px}
 /* orderflow visuals v2 */
 .ofv{background:linear-gradient(180deg,#070a0f,#05070a);box-shadow:0 0 0 1px rgba(140,196,255,.04),0 10px 30px rgba(0,0,0,.35)}
 .ofv-bar{display:flex;justify-content:space-between;align-items:center;margin:-2px 0 8px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
@@ -456,3 +456,6 @@ dialog p{color:var(--ink2);margin:4px 0}
 .of-bar{transform-box:fill-box;transform-origin:0% 50%;animation:ofBarX .8s cubic-bezier(.2,.8,.2,1) both}
 @keyframes ofBarX{from{transform:scaleX(0)}}
 .of-fo{font:9.5px/1.35 var(--f-body);color:var(--ink2)}
+.ofv-q{display:block;margin-top:10px}.ofv-q svg{width:100%;max-width:560px;height:auto;display:block;background:#05070a;border:1px solid var(--line2);border-radius:8px}
+
+.choose.three{grid-template-columns:1fr 1fr 1.3fr}@media(max-width:900px){.choose.three{grid-template-columns:1fr}}

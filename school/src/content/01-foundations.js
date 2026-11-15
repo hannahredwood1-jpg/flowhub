@@ -13,7 +13,7 @@ const SCEN=[
  {q:'A friend made a lot on a move you didn\'t take, and you feel the urge to chase it. What is this?',o:['A FOMO entry. Missing a move is not a loss','A confirmed setup','Risk management','A plan-based entry'],why:'FOMO entries chase price after the move. Missing a trade costs nothing; chasing one often does.'},
  {q:'You have only just started learning and want to try real money. What does this course say?',o:['Practise on a demo (paper) account first. Never real money while learning','Start with real money so it feels serious','Use real money but a tiny size','Use a funded account to learn faster'],why:'Learning with real money mixes emotional attachment to money into the process. Demo first.'},
  {q:'You won a trade, but you broke your rules to take it. How should you treat it?',o:['As a mistake that happened to pay: it reinforces the wrong habit','As proof the rules aren\'t needed','As a great trade','As something to repeat tomorrow'],why:'The process is what you control. A win taken outside the plan teaches the wrong lesson.'}];
-MODS.push({id:'m01',o:1.5,ph:0,chart:false,t:'Trading Mindset',out:'Explain what trading is, and what it is not.',
+MODS.push({id:'m01',o:1.5,ph:0,chart:false,t:'Mindset and One Trade Per Session',out:'Explain what trading is, and what it is not.',
  ls:['What day trading actually means','Skill first, money second','Why "I want money today" blows accounts','Losses are lessons, not failures','Technical vs fundamental traders'],
  task:'Write the definition of day trading in your own words. Then list 3 thoughts or habits that reflect "I\'m here to make money today" and 3 that reflect "I\'m here to get better today".',
  learn:[

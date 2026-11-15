@@ -100,9 +100,11 @@ console.log(`invertix ${(invertixHtml.length / 1024).toFixed(0)}KB`);
 const orderflowHtml = await buildSchool(esbuild, { orderflow: true });
 writeFileSync(path.join(appDir, "assets/orderflow.html.gz"), gzipSync(Buffer.from(orderflowHtml), { level: 9 }));
 console.log(`orderflow ${(orderflowHtml.length / 1024).toFixed(0)}KB`);
-const orderflow = (await esbuild.transform(readFileSync(path.join(root, "school/src/vault/orderflow-pack.js"), "utf8"), { minify: true, target: "es2020", legalComments: "none" })).code;
-writeFileSync(path.join(appDir, "assets/vault-orderflow.js.gz"), gzipSync(Buffer.from(orderflow), { level: 9 }));
-console.log(`vault ${(vaultHtml.length / 1024).toFixed(0)}KB · orderflow pack ${(orderflow.length / 1024).toFixed(0)}KB`);
+// LUMEN: its own page, a private file served to students who passed the Orderflow tests.
+const lumenHtml = await buildSchool(esbuild, { lumen: true });
+writeFileSync(path.join(appDir, "assets/lumen.html.gz"), gzipSync(Buffer.from(lumenHtml), { level: 9 }));
+console.log(`lumen ${(lumenHtml.length / 1024).toFixed(0)}KB`);
+console.log(`vault ${(vaultHtml.length / 1024).toFixed(0)}KB`);
 writeFileSync(path.join(appDir, "package.json"), JSON.stringify({
   name: "flowhub", private: true, type: "module",
   scripts: { start: "bun server.js" },

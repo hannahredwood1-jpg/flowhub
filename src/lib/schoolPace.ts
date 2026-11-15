@@ -8,8 +8,8 @@ export const PACE_PRESETS = [
 ] as const;
 /** The Trading Fundamentals have no exams and an express path, so a module takes much less time: the presets are faster there. */
 export const PACE_PRESETS_FUNDAMENTALS = [
-  { id: "sprint", name: "Sprint", perWeek: 14 },
-  { id: "steady", name: "Steady", perWeek: 7 },
+  { id: "sprint", name: "Sprint", perWeek: 10 },
+  { id: "steady", name: "Steady", perWeek: 5 },
   { id: "relaxed", name: "Relaxed", perWeek: 3 },
 ] as const;
 export const presetsFor = (track: string) => (track === "fundamentals" ? PACE_PRESETS_FUNDAMENTALS : PACE_PRESETS);

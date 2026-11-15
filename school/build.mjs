@@ -8,19 +8,26 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const src = (p) => readFileSync(path.join(here, "src", p), "utf8");
 
-export async function buildSchool(esbuild, { minify = true, practice = false, vault = false, invertix = false, orderflow = false } = {}) {
+export async function buildSchool(esbuild, { minify = true, practice = false, vault = false, invertix = false, orderflow = false, lumen = false } = {}) {
   const list = (d, f = () => true) => readdirSync(path.join(here, "src", d)).filter((f2) => f2.endsWith(".js") && f(f2)).sort().map((f2) => d + "/" + f2);
   // The vault and the INVERTIX page are their own pages: the shared engine and helpers plus ONLY their own content (never the school's lessons).
   const shared = ["content/00-core.js", "content/00-glossary.js", "content/08-helpers.js"];
   const engine = ["util.js", "gen.js", "gen2.js", "chart.js", "items.js"], tail = ["tracks.js", "path.js", "pace.js", "gex.js", "app.js", "track.js"];
+  const vis = "content/12-orderflow-visuals.js";
+  // Each strategy page is its own page: the shared engine and helpers, the footprint visuals, and ONLY its own lessons (never the school's lessons).
+  // The practice page is built around orderflow: the Orderflow lessons' drills and the footprint reading scenes.
   const parts = orderflow
-    ? [...engine, ...shared, "content/12-orderflow-visuals.js", "content/12-orderflow.js", ...list("orderflow"), ...tail]
-    : vault
-    ? [...engine, ...shared, ...list("vault", (f2) => f2 !== "orderflow-pack.js"), ...tail]
-    : invertix
-      ? [...engine, ...shared, "content/11-invertix.js", ...list("invertix"), ...tail]
-      // the school and the practice page leave INVERTIX out: it has its own gated page
-      : [...engine, ...list("content", (f2) => f2 !== "11-invertix.js" && !f2.startsWith("12-orderflow")), ...(practice ? [...list("data"), "lab.js"] : []), ...tail];
+    ? [...engine, ...shared, vis, "content/12-orderflow.js", ...list("orderflow"), ...tail]
+    : lumen
+      ? [...engine, ...shared, vis, "content/13-lumen.js", ...list("lumen"), ...tail]
+      : vault
+        ? [...engine, ...shared, vis, ...list("vault"), ...tail]
+        : invertix
+          ? [...engine, ...shared, vis, "content/11-invertix.js", ...list("invertix"), ...tail]
+          : practice
+            ? [...engine, ...shared, vis, "content/12-orderflow.js", ...list("orderflow"), "content/14-practice-orderflow.js", ...list("data"), "lab.js", ...tail]
+            // the school leaves every strategy and Orderflow out: each has its own gated page
+            : [...engine, ...list("content", (f2) => f2 !== "11-invertix.js" && f2 !== "13-lumen.js" && !f2.startsWith("12-orderflow") && !f2.startsWith("14-practice")), ...tail];
   let js = parts.map((p) => `/* ── ${p} ── */\n${src(p)}`).join("\n");
   let css = src("style.css");
   if (minify) {
@@ -31,6 +38,7 @@ export async function buildSchool(esbuild, { minify = true, practice = false, va
   if (vault) html = vaultShell(html);
   if (invertix) html = invertixShell(html);
   if (orderflow) html = orderflowShell(html);
+  if (lumen) html = lumenShell(html);
   return html;
 }
 
@@ -48,10 +56,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 export function vaultShell(html) {
   const sub = (a, b2) => { if (!html.includes(a)) throw new Error("vault shell text not found: " + a.slice(0, 40)); html = html.replace(a, b2); };
   sub("<title>Trading School · FLOWHUB</title>", "<title>The Vault · FLOWHUB</title>");
-  sub('<span class="pill"><span class="dot"></span>Practice · no real money</span>', '<span class="pill vault-pill"><span class="dot"></span>ECHO and ORBIT · the vault</span>');
-  sub('<div class="hud" style="margin-bottom:8px">Trading School</div>', '<div class="hud" style="margin-bottom:8px">The Vault · ECHO and ORBIT</div>');
+  sub('<span class="pill"><span class="dot"></span>Practice · no real money</span>', '<span class="pill vault-pill"><span class="dot"></span>ECHO x ORBIT · the vault</span>');
+  sub('<div class="hud" style="margin-bottom:8px">Trading School</div>', '<div class="hud" style="margin-bottom:8px">The Vault · ECHO x ORBIT</div>');
   sub('Learn to trade, <span class="f">A to Z.</span>', 'You are <span class="f">inside.</span>');
-  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Two strategies live in this room, ECHO and ORBIT. Each has its own course, certificate and exams. Nothing here is shown outside it.");
+  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Two strategies live in this room, Echo and Orbit, taught as one course with one routine. Five modules, every one with a test, and a certificate at the end. Nothing here is shown outside it.");
   return html.replace("<script>", "<script>window.VAULT=1;</script><script>");
 }
 
@@ -62,7 +70,7 @@ export function invertixShell(html) {
   sub('<span class="pill"><span class="dot"></span>Practice · no real money</span>', '<span class="pill"><span class="dot"></span>INVERTIX · practice, no real money</span>');
   sub('<div class="hud" style="margin-bottom:8px">Trading School</div>', '<div class="hud" style="margin-bottom:8px">INVERTIX</div>');
   sub('Learn to trade, <span class="f">A to Z.</span>', 'Learn <span class="f">INVERTIX.</span>');
-  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Eight modules take you from the key level to the daily playbook, with PRIME, EARLY, H/L, PO3, the news fade and the FOMC evening trade along the way. Each one teaches one idea, makes you apply it on a chart, and then tests you. You move on by proving it, not by clicking through.");
+  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Three short modules, about 30 minutes: the news fade, how to read the rush in the order flow, and how to size and run a news day. Each one teaches one idea, has you apply it, and then tests you.");
   return html.replace("<script>", "<script>window.INV=1;</script><script>");
 }
 
@@ -73,8 +81,19 @@ export function orderflowShell(html) {
   sub('<span class="pill"><span class="dot"></span>Practice · no real money</span>', '<span class="pill"><span class="dot"></span>Orderflow · practice, no real money</span>');
   sub('<div class="hud" style="margin-bottom:8px">Trading School</div>', '<div class="hud" style="margin-bottom:8px">Orderflow</div>');
   sub('Learn to trade, <span class="f">A to Z.</span>', 'Learn <span class="f">Orderflow.</span>');
-  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Ten modules take you from the tape and the footprint to how orderflow sits beside ECHO, ORBIT and INVERTIX. Each one teaches one idea, has you apply it, and then tests you. Pass every test and all three strategies open. You move on by proving it, not by clicking through.");
+  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Eleven modules take you from plain-word price ideas to the tape and the footprint to how orderflow sits beside ECHO, ORBIT and INVERTIX. Each one teaches one idea, has you apply it, and then tests you. Pass every test and all three strategies open. You move on by proving it, not by clicking through.");
   sub("One concept, built from the one before it, with a worked example on a live chart.", "One concept, built from the one before it, with a worked example you can step through.");
   sub("Do it yourself on the chart with drawing tools. Tasks count when you get them right on the first check.", "Do it yourself: three tasks with fresh numbers. Tasks count when you get them right on the first check.");
   return html.replace("<script>", "<script>window.OFL=1;</script><script>");
+}
+
+/** The LUMEN page: the school shell with its own words. */
+export function lumenShell(html) {
+  const sub = (a, b2) => { if (!html.includes(a)) throw new Error("lumen shell text not found: " + a.slice(0, 40)); html = html.replace(a, b2); };
+  sub("<title>Trading School · FLOWHUB</title>", "<title>LUMEN · FLOWHUB</title>");
+  sub('<span class="pill"><span class="dot"></span>Practice · no real money</span>', '<span class="pill"><span class="dot"></span>LUMEN · practice, no real money</span>');
+  sub('<div class="hud" style="margin-bottom:8px">Trading School</div>', '<div class="hud" style="margin-bottom:8px">LUMEN</div>');
+  sub('Learn to trade, <span class="f">A to Z.</span>', 'Learn <span class="f">LUMEN.</span>');
+  sub("Each module teaches one idea, makes you apply it on a real chart, and then tests you. You move on by proving it, not by clicking through.", "Five modules: LUMEN in plain words, then the 30-second order-flow check at its three moments (the zone tap, the break candle, and after you are in), then how to act on it. Each one teaches one idea, has you apply it, and then tests you.");
+  return html.replace("<script>", "<script>window.LUMEN=1;</script><script>");
 }

@@ -3,7 +3,7 @@
    everything else is learned the normal way. There are no exams. Every module is finished only by passing its practice tasks.
    Stored modes keep the old names: 'prove' = express, 'learn' = teach me. Mirrors src/lib/schoolPath.ts (a test keeps the list below in step).
 ============================================================ */
-const NO_PROOF=['m50'];
+const NO_PROOF=[];
 let PATH=null,PATH_READY=false,PATH_STAFF=false,PATH_OV=null;
 const pathOn=()=>!!TRACK&&TRACK.id==='fundamentals';
 const provableMod=m=>!NO_PROOF.includes(m.id);
@@ -35,15 +35,14 @@ function pathCard(){
   return`<div class="card pace-card"><div class="hud" style="display:flex;justify-content:space-between">Your path <span class="chip live">${s0.done>=s0.need?'Done':'About '+fmtHrs(minsLeft())+' left'}</span></div>
   <div class="h" style="font-size:17px;margin:6px 0 8px">To earn your certificate</div><div class="pbar"><i style="width:${pct}%"></i></div>
   <p class="muted" style="font-size:13.5px;margin-top:8px"><b>${s.done} of ${s.need}</b> complete${s.express?` · ${s.express} express`:''}${s.learn?` · ${s.learn} to learn`:''}</p>
-  <p class="muted" style="font-size:12.5px;margin-top:6px">Understanding GEX Levels is always learned in full.</p>
   <button class="btn sm" data-path-open style="margin-top:10px">Edit your path</button></div>`}
 document.addEventListener('click',e=>{if(e.target.closest('[data-path-open]'))openPath(PATH?'edit':'first')});
 function pathMaybeFirst(){if(pathGate()&&!PATH_OV)openPath('first');return pathGate()}
 
 const PATH_START=[
  {id:'new',n:"I'm brand new",d:"Teach me everything from the start.",prove:[]},
- {id:'traded',n:"I've traded before",d:'I know the basics, my platform and the habits. Express those.',prove:[0,1,2]},
- {id:'experienced',n:"I'm experienced",d:'I already trade with a method and manage risk. Express most of it.',prove:[0,1,2,3,4,5,6]}];
+ {id:'traded',n:"I've traded before",d:'I know the basics, my platform and the habits. Express those.',prove:[0,1]},
+ {id:'experienced',n:"I'm experienced",d:'I already trade with a method and manage risk. Express most of it.',prove:[0,1,2]}];
 function openPath(mode){
   if(PATH_OV)return;const first=mode==='first',view=false;
   const rem=MODS.filter(m=>provableMod(m)&&!pm(m.id).p);
@@ -66,8 +65,8 @@ function openPath(mode){
       return`<div class="pb-row"><div class="pb-rh"><div><b>${PH[ph].n}</b><small>${ms.length} module${ms.length>1?'s':''}${!allP&&!allL?' · mixed':''}</small></div>
         ${view?`<span class="chip ${allP?'live':''}">${allP?'Express':allL?'Learn it':'Mixed'}</span>`:`<div class="seg" role="group" aria-label="${esc(PH[ph].n)}"><button type="button" class="${allL?'on':''}" data-pset="${ph}:learn">Teach me</button><button type="button" class="${allP?'on':''}" data-pset="${ph}:prove">Express</button></div>`}</div>
         <details class="pb-mods" ${view?'open':''}><summary>${view?'Modules':'Choose module by module'}</summary>${ms.map(m=>`<label class="pb-m"><input type="checkbox" data-m="${m.id}" ${modes[m.id]==='prove'?'checked':''} ${view?'disabled':''}><span>${m.n}. ${esc(m.t)}</span><em>${modes[m.id]==='prove'?'Express':'Learn it'}</em></label>`).join('')}</details></div>`}).join(''):'<p class="muted">Everything you can test out of is already done.</p>'}
-      <div class="pb-row pb-full"><div class="pb-rh"><div><b>Always learned in full</b><small>${fullN} module</small></div><span class="chip">Learn it</span></div><p class="muted" style="font-size:13.5px;margin-top:6px">Understanding GEX Levels is always learned in full.</p></div></div>
-    <div class="card pb-sum"><div class="hud">Your path</div><p style="margin:4px 0 10px"><b>${nP}</b> express · <b>${nL}</b> to learn · <b>${fullN}</b> always in full · about <b>${fmtHrs(mins)}</b></p>
+      ${fullN?`<div class="pb-row pb-full"><div class="pb-rh"><div><b>Always learned in full</b><small>${fullN} module</small></div><span class="chip">Learn it</span></div><p class="muted" style="font-size:13.5px;margin-top:6px">Understanding GEX Levels is always learned in full.</p></div>`:''}</div>
+    <div class="card pb-sum"><div class="hud">Your path</div><p style="margin:4px 0 10px"><b>${nP}</b> express · <b>${nL}</b> to learn ${fullN?` · <b>${fullN}</b> always in full`:''} · about <b>${fmtHrs(mins)}</b></p>
       <ul class="pb-rules"><li><b>Express</b> skips the lesson. You still have to get the three practice tasks right the first time. You can open the lesson whenever you want.</li><li>Every module, express or not, is complete only when its practice tasks are passed. There are no exams.</li><li>When every module is complete you earn your Fundamentals certificate. The certificate opens the INVERTIX page.</li><li>You can change your path at any time.</li></ul>
       <div class="pace-act">${view?'<button class="btn primary" id="pbClose">Close</button>':`<button class="btn primary" id="pbGo">${first?'Lock in my path →':'Save my path'}</button>${first?'<a class="btn ghost" href="/">← FLOWHUB home</a>':'<button class="btn ghost" id="pbClose">Cancel</button>'}`}</div></div></div>`;
     bind()};

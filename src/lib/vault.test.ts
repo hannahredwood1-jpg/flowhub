@@ -5,12 +5,9 @@ import { VAULT_MODULES, hashCode, makeCode, normalizeCode, vaultPassed } from ".
 
 test("vault module list matches the vault content", () => {
   const dir = new URL("../../school/src/vault/", import.meta.url);
-  const src = readdirSync(dir).filter((f) => f.endsWith(".js") && f !== "orderflow-pack.js").map((f) => readFileSync(new URL(f, dir), "utf8")).join("\n");
+  const src = readdirSync(dir).filter((f) => f.endsWith(".js")).map((f) => readFileSync(new URL(f, dir), "utf8")).join("\n");
   const clean = (t: string) => t.replace(/\\'/g, "'");
-  const found = [
-    ...[...src.matchAll(/(?:chartMod|quick)\(\{id:'([xbo]\d+)',[^]*?\bt:'((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], clean(m[2])]),
-    ...[...src.matchAll(/\['(o\d+)','((?:[^'\\]|\\.)*)',\[/g)].map((m) => [m[1], clean(m[2])]),
-  ];
+  const found = [...src.matchAll(/(?:chartMod|quick)\(\{id:'(e\d+)',[^]*?\bt:'((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], clean(m[2])]);
   assert.deepEqual([...found].sort(), VAULT_MODULES.map((m) => [m.id, m.title]).sort());
 });
 
@@ -24,6 +21,6 @@ test("codes: format, look-alikes and hashing", () => {
 });
 
 test("vault progress counts passed modules", () => {
-  assert.equal(vaultPassed({ v2: { m: { x01: { p: 1 }, x02: { p: 0 }, x03: { p: 1 }, zz: { p: 1 } } } }), 2);
+  assert.equal(vaultPassed({ v2: { m: { e01: { p: 1 }, e02: { p: 0 }, e03: { p: 1 }, zz: { p: 1 } } } }), 2);
   assert.equal(vaultPassed(null), 0);
 });
