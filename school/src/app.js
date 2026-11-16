@@ -525,14 +525,14 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape')$$('dialog[open]').for
 /* ============================================================
    PRACTICE: the same generated charts and tasks as the modules, endless, with instant feedback and no exam
 ============================================================ */
-const PM={of:['f00','f01','f02','f03','f04','f05','f06','f07','f09','f08','f10','px1']};
+const PM={of:['f00','f01','f02','f03','f04','f05','f06','f07','f09','f08','f10','f11','px1','px2']};
 let PV='tasks';
-const PR={topic:'mixed',item:null,m:null,st:{},fb:null,checked:false,revealed:false,n:0,ok:0};
+const PR={topic:'px2',item:null,m:null,st:{},fb:null,checked:false,revealed:false,n:0,ok:0};
 const pracModel=id=>Object.keys(PM).find(k=>PM[k].includes(id));
 async function pracRep(ok){const m=pracModel(PR.m.id);if(!m)return;try{await fetch('/api/practice/rep',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({m,d:'school',ok,tags:[]})})}catch(e){}}
 function pracNext(){
   const pool=PR.topic==='mixed'?MODS:PM[PR.topic]?MODS.filter(m=>PM[PR.topic].includes(m.id)):MODS.filter(m=>m.id===PR.topic),cand=pool.filter(m=>m.drills&&m.drills.length);
-  const px=PR.topic==='mixed'?cand.find(x=>x.id==='px1'):null,m=px&&Math.random()<.55?px:pick(Math.random,cand),f=pick(Math.random,m.drills),r=mulberry(Math.floor(Math.random()*1e9));
+  const x=Math.random(),px=PR.topic==='mixed'?cand.find(y=>y.id==='px2'&&x<.5)||cand.find(y=>y.id==='px1'&&x>=.5&&x<.75):null,m=px||pick(Math.random,cand),f=pick(Math.random,m.drills),r=mulberry(Math.floor(Math.random()*1e9));
   PR.m=m;PR.item=fin(f(r),r);PR.st={};PR.fb=null;PR.checked=false;PR.revealed=false;PR.hint=false;pracPaint();pracPanel();
 }
 function pracPaint(){
@@ -547,8 +547,8 @@ function pracPaint(){
 }
 function pracPanel(){
   const it=PR.item,kd=K[it.kind],g=PR.fb,box=$('#lesson');
-  const opts=[['mixed','Mixed: any topic'],...MODS.map(m=>[m.id,`${m.n}. ${m.t}`])];
-  box.innerHTML=`<div class="les-h"><div class="hud">Practice · no exam, no pass mark</div><div class="h">Practice</div>
+  const opts=[['px2','Chart drills: click the answer on the chart'],['mixed','Everything: drills and questions'],...MODS.filter(m=>m.id!=='px2').map(m=>[m.id,`Questions · ${m.t}`])];
+  box.innerHTML=`<div class="les-h"><div class="hud">Practice · no exam, no pass mark</div><div class="h">Practice</div><p class="muted" style="font-size:13.5px;margin-top:4px">Hands-on: the chart is the question. Click on it to answer.</p>
    <div style="margin:10px 0 4px"><select id="pTopic" class="in">${opts.map(([v,t])=>`<option value="${v}" ${v===PR.topic?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
    <div class="kv"><span class="chip ok">${PR.ok} right</span><span class="chip">${PR.n} done</span><span class="chip">${esc(it.topic||'Task')}</span></div></div>
    <div class="les-b"><p style="color:var(--ink)"><b>${it.q}</b></p>${it.table&&it.kind!=='num'?`<table class="dw">${it.table}</table>`:''}${kd.html(it,PR.st,{res:PR.checked})}
