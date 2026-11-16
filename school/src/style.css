@@ -547,3 +547,13 @@ select{height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:8p
 .xsvg{display:block;width:100%;max-width:840px;height:auto;margin:10px 0}
 .xh{cursor:pointer}.xh:hover{fill:rgba(255,255,255,.09)}.xc.done .xh{cursor:default}.xc.done .xh:hover{fill:transparent}
 .xcell rect:first-child{transition:stroke .1s}
+
+/* trade simulator */
+.sim-svg{max-width:880px}
+.sim-opt{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink2);margin:6px 0}.sim-opt input{margin-top:3px;accent-color:var(--signal)}
+.sim-step{margin:10px 0 4px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.sim-q{font-size:15.5px;margin:6px 0 10px;color:var(--ink)}
+.sim-debrief{margin:12px 0;display:grid;gap:10px}
+.sim-row{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.sim-row>b{display:inline-block;margin-right:10px}.sim-row p{margin:6px 0 0;color:var(--ink2);font-size:14px}.sim-row ul{margin:6px 0 0;padding-left:18px;color:var(--ink2);font-size:14px}
+.chip.bad{color:var(--loss)}
