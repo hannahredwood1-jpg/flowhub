@@ -85,6 +85,7 @@ export function JournalTable({ data, readOnly, onNew, onEdit, onChanged }: {
                                 <KV k="Risk" v={[j.riskDollars != null && usd(j.riskDollars), j.riskPct != null && `${j.riskPct}%`].filter(Boolean).join(" · ") || "—"} />
                                 <KV k="Planned R:R" v={j.rrPlanned != null ? `1:${j.rrPlanned}` : "—"} />
                                 <KV k="Followed plan" v={j.followedPlan ? "Yes" : "No"} />
+                                <KV k="3-min flow check" v={j.flowCheck === "with" ? "With me" : j.flowCheck === "against" ? "Against me" : j.flowCheck === "unsure" ? "Mixed" : "—"} />
                               </div>
                               <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-2">{j.notes || <span className="text-ink-3">No notes.</span>}</p>
                               {j.screenshotUrl && (

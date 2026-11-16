@@ -604,6 +604,7 @@ var journalInput = z.object({
   pnl: money.min(-1e6).max(1e6),
   emotion: z.enum(Emotions),
   followedPlan: z.boolean().default(true),
+  flowCheck: z.enum(["with", "against", "unsure"]).optional().nullable(),
   screenshotUrl: httpsUrl.optional().nullable().or(z.literal("").transform(() => null)),
   notes: z.string().max(4e3).optional().nullable()
 });
@@ -1265,6 +1266,7 @@ async function loadDashboard(viewer, traderId) {
       pnl: n(j.pnl),
       emotion: j.emotion,
       followedPlan: j.followedPlan,
+      flowCheck: j.flowCheck ?? null,
       screenshotUrl: j.screenshotUrl,
       notes: j.notes,
       feedbackCount: j.fb
@@ -1678,10 +1680,10 @@ app.post("/api/journal", async (c) => {
   await checkOwnAccount(u.id, d.memberAccountId);
   const id = randomUUID();
   await sql`insert into "JournalEntry" (id, "userId", "memberAccountId", "tradeDate", ticker, direction, "setupType", contracts, "riskPct", "riskDollars",
-              "rrPlanned", "rrRealized", outcome, pnl, emotion, "followedPlan", "screenshotUrl", notes)
+              "rrPlanned", "rrRealized", outcome, pnl, emotion, "followedPlan", "flowCheck", "screenshotUrl", notes)
             values (${id}, ${u.id}, ${d.memberAccountId ?? null}, ${d.tradeDate}::date, ${d.ticker}, ${d.direction}::"Direction", ${d.setupType},
               ${d.contracts ?? null}, ${d.riskPct ?? null}, ${d.riskDollars ?? null}, ${d.rrPlanned ?? null}, ${d.rrRealized ?? null},
-              ${d.outcome}::"Outcome", ${d.pnl}, ${d.emotion}::"Emotion", ${d.followedPlan}, ${d.screenshotUrl ?? null}, ${d.notes ?? null})`;
+              ${d.outcome}::"Outcome", ${d.pnl}, ${d.emotion}::"Emotion", ${d.followedPlan}, ${d.flowCheck ?? null}, ${d.screenshotUrl ?? null}, ${d.notes ?? null})`;
   return c.json({ id });
 });
 async function ownEntry(c) {

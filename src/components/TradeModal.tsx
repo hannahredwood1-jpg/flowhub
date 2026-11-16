@@ -27,6 +27,7 @@ export function TradeModal({ open, onClose, accounts, editing, today, onSaved }:
     pnl: editing?.pnl ?? "",
     emotion: editing?.emotion ?? "CALM",
     followedPlan: editing?.followedPlan ?? true,
+    flowCheck: (editing?.flowCheck ?? "") as "" | "with" | "against" | "unsure",
     screenshotUrl: editing?.screenshotUrl ?? "",
     notes: editing?.notes ?? "",
   });
@@ -49,7 +50,7 @@ export function TradeModal({ open, onClose, accounts, editing, today, onSaved }:
       memberAccountId: f.memberAccountId || null,
       contracts: opt(f.contracts), riskDollars: opt(f.riskDollars), riskPct: opt(f.riskPct === "" ? autoPct : f.riskPct),
       rrPlanned: opt(f.rrPlanned), rrRealized: opt(f.rrRealized), pnl,
-      screenshotUrl: f.screenshotUrl || null, notes: f.notes || null,
+      screenshotUrl: f.screenshotUrl || null, notes: f.notes || null, flowCheck: f.flowCheck || null,
     };
     try {
       if (editing) await api.updateTrade(editing.id, body);
@@ -124,6 +125,14 @@ export function TradeModal({ open, onClose, accounts, editing, today, onSaved }:
           <Field label="Screenshot link" htmlFor="t-shot" hint="TradingView snapshot or image link (https)"><input id="t-shot" type="url" className="field" placeholder="https://www.tradingview.com/x/…" value={f.screenshotUrl} onChange={set("screenshotUrl")} /></Field>
         </div>
         <Field label="Notes" htmlFor="t-notes"><textarea id="t-notes" rows={3} className="field" maxLength={4000} value={f.notes} onChange={set("notes")} placeholder="Why you took it, what you'd do differently" /></Field>
+        <Field label="3-minute flow check (optional)" htmlFor="t-flow" hint="After you were in for 3 minutes: was buying/selling pressure (delta) leaning with your trade or against it? Log it so you can see your own pattern.">
+          <select id="t-flow" className="field" value={f.flowCheck} onChange={set("flowCheck")}>
+            <option value="">Did not check</option>
+            <option value="with">With me (delta leaned my way)</option>
+            <option value="against">Against me (delta leaned the other way)</option>
+            <option value="unsure">Mixed / could not tell</option>
+          </select>
+        </Field>
         <label className="flex items-center gap-2 text-sm text-ink-2">
           <input id="t-plan" type="checkbox" className="h-4 w-4 accent-[var(--color-ice)]" checked={f.followedPlan} onChange={(e) => setF({ ...f, followedPlan: e.target.checked })} />
           I followed my plan on this trade

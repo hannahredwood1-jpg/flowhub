@@ -100,6 +100,7 @@ export function PlanHub({ initial, catalog }: { initial: DashboardData; catalog:
           {unread.length > 0 && <Panel title="New from your coach"><div className="grid gap-2 p-4">{unread.map((f) => <FeedbackItem key={f.id} f={f} onRead={async (id) => { await api.markFeedbackRead(id); await refresh(); }} />)}</div></Panel>}
           <TiltGuard data={data} />
           <RoutineRow data={data} />
+          <FlowCheckPanel journal={data.journal} />
           <JournalTable data={data} onNew={() => setModal({ kind: "trade", editing: null })} onEdit={(j) => setModal({ kind: "trade", editing: j })} onChanged={refresh} />
           {data.feedback.some((f) => !f.journalEntryId && f.readAt) && (
             <Panel title="Coaching notes"><div className="grid max-h-80 gap-2 overflow-auto p-4">{data.feedback.filter((f) => !f.journalEntryId && f.readAt).map((f) => <FeedbackItem key={f.id} f={f} />)}</div></Panel>
@@ -400,5 +401,34 @@ function Review({ plan }: { plan: GoalPlan }) {
       </div>
       <p className="text-[12.5px] leading-relaxed text-ink-3">This is arithmetic on assumptions, not a prediction. Saving it creates your plan page, your daily targets and your pre-trade checklist. You can change any answer later.</p>
     </div>
+  );
+}
+
+/** The member's own 3-minute flow check log. Counts only what they logged; it makes no claim about what the check means. */
+function FlowCheckPanel({ journal }: { journal: JournalDTO[] }) {
+  const logged = journal.filter((j) => j.flowCheck === "with" || j.flowCheck === "against");
+  const group = (k: "with" | "against") => {
+    const g = logged.filter((j) => j.flowCheck === k);
+    const wins = g.filter((j) => j.outcome === "WIN").length;
+    return { n: g.length, wins, pnl: g.reduce((s, j) => s + j.pnl, 0) };
+  };
+  const w = group("with"), a = group("against");
+  return (
+    <Panel title="Your 3-minute flow check">
+      <div className="grid gap-3 p-4 text-sm text-ink-2">
+        <p>After you are in a trade for 3 minutes, look at delta. Log it when you save the trade (With me / Against me). This page only counts what you logged, so you can see your own pattern over time. It does not prove anything until you have a lot of trades.</p>
+        {logged.length === 0 ? <p className="text-ink-3">Nothing logged yet. Pick an answer in the trade form next time.</p> : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {([["Delta leaned with me", w], ["Delta leaned against me", a]] as const).map(([label, g]) => (
+              <div key={label} className="rounded-lg border border-line p-3">
+                <div className="text-xs text-ink-3">{label}</div>
+                <div className="mt-1 text-base font-semibold text-ink">{g.n} trade{g.n === 1 ? "" : "s"}</div>
+                <div className="text-xs">{g.n ? `${g.wins} won · ${usd(g.pnl)} total` : "—"}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Panel>
   );
 }

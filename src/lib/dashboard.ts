@@ -3,7 +3,7 @@ import type { User } from "@prisma/client";
 import { db, isoDate, num } from "./db";
 import { avatarUrl } from "./discord";
 import { buildDashboard, buildDirectoryRow, type RawAccount } from "./viewmodel";
-import type { CatalogFirm, DashboardData, PersonDTO, ProjectionDTO, RulesDTO } from "./types";
+import type { CatalogFirm, DashboardData, JournalDTO, PersonDTO, ProjectionDTO, RulesDTO } from "./types";
 import { todayET } from "./types";
 import type { Instrument } from "./planner";
 import { blendedWinRate, type StrategyKey } from "./strategies";
@@ -53,7 +53,7 @@ export async function loadDashboard(viewer: User, traderId: string): Promise<Das
       id: j.id, memberAccountId: j.memberAccountId, tradeDate: isoDate(j.tradeDate), ticker: j.ticker, direction: j.direction,
       setupType: j.setupType, contracts: j.contracts, riskPct: num(j.riskPct), riskDollars: num(j.riskDollars),
       rrPlanned: num(j.rrPlanned), rrRealized: num(j.rrRealized), outcome: j.outcome, pnl: num(j.pnl)!, emotion: j.emotion,
-      followedPlan: j.followedPlan, screenshotUrl: j.screenshotUrl, notes: j.notes, feedbackCount: j._count.feedback,
+      followedPlan: j.followedPlan, flowCheck: (j.flowCheck as JournalDTO["flowCheck"]) ?? null, screenshotUrl: j.screenshotUrl, notes: j.notes, feedbackCount: j._count.feedback,
     })),
     feedback: trader.feedbackGot.map((f) => ({
       id: f.id, coach: { name: f.coach.globalName ?? f.coach.username, avatarUrl: avatarUrl(f.coach.discordId, f.coach.avatarHash) },

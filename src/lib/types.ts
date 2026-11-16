@@ -75,6 +75,7 @@ export type JournalDTO = {
   pnl: number;
   emotion: string;
   followedPlan: boolean;
+  flowCheck: "with" | "against" | "unsure" | null;
   screenshotUrl: string | null;
   notes: string | null;
   feedbackCount: number;
