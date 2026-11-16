@@ -107,9 +107,9 @@ const planTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM");
 export const tradingPlanInput = z.object({
   schedule: z.object({
     days: z.array(z.enum(PLAN_DAYS)).min(1, "Pick at least one day").max(6),
-    sessions: z.array(z.enum(["ASIA", "LONDON", "NY"])).min(1, "Pick at least one session").max(3),
+    sessions: z.array(z.enum(["ASIA", "LONDON", "NY", "NY_AM", "NY_LUNCH", "NY_PM"])).min(1, "Pick at least one session").max(5),
     start: planTime, end: planTime,
-    windows: z.record(z.enum(["ASIA", "LONDON", "NY"]), z.object({ start: planTime, end: planTime })).optional(),
+    windows: z.record(z.enum(["ASIA", "LONDON", "NY", "NY_AM", "NY_LUNCH", "NY_PM"]), z.object({ start: planTime, end: planTime })).optional(),
   }),
   models: z.array(z.enum(["ECHO_X_ORBIT", "INVERTIX"])).min(1, "Pick at least one model").max(2),
   entries: z.object({
@@ -139,8 +139,9 @@ export const tradingPlanInput = z.object({
     style: z.enum(["steady", "balanced", "faster"]),
     maxLossDay: z.coerce.number().min(0).max(100_000),
     budget: z.coerce.number().min(0).max(1_000_000),
-    evalFee: z.coerce.number().min(0).max(5_000),
-    sessions: z.array(z.enum(["ASIA", "LONDON", "NY"])).min(1).max(3),
+    strengths: z.array(z.string().max(24)).max(8).default([]),
+    weaknesses: z.array(z.string().max(24)).max(8).default([]),
+    sessions: z.array(z.enum(["ASIA", "LONDON", "NY", "NY_AM", "NY_LUNCH", "NY_PM"])).min(1).max(5),
     tradesPerDay: z.coerce.number().min(0.5).max(10),
     winRate: z.coerce.number().min(0.1).max(0.95),
     stopPts: z.coerce.number().min(1).max(200),

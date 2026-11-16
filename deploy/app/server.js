@@ -554,6 +554,8 @@ function todayET(d = /* @__PURE__ */ new Date()) {
 
 // src/lib/tradingPlan.ts
 var PLAN_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
+var PLAN_SESSIONS = { NY_AM: "NY AM \xB7 9:30 AM\u201312 PM", NY_LUNCH: "NY Lunch \xB7 12\u20132 PM", NY_PM: "NY PM \xB7 2\u20134 PM", ASIA: "Asia \xB7 7 PM\u201312 AM", LONDON: "London \xB7 12\u20136 AM" };
+var SESSION_LABELS = { ...PLAN_SESSIONS, NY: "New York \xB7 9:30 AM\u20134 PM" };
 var PLAN_MODELS = { ECHO_X_ORBIT: "ECHO X ORBIT (Discord calls)", INVERTIX: "INVERTIX" };
 function cleanPlanModels(models) {
   const ok = (models ?? []).filter((m) => m in PLAN_MODELS);
@@ -647,10 +649,10 @@ var planTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM");
 var tradingPlanInput = z.object({
   schedule: z.object({
     days: z.array(z.enum(PLAN_DAYS)).min(1, "Pick at least one day").max(6),
-    sessions: z.array(z.enum(["ASIA", "LONDON", "NY"])).min(1, "Pick at least one session").max(3),
+    sessions: z.array(z.enum(["ASIA", "LONDON", "NY", "NY_AM", "NY_LUNCH", "NY_PM"])).min(1, "Pick at least one session").max(5),
     start: planTime,
     end: planTime,
-    windows: z.record(z.enum(["ASIA", "LONDON", "NY"]), z.object({ start: planTime, end: planTime })).optional()
+    windows: z.record(z.enum(["ASIA", "LONDON", "NY", "NY_AM", "NY_LUNCH", "NY_PM"]), z.object({ start: planTime, end: planTime })).optional()
   }),
   models: z.array(z.enum(["ECHO_X_ORBIT", "INVERTIX"])).min(1, "Pick at least one model").max(2),
   entries: z.object({
@@ -680,8 +682,9 @@ var tradingPlanInput = z.object({
     style: z.enum(["steady", "balanced", "faster"]),
     maxLossDay: z.coerce.number().min(0).max(1e5),
     budget: z.coerce.number().min(0).max(1e6),
-    evalFee: z.coerce.number().min(0).max(5e3),
-    sessions: z.array(z.enum(["ASIA", "LONDON", "NY"])).min(1).max(3),
+    strengths: z.array(z.string().max(24)).max(8).default([]),
+    weaknesses: z.array(z.string().max(24)).max(8).default([]),
+    sessions: z.array(z.enum(["ASIA", "LONDON", "NY", "NY_AM", "NY_LUNCH", "NY_PM"])).min(1).max(5),
     tradesPerDay: z.coerce.number().min(0.5).max(10),
     winRate: z.coerce.number().min(0.1).max(0.95),
     stopPts: z.coerce.number().min(1).max(200),
@@ -1304,7 +1307,8 @@ async function loadCatalog() {
       drawdownModel: t.drawdownModel,
       maxMinis: t.maxMinis,
       maxMicros: t.maxMicros,
-      profitSplit: t.profitSplit
+      profitSplit: t.profitSplit,
+      notes: t.notes ?? null
     });
   }
   return out;

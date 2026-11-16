@@ -112,7 +112,7 @@ export type DashboardData = {
 export type CatalogSize = {
   id: string; accountSize: number; profitTarget: number | null; maxLoss: number; dailyLossLimit: number | null;
   consistencyPct: number | null; minDays: number; drawdownNote: string; dataStatus: "OFFICIAL" | "SECONDARY" | "VERIFY";
-  drawdownModel: DrawdownModel; maxMinis: number; maxMicros: number; profitSplit: string | null;
+  drawdownModel: DrawdownModel; maxMinis: number; maxMicros: number; profitSplit: string | null; notes?: string | null;
 };
 export type CatalogFirm = { firm: string; plans: { plan: string; sizes: CatalogSize[] }[] };
 

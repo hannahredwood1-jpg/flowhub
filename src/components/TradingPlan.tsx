@@ -5,7 +5,7 @@ import { useState } from "react";
 import { api } from "@/lib/api-client";
 import type { CatalogFirm, DashboardData } from "@/lib/types";
 import {
-  PLAN_DAYS, PLAN_ENTRY, PLAN_MODELS, PLAN_SESSIONS, SESSION_RANGE, fmtTime, planWindows, windowsText, planMaxDailyLoss, planRewardPerTrade, planRiskPerTrade,
+  PLAN_DAYS, PLAN_ENTRY, PLAN_MODELS, PLAN_SESSIONS, SESSION_LABELS, SESSION_RANGE, fmtTime, planWindows, windowsText, planMaxDailyLoss, planRewardPerTrade, planRiskPerTrade,
   type PlanModel, type PlanSession, type TradingPlanDTO, type TradingPlanInput,
 } from "@/lib/tradingPlan";
 import { usd } from "@/lib/format";
@@ -117,7 +117,7 @@ function PlanBuilder({ data, onSaved, onProjections }: { data: DashboardData; on
                 <div className="label">Your windows (ET) · pick the part of each session that fits your day</div>
                 {p.schedule.sessions.map((s) => { const w = p.schedule.windows?.[s] ?? SESSION_RANGE[s]; return (
                   <div key={s} className="grid max-w-xl grid-cols-[110px_1fr_1fr] items-end gap-3">
-                    <span className="pb-2 text-sm">{PLAN_SESSIONS[s].split(" ·")[0]}</span>
+                    <span className="pb-2 text-sm">{SESSION_LABELS[s].split(" ·")[0]}</span>
                     <Field label="From" htmlFor={`pl-${s}-a`}><input id={`pl-${s}-a`} type="time" className="field" value={w.start} onChange={(e) => setWindow(s, { ...w, start: e.target.value })} /></Field>
                     <Field label="To" htmlFor={`pl-${s}-b`}><input id={`pl-${s}-b`} type="time" className="field" value={w.end} onChange={(e) => setWindow(s, { ...w, end: e.target.value })} /></Field>
                   </div>); })}

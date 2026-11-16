@@ -252,7 +252,7 @@ async function loadCatalog(): Promise<CatalogFirm[]> {
     if (!p) f.plans.push((p = { plan: t.planName, sizes: [] }));
     p.sizes.push({ id: t.id, accountSize: t.accountSize, profitTarget: t.profitTarget, maxLoss: t.maxLoss, dailyLossLimit: t.dailyLossLimit,
       consistencyPct: t.consistencyPct, minDays: t.minDays, drawdownNote: t.drawdownNote, dataStatus: t.dataStatus,
-      drawdownModel: t.drawdownModel, maxMinis: t.maxMinis, maxMicros: t.maxMicros, profitSplit: t.profitSplit });
+      drawdownModel: t.drawdownModel, maxMinis: t.maxMinis, maxMicros: t.maxMicros, profitSplit: t.profitSplit, notes: t.notes ?? null });
   }
   return out;
 }
