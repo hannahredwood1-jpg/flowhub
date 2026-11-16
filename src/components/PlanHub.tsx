@@ -6,9 +6,9 @@ import { api } from "@/lib/api-client";
 import type { AccountDTO, CatalogFirm, DashboardData, JournalDTO } from "@/lib/types";
 import { usd } from "@/lib/format";
 import {
-  STYLE_PRESETS, buildGoalPlan, defaultAnswers, monthPath, type Experience, type GoalAnswers, type GoalPlan, type PlanSessionKey, type Recommendation, type Style,
+  STRENGTHS, STYLE_PRESETS, WEAKNESSES, buildGoalPlan, comfortFrom, defaultAnswers, monthPath, type Experience, type GoalAnswers, type GoalPlan, type PlanSessionKey, type Recommendation, type Style,
 } from "@/lib/goalPlan";
-import { PLAN_SESSIONS, SESSION_RANGE, planChecklist, type TradingPlanInput } from "@/lib/tradingPlan";
+import { SESSION_LABELS, planChecklist, type TradingPlanInput } from "@/lib/tradingPlan";
 import { PlanPanel } from "./PlanPanel";
 import { JournalTable } from "./JournalTable";
 import { AccountModal } from "./AccountModal";
@@ -34,9 +34,9 @@ function startAnswers(d: DashboardData): GoalAnswers {
 
 /** Turn the answers into the written plan the pre-session checklist and coaches read, keeping anything the member already wrote. */
 export function planFromAnswers(a: GoalAnswers, plan: GoalPlan, existing: TradingPlanInput | null): TradingPlanInput {
-  const win = (s: PlanSessionKey) => (s === "NY" ? { start: "09:30", end: "11:00" } : s === "LONDON" ? { start: "02:00", end: "05:00" } : { start: SESSION_RANGE.ASIA.start, end: "23:00" });
-  const windows = Object.fromEntries(a.sessions.map((s) => [s, win(s)])) as Record<PlanSessionKey, { start: string; end: string }>;
-  const first = windows[a.sessions[0]];
+  const win = (s: PlanSessionKey) => ({ NY_AM: { start: "09:30", end: "11:00" }, NY_LUNCH: { start: "12:00", end: "13:30" }, NY_PM: { start: "14:00", end: "15:30" }, ASIA: { start: "19:00", end: "23:00" }, LONDON: { start: "02:00", end: "05:00" }, NY: { start: "09:30", end: "11:00" } })[s];
+  const windows = Object.fromEntries(a.sessions.map((s) => [s, win(s)])) as Partial<Record<PlanSessionKey, { start: string; end: string }>>;
+  const first = windows[a.sessions[0]]!;
   const days = [...(a.sessions.includes("ASIA") ? (["Sun"] as const) : []), ...DAYS.slice(0, a.daysPerWeek)];
   const contracts = Math.max(1, Math.min(50, plan.picks[0]?.contracts ?? plan.req.contracts ?? 1));
   return {
@@ -269,6 +269,7 @@ function PickCard({ p, rank, onAdd }: { p: Recommendation; rank: number; onAdd: 
         <div><dt className="text-ink-3">Safe risk per trade</dt><dd className="font-medium">{usd(p.riskPerTrade)}</dd></div>
         <div><dt className="text-ink-3">Max loss</dt><dd className="font-medium">{usd(p.rules.maxLoss)}</dd></div>
         <div><dt className="text-ink-3">Daily loss limit</dt><dd className="font-medium">{p.rules.dailyLossLimit ? usd(p.rules.dailyLossLimit) : "None"}</dd></div>
+        <div className="col-span-2"><dt className="text-ink-3">Price</dt><dd className="font-medium">{p.price ? `${usd(p.price.price)} ${p.price.billing === "monthly" ? "a month until you pass" : "one-time"}${p.price.activation ? ` + ${usd(p.price.activation)} activation` : ""}` : "Check the firm's site"}<span className="ml-1.5 text-[12px] font-normal text-ink-3">{p.price ? "list price" : `about ${usd(p.costEach)} estimated`}</span></dd></div>
       </dl>
       <ul className="mt-3 grid gap-1.5 text-[13px] text-ink-2">{p.reasons.slice(0, more ? p.reasons.length : 2).map((r, i) => <li key={i} className="flex gap-2"><span className="text-ink-3">•</span>{r}</li>)}</ul>
       {p.reasons.length > 2 && <button className="mt-1.5 self-start text-[12.5px] font-medium text-ice" onClick={() => setMore(!more)}>{more ? "Show less" : `Show ${p.reasons.length - 2} more reasons`}</button>}
@@ -279,7 +280,7 @@ function PickCard({ p, rank, onAdd }: { p: Recommendation; rank: number; onAdd: 
 
 /* ───────────────────────── the question series ───────────────────────── */
 
-const STEPS = ["Your goal", "You and your risk", "Money", "Time", "Your plan"] as const;
+const STEPS = ["Your goal", "About you", "Money", "Time", "Your plan"] as const;
 
 function Chips<T extends string | number>({ value, options, onChange }: { value: T; options: { v: T; t: string; sub?: string }[]; onChange: (v: T) => void }) {
   return (
@@ -290,6 +291,13 @@ function Chips<T extends string | number>({ value, options, onChange }: { value:
           <div className="font-medium">{o.t}</div>{o.sub && <div className={cx("text-[12px]", value === o.v ? "opacity-75" : "text-ink-3")}>{o.sub}</div>}
         </button>
       ))}
+    </div>
+  );
+}
+function Multi({ items, value, onChange }: { items: Record<string, string>; value: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {Object.entries(items).map(([k, t]) => { const on = value.includes(k); return <button key={k} type="button" aria-pressed={on} onClick={() => onChange(on ? value.filter((x) => x !== k) : [...value, k])} className={cx("rounded-lg border px-3.5 py-2 text-[14px] transition-colors", on ? "border-ink bg-ink text-void" : "border-line-2 text-ink-2 hover:border-ink-3")}>{t}</button>; })}
     </div>
   );
 }
@@ -312,7 +320,7 @@ function Wizard({ data, catalog, answers, setAnswers, onSaved, canCancel, onCanc
   const a = answers, set = (p: Partial<GoalAnswers>) => setAnswers({ ...a, ...p });
   const plan = useMemo(() => (step === 4 ? buildGoalPlan(a, catalog, { runs: 300 }) : null), [step, a, catalog]);
   const pickStyle = (s: Style) => set({ style: s, winRate: STYLE_PRESETS[s].winRate, stopPts: STYLE_PRESETS[s].stopPts, targetPts: STYLE_PRESETS[s].targetPts });
-  const valid = [a.monthlyGoal > 0, true, a.budget >= 0 && a.evalFee > 0, a.sessions.length > 0, true][step];
+  const valid = [a.monthlyGoal > 0, true, a.budget >= 0, a.sessions.length > 0, true][step];
 
   async function save() {
     if (!plan) return;
@@ -342,14 +350,14 @@ function Wizard({ data, catalog, answers, setAnswers, onSaved, canCancel, onCanc
         {step === 1 && <>
           <Q title="How experienced are you?"><Chips<Experience> value={a.experience} onChange={(v) => set({ experience: v })} options={[{ v: "new", t: "New", sub: "Still learning" }, { v: "some", t: "Some experience", sub: "I trade, not yet steadily" }, { v: "experienced", t: "Experienced", sub: "Steady for a while" }]} /></Q>
           <Q title="What style sounds like you?" help="This only sets starting assumptions. You can change them on the next page."><Chips<Style> value={a.style} onChange={pickStyle} options={(Object.keys(STYLE_PRESETS) as Style[]).map((s) => ({ v: s, t: STYLE_PRESETS[s].label, sub: STYLE_PRESETS[s].blurb }))} /></Q>
-          <Q title="How do you feel about risk?" help="There is no wrong answer. We use it to keep your plan at a pace you can stay calm with, and you can change it later."><Chips<number> value={a.maxLossDay <= 200 ? 150 : a.maxLossDay <= 400 ? 300 : 600} onChange={(v) => set({ maxLossDay: v })} options={[{ v: 150, t: "Cautious", sub: "I would rather grow slowly and keep losses small" }, { v: 300, t: "Moderate", sub: "A steady middle path" }, { v: 600, t: "Bold", sub: "I accept bigger swings for a faster pace" }]} /></Q>
+          <Q title="What are you good at as a trader?" help="Pick any that sound like you. We use these to find an account that works with your strengths."><Multi items={STRENGTHS} value={a.strengths} onChange={(v) => set({ strengths: v, maxLossDay: comfortFrom(v, a.weaknesses, a.experience) })} /></Q>
+          <Q title="What trips you up?" help="Be honest: this is how we find an account with the right guard rails for you. Nobody sees this but you and your coaches."><Multi items={WEAKNESSES} value={a.weaknesses} onChange={(v) => set({ weaknesses: v, maxLossDay: comfortFrom(a.strengths, v, a.experience) })} /></Q>
         </>}
         {step === 2 && <>
-          <Q title="How much can you spend on evaluations in total?" help="Evaluations are the paid tests prop firms use. Money you cannot afford to lose should never go here."><Money label="Evaluation budget" value={a.budget} onChange={(n) => set({ budget: n })} presets={[200, 500, 1000, 2500]} /></Q>
-          <Q title="What does one evaluation usually cost?" help="Check a firm's page for today's price. This is only used to estimate your spend."><Money label="Fee per evaluation" value={a.evalFee} onChange={(n) => set({ evalFee: n })} presets={[75, 150, 250, 400]} /></Q>
+          <Q title="How much can you spend on evaluations in total?" help="Evaluations are the paid tests prop firms use. We look up each firm's current price ourselves, so you do not need to know it. Money you cannot afford to lose should never go here."><Money label="Evaluation budget" value={a.budget} onChange={(n) => set({ budget: n })} presets={[200, 500, 1000, 2500]} /></Q>
         </>}
         {step === 3 && <>
-          <Q title="When can you trade?" help="Pick every session you will actually be at the screen for."><div className="flex flex-wrap gap-2">{(Object.keys(PLAN_SESSIONS) as PlanSessionKey[]).map((s) => { const on = a.sessions.includes(s); return <button key={s} type="button" aria-pressed={on} onClick={() => set({ sessions: on ? a.sessions.filter((x) => x !== s) : [...a.sessions, s] })} className={cx("rounded-lg border px-3.5 py-2 text-[14px]", on ? "border-ink bg-ink text-void" : "border-line-2 text-ink-2 hover:border-ink-3")}>{PLAN_SESSIONS[s]}</button>; })}</div></Q>
+          <Q title="When can you trade?" help="Pick every session you will actually be at the screen for."><div className="flex flex-wrap gap-2">{(["NY_AM", "NY_LUNCH", "NY_PM", "ASIA", "LONDON"] as PlanSessionKey[]).map((s) => { const on = a.sessions.includes(s); return <button key={s} type="button" aria-pressed={on} onClick={() => set({ sessions: on ? a.sessions.filter((x) => x !== s) : [...a.sessions, s] })} className={cx("rounded-lg border px-3.5 py-2 text-[14px]", on ? "border-ink bg-ink text-void" : "border-line-2 text-ink-2 hover:border-ink-3")}>{SESSION_LABELS[s]}</button>; })}</div></Q>
           <Q title="How many trades a day?" help="Fewer, better trades is the standard in this school."><Chips value={a.tradesPerDay} onChange={(v) => set({ tradesPerDay: v })} options={[{ v: 1, t: "1 trade" }, { v: 2, t: "2 trades" }, { v: 3, t: "3 trades" }]} /></Q>
         </>}
         {step === 4 && plan && <Review plan={plan} />}
@@ -386,7 +394,7 @@ function Review({ plan }: { plan: GoalPlan }) {
             <div className="text-[12px] font-semibold uppercase tracking-[0.05em] text-ink-3">{i === 0 ? "Best fit" : `Option ${i + 1}`}</div>
             <div className="mt-1 text-[14.5px] font-semibold leading-snug">{p.label}</div>
             <div className="mt-1 text-[13px] text-ink-2">{p.accountsNeeded} account{p.accountsNeeded > 1 ? "s" : ""} · {usd(p.riskPerTrade)} per trade</div>
-            <div className="mt-1 text-[12.5px] text-ink-3">{p.withinBudget ? `About ${usd(p.evalSpend)} in evaluations, inside your budget.` : `About ${usd(p.evalSpend)} in evaluations, above your budget.`}</div>
+            <div className="mt-1 text-[12.5px] text-ink-3">{p.withinBudget ? `About ${usd(p.evalSpend)} to get funded, inside your budget.` : `About ${usd(p.evalSpend)} to get funded, above your budget.`}{p.priceKnown ? "" : " (price estimated)"}</div>
           </div>
         )) : <p className="text-[13.5px] text-ink-3">No account fits these assumptions. Go back and change the goal or the style.</p>}</div>
       </div>

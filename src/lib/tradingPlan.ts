@@ -2,8 +2,14 @@
 // It shows on the dashboard, feeds the pre-session checklist, and coaches can read it.
 
 export const PLAN_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri"] as const; // Sunday = the Asia open
-export const PLAN_SESSIONS = { ASIA: "Asia · 8 PM–12 AM", LONDON: "London · 12–6 AM", NY: "New York · 9:30 AM–4 PM" } as const;
-export const SESSION_RANGE: Record<"ASIA" | "LONDON" | "NY", { start: string; end: string }> = { ASIA: { start: "20:00", end: "23:59" }, LONDON: { start: "00:00", end: "06:00" }, NY: { start: "09:30", end: "16:00" } };
+/** The sessions a member can choose. */
+export const PLAN_SESSIONS = { NY_AM: "NY AM · 9:30 AM–12 PM", NY_LUNCH: "NY Lunch · 12–2 PM", NY_PM: "NY PM · 2–4 PM", ASIA: "Asia · 7 PM–12 AM", LONDON: "London · 12–6 AM" } as const;
+/** Names for every session a saved plan can hold, including the single New York session older plans used. */
+export const SESSION_LABELS = { ...PLAN_SESSIONS, NY: "New York · 9:30 AM–4 PM" } as const;
+export const SESSION_RANGE: Record<keyof typeof SESSION_LABELS, { start: string; end: string }> = {
+  NY_AM: { start: "09:30", end: "12:00" }, NY_LUNCH: { start: "12:00", end: "14:00" }, NY_PM: { start: "14:00", end: "16:00" },
+  ASIA: { start: "19:00", end: "23:59" }, LONDON: { start: "00:00", end: "06:00" }, NY: { start: "09:30", end: "16:00" },
+};
 export const PLAN_MODELS = { ECHO_X_ORBIT: "ECHO X ORBIT (Discord calls)", INVERTIX: "INVERTIX" } as const;
 /** Models from plans saved before NYFLOW / ASIAFLOW were retired: dropped when a plan is read. */
 export const RETIRED_PLAN_MODELS = ["ESC_VLCTY", "NYFLOW_HL", "NYFLOW_PO3", "ASIAFLOW_PO3"];
@@ -12,7 +18,7 @@ export function cleanPlanModels(models: string[]): PlanModel[] {
   return ok.length ? ok : ["ECHO_X_ORBIT"];
 }
 export const PLAN_ENTRY = { limit: "Limit at the level when it qualifies", confirmation: "Wait for confirmation", both: "Limit when it qualifies, otherwise confirmation" } as const;
-export type PlanSession = keyof typeof PLAN_SESSIONS;
+export type PlanSession = keyof typeof SESSION_LABELS;
 export type PlanModel = keyof typeof PLAN_MODELS;
 
 import type { GoalAnswers } from "./goalPlan";
@@ -34,7 +40,7 @@ export const planRewardPerTrade = (p: TradingPlanInput) => p.entries.targetPts *
 export const planMaxDailyLoss = (p: TradingPlanInput) => planRiskPerTrade(p) * p.risk.maxLossesPerDay;
 /** The member's own trading windows, one per chosen session (older plans: the single start/end window). */
 export const planWindows = (p: TradingPlanInput) => (p.schedule.windows && Object.keys(p.schedule.windows).length ? p.schedule.sessions.filter((s) => p.schedule.windows![s]).map((s) => ({ session: s, ...p.schedule.windows![s]! })) : [{ session: p.schedule.sessions[0], start: p.schedule.start, end: p.schedule.end }]);
-export const windowsText = (p: TradingPlanInput) => planWindows(p).map((w) => `${PLAN_SESSIONS[w.session].split(" ·")[0]} ${fmtTime(w.start)}–${fmtTime(w.end)}`).join(" · ");
+export const windowsText = (p: TradingPlanInput) => planWindows(p).map((w) => `${SESSION_LABELS[w.session].split(" ·")[0]} ${fmtTime(w.start)}–${fmtTime(w.end)}`).join(" · ");
 export const fmtTime = (t: string) => { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`; };
 
 /** Pre-session checklist lines generated from the plan (falls back to the generic list when there's no plan). */

@@ -18,8 +18,8 @@ const tpl = (id: string): RuleSet => {
 
 // ── Catalog parsing ─────────────────────────────────────────
 test("catalog: every row converts to a usable template", () => {
-  assert.equal(templates.length, 90);
-  assert.equal(new Set(templates.map((t) => t.id)).size, 90);
+  assert.equal(templates.length, 99);
+  assert.equal(new Set(templates.map((t) => t.id)).size, 99);
   for (const t of templates) {
     assert.ok(t.maxLoss > 0 && t.accountSize > 0, t.id);
     assert.ok(t.profitTarget === null || t.profitTarget > 0, t.id);

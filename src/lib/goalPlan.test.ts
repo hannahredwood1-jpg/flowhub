@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { buildGoalPlan, breakdownOf, defaultAnswers, monthPath, recommendAccounts, requirementsOf, STYLE_PRESETS } from "./goalPlan";
+import { buildGoalPlan, breakdownOf, comfortFrom, defaultAnswers, fitFor, monthPath, recommendAccounts, requirementsOf, STYLE_PRESETS } from "./goalPlan";
+import { PROP_PRICES } from "./propPrices";
 import { rowToTemplate, type CatalogRow } from "./catalog";
 import type { CatalogFirm } from "./types";
 
@@ -11,7 +12,7 @@ for (const r of rows) {
   const t = rowToTemplate(r);
   let f = catalog.find((x) => x.firm === r.firm); if (!f) catalog.push((f = { firm: r.firm, plans: [] }));
   let p = f.plans.find((x) => x.plan === r.plan); if (!p) f.plans.push((p = { plan: r.plan, sizes: [] }));
-  p.sizes.push({ id: r.id, accountSize: t.accountSize, profitTarget: t.profitTarget, maxLoss: t.maxLoss, dailyLossLimit: t.dailyLossLimit, consistencyPct: t.consistencyPct, minDays: t.minDays, drawdownNote: t.drawdownNote, dataStatus: t.dataStatus, drawdownModel: t.drawdownModel, maxMinis: t.maxMinis, maxMicros: t.maxMicros, profitSplit: t.profitSplit });
+  p.sizes.push({ id: r.id, accountSize: t.accountSize, profitTarget: t.profitTarget, maxLoss: t.maxLoss, dailyLossLimit: t.dailyLossLimit, consistencyPct: t.consistencyPct, minDays: t.minDays, drawdownNote: t.drawdownNote, dataStatus: t.dataStatus, drawdownModel: t.drawdownModel, maxMinis: t.maxMinis, maxMicros: t.maxMicros, profitSplit: t.profitSplit, notes: t.notes });
 }
 
 test("the goal breaks down into weekly, daily and per-trade numbers", () => {
@@ -49,7 +50,7 @@ test("a smaller goal never needs more accounts than a bigger one on the same acc
 });
 
 test("a low budget is respected or clearly flagged", () => {
-  const tight = recommendAccounts(defaultAnswers({ monthlyGoal: 6000, budget: 150, evalFee: 150 }), catalog, { runs: 100 });
+  const tight = recommendAccounts(defaultAnswers({ monthlyGoal: 6000, budget: 150 }), catalog, { runs: 100 });
   for (const p of tight) assert.ok(p.withinBudget || p.reasons.some((r) => r.includes("above your")));
 });
 
@@ -63,4 +64,31 @@ test("the month path has a target line and actual P&L only up to today", () => {
   assert.equal(path[2].actual, 200); assert.equal(path[3].actual, 150);
   assert.equal(path[10].actual, null);
   assert.equal(path[29].target, 2000);
+});
+
+test("real prices are used where confirmed and an estimate is flagged where not", () => {
+  const picks = recommendAccounts(defaultAnswers({ monthlyGoal: 1500, budget: 800 }), catalog, { runs: 100 });
+  for (const p of picks) {
+    if (p.priceKnown) assert.ok(p.price && p.reasons.some((r) => r.startsWith("Price: $")));
+    else assert.ok(p.reasons.some((r) => r.includes("could not confirm")));
+    assert.ok(p.costEach > 0 && p.evalSpend === p.costEach * p.accountsNeeded);
+  }
+});
+
+test("strengths and weaknesses steer the ranking in plain, stated ways", () => {
+  const base = defaultAnswers({ monthlyGoal: 1500, budget: 2000 });
+  const tilt = fitFor({ ...base, weaknesses: ["overtrade", "revenge"] }, { accountSize: 50000, profitTarget: 3000, maxLoss: 2000, drawdownModel: "EOD_TRAILING", dailyLossLimit: 1000, consistencyPct: null, minDays: 1, maxMinis: 5, maxMicros: 50 });
+  const none = fitFor({ ...base, weaknesses: ["overtrade", "revenge"] }, { accountSize: 50000, profitTarget: 3000, maxLoss: 2000, drawdownModel: "INTRADAY_TRAILING", dailyLossLimit: null, consistencyPct: null, minDays: 1, maxMinis: 5, maxMicros: 50 });
+  assert.ok(tilt.score > none.score);
+  assert.ok(tilt.reasons[0].includes("daily loss limit"));
+  const runner = fitFor({ ...base, strengths: ["runner"] }, { accountSize: 50000, profitTarget: 3000, maxLoss: 2000, drawdownModel: "EOD_TRAILING", dailyLossLimit: null, consistencyPct: 40, minDays: 1, maxMinis: 5, maxMicros: 50 });
+  assert.ok(runner.score < 0);
+  assert.equal(comfortFrom(["calm", "discipline"], [], "experienced"), 600);
+  assert.equal(comfortFrom([], ["overtrade"], "new"), 150);
+});
+
+test("prices: every confirmed price belongs to a real account in the catalog", () => {
+  const ids = new Set(rows.map((r) => r.id));
+  for (const id of Object.keys(PROP_PRICES)) assert.ok(ids.has(id), id);
+  assert.ok(Object.keys(PROP_PRICES).length >= 40);
 });
