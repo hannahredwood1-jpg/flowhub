@@ -542,3 +542,8 @@ select{height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:8p
   .ex-svg{overflow-x:auto}.ex-svg svg{min-width:620px}
   .coursebar{padding:0 14px}
 }
+
+/* chart drills (practice): click the answer on the chart */
+.xsvg{display:block;width:100%;max-width:840px;height:auto;margin:10px 0}
+.xh{cursor:pointer}.xh:hover{fill:rgba(255,255,255,.09)}.xc.done .xh{cursor:default}.xc.done .xh:hover{fill:transparent}
+.xcell rect:first-child{transition:stroke .1s}

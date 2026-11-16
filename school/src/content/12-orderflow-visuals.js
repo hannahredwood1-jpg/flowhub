@@ -318,7 +318,7 @@ const exFig=(kind,layers,n,cap,attrs='')=>`<figure class="ofv ex" data-ex="${kin
   <div class="ex-leg" aria-live="polite"></div><div class="ex-svg"></div><div class="ex-take"></div><figcaption>${cap}</figcaption></figure>`;
 
 /* ---------- 1. volume + profile on a candle chart ---------- */
-function exVolData(){const r=exRng(7),cs=[];let p=21440;
+function exVolData(seed=7){const r=exRng(seed),cs=[];let p=21440;
   for(let i=0;i<48;i++){let dr,vb;
     if(i<6){dr=1.4;vb=760}else if(i<22){dr=Math.sin(i*.9)*.9;vb=330}else if(i<26){dr=2.6;vb=i===23?1550:860}else if(i<36){dr=.3;vb=i>=31&&i<=34?980:440}else{dr=-.7;vb=300-(i-36)*11}
     const o=p,c=o+dr+(r()-.5)*2.2,h=Math.max(o,c)+r()*1.8,l=Math.min(o,c)-r()*1.8;cs.push({o:exQ(o),h:exQ(h),l:exQ(l),c:exQ(c),v:Math.round(vb*(.82+r()*.36))});p=c}
@@ -364,7 +364,7 @@ function exVolLeg(fig,i){const c=fig._d[i],av=fig._avg[i],rv=av?c.v/av:0,up=c.c>
   fig.querySelector('.ex-leg').innerHTML=`<b>NQ</b> · 1m · ${exTime(i)} &nbsp;<span style="color:${k}">O <i>${exN(c.o,2)}</i> H <i>${exN(c.h,2)}</i> L <i>${exN(c.l,2)}</i> C <i>${exN(c.c,2)}</i></span> &nbsp;Vol <i>${exN(c.v)}</i>${av?` &nbsp;<span style="color:${rv>=1.6?EXC.gold:'inherit'}">${exN(rv,1)}× the recent average</span>`:''}`}
 
 /* ---------- 2. footprint: cells, imbalances, delta table, CVD, profile ---------- */
-function exFpData(){const r=exRng(11),R=9,spec=[
+function exFpData(seed=11){const r=exRng(seed),R=9,spec=[
   {a:3,b:7,bias:.15,s:70},{a:1,b:6,bias:.55,s:95},{a:0,b:4,bias:.25,s:150,hot:0},{a:1,b:5,bias:-.5,s:105},{a:3,b:8,bias:-.55,s:120},{a:4,b:8,bias:.1,s:60}];
   const cs=spec.map(sp=>{const rows=[];for(let i=0;i<R;i++){if(i<sp.a||i>sp.b){rows.push([0,0]);continue}
       const mid=(sp.a+sp.b)/2,bell=1-Math.abs(i-mid)/((sp.b-sp.a)/2+1)*.6,v=Math.max(6,Math.round(sp.s*bell*(.7+r()*.6)*(sp.hot===i?2.2:1))),sh=Math.min(.9,Math.max(.1,.5+.55*sp.bias+(r()-.5)*.1)),ask=Math.round(v*sh);rows.push([v-ask,ask])}
