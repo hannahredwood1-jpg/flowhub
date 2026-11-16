@@ -25,9 +25,9 @@ export async function buildSchool(esbuild, { minify = true, practice = false, va
         : invertix
           ? [...engine, ...shared, vis, "content/11-invertix.js", ...list("invertix"), ...tail]
           : practice
-            ? [...engine, ...shared, vis, "content/12-orderflow.js", ...list("orderflow"), "content/14-practice-orderflow.js", "content/15-practice-drills.js", ...list("data"), "lab.js", ...tail]
+            ? [...engine, ...shared, vis, "content/12-orderflow.js", ...list("orderflow"), "content/14-practice-orderflow.js", "content/15-practice-drills.js", "content/16-practice-sim.js", ...list("data"), "lab.js", ...tail]
             // the school leaves every strategy and Orderflow out: each has its own gated page
-            : [...engine, ...list("content", (f2) => f2 !== "11-invertix.js" && f2 !== "13-lumen.js" && !f2.startsWith("12-orderflow") && !f2.startsWith("14-practice") && !f2.startsWith("15-practice")), ...tail];
+            : [...engine, ...list("content", (f2) => f2 !== "11-invertix.js" && f2 !== "13-lumen.js" && !f2.startsWith("12-orderflow") && !f2.startsWith("14-practice") && !f2.startsWith("15-practice") && !f2.startsWith("16-practice")), ...tail];
   let js = parts.map((p) => `/* ── ${p} ── */\n${src(p)}`).join("\n");
   let css = src("style.css");
   if (minify) {
