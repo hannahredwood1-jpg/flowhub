@@ -14,7 +14,7 @@ export type GoalAnswers = {
   daysPerWeek: number;      // 1..5
   experience: Experience;
   style: Style;
-  maxLossDay: number;       // the biggest losing day they could accept, $
+  maxLossDay: number;       // loss-per-day comfort in $, set from how they say they feel about risk (150 / 300 / 600)
   budget: number;           // total $ they can spend on evaluations
   evalFee: number;          // typical $ per evaluation attempt
   sessions: PlanSessionKey[];
@@ -176,7 +176,7 @@ export type GoalPlan = { answers: GoalAnswers; breakdown: Breakdown; req: Requir
 export function buildGoalPlan(a: GoalAnswers, catalog: CatalogFirm[], opts: { runs?: number } = {}): GoalPlan {
   const breakdown = breakdownOf(a), req = requirementsOf(a, breakdown), picks = recommendAccounts(a, catalog, opts), notes: string[] = [];
   if (req.riskPerTrade == null) notes.push("With these assumptions the average trade does not make money, so no goal can be reached. Raise the reward or the win rate, or choose a different style.");
-  else if (!req.losingDayBudgetOk) notes.push(`Two losing trades in a day would cost about $${req.worstDay}, more than the $${a.maxLossDay} losing day you said you could accept. The plan below keeps risk inside your limit, which means more accounts or more time.`);
+  else if (!req.losingDayBudgetOk) notes.push(`Two losing trades in a day would cost about $${req.worstDay}. That is more than the pace you said you are comfortable with (about $${a.maxLossDay} a day), so the plan keeps each trade's risk smaller, which means more accounts or more time.`);
   if (picks[0] && picks[0].accountsNeeded > 5) notes.push(`This goal is large for the risk you are comfortable with: it takes about ${picks[0].accountsNeeded} accounts at once. Many traders build toward it in stages.`);
   return { answers: a, breakdown, req, picks, notes };
 }
