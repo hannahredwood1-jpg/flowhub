@@ -225,7 +225,7 @@ async function loadDashboard(viewer: UserRow, traderId: string): Promise<Dashboa
     journal: journal.map((j: Record<string, any>) => ({
       id: j.id, memberAccountId: j.memberAccountId, tradeDate: j.dateISO, ticker: j.ticker, direction: j.direction, setupType: j.setupType,
       contracts: j.contracts, riskPct: n(j.riskPct), riskDollars: n(j.riskDollars), rrPlanned: n(j.rrPlanned), rrRealized: n(j.rrRealized),
-      outcome: j.outcome, pnl: n(j.pnl)!, emotion: j.emotion, followedPlan: j.followedPlan, screenshotUrl: j.screenshotUrl, notes: j.notes, feedbackCount: j.fb,
+      outcome: j.outcome, pnl: n(j.pnl)!, emotion: j.emotion, followedPlan: j.followedPlan, flowCheck: j.flowCheck ?? null, screenshotUrl: j.screenshotUrl, notes: j.notes, feedbackCount: j.fb,
     })),
     feedback: feedback.map((f: Record<string, any>) => ({
       id: f.id, coach: { name: f.cName ?? f.cUser, avatarUrl: avatarUrl(f.cDid, f.cAv) }, kind: f.kind, body: f.body,
@@ -625,10 +625,10 @@ app.post("/api/journal", async (c) => {
   await checkOwnAccount(u.id, d.memberAccountId);
   const id = randomUUID();
   await sql`insert into "JournalEntry" (id, "userId", "memberAccountId", "tradeDate", ticker, direction, "setupType", contracts, "riskPct", "riskDollars",
-              "rrPlanned", "rrRealized", outcome, pnl, emotion, "followedPlan", "screenshotUrl", notes)
+              "rrPlanned", "rrRealized", outcome, pnl, emotion, "followedPlan", "flowCheck", "screenshotUrl", notes)
             values (${id}, ${u.id}, ${d.memberAccountId ?? null}, ${d.tradeDate}::date, ${d.ticker}, ${d.direction}::"Direction", ${d.setupType},
               ${d.contracts ?? null}, ${d.riskPct ?? null}, ${d.riskDollars ?? null}, ${d.rrPlanned ?? null}, ${d.rrRealized ?? null},
-              ${d.outcome}::"Outcome", ${d.pnl}, ${d.emotion}::"Emotion", ${d.followedPlan}, ${d.screenshotUrl ?? null}, ${d.notes ?? null})`;
+              ${d.outcome}::"Outcome", ${d.pnl}, ${d.emotion}::"Emotion", ${d.followedPlan}, ${d.flowCheck ?? null}, ${d.screenshotUrl ?? null}, ${d.notes ?? null})`;
   return c.json({ id });
 });
 async function ownEntry(c: Context<Env>) {

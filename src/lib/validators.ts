@@ -55,6 +55,7 @@ export const journalInput = z.object({
   pnl: money.min(-1_000_000).max(1_000_000),
   emotion: z.enum(Emotions),
   followedPlan: z.boolean().default(true),
+  flowCheck: z.enum(["with", "against", "unsure"]).optional().nullable(),
   screenshotUrl: httpsUrl.optional().nullable().or(z.literal("").transform(() => null)),
   notes: z.string().max(4000).optional().nullable(),
 });

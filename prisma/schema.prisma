@@ -269,6 +269,7 @@ model JournalEntry {
   pnl             Decimal        @db.Decimal(12, 2)   // net P/L in dollars (after fees)
   emotion         Emotion
   followedPlan    Boolean        @default(true)
+  flowCheck       String?        // "with" | "against" | "unsure": did the first 3 minutes of delta lean with the trade?
   screenshotUrl   String?
   notes           String?
 

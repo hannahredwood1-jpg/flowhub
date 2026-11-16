@@ -104,7 +104,7 @@ for (const [i, p] of profiles.entries()) {
           id: `t${uid++}`, memberAccountId: id, tradeDate: d, ticker: p.roadmap.primaryInstrument, direction: rand() < 0.55 ? "LONG" : "SHORT",
           setupType: strategyLabel(pick(p.roadmap.strategies as StrategyKey[])), contracts: Math.max(1, Math.round(risk / (p.roadmap.avgStopPoints * (p.roadmap.primaryInstrument === "NQ" ? 20 : p.roadmap.primaryInstrument === "MES" ? 5 : 2)))),
           riskPct: Math.round((risk / rules.accountSize) * 10000) / 100, riskDollars: risk, rrPlanned: 2, rrRealized: rr,
-          outcome: be ? "BREAKEVEN" : win ? "WIN" : "LOSS", pnl, emotion: followed ? pick(EMO_GOOD) : pick(EMO_BAD), followedPlan: followed,
+          outcome: be ? "BREAKEVEN" : win ? "WIN" : "LOSS", pnl, emotion: followed ? pick(EMO_GOOD) : pick(EMO_BAD), followedPlan: followed, flowCheck: null,
           screenshotUrl: rand() < 0.5 ? "https://www.tradingview.com/x/example/" : null, notes: pick(NOTES), feedbackCount: 0,
         });
       }
