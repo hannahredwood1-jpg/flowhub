@@ -21,16 +21,21 @@ function LocalLogin({ onLocal }: { onLocal: (u: string, p: string) => Promise<st
   const [p, setP] = useState("");
   const [err, setErr] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
-  if (!open) return <button type="button" onClick={() => setOpen(true)} className="max-w-md text-left text-sm text-ink-3 underline underline-offset-4 hover:text-ink-2">Sign in without Discord</button>;
+  if (!open) return (
+    <div className="grid gap-3">
+      <div className="flex items-center gap-3 text-xs text-ink-3"><span className="h-px flex-1 bg-line" />or<span className="h-px flex-1 bg-line" /></div>
+      <button type="button" onClick={() => setOpen(true)} className="btn !h-12 w-full !text-[15px]">I don&apos;t have Discord: sign in with email</button>
+    </div>
+  );
   return (
-    <form className="grid max-w-md gap-3 border-l border-line-2 pl-4" onSubmit={async (e) => { e.preventDefault(); setBusy(true); setErr(await onLocal(u, p)); setBusy(false); }}>
-      <div className="label">Sign in without Discord</div>
+    <form className="grid gap-3 rounded-lg border border-line bg-panel p-4" onSubmit={async (e) => { e.preventDefault(); setBusy(true); setErr(await onLocal(u, p)); setBusy(false); }}>
+      <div className="flex items-center justify-between"><div className="label">Sign in with email</div><button type="button" onClick={() => setOpen(false)} className="text-xs text-ink-3 underline underline-offset-4 hover:text-ink-2">Back</button></div>
       <input className="border border-line-2 bg-panel px-3 py-2.5 text-[15px] text-ink outline-none focus:border-ice-dim" placeholder="Email or username" autoComplete="username" value={u} onChange={(e) => setU(e.target.value)} />
       <input className="border border-line-2 bg-panel px-3 py-2.5 text-[15px] text-ink outline-none focus:border-ice-dim" placeholder="Password" type="password" autoComplete="current-password" value={p} onChange={(e) => setP(e.target.value)} />
       {err && <p role="alert" className="border-l-2 border-loss bg-loss/10 px-3 py-2 text-sm text-loss">{err}</p>}
       <button type="submit" disabled={busy || !u || !p} className="btn-primary px-4 py-2.5 disabled:opacity-50">{busy ? "Signing in…" : "Sign in"}</button>
       <button type="button" className="text-left text-sm text-ink-3 underline underline-offset-4 hover:text-ink-2" onClick={async () => { if (!u.includes("@")) { setErr("Type your email address above, then press this again."); return; } await fetch("/auth/local/forgot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: u }) }); setErr("If that email has an account, a link to choose a new password is on its way."); }}>Forgot password?</button>
-      <p className="text-xs text-ink-3">Your coach sets up this login for you and emails you a link. Ask them if you do not have one.</p>
+      <p className="text-xs text-ink-3">Your coach sets up this login for you and emails you a link to choose a password. Ask them if you do not have one.</p>
     </form>
   );
 }
@@ -52,7 +57,7 @@ export function LoginScreen({ action, notice, onLocal }: { action: (fd: FormData
         </section>
         <section className="card-lite grid gap-4 rounded-xl border border-line bg-panel p-7 shadow-sm">
           <h2 className="text-xl font-semibold">Sign in</h2>
-          <p className="text-[14.5px] text-ink-2">Use your FLOWMTD Discord account. We only read your name, avatar and your roles in the server. No email, no messages.</p>
+          <p className="text-[14.5px] text-ink-2">Use your FLOWMTD Discord account if you have one. We only read your name, avatar and your roles in the server. No Discord? Use the email button below.</p>
           <form action={action} className="grid gap-3">
             <ConnectButton />
             {notice && <p role="alert" className="rounded-md border border-loss/40 bg-loss/10 px-3 py-2 text-sm text-loss">{notice}</p>}
