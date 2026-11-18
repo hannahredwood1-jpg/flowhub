@@ -27,7 +27,7 @@ import { clampPace, expectedPassed, nudgeGapDays, paceStatus, PACE_MAX_NUDGES } 
 import { SCHOOL_MODULES, SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
 import { cleanPlanModels, type TradingPlanDTO } from "../src/lib/tradingPlan";
 import { VAULT_MODULE_IDS, hashCode, makeCode, vaultPassed } from "../src/lib/vault";
-import { EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, LUMEN_MODULE_IDS, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_OPTIONAL_IDS, orderflowComplete, orderflowOpen, vaultStrategiesOpen, passedIn as passedInSet, unwrapState, withPasses, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
+import { BASIC_MODULES, basicOrderSkip, fundamentalsComplete, isLearnPath, LEARN_PATH_NAME, passedOnPath, strategyOpen, trackTotalFor, type LearnPath, EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, LUMEN_MODULE_IDS, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_OPTIONAL_IDS, orderflowComplete, orderflowOpen, vaultStrategiesOpen, passedIn as passedInSet, unwrapState, withPasses, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
 
 // ─────────────────────────────────────────────────────────────
 // Config
@@ -747,6 +747,7 @@ app.get("/api/school", async (c) => {
     state: row ? (isStaff(u) ? unwrapState(row.state) : normState(unwrapState(row.state), "fundamentals", new Set((row.unlocks ?? []) as string[]))) : null, unlocks: isStaff(u) ? ["all"] : row?.unlocks ?? [], staff: isStaff(u), name: u.globalName ?? u.username,
     pace: pace ? { perWeek: Number(pace.perWeek), preset: pace.preset, baseline: pace.baseline, startedAt: new Date(pace.startedAt).toISOString(), emails: pace.emails } : null,
     hasEmail: !!acct,
+    learnPath: ((await sql`select path from "LearningPath" where "userId" = ${u.id}`)[0]?.path as string | undefined) ?? null,
     path: path ? { modes: js(path.modes), answers: js(path.answers), committedAt: new Date(path.committedAt).toISOString(), locked: !!path.lockedAt } : null,
     proofs,
   });
@@ -851,6 +852,39 @@ async function trackState(userId: string, track: TrackId): Promise<unknown> {
   const proven = ((await sql`select distinct ref from "SchoolAttempt" where "userId" = ${userId} and kind = 'ex' and pass = true`) as { ref: string }[]).map((x) => x.ref).filter((x) => SETS[track].has(x));
   return proven.length ? withPasses(r?.state ?? null, proven) : (r?.state ?? null);
 }
+/** A tiny script that tells a strategy page which path the student is on (placed before the page's own script). */
+const pathTag = (p: LearnPath) => (p === "basic" ? '<script>window.LEARN_PATH="basic";</script>' : "");
+/** The path a student chose after Foundations. Everyone who has not chosen is on the full Orderflow path (nothing changes for them). */
+async function learnPathOf(userId: string): Promise<LearnPath> {
+  const [r] = await sql`select path from "LearningPath" where "userId" = ${userId}`;
+  return isLearnPath(r?.path) ? r.path : "orderflow";
+}
+async function pathMap(): Promise<Map<string, LearnPath>> {
+  const rows = (await sql`select "userId", path from "LearningPath"`) as { userId: string; path: string }[];
+  return new Map(rows.filter((r) => isLearnPath(r.path)).map((r) => [r.userId, r.path as LearnPath]));
+}
+/** The first lesson of a track the student still has to pass on their path. */
+const effPath = (chosen: LearnPath | undefined, ofState: unknown): LearnPath => (orderflowComplete(ofState) ? "orderflow" : chosen ?? "orderflow");
+function nextOnPath(t: TrackId, state: unknown, path: LearnPath) {
+  if (path === "basic" && (t === "invertix" || t === "lumen" || t === "exo")) {
+    const st = unwrapState(state) as { v2?: { m?: Record<string, { p?: number }> } } | null, ids = BASIC_MODULES[t];
+    const id = ids.find((x) => st?.v2?.m?.[x]?.p !== 1) ?? ids[ids.length - 1];
+    return { title: trackModules(t).find((m) => m.id === id)?.title ?? "" };
+  }
+  return nextModule(t, state);
+}
+app.get("/api/learn-path", async (c) => {
+  const u = c.get("user"), fs = await trackState(u.id, "fundamentals");
+  const [r] = await sql`select path from "LearningPath" where "userId" = ${u.id}`;
+  return c.json({ path: isLearnPath(r?.path) ? r.path : null, fundamentalsDone: isStaff(u) || fundamentalsComplete(fs) });
+});
+app.put("/api/learn-path", async (c) => {
+  const u = c.get("user"), b = (await c.req.json().catch(() => ({}))) as { path?: unknown };
+  if (!isLearnPath(b.path)) throw new HttpError(400, "Pick a path");
+  if (!isStaff(u) && !fundamentalsComplete(await trackState(u.id, "fundamentals"))) throw new HttpError(403, "Finish the Foundations first");
+  await sql`insert into "LearningPath" ("userId", path) values (${u.id}, ${b.path}) on conflict ("userId") do update set path = excluded.path, "updatedAt" = now()`;
+  return c.json({ path: b.path });
+});
 /** A saved state with its passes put back in order (nobody skips ahead). Used when state is read and written. */
 function normState(state: unknown, track: TrackId, skip: ReadonlySet<string> = new Set()): unknown {
   if (!state) return state;
@@ -907,10 +941,11 @@ app.get("/api/coach/pace", async (c) => {
   const okRows = (await sql`select "userId", ref from "SchoolAttempt" where kind = 'ex' and pass = true group by "userId", ref`) as { userId: string; ref: string }[];
   const passBy = new Map<string, string[]>();
   for (const a of okRows) if (SCHOOL_MODULE_SET.has(a.ref)) passBy.set(a.userId, [...(passBy.get(a.userId) ?? []), a.ref]);
+  const lpm = await pathMap();
   const out = rows.map((r: Record<string, any>) => {
-    const track = trackOf(r.track), total = trackTotal(track), active = rowActive(r, track);
+    const track = trackOf(r.track), pth = effPath(lpm.get(r.id), r.ostate), total = trackTotalFor(track, pth), active = rowActive(r, track);
     const state = track === "fundamentals" ? withPasses(rowState(r, track), passBy.get(r.id)) : rowState(r, track);
-    const passed = passedIn(state, track), perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
+    const passed = passedOnPath(state, track, pth), perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
     const left = total - passed, fin = passed >= total ? null : new Date(now.getTime() + (left / perWeek) * 7 * 86400_000).toISOString();
     const act = active ? new Date(active).toISOString() : null;
     return { id: r.id, track, name: r.name, perWeek, preset: r.preset, passed, total, expected: exp, status: paceStatus(passed, exp, total), finish: fin, lastActive: act, setAt: new Date(r.setAt).toISOString(), changes: r.changes,
@@ -943,9 +978,10 @@ async function runPaceNudges(now = new Date()): Promise<number> {
     left join "SchoolProgress" sp on sp."userId" = p."userId" left join "TrackProgress" tp on tp."userId" = p."userId" and tp.track = 'invertix' left join "TrackProgress" tf on tf."userId" = p."userId" and tf.track = 'orderflow' left join "TrackProgress" tl on tl."userId" = p."userId" and tl.track = 'lumen' left join "VaultAccess" v on v."userId" = p."userId"
     where p.emails and u.role = 'MEMBER'::"Role" limit 1000`;
   let sent = 0;
+  const lpm2 = await pathMap();
   for (const r of rows as Record<string, any>[]) {
-    const track = trackOf(r.track), total = trackTotal(track), state = rowState(r, track), activeAt = rowActive(r, track);
-    const passed = passedIn(state, track);
+    const track = trackOf(r.track), pth = effPath(lpm2.get(r.userId), r.ostate), total = trackTotalFor(track, pth), state = rowState(r, track), activeAt = rowActive(r, track);
+    const passed = passedOnPath(state, track, pth);
     if (passed >= total) continue;
     const perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
     if (paceStatus(passed, exp, total) === "ahead") continue;
@@ -1124,15 +1160,16 @@ const rolesOf = (u: { guildRoleIds?: unknown }): string[] => {
 const hasMentorRole = (u: { guildRoleIds?: unknown }) => rolesOf(u).some((id) => CFG.mentorshipRoles.includes(id) || /mentor/i.test(ROLE_NAMES.get(id) ?? ""));
 type VaultRow = { userId: string; codeHash: string; codeHint: string; redeemedAt: Date | null; revokedAt: Date | null; mentorshipOverride: boolean; orderflow: boolean; state: unknown };
 // "orderflow": the member has the mentorship role and the code, but has not passed the Orderflow tests yet
-type VaultAccess = { level: "open" | "code" | "orderflow" | "none"; orderflow: boolean; row: VaultRow | null };
+type VaultAccess = { level: "open" | "code" | "orderflow" | "none"; orderflow: boolean; row: VaultRow | null; path?: LearnPath };
 async function vaultAccess(u: UserRow): Promise<VaultAccess> {
   if (isStaff(u)) return { level: "open", orderflow: u.role === "ADMIN", row: null }; // staff can look around; only an admin sees the sealed room
   const [row] = (await sql`select * from "VaultAccess" where "userId" = ${u.id}`) as VaultRow[];
   if (!row || row.revokedAt || !(hasMentorRole(u) || row.mentorshipOverride)) return { level: "none", orderflow: false, row: row ?? null };
   if (!row.redeemedAt) return { level: "code", orderflow: false, row };
   // every strategy is behind the Orderflow tests (someone already partway through the vault keeps their way in)
-  if (!vaultStrategiesOpen(await trackState(u.id, "orderflow"))) return { level: "orderflow", orderflow: false, row };
-  return { level: "open", orderflow: !!row.orderflow, row };
+  const [os, fs, chosen] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "fundamentals"), learnPathOf(u.id)]);
+  if (!strategyOpen(os, fs, chosen)) return { level: "orderflow", orderflow: false, row };
+  return { level: "open", orderflow: !!row.orderflow, row, path: orderflowComplete(os) ? "orderflow" : chosen };
 }
 const readPrivate = async (name: string) => {
   const f = Bun.file(`${import.meta.dir}/assets/${name}`);
@@ -1175,7 +1212,7 @@ app.get("/vault", async (c) => {
   const acc = await vaultAccess(user);
   if (acc.level === "orderflow") {
     const os = await trackState(user.id, "orderflow");
-    return c.html(pageShell(`<h1>ECHO and ORBIT open with your Orderflow certificate</h1><p>Your vault code is in. Pass every Orderflow test to open the strategies. You have passed <b>${passedIn(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+    return c.html(pageShell(`<h1>ECHO and ORBIT open after Foundations on the Basic path, or with your Orderflow certificate</h1><p>Your vault code is in. Choose your path in the Trading School, or pass every Orderflow test. You have passed <b>${passedIn(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   }
   if (acc.level !== "open") return c.html(LOCK_PAGE, 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("vault.html.gz");
@@ -1183,7 +1220,7 @@ app.get("/vault", async (c) => {
   const etag = String(Bun.hash(gz));
   if (!vaultHtml || vaultHtml.etag !== etag) vaultHtml = { etag, html: gunzipSync(gz).toString("utf8") };
   const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-  return c.html(vaultHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+  return c.html(vaultHtml.html.replace("<!--FH_NAV-->", nav + pathTag(acc.path ?? "orderflow")), 200, { "Cache-Control": "no-store" });
 });
 app.post("/api/vault/redeem", async (c) => {
   const u = c.get("user");
@@ -1211,7 +1248,7 @@ app.get("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
   if (acc.level !== "open") throw new HttpError(403, "Not open");
   const [row] = acc.row ? await sql`select state from "VaultAccess" where "userId" = ${u.id}` : [];
-  const state = row?.state ? normState(row.state, "exo") : null;
+  const state = row?.state ? normState(row.state, "exo", acc.path === "basic" ? basicOrderSkip("exo") : undefined) : null;
   return c.json({ state, unlocks: isStaff(u) ? ["all"] : [], name: u.globalName ?? u.username, orderflow: acc.orderflow, ...(await paceFor(u.id, "exo")) });
 });
 app.put("/api/vault/progress", async (c) => {
@@ -1225,7 +1262,7 @@ app.put("/api/vault/progress", async (c) => {
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const mv = isStaff(u) ? m : normalizeOrder(EXO_MODULE_IDS, m, 0);
+  const mv = isStaff(u) ? m : normalizeOrder(EXO_MODULE_IDS, m, 0, acc.path === "basic" ? basicOrderSkip("exo") : undefined);
   await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m: mv } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
   return c.json({ ok: true });
 });
@@ -1288,22 +1325,22 @@ app.put("/api/orderflow/progress", async (c) => {
 // module before the gate existed keeps their way in. Coaches and admins can always open it.
 // ─────────────────────────────────────────────────────────────
 async function invertixAccess(u: UserRow) {
-  const [os, is] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "invertix")]);
-  const earned = invertixOpen(os);
-  return { open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn(os, "orderflow"), oTotal: trackTotal("orderflow"), iPassed: passedIn(is, "invertix"), iTotal: trackTotal("invertix"), state: is };
+  const [os, is, fs, path] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "invertix"), trackState(u.id, "fundamentals"), learnPathOf(u.id)]);
+  const earned = strategyOpen(os, fs, path);
+  return { path: orderflowComplete(os) ? ("orderflow" as LearnPath) : path, open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn(os, "orderflow"), oTotal: trackTotal("orderflow"), iPassed: passedIn(is, "invertix"), iTotal: trackTotal("invertix"), state: is };
 }
 let invHtml: { etag: string; html: string } | null = null;
 app.get("/invertix", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await invertixAccess(user);
-  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens with your Orderflow certificate</h1><p>Pass every Orderflow test to open INVERTIX. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens after Foundations on the Basic path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("invertix.html.gz");
   if (!gz) return c.text("INVERTIX is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!invHtml || invHtml.etag !== etag) invHtml = { etag, html: gunzipSync(gz).toString("utf8") };
   const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-  return c.html(invHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+  return c.html(invHtml.html.replace("<!--FH_NAV-->", nav + pathTag(acc.path)), 200, { "Cache-Control": "no-store" });
 });
 // what the home screen shows: the open door, or the locked door with how far along the fundamentals are
 app.get("/api/invertix/status", async (c) => {
@@ -1313,7 +1350,7 @@ app.get("/api/invertix/status", async (c) => {
 app.get("/api/invertix/progress", async (c) => {
   const u = c.get("user"), acc = await invertixAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const state = acc.state ? normState(acc.state, "invertix") : null;
+  const state = acc.state ? normState(acc.state, "invertix", acc.path === "basic" ? basicOrderSkip("invertix") : undefined) : null;
   return c.json({ state, unlocks: isStaff(u) ? ["all"] : [], name: u.globalName ?? u.username, ...(await paceFor(u.id, "invertix")) });
 });
 app.put("/api/invertix/progress", async (c) => {
@@ -1326,7 +1363,7 @@ app.put("/api/invertix/progress", async (c) => {
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const mi = isStaff(u) ? m : normalizeOrder(INVERTIX_MODULE_IDS, m, 0);
+  const mi = isStaff(u) ? m : normalizeOrder(INVERTIX_MODULE_IDS, m, 0, acc.path === "basic" ? basicOrderSkip("invertix") : undefined);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'invertix', ${JSON.stringify({ v2: { m: mi } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
@@ -1335,22 +1372,22 @@ app.put("/api/invertix/progress", async (c) => {
 // LUMEN: its own page, opened by the Orderflow certificate (every Orderflow test passed). Coaches and admins can always open it.
 // ─────────────────────────────────────────────────────────────
 async function lumenAccess(u: UserRow) {
-  const [os, ls] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "lumen")]);
-  const earned = lumenOpen(os);
-  return { open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn(os, "orderflow"), oTotal: trackTotal("orderflow"), lPassed: passedIn(ls, "lumen"), lTotal: trackTotal("lumen"), state: ls };
+  const [os, ls, fs, path] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "lumen"), trackState(u.id, "fundamentals"), learnPathOf(u.id)]);
+  const earned = strategyOpen(os, fs, path);
+  return { path: orderflowComplete(os) ? ("orderflow" as LearnPath) : path, open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn(os, "orderflow"), oTotal: trackTotal("orderflow"), lPassed: passedIn(ls, "lumen"), lTotal: trackTotal("lumen"), state: ls };
 }
 let lumHtml: { etag: string; html: string } | null = null;
 app.get("/lumen", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await lumenAccess(user);
-  if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens with your Orderflow certificate</h1><p>Pass every Orderflow test to open LUMEN. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens after Foundations on the Basic path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("lumen.html.gz");
   if (!gz) return c.text("LUMEN is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!lumHtml || lumHtml.etag !== etag) lumHtml = { etag, html: gunzipSync(gz).toString("utf8") };
   const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-  return c.html(lumHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+  return c.html(lumHtml.html.replace("<!--FH_NAV-->", nav + pathTag(acc.path)), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/lumen/status", async (c) => {
   const acc = await lumenAccess(c.get("user"));
@@ -1359,7 +1396,7 @@ app.get("/api/lumen/status", async (c) => {
 app.get("/api/lumen/progress", async (c) => {
   const u = c.get("user"), acc = await lumenAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const state = acc.state ? normState(acc.state, "lumen") : null;
+  const state = acc.state ? normState(acc.state, "lumen", acc.path === "basic" ? basicOrderSkip("lumen") : undefined) : null;
   return c.json({ state, unlocks: isStaff(u) ? ["all"] : [], name: u.globalName ?? u.username, ...(await paceFor(u.id, "lumen")) });
 });
 app.put("/api/lumen/progress", async (c) => {
@@ -1372,7 +1409,7 @@ app.put("/api/lumen/progress", async (c) => {
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const ml = isStaff(u) ? m : normalizeOrder(LUMEN_MODULE_IDS, m, 0);
+  const ml = isStaff(u) ? m : normalizeOrder(LUMEN_MODULE_IDS, m, 0, acc.path === "basic" ? basicOrderSkip("lumen") : undefined);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'lumen', ${JSON.stringify({ v2: { m: ml } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
@@ -1414,10 +1451,13 @@ app.get("/api/coach/members", async (c) => {
   const passBy = new Map<string, string[]>();
   for (const r of ok) if (SCHOOL_MODULE_SET.has(r.ref)) passBy.set(r.userId, [...(passBy.get(r.userId) ?? []), r.ref]);
   const COURSES: [TrackId, string][] = [["fundamentals", "Foundations"], ["orderflow", "Orderflow"], ["invertix", "INVERTIX"], ["lumen", "LUMEN"], ["exo", "ECHO x ORBIT"]];
+  const lpm3 = await pathMap();
   for (const r of rows) {
     const mine = { ...(st.get(r.trader.id) ?? {}) };
     mine.fundamentals = withPasses(mine.fundamentals, passBy.get(r.trader.id));
-    r.path = COURSES.map(([id, name]) => ({ id, name, passed: passedIn(mine[id], id), total: trackTotal(id), next: nextModule(id, mine[id]).title }));
+    const chosen = lpm3.get(r.trader.id), pth = effPath(chosen, mine.orderflow);
+    r.learnPath = chosen ?? null;
+    r.path = COURSES.map(([id, name]) => ({ id, name, passed: passedOnPath(mine[id], id, pth), total: trackTotalFor(id, pth), next: nextOnPath(id, mine[id], pth).title }));
     r.lastActive = seen.get(r.trader.id) ?? null;
   }
   return c.json(sortDirectory(rows, sort));

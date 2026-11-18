@@ -103,3 +103,39 @@ test("a passing exam attempt on record counts as a pass even if the save lost it
   assert.equal(passedIn(s, new Set(["m37", "m02", "m39", "m41"])), 3);
   assert.equal(passedIn(withPasses(null, undefined), new Set(["m37"])), 0);
 });
+
+/* ---- the learning path: Orderflow path (default) or Basic path ---- */
+import { BASIC_MODULES, basicOrderSkip, passedOnPath, strategyOpen, trackModules as trackMods, trackTotalFor } from "./tracks";
+const fundDone = { v2: { m: Object.fromEntries(trackMods("fundamentals").map((m) => [m.id, { p: 1 }])) } };
+const ofDone = { v2: { m: Object.fromEntries(trackMods("orderflow").map((m) => [m.id, { p: 1 }])) } };
+test("the strategies open after Foundations only on the Basic path, and always with the Orderflow certificate", () => {
+  assert.equal(strategyOpen(null, fundDone, "basic"), true);
+  assert.equal(strategyOpen(null, fundDone, "orderflow"), false);
+  assert.equal(strategyOpen(null, null, "basic"), false);
+  assert.equal(strategyOpen(ofDone, fundDone, "orderflow"), true);
+  assert.equal(strategyOpen(ofDone, null, "orderflow"), true);
+});
+test("Basic path lessons exist in each strategy, and the totals and passes follow the path", () => {
+  for (const t of ["invertix", "lumen", "exo"] as const) {
+    const ids = trackMods(t).map((m) => m.id);
+    for (const id of BASIC_MODULES[t]) assert.ok(ids.includes(id), `${t} has ${id}`);
+    assert.equal(trackTotalFor(t, "basic"), BASIC_MODULES[t].length);
+    assert.equal(trackTotalFor(t, "orderflow"), ids.length);
+  }
+  assert.equal(trackTotalFor("orderflow", "basic"), trackMods("orderflow").length);
+  const st = { v2: { m: { n01: { p: 1 }, n02: { p: 1 }, n03: { p: 1 } } } };
+  assert.equal(passedOnPath(st, "invertix", "basic"), 2);
+  assert.equal(passedOnPath(st, "invertix", "orderflow"), 3);
+});
+test("a Basic lesson after a skipped lesson is exempt from the in-order rule", () => {
+  assert.deepEqual([...basicOrderSkip("invertix")], ["n03"]);
+  assert.deepEqual([...basicOrderSkip("lumen")], []);
+  assert.deepEqual([...basicOrderSkip("orderflow")], []);
+});
+test("the school page keeps the same Basic lesson list as the server", () => {
+  const src = readFileSync(new URL("../../school/src/tracks.js", import.meta.url), "utf8");
+  const m = src.match(/const BASIC_IDS=(\{[^}]*\})/);
+  assert.ok(m, "BASIC_IDS found");
+  const page = JSON.parse(m![1].replace(/'/g, '"').replace(/(\w+):/g, '"$1":'));
+  assert.deepEqual(page, BASIC_MODULES);
+});

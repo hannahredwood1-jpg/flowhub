@@ -89,6 +89,28 @@ export function nextModule(t: TrackId, state: unknown) {
 /** Orderflow opens with the fundamentals certificate (every fundamentals module passed). */
 export const fundamentalsComplete = (fundState: unknown) => passedIn(fundState, new Set(SCHOOL_MODULES.map((m) => m.id))) >= SCHOOL_MODULES.length;
 export const orderflowOpen = (fundState: unknown) => fundamentalsComplete(fundState);
+
+/** After Foundations a student chooses a path. "orderflow" (the default for everyone who has not chosen) is the full course: Orderflow first, then every strategy lesson.
+ *  "basic" goes straight to the strategies and takes only the lessons that are rules and sizing (no order-flow reading). */
+export type LearnPath = "orderflow" | "basic";
+export const LEARN_PATHS: LearnPath[] = ["orderflow", "basic"];
+export const isLearnPath = (v: unknown): v is LearnPath => v === "orderflow" || v === "basic";
+export const LEARN_PATH_NAME: Record<LearnPath, string> = { orderflow: "Orderflow path", basic: "Basic path" };
+/** The strategy lessons on the Basic path (a test keeps school/src/tracks.js in step with this). */
+export const BASIC_MODULES: Record<"invertix" | "lumen" | "exo", string[]> = { invertix: ["n01", "n03"], lumen: ["l01"], exo: ["e01"] };
+export const isBasicTrack = (t: TrackId): t is "invertix" | "lumen" | "exo" => t === "invertix" || t === "lumen" || t === "exo";
+/** How many lessons a track has for someone on the given path. */
+export const trackTotalFor = (t: TrackId, path: LearnPath) => (path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t].length : trackTotal(t));
+/** Lessons passed on the given path (only the Basic lessons count on the Basic path). */
+export const passedOnPath = (state: unknown, t: TrackId, path: LearnPath) => passedIn(state, new Set(path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t] : trackModules(t).map((m) => m.id)));
+/** A Basic lesson whose lesson before it in the full course is not a Basic lesson is exempt from the "in order" rule. */
+export function basicOrderSkip(t: TrackId): ReadonlySet<string> {
+  if (!isBasicTrack(t)) return new Set();
+  const ids = trackModules(t).map((m) => m.id), basic = new Set(BASIC_MODULES[t]);
+  return new Set(ids.filter((id, i) => basic.has(id) && i > 0 && !basic.has(ids[i - 1])));
+}
+/** The strategies open with the Orderflow certificate, or on the Basic path with the Foundations certificate. */
+export const strategyOpen = (ofState: unknown, fundState: unknown, path: LearnPath) => orderflowComplete(ofState) || (path === "basic" && fundamentalsComplete(fundState));
 /** Every Orderflow module passed (each one needs a passed exam). This is what unlocks the strategies. */
 export const orderflowComplete = (ofState: unknown) => passedIn(ofState, new Set(ORDERFLOW_MODULE_IDS)) >= ORDERFLOW_MODULE_IDS.length;
 /** Every strategy opens only with the Orderflow certificate, so nobody skips ahead: passing every Orderflow test is the key. Progress in a strategy course does not open it. */
