@@ -847,7 +847,9 @@ async function trackState(userId: string, track: TrackId): Promise<unknown> {
   const [r] = track === "fundamentals" ? await sql`select state from "SchoolProgress" where "userId" = ${userId}`
     : track === "invertix" || track === "orderflow" || track === "lumen" ? await sql`select state from "TrackProgress" where "userId" = ${userId} and track = ${track}`
     : await sql`select state from "VaultAccess" where "userId" = ${userId}`;
-  return r?.state ?? null;
+  // A passing exam attempt on the server is proof of the pass, even when the saved progress missed it (a failed or stale save must never lock someone out).
+  const proven = ((await sql`select distinct ref from "SchoolAttempt" where "userId" = ${userId} and kind = 'ex' and pass = true`) as { ref: string }[]).map((x) => x.ref).filter((x) => SETS[track].has(x));
+  return proven.length ? withPasses(r?.state ?? null, proven) : (r?.state ?? null);
 }
 /** A saved state with its passes put back in order (nobody skips ahead). Used when state is read and written. */
 function normState(state: unknown, track: TrackId, skip: ReadonlySet<string> = new Set()): unknown {

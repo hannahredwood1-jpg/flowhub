@@ -1903,7 +1903,8 @@ var SETS = { fundamentals: SCHOOL_MODULE_SET, orderflow: new Set(ORDERFLOW_MODUL
 var passedIn2 = (state, track = "fundamentals") => passedIn(state, SETS[track]);
 async function trackState(userId, track) {
   const [r] = track === "fundamentals" ? await sql`select state from "SchoolProgress" where "userId" = ${userId}` : track === "invertix" || track === "orderflow" || track === "lumen" ? await sql`select state from "TrackProgress" where "userId" = ${userId} and track = ${track}` : await sql`select state from "VaultAccess" where "userId" = ${userId}`;
-  return r?.state ?? null;
+  const proven = (await sql`select distinct ref from "SchoolAttempt" where "userId" = ${userId} and kind = 'ex' and pass = true`).map((x) => x.ref).filter((x) => SETS[track].has(x));
+  return proven.length ? withPasses(r?.state ?? null, proven) : r?.state ?? null;
 }
 function normState(state, track, skip = /* @__PURE__ */ new Set()) {
   if (!state) return state;
