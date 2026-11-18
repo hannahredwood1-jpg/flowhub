@@ -232,7 +232,7 @@ function App() {
   }, []);
   const initialDir = sortDirectory([...db.keys()].map((id, i) => withProgress(buildDirectoryRow(dash(ME, id)), i)), "drawdown");
   if (view === "login")
-    return <LoginScreen action={async () => { await new Promise((r) => setTimeout(r, 2200)); location.hash = "plan"; }} />;
+    return <LoginScreen action={async () => { await new Promise((r) => setTimeout(r, 2200)); location.hash = "plan"; }} onLocal={async () => "Preview only"} />;
   if (view === "home") return <HomeScreen viewer={coach} />;
   return (
     <AppShell viewer={coach} active={view} links={{ home: "#home", plan: "#plan", school: "https://claude.ai/artifact/TeTW45zgMgzPLasmC1PQUr", practice: "https://claude.ai/artifact/9sx6av7g7VLRg4bYzWRaPN", coach: "#coach" }}>
