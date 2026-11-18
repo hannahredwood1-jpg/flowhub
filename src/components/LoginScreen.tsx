@@ -24,7 +24,7 @@ function LocalLogin({ onLocal }: { onLocal: (u: string, p: string) => Promise<st
   if (!open) return (
     <div className="grid gap-3">
       <div className="flex items-center gap-3 text-xs text-ink-3"><span className="h-px flex-1 bg-line" />or<span className="h-px flex-1 bg-line" /></div>
-      <button type="button" onClick={() => setOpen(true)} className="btn !h-12 w-full !text-[15px]">I don&apos;t have Discord: sign in with email</button>
+      <button type="button" onClick={() => setOpen(true)} className="btn !h-12 w-full !text-[15px] !text-ink">No Discord? Sign in with email</button>
     </div>
   );
   return (
@@ -40,6 +40,68 @@ function LocalLogin({ onLocal }: { onLocal: (u: string, p: string) => Promise<st
   );
 }
 
+
+const CANDLES: [number, number, number, number][] = [
+  // [open, close, high, low] on a 0..100 scale (higher = higher price)
+  [62, 55, 66, 50], [55, 47, 58, 42], [47, 40, 50, 34], [40, 33, 43, 27], [33, 28, 36, 20], [28, 36, 38, 18], [36, 44, 47, 33],
+  [44, 41, 48, 38], [41, 52, 55, 39], [52, 61, 64, 50], [61, 58, 65, 54], [58, 70, 73, 56], [70, 78, 81, 68],
+];
+function HeroChart() {
+  const W = 520, H = 210, left = 14, step = (W - left * 2) / CANDLES.length, y = (v: number) => H - 52 - v * 1.7;
+  const cvd = CANDLES.map((c, i) => [left + step * i + step / 2, H - 10 - (c[1] - 20) * 0.28] as const);
+  return (
+    <figure className="fh-hero relative overflow-hidden rounded-xl border border-line bg-panel p-4 shadow-sm" aria-label="An animated example of a price chart">
+      <style>{`
+        .fh-hero svg .c{transform-box:fill-box;transform-origin:center bottom;animation:fhGrow .55s cubic-bezier(.2,.8,.2,1) both}
+        .fh-hero svg .l{stroke-dasharray:640;stroke-dashoffset:640;animation:fhDraw 2.4s .5s ease-out forwards}
+        .fh-hero .chip{animation:fhFloat 4.5s ease-in-out infinite}
+        .fh-hero .pulse{animation:fhPulse 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
+        .fh-glow{background:radial-gradient(60% 60% at 20% 10%,rgb(255 106 0/.16),transparent 70%),radial-gradient(50% 60% at 90% 90%,rgb(27 102 194/.16),transparent 70%)}
+        @keyframes fhGrow{from{transform:scaleY(0);opacity:0}to{transform:none;opacity:1}}
+        @keyframes fhDraw{to{stroke-dashoffset:0}}
+        @keyframes fhFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+        @keyframes fhPulse{0%{transform:scale(.8);opacity:.9}100%{transform:scale(2.6);opacity:0}}
+        @media (prefers-reduced-motion:reduce){.fh-hero svg .c,.fh-hero svg .l,.fh-hero .chip,.fh-hero .pulse{animation:none!important}.fh-hero svg .l{stroke-dashoffset:0}}
+      `}</style>
+      <div className="fh-glow pointer-events-none absolute inset-0" aria-hidden />
+      <div className="relative">
+        <div className="mb-2 flex items-center justify-between text-xs text-ink-3"><span className="font-medium text-ink-2">NQ · 1 minute · practice data</span><span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-win" />Buyers take over</span></div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="presentation">
+          {[0, 1, 2, 3].map((i) => <line key={i} x1={left} x2={W - left} y1={30 + i * 40} y2={30 + i * 40} stroke="var(--color-line)" strokeDasharray="3 5" />)}
+          {CANDLES.map((c, i) => {
+            const x = left + step * i + step / 2, up = c[1] >= c[0], col = up ? "var(--color-win)" : "var(--color-loss)", top = y(Math.max(c[0], c[1])), bot = y(Math.min(c[0], c[1]));
+            return (
+              <g key={i} className="c" style={{ animationDelay: `${i * 0.12}s` }}>
+                <line x1={x} x2={x} y1={y(c[2])} y2={y(c[3])} stroke={col} strokeWidth="1.6" />
+                <rect x={x - step * 0.28} y={top} width={step * 0.56} height={Math.max(3, bot - top)} rx="2" fill={col} />
+              </g>
+            );
+          })}
+          <polyline className="l" points={cvd.map((p) => p.join(",")).join(" ")} fill="none" stroke="var(--color-ice)" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
+          <circle cx={cvd[cvd.length - 1][0]} cy={cvd[cvd.length - 1][1]} r="4" fill="var(--color-ice)" />
+          <circle className="pulse" cx={cvd[cvd.length - 1][0]} cy={cvd[cvd.length - 1][1]} r="4" fill="var(--color-ice)" />
+        </svg>
+        <div className="chip absolute left-[8%] top-[17%] rounded-md border border-line bg-panel/95 px-2 py-1 text-[11px] font-medium text-ink shadow-sm">Sellers absorbed</div>
+        <div className="chip absolute right-[6%] top-[14%] rounded-md border border-line bg-panel/95 px-2 py-1 text-[11px] font-medium text-win shadow-sm" style={{ animationDelay: "1.2s" }}>Delta +184</div>
+      </div>
+    </figure>
+  );
+}
+
+function PathSteps() {
+  const steps = [["1", "Foundations", "10 lessons", "var(--color-signal)"], ["2", "Orderflow", "11 lessons", "var(--color-ice)"], ["3", "Strategies", "LUMEN · INVERTIX · ECHO x ORBIT", "var(--color-win)"]] as const;
+  return (
+    <ol className="grid gap-2 sm:grid-cols-3">
+      {steps.map(([n, t, d, c]) => (
+        <li key={n} className="rounded-lg border border-line bg-panel p-3 transition-transform hover:-translate-y-0.5">
+          <div className="flex items-center gap-2"><span className="grid h-6 w-6 place-items-center rounded-full text-xs font-bold text-white" style={{ background: c }}>{n}</span><span className="text-sm font-semibold text-ink">{t}</span></div>
+          <div className="mt-1 text-xs text-ink-3">{d}</div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export function LoginScreen({ action, notice, onLocal }: { action: (fd: FormData) => void | Promise<void>; notice?: string; onLocal?: (u: string, p: string) => Promise<string | undefined> }) {
   return (
     <main className="grid min-h-dvh grid-rows-[auto_1fr]">
@@ -47,8 +109,10 @@ export function LoginScreen({ action, notice, onLocal }: { action: (fd: FormData
       <div className="mx-auto grid w-full max-w-[1200px] items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_1fr]">
         <section className="grid max-w-xl gap-5">
           <div className="label !uppercase tracking-[0.06em]">Trading School</div>
-          <h1 className="text-[clamp(32px,5vw,46px)] font-semibold leading-[1.1] tracking-[-0.02em]">Learn to read the market, one lesson at a time.</h1>
+          <h1 className="text-[clamp(32px,5vw,46px)] font-semibold leading-[1.1] tracking-[-0.02em]">Learn to read the market, <span className="bg-gradient-to-r from-[var(--color-signal)] to-[#ffa24d] bg-clip-text text-transparent">one lesson at a time.</span></h1>
           <p className="text-[17px] leading-relaxed text-ink-2">A step-by-step school for new traders: the basics, then orderflow, then three strategies. Practice, quizzes and a coach who can see how you are doing.</p>
+          <HeroChart />
+          <PathSteps />
           <ul className="grid gap-2 text-[15px] text-ink-2">
             <li>• Start from zero. Every term is explained in plain words.</li>
             <li>• Interactive charts you can play, pause and explore.</li>
