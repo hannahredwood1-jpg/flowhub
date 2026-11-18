@@ -49,16 +49,19 @@ quick({id:'l01',o:15.71,ph:0,t:'LUMEN in Plain Words',out:'Say what LUMEN waits 
  examDesc:'The three steps in order, the opens, the model tags, and what LUMEN feels like.'});
 /* ---------- l02 · the tap ---------- */
 quick({id:'l02',o:15.72,ph:0,t:'Moment 1: The Zone Tap',out:'Read a zone tap in the flow: is the zone defending itself or being run over?',
- ls:['What you want to see','What is a warning','Night-session volume is thin'],
+ ls:['What you want to see','What is a warning','The leg behind the zone','Night-session volume is thin'],
  task:'Find a LUMEN zone tap on a footprint chart (or use the pictures here). Write down: did price meet heavy aggressive volume against your direction at the zone? Did it make progress through the zone?',
  learn:[
   {t:'What you want to see',h:key('<p>A zone that is working shows heavy trading that cannot get through it. That is absorption.</p>','In plain words')+`<p>When the zone is tapped, the question is: <b>is the zone defending itself?</b> Price pokes into a demand zone with heavy aggressive volume against your direction (sells into a demand zone, buys into a supply zone) but <b>cannot make progress</b>. The delta may swing hard against price and then stall. That is a green.</p>`+OFV.scene('z_absorb')},
   {t:'What is a warning',h:`<p>Price <b>slices through the zone</b> with stacked imbalances and one-sided delta, and the next candle opens beyond the zone\'s far edge. A 15-minute close through the zone also kills it on the chart. That is a red.</p>`+OFV.scene('z_slice')},
+  {t:'The leg behind the zone',h:`<p>A LUMEN zone is the last opposite candle before a strong move. That strong move is the leg where one side was far more aggressive. If you profile that leg, the thin spots inside it show you where price may react when it comes back to the zone.</p>`+key('<p>The zone is where the aggression started. The thin spots are the same story seen in the profile.</p>','In plain words')+OFV.lab('lvn','zone')},
   {t:'Night-session volume is thin',h:warn('<p>A few large orders can distort delta at night. Give order flow less weight in Asia and keep the size small.</p>')}],
  recall:rc('LUMEN in Plain Words','How many of the 4 opens must agree?',['At least 3','All 4 always','1','None'],'The default is 3 of 4.'),
  steps:[['<b>A healthy tap.</b>',OFV.scene('z_absorb')],['<b>A failing zone.</b>',OFV.scene('z_slice')],['<b>At night.</b>',`<p>Thin volume: give flow less weight, keep the size small.</p>`]],
  gens:[tapQ,tapQ,nightQ,lateQ],
  bank:BANKS('The zone tap',[
+  ['A LUMEN zone is the last opposite candle before a strong move. What do the thin spots in that leg show?',['Where price may react when it returns','A guaranteed target','Where to move the stop','Nothing'],'Thin spots are where one side was far more aggressive.'],
+
   ['At a tap, what is the question?',['Is the zone defending itself or being run over?','Is it Monday?','What is the news?','Where is the stop?'],'Absorption or a slice-through.'],
   ['Heavy selling pushes into a demand zone but cannot make progress. What is it?',['Absorption: green','A failing zone','A news spike','A gap'],'The zone is defending itself.'],
   ['What does a sliced-through zone look like?',['Stacked imbalances, one-sided delta, and the next candle opens beyond the far edge','Heavy volume that stalls','Thin volume','A doji'],'Red.'],
@@ -73,16 +76,19 @@ quick({id:'l02',o:15.72,ph:0,t:'Moment 1: The Zone Tap',out:'Read a zone tap in 
  examDesc:'Reading a zone tap: absorption versus a slice-through, and the night session.'});
 /* ---------- l03 · the break ---------- */
 quick({id:'l03',o:15.73,ph:0,t:'Moment 2: The Break Candle',out:'Read the break candle in the flow: who pushed it?',
- ls:['What you want to see','Warning signs','LUMEN checks size, you check who'],
+ ls:['What you want to see','Warning signs','Close, not wick','LUMEN checks size, you check who'],
  task:'Find the break candle of a LUMEN entry on a footprint chart. Write down its delta, whether volume was clearly higher than the candles before, and whether stacked imbalances piled up in the break direction.',
  learn:[
   {t:'What you want to see',h:key('<p>A good break is pushed by the side it breaks toward. The delta agrees with the candle and the volume is clearly higher.</p>','In plain words')+`<p>The delta of the break candle <b>agrees with its direction</b>. The break happens on clearly higher volume than the candles before, and imbalances pile up in the direction of the break.</p>`+OFV.scene('b_good')},
   {t:'Warning signs',h:`<p>A big break candle with <b>weak or opposite delta</b>: the candle closed up but sellers were the aggressors. Or volume jumps but price barely follows: <b>absorption on the wrong side</b>.</p>`+OFV.scene('b_weak')+OFV.scene('b_absorbed')},
+  {t:'Close, not wick',h:`<p>LUMEN's break is a candle that <b>closes</b> beyond the last 8 candles' swing. The same idea applies to the flow: a wick through a level is not a break, and a close still inside the cluster of big prints is not either.</p>`+key('<p>The close is what counts. A touch is not a break.</p>','In plain words')+OFV.lab('brk')},
   {t:'LUMEN checks size, you check who',h:`<p>Some models need a big candle and a volume filter. LUMEN checks the <b>size</b>. You check <b>who pushed it</b>. A big candle can still be a bad break.</p>`}],
  recall:rc('Moment 1: The Zone Tap','What colour is a slice-through?',['Red: skip','Green','Yellow','Always green'],'The zone is failing.'),
  steps:[['<b>A clean break.</b>',OFV.scene('b_good')],['<b>Weak delta.</b>',OFV.scene('b_weak')],['<b>Absorbed.</b>',OFV.scene('b_absorbed')]],
  gens:[breakQ,breakQ,tapQ,mixQ],
  bank:BANKS('The break candle',[
+  ['Price pokes through a level but the candle closes back inside. Is it a break?',['No: a wick is not a break','Yes','Only at night','Only with big volume'],'The close counts, not the touch.'],
+
   ['What do you check about the break candle?',['Whether its delta agrees with its direction','Only its colour','Only its size','The news'],'Who pushed it.'],
   ['The break candle closed up but its delta is negative. What colour is it?',['Red: skip','Green','Yellow','Always green'],'Sellers were the aggressors.'],
   ['What does a clean break show?',['Delta agrees, volume clearly higher, imbalances pile up in the break direction','Delta against it','Low volume','A gap'],'Green.'],
@@ -121,12 +127,13 @@ quick({id:'l04',o:15.74,ph:0,t:'Moment 3: After You Are In',out:'Read what the f
  examDesc:'Reading the flow after entry: being fed, fading, pressure at the stop, and what never changes.'});
 /* ---------- l05 · act and routine ---------- */
 quick({id:'l05',o:15.75,ph:0,t:'How to Act, and Your Routine',out:'Turn the three checks into one decision, size small, and run a LUMEN day.',
- ls:['How to act on it','Footprint settings to start with','Why trades lose','Extra flow checks (second opinion)','The one to watch: the first 3 minutes','A daily routine'],
+ ls:['How to act on it','Footprint settings to start with','Why trades lose','The opens are your balance check','Extra flow checks (second opinion)','The one to watch: the first 3 minutes','A daily routine'],
  task:'Write your own 30-second check card: one line for the tap, one for the break, one for after entry, and your rule for green, yellow and red.',
  learn:[
   {t:'How to act on it',h:key('<p>All green: planned size. One yellow: half size, or wait one candle. Red: skip.</p>','In plain words')+tblx(['Moment','Green','Warning (yellow or red)'],[['1. The tap','Absorption: heavy volume against you but no progress','Sliced through with stacked imbalances; the next candle opens beyond the far edge'],['2. The break','Delta agrees, volume clearly higher, imbalances pile up','Big candle with weak or opposite delta; volume jumps but price does not follow'],['3. After entry','CVD keeps moving your way, thin pullbacks','New high with a lower CVD high; heavy opposite volume at your stop']])+`<ul><li><b>All green:</b> take the trade at your planned size.</li><li><b>One yellow:</b> take half size, or wait one candle to see if it clears.</li><li><b>Red:</b> skip it.</li><li>Never size up because the flow looks great.</li></ul>`+OFV.scene('b_good')},
   {t:'Footprint settings to start with',h:`<p>On a footprint platform (such as DeepCharts): a <b>1-minute (or 3-minute) footprint</b> with bid and ask volume and delta, an <b>imbalance ratio of about 300%</b>, a <b>cumulative delta panel reset at the 6 PM open</b>, and the volume profile of the current session. Keep the footprint on a second chart or monitor if your main chart gets crowded.</p>`},
   {t:'Why trades lose',h:tblx(['What happened','What to do'],[['Stopped out right after a zone tap','Normal. Most trades are stopped. Keep risk small'],['Several losses in a row','Expected. Do not increase size to win it back. Reduce size after a bad week if it affects your decisions'],['Too many trades open together','Lower the max-open setting. Overlapping trades are not independent'],['A break-even-hours trade went nowhere','Stick to PRIME or GOOD HRS tags'],['Entered late, after price ran','Skip late entries']])},
+  {t:'The opens are your balance check',h:`<p>LUMEN's third step (price on the trade's side of at least 3 of the 4 opens) is its version of <b>waiting for out-of-balance</b>. Inside a balanced day, a zone tap and a break stall. Once price is clearly away from the opens, the same pattern has room.</p>`+key('<p>The opens check is the lock: price has to be out of balance before the pattern is worth acting on.</p>','In plain words')+OFV.lab('bal')},
   {t:'Extra flow checks (second opinion)',h:FLOWX.words()+FLOWX.lumen()},
   {t:'The one to watch: the first 3 minutes',h:FLOWX.watch()},
   {t:'A daily routine',h:`<ol><li><b>Before the session:</b> check the day\'s news and the 1-hour, 4-hour, day and week opens. Know which way price sits against them.</li><li>Check your alert is active. TradingView alerts expire: re-create it when needed.</li><li><b>When a message arrives:</b> read the tab, do the 30-second check, decide.</li><li><b>After the session:</b> write down each trade, its model tag, your flow colours and how it ended. Review weekly.</li></ol>`+warn('<p>LUMEN is a decision aid, not a promise of profit. Losing streaks are normal. Trade only money you can afford to lose.</p>')}],
@@ -134,6 +141,8 @@ quick({id:'l05',o:15.75,ph:0,t:'How to Act, and Your Routine',out:'Turn the thre
  steps:[['<b>The decision.</b>',tblx(['Result','You do'],[['All green','Planned size'],['One yellow','Half size, or wait one candle'],['Red','Skip']])],['<b>One picture.</b>',OFV.scene('b_good')],['<b>The routine.</b>',`<p>Opens in the morning, alert on, check at each message, journal at the end.</p>`]],
  gens:[mixQ,mixQ,contracts,orderQ],
  bank:BANKS('Acting on the check',[
+  ['LUMEN\'s 3-of-4 opens step is like...',['Waiting for price to be out of balance','A news filter','A time filter','A size filter'],'Price has to be away from the opens for the pattern to have room.'],
+
   ['All three moments green. What do you do?',['Take the trade at your planned size','Double size','Skip','Move the stop'],'Never more.'],
   ['One yellow. What do you do?',['Half size, or wait one candle','Double size','Skip always','Move the stop'],'Part of the picture is off.'],
   ['Red. What do you do?',['Skip it','Take it anyway','Add size','Move the stop'],'Skipping costs nothing.'],

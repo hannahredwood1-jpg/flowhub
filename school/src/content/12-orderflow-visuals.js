@@ -490,3 +490,197 @@ const FLOWX={
   ['Delta and big prints','The rush ends on a very large print that price cannot move through: absorption','A big print by itself is not a reversal'],
   ['CVD divergence','New extreme in price with weaker delta is the classic exhaustion sign','On a strong trend day CVD can keep diverging for a long time']])+`<p>A check that disagrees means smaller size or no trade. None of them change your stop or target.</p>`
 };
+
+/* ======================================================================
+   LABS: interactive lesson figures (play it, switch the case, answer the question, click the chart).
+   Made-up numbers. Each lab is a small spec: gen() builds candles, over() draws extras, say() is the plain-words line, q is the question.
+   ====================================================================== */
+const FLAB={};
+const labPath=(keys,n,r,noise)=>{const p=[];for(let i=0;i<n;i++){let j=0;while(j<keys.length-2&&i>keys[j+1][0])j++;const a=keys[j],b=keys[j+1],f=Math.min(1,Math.max(0,(i-a[0])/((b[0]-a[0])||1)));p.push(a[1]+(b[1]-a[1])*f+(r()-.5)*2*noise)}return p};
+const labCandles=(close,r,o={})=>{const cs=[];let prev=close[0];close.forEach((c,i)=>{const op=i?prev:c-.5,w=o.wick??1.2;cs.push({o:op,c,h:Math.max(op,c)+r()*w,l:Math.min(op,c)-r()*w,v:Math.round((o.v?o.v(i):100)*(.8+.4*r())),d:0,pr:null});prev=c});return cs};
+const labDelta=(cs,fn)=>cs.forEach((c,i)=>{c.d=Math.round(fn(i,c))});
+const labFmt=n=>(n>0?'+':'')+n;
+
+/* ---- 1. balance or imbalance: the lock ---- */
+FLAB.bal={n:48,seed:31,alt:'A day that balances, then leaves balance, with break patterns marked',layers:[['prof','Volume profile'],['val','Balance area'],['sig','Break patterns']],cases:[{n:'The day'}],
+  cap:'Press Play. The arrows are the same kind of break pattern. Watch what the profile on the right is telling you before each one. Made-up data.',
+  gen(ci,r){const c=labPath([[0,21440],[8,21447],[16,21433],[24,21444],[28,21442],[34,21470],[40,21466],[47,21490]],48,r,2.2),cs=labCandles(c,r,{wick:1.6,v:i=>i<28?90:i<36?260:150});labDelta(cs,(i,x)=>(x.c-x.o)*18);return{cs}},
+  marks:[[9,'1',0],[17,'2',0],[25,'3',0],[38,'4',1]],
+  over(x){let s='';const {X,Y,L,step,off}=x;
+    if(!off.val&&step>8){const e=Math.min(step,28);s+=`<rect x="${L}" y="${Y(21451)}" width="${X(e-1)-L}" height="${Y(21431)-Y(21451)}" fill="${EXC.gold}" fill-opacity=".09" stroke="${EXC.gold}" stroke-opacity=".35" stroke-dasharray="4 4"/>`+exT(L+6,Y(21451)+14,'Balance: price chops inside this range',{c:EXC.gold,s:10.5})}
+    if(!off.sig)FLAB.bal.marks.forEach(m=>{if(m[0]>=step)return;const i=m[0],c=x.cs[i],px=X(i),py=Y(c.h)-16,col=m[2]?EXC.up:EXC.dn;s+=`<path d="M${px-8} ${py-12}L${px+8} ${py-12}L${px} ${py}Z" fill="${col}"/>`+exT(px,py-16,m[1],{a:'middle',s:11,c:col,w:700})});
+    return s},
+  say(x){const t=x.step;return t<9?'Price opens and settles into a range.':t<28?'Balanced: price keeps returning to the middle, where most of the volume sits. A break pattern inside the range (arrows 1, 2, 3) has little room, so it stalls.':t<36?'Price leaves the range on heavy volume. The market has gone out of balance.':'Out of balance: a pattern now has room to run. Arrow 4 is the one worth your attention.'},
+  q:[{t:'Four break patterns are marked. Which deserves the most attention?',o:['Arrow 4, after price left the balance area','All four equally','Arrow 1, because it came first','None: patterns never work'],r:0,why:'Inside balance, most volume sits in the middle and a break tends to stall. After price leaves balance, a pattern has room to run. Waiting for that is the lock.'}]};
+
+/* ---- 2. profile the impulse leg: thin spots ---- */
+FLAB.lvn={n:40,seed:5,alt:'An impulse leg with its volume profile and the thin spots',layers:[['prof','Volume profile'],['nodes','Thin and busy spots'],['leg','The leg']],cases:[{n:'The move'}],
+  cap:'Press Play. Gold boxes in the profile are thin spots: little traded there. Watch what price does when it comes back to one. Made-up data.',
+  gen(ci,r){const c=labPath([[0,21404],[9,21408],[10,21411],[11,21418],[12,21433],[13,21440],[20,21458],[26,21429],[30,21436],[39,21472]],40,r,.6),cs=labCandles(c,r,{wick:1,v:i=>i<10?170:i<21?55:i<27?70:110});labDelta(cs,(i,x)=>(x.c-x.o)*14);return{cs}},
+  over(x){let s='';const {X,Y,step,off,cs}=x;
+    if(!off.leg&&step>10){const e=Math.min(step,21)-1;s+=`<rect x="${X(9.5)}" y="${Y(21462)}" width="${X(e)-X(9.5)+6}" height="${Y(21404)-Y(21462)}" fill="none" stroke="${EXC.blue}" stroke-dasharray="4 4"/>`+exT(X(9.5)+4,Y(21462)-6,'The impulse leg: profile it',{c:EXC.blue,s:10.5})}
+    if(x.v==='zone'&&step>9){const c=cs[9];s+=`<rect x="${X(9)-6}" y="${Y(c.h)}" width="${x.R-X(9)+6}" height="${Y(c.l)-Y(c.h)}" fill="${EXC.sig}" fill-opacity=".14" stroke="${EXC.sig}" stroke-opacity=".6"/>`+exT(x.R-4,Y(c.h)-5,'Zone: last opposite candle before the move',{a:'end',c:EXC.sig,s:10.5})}
+    if(x.v==='fvg'&&step>13){const a=cs[11].h,b=cs[13].l;if(b>a)s+=`<rect x="${X(11)}" y="${Y(b)}" width="${x.R-X(11)}" height="${Y(a)-Y(b)}" fill="${EXC.sig}" fill-opacity=".14" stroke="${EXC.sig}" stroke-opacity=".6"/>`+exT(x.R-4,Y(b)-5,'The gap (FVG): one side was far more aggressive',{a:'end',c:EXC.sig,s:10.5})}
+    return s},
+  say(x){const t=x.step;return t<10?'Price balances. Lots of trading at one level: a busy spot (blue).':t<21?'A fast leg. Price moves quickly, so little trades at each price on the way up: thin spots (gold).':t<27?'Price pulls back into the thin spot. Watch for aggression here. A thin spot is a place to look, not a place to guess.':'Price reacted at the thin spot and moved on.'},
+  q:[{t:'Price has pulled back into the gold thin spot. What is it?',o:['A place to watch for a reaction, then wait for aggression','A level where you buy at once','A busy level that will stop price','Nothing: levels do not matter'],r:0,why:'A thin spot is where one side was far more aggressive. It is a good place to look for a reaction, but you still wait for the flow to confirm before you act.'}]};
+
+/* ---- 3. delta at price ---- */
+FLAB.dap={n:30,seed:12,alt:'Price oscillating with delta shown at each price',layers:[['dp','Delta at price'],['clu','Biggest clusters']],cases:[{n:'The range'}],prof:'delta',
+  cap:'Press Play. Green bars are buying delta at that price, red bars selling delta. The longest bars are the real supply and demand. Made-up data.',
+  gen(ci,r){const c=labPath([[0,21440],[5,21446],[9,21436],[13,21433],[17,21442],[22,21446],[26,21436],[29,21433]],30,r,.8),cs=labCandles(c,r,{wick:.8,v:i=>120});labDelta(cs,(i,x)=>{let d=(x.c-x.o)*10;if(x.h>=21445.2)d-=95;if(x.l<=21434.2)d+=95;return d});
+    cs.forEach(c=>{c.rowsD={};const lo=Math.floor(c.l),hi=Math.ceil(c.h),sp=hi-lo+1;for(let p=lo;p<=hi;p++){let w=c.d/sp;if(p>=21445&&c.h>=21445.2)w-=40;if(p<=21434&&c.l<=21434.2)w+=40;c.rowsD[p]=w}});return{cs}},
+  over(x){let s='';if(x.off.clu)return s;const dp=x.dp;if(!dp)return s;const ks=Object.keys(dp).map(Number);if(!ks.length)return s;const mx=ks.reduce((a,k)=>dp[k]>dp[a]?k:a,ks[0]),mn=ks.reduce((a,k)=>dp[k]<dp[a]?k:a,ks[0]);
+    if(dp[mx]>60)s+=`<line x1="${x.L}" x2="${x.R}" y1="${x.Y(mx+.5)}" y2="${x.Y(mx+.5)}" stroke="${EXC.up}" stroke-dasharray="5 4"/>`+exT(x.L+6,x.Y(mx+.5)-5,'Biggest buying delta: real demand',{c:EXC.up,s:10.5});
+    if(dp[mn]<-60)s+=`<line x1="${x.L}" x2="${x.R}" y1="${x.Y(mn+.5)}" y2="${x.Y(mn+.5)}" stroke="${EXC.dn}" stroke-dasharray="5 4"/>`+exT(x.L+6,x.Y(mn+.5)-5,'Biggest selling delta: real supply',{c:EXC.dn,s:10.5});
+    return s},
+  say(x){const t=x.step;return t<6?'Price starts to trade. Each bar on the right is the net buying or selling at that price.':t<20?'Look at where the longest bars are building. That is where one side has been doing the work.':'The clusters mark real supply and demand: executed trades, not resting orders. Price keeps reacting at them.'},
+  q:[{t:'Where is the real supply (sellers in control)?',o:['The price with the longest red bar','The highest price on the chart','The price with the longest green bar','There is no way to tell'],r:0,why:'The price with the biggest selling delta is where sellers did the work. Mark those levels before the session, and watch how price behaves when it returns to them.'}]};
+
+/* ---- 4. absorption by result ---- */
+const labAbsGen=(ci,r)=>{const A=[[0,21452],[5,21443],[6,21441],[9,21440],[10,21436],[15,21424]],B=[[0,21452],[5,21443],[6,21441],[9,21440],[10,21441],[15,21452]],c=labPath(ci?B:A,16,r,.4),cs=labCandles(c,r,{wick:.9,v:i=>i>=6&&i<=8?420:100});
+  labDelta(cs,(i,x)=>i>=6&&i<=8?-(210+r()*70):i>=9?(ci?60:-90):-(x.o-x.c)*8);[[6,48],[7,64],[8,40]].forEach(([i,z])=>{cs[i].pr=[[21440.4,z,'s']]});return{cs}};
+FLAB.abs={n:16,seed:8,alt:'Big selling prints near a low, with and without follow-through',layers:[['bub','Big prints'],['pan','Delta bars']],cases:[{n:'Price follows the sellers'},{n:'Price does not move'}],panel:'delta',prof:false,
+  cap:'Press Play, then switch the case. Same big sell prints, different result. The result is what tells you who is in control. Made-up data.',
+  gen:labAbsGen,over(x){return x.step>9?`<line x1="${x.L}" x2="${x.R}" y1="${x.Y(21440)}" y2="${x.Y(21440)}" stroke="${EXC.gold}" stroke-dasharray="3 5" stroke-opacity=".7"/>`+exT(x.L+6,x.Y(21440)-5,'the low where the prints hit',{c:EXC.gold,s:10.5}):''},
+  say(x){const t=x.step,ci=x.ci;return t<6?'Price drifts toward a low.':t<9?'Big sell prints hit at the low (the bubbles). Heavy selling.':ci?'The sellers used a lot of size and price did not move. The side with the smaller result is not in control. This is absorption.':'The sellers hit hard and price followed them down. They are in control. This is not absorption.'},
+  q:[{t:'You hold a long and the big sell prints just hit. Price kept falling. What now?',o:['Leave: the sellers have follow-through','Hold: it is absorbed','Add to the long','Move the stop further away'],r:0,why:'Big selling with follow-through means the sellers are winning. Your stop and plan still rule, but this is a warning, not a reason to add.'},
+     {t:'You hold a long and the same big sell prints hit. Price did not fall. What does that say?',o:['They were absorbed: buyers took everything','The sellers are about to win','The data is wrong','Nothing'],r:0,why:'Big executed volume with no price result means someone is soaking it up. The side with the better price result is in control.'}]};
+/* "cheap compared with what?" reuses the same picture */
+FLAB.cheap={...FLAB.abs,alt:'Price looks cheap near a low: who is pushing?',cases:[{n:'Sellers still pushing'},{n:'Sellers soaked up'}],cap:'Price is lower than an hour ago, so it looks cheap. Press Play and switch the case to see why that is not enough. Made-up data.',
+  say(x){const t=x.step,ci=x.ci;return t<6?'Price is lower than it was an hour ago. It looks cheap.':t<9?'Sellers hit the low with big prints. Are they done?':ci?'Price stopped falling: buyers soaked up the selling. Now it may be worth looking for buyers to take over.':'Price kept falling. It looked cheap and became cheaper: the sellers were still pushing.'},
+  q:[{t:'Price looked cheap and kept falling. Why?',o:['Cheap compared with what? Sellers were still the ones pushing','The market was broken','Buyers were not paying attention','Price always bounces from cheap'],r:0,why:'"Low" only means something next to who is pushing. If sellers keep pushing, cheap gets cheaper.'},
+     {t:'Price stopped falling after heavy selling. What would you look for next?',o:['Buyers taking over (delta flipping, stacked buys)','More selling','A reason to sell more','Nothing'],r:0,why:'Absorption tells you the selling met a wall. The next clue you need is buyers actually stepping in.'}]};
+
+/* ---- 5. the squeeze ---- */
+FLAB.sq={n:16,seed:21,alt:'Sellers get trapped and price squeezes up through a thin spot',layers:[['bub','Big prints'],['trap','Trapped line'],['thin','Thin spot']],cases:[{n:'The squeeze'}],prof:false,
+  cap:'Press Play. Watch where the sellers enter, what happens when price recovers above them, and what is left behind. Made-up data.',
+  gen(ci,r){const c=labPath([[0,21448],[3,21440],[6,21439],[7,21443],[9,21447],[10,21452],[13,21470],[15,21458]],16,r,.3),cs=labCandles(c,r,{wick:.9,v:i=>i>=3&&i<=6?260:i>=10&&i<=13?70:100});labDelta(cs,(i,x)=>i>=3&&i<=6?-(150+r()*60):i>=7&&i<=13?(x.c-x.o)*22:0);[[3,52],[4,60],[5,44],[6,58]].forEach(([i,z])=>{cs[i].pr=[[21439.6,z,'s']]});return{cs}},
+  over(x){let s='';const {X,Y,L,R,step,off}=x;
+    if(!off.trap&&step>7){s+=`<line x1="${X(3)}" x2="${R}" y1="${Y(21439.6)}" y2="${Y(21439.6)}" stroke="${EXC.dn}" stroke-dasharray="5 4"/>`+exT(R-4,Y(21439.6)+14,'Where the sellers entered',{a:'end',c:EXC.dn,s:10.5})}
+    if(!off.thin&&step>13){s+=`<rect x="${X(9.5)}" y="${Y(21467)}" width="${R-X(9.5)}" height="${Y(21453)-Y(21467)}" fill="${EXC.gold}" fill-opacity=".1" stroke="${EXC.gold}" stroke-opacity=".5" stroke-dasharray="4 4"/>`+exT(X(9.5)+6,Y(21467)+14,'Thin spot left behind',{c:EXC.gold,s:10.5})}
+    return s},
+  say(x){const t=x.step;return t<3?'Price hovers near a low.':t<7?'Big sell prints hit, again and again, but price does not follow. The sellers are being absorbed. Their entry is marked.':t<10?'Price recovers above the sellers\' entry. They are now losing.':t<14?'Trapped sellers must buy to get out, which adds fuel to the rise. Price jumps and trades little at each price (a thin spot).':'Price comes back to fill part of the thin spot. Voids tend to get filled.'},
+  q:[{t:'Why did price jump so fast through the thin spot?',o:['Trapped sellers had to buy back to get out, adding to the move','Random luck','News came out','Buyers gave up'],r:0,why:'A squeeze is the forced exit of the traders on the wrong side. Their exits push price the way they did not want it to go.'}]};
+
+/* ---- 6. CVD: confirm, skip, or whip ---- */
+const labCvdGen=(ci,r)=>{const K=[[[0,21440],[8,21446],[12,21444],[23,21466]],[[0,21440],[8,21446],[12,21444],[23,21466]],[[0,21440],[10,21452],[14,21457],[17,21459],[20,21461],[23,21452]]][ci],c=labPath(K,24,r,.5),cs=labCandles(c,r,{wick:.9,v:i=>110});
+  labDelta(cs,(i,x)=>{const m=(x.c-x.o)*16;if(ci===0)return m+25;if(ci===1)return i<8?m+20:-30+m*.2-12;return i<12?m+10:-(24+r()*14)});return{cs}};
+FLAB.cvd={n:24,seed:9,alt:'Price with cumulative delta underneath',layers:[['lvl','Level'],['pan','CVD line']],cases:[{n:'Buyers keep pushing'},{n:'Price up, CVD not'},{n:'CVD sinking into a level'}],panel:'cvd',prof:false,
+  cap:'Press Play and switch the case. The line under the candles is cumulative delta (CVD): the running total of buying minus selling. Made-up data.',
+  gen:labCvdGen,over(x){return x.ci===2&&!x.off.lvl?`<line x1="${x.L}" x2="${x.R}" y1="${x.Y(21460)}" y2="${x.Y(21460)}" stroke="${EXC.gold}" stroke-dasharray="5 4"/>`+exT(x.L+6,x.Y(21460)-5,'a level price keeps testing',{c:EXC.gold,s:10.5}):''},
+  say(x){const t=x.step,ci=x.ci;if(t<6)return'Price starts to climb.';return ci===0?'CVD climbs with price. Aggressive buyers are pushing and pullbacks are shallow: the move is supported.':ci===1?'Price keeps rising, but the CVD line stalls and turns down. The move is not supported by aggressive buying.':'Price grinds up into a level while CVD sinks under it. Hold on: this is how a whip (a poke through the level, then a snap back) is set up.'},
+  q:[{t:'CVD is rising as the leg builds. What does that say?',o:['Buyers are pushing: the move is supported','The move is about to end','Sellers are in control','Nothing'],r:0,why:'Rising CVD with price means aggressive buyers are doing the work, so the move is supported.'},
+     {t:'Price keeps making highs but CVD does not follow. What do you do with a break-and-retest idea?',o:['Skip it: the move is not supported','Take it at double size','Ignore the CVD','Buy every dip'],r:0,why:'A move without the pressure behind it is unsupported. Skip it or wait for the pressure to return.'},
+     {t:'CVD is sinking while price grinds up into a level. What is the warning?',o:['A whip: a poke through the level that snaps back','A sure breakout','A news event','Nothing'],r:0,why:'Price rising on falling pressure into a level often pokes through and snaps back.'}]};
+
+/* ---- 7. break and test: close, not touch ---- */
+const labBrkGen=(ci,r)=>{const K=[[[0,21440],[5,21446],[7,21448],[8,21447],[11,21440]],[[0,21440],[5,21446],[7,21449],[8,21449],[11,21444]],[[0,21440],[5,21446],[7,21449],[8,21455],[11,21460]],[[0,21440],[2,21446],[3,21449],[4,21445],[6,21449],[7,21444],[9,21449],[10,21444],[11,21441]]][ci],c=labPath(K,12,r,.25),cs=labCandles(c,r,{wick:.7,v:i=>100});
+  if(ci===0)cs[8].h=21453;if(ci===1){cs[8].h=21452.4;cs[8].c=21449}if(ci===2){cs[8].o=21449.3;cs[8].c=21455;cs[8].h=21456;cs[8].l=21448.6}if(ci===3){[3,6,9].forEach(i=>{cs[i].h=21451.2})}
+  labDelta(cs,(i,x)=>(x.c-x.o)*18);return{cs}};
+FLAB.brk={n:12,seed:14,alt:'A level with a cluster of big prints and a candle that tests it',layers:[['lvl','Level'],['box','Big-print box']],cases:[{n:'Wick only'},{n:'Closes inside'},{n:'Closes beyond'},{n:'Third rejection'}],prof:false,
+  cap:'Press Play and switch the case. A break counts when a candle closes beyond the level and the big-print box, not when price merely touches it. Made-up data.',
+  gen:labBrkGen,over(x){let s='';const {L,R,Y,X,off,ci,step}=x;
+    if(!off.box)s+=`<rect x="${L}" y="${Y(21450)}" width="${R-L}" height="${Y(21446)-Y(21450)}" fill="${EXC.dn}" fill-opacity=".13"/>`+exT(L+6,Y(21446)-5,'Big prints (aggressive trading) near the level',{c:'#ff8a85',s:10});
+    if(!off.lvl)s+=`<line x1="${L}" x2="${R}" y1="${Y(21450)}" y2="${Y(21450)}" stroke="${EXC.gold}" stroke-width="1.6"/>`+exT(R-4,Y(21450)-6,'The level',{a:'end',c:EXC.gold,s:10.5});
+    if(ci===3){[[3,'1st'],[6,'2nd'],[9,'3rd']].forEach(([i,t])=>{if(i<step)s+=exT(X(i),Y(21452.6),t+' rejection',{a:'middle',c:EXC.dn,s:10})})}
+    return s},
+  say(x){const t=x.step,ci=x.ci;if(t<7)return'Price rises toward the level.';return ci===0?'Price pokes through, but the candle closes back under the level. A wick is not a break.':ci===1?'The candle closes at the level, still inside the big-print box. It did not get out. No break yet.':ci===2?'The candle closes above the level and above the box: the break counts. Price carries on.':'Price is rejected here again and again. Each rejection at the same level weakens the setup: expect it to fail or tighten your plan.'},
+  q:[{t:'Price poked above the level but the candle closed back below it. Is it a break?',o:['No: a wick is not a break','Yes','Yes, if the volume is high','Only on news days'],r:0,why:'A break counts on a close beyond the level, not a touch.'},
+     {t:'The candle closed right at the level, still inside the big-print box. Is it a break?',o:['Not yet: it has not closed beyond the box','Yes','Yes, it touched','It depends on the colour'],r:0,why:'The close has to be beyond the level and the box. Inside means no break.'},
+     {t:'A candle closed above the level and above the big-print box. What does it mean?',o:['The break counts','It is a trap for sure','Nothing','Skip it'],r:0,why:'That is the confirmation: acceptance beyond the level.'},
+     {t:'Price has been rejected at the same level three times. What changes?',o:['The setup is weaker each time','It is stronger each time','Nothing','It always breaks on the third try'],r:0,why:'Every rejection at the same level weakens the idea. Expect a failure or tighten up.'}]};
+
+/* ---- 8. the open and the plan (also the news version) ---- */
+FLAB.day={n:40,seed:44,alt:'The first part of the New York morning with phases marked',layers:[['ph','Phases'],['plan','My scenarios']],cases:[{n:'The morning'}],prof:false,
+  cap:'Press Play to see the phases. Then click the chart where your long idea would be proven wrong. Made-up data.',
+  gen(ci,r){const c=labPath([[0,21440],[9,21442],[10,21442],[13,21428],[17,21446],[19,21441],[20,21441],[30,21462],[31,21460],[39,21474]],40,r,1.1),cs=labCandles(c,r,{wick:1.3,v:i=>i<10?60:i<20?210:i<31?150:120});labDelta(cs,(i,x)=>(x.c-x.o)*15);return{cs}},
+  phases:[[0,10,'Before the open: noise'],[10,20,'The open: the fight'],[20,31,'Direction shows'],[31,40,'Trade with it']],
+  over(x){let s='';const {X,Y,L,R,step,off}=x;
+    if(!off.ph)FLAB.day.phases.forEach(p=>{if(step>p[0]){const e=Math.min(step,p[1]);s+=`<rect x="${X(p[0])-x.dx/2}" y="22" width="${X(e-1)-X(p[0])+x.dx}" height="18" fill="${EXC.blue}" fill-opacity="${.08+.04*(p[0]/10%2)}"/>`+exT(X(p[0])-x.dx/2+4,35,p[2],{c:EXC.blue,s:10})}});
+    if(!off.plan&&step>=20){s+=`<line x1="${L}" x2="${R}" y1="${Y(21448)}" y2="${Y(21448)}" stroke="${EXC.up}" stroke-dasharray="5 4"/>`+exT(L+6,Y(21448)-5,'Scenario A: long if price takes this high',{c:EXC.up,s:10.5})+`<line x1="${L}" x2="${R}" y1="${Y(21427.4)}" y2="${Y(21427.4)}" stroke="${EXC.dn}" stroke-dasharray="5 4"/>`+exT(L+6,Y(21427.4)+13,'Scenario B: this low breaks and the idea changes',{c:EXC.dn,s:10.5})}
+    return s},
+  say(x){const t=x.step;return t<10?'Before the open. Price drifts in noise. You can see the battle but not who will win, so you wait.':t<20?'The open. Price takes the low, takes the high, and comes back. The first minutes are a fight. Do nothing yet.':t<31?'Direction shows. Your written plan (switch on "My scenarios") says what you do if the high breaks and what changes if the low breaks.':'Price carries on with the direction that showed. You traded the plan, not a guess.'},
+  pick:{at:20,t:'Click the price where your long idea would be proven wrong.',check:p=>p>=21432?[0,'That is inside the opening noise: normal movement would stop you out before the idea is wrong.']:p<21419?[0,'That is much further than the idea needs. You would risk far more than necessary.']:[1,'Just beyond the low the market took in the open. If price trades there, the idea is wrong, so that is the right place.']},
+  q:null};
+FLAB.news={...FLAB.day,seed:51,alt:'A news spike, a fight at the high, and a fade back',layers:[['ph','Phases'],['poc','Where price came from'],['bub','Big prints']],cap:'Press Play. Then click the price where you would aim a fade. Made-up data.',
+  gen(ci,r){const c=labPath([[0,21440],[9,21440],[10,21446],[13,21480],[14,21479],[22,21480],[26,21464],[35,21442]],36,r,.7),cs=labCandles(c,r,{wick:1.2,v:i=>i<10?50:i<14?330:i<23?180:120});labDelta(cs,(i,x)=>i>=10&&i<14?(x.c-x.o)*20:i>=14&&i<23?(r()<.5?90:-30):(x.c-x.o)*14);for(let i=15;i<=20;i+=2)cs[i].pr=[[21480.2,44+i,'b']];return{cs}},
+  phases:[[0,10,'Quiet before the news'],[10,14,'The spike'],[14,23,'The fight'],[23,36,'The fade']],n:36,
+  over(x){let s='';const {X,Y,L,R,step,off}=x;
+    if(!off.ph)FLAB.news.phases.forEach(p=>{if(step>p[0]){const e=Math.min(step,p[1]);s+=`<rect x="${X(p[0])-x.dx/2}" y="22" width="${X(e-1)-X(p[0])+x.dx}" height="18" fill="${EXC.blue}" fill-opacity="${.08+.04*(FLAB.news.phases.indexOf(p)%2)}"/>`+exT(X(p[0])-x.dx/2+4,35,p[2],{c:EXC.blue,s:10})}});
+    if(!off.poc)s+=`<line x1="${L}" x2="${R}" y1="${Y(21440)}" y2="${Y(21440)}" stroke="${EXC.gold}" stroke-dasharray="5 4"/>`+exT(L+6,Y(21440)-5,'Where price came from (the previous balance)',{c:EXC.gold,s:10.5});
+    return s},
+  say(x){const t=x.step;return t<10?'Before the news price is quiet. Do not trade the minutes before: volatility can hurt you even when you are right.':t<14?'The news hits. Price spikes on heavy volume. Do not chase it.':t<23?'The fight at the high. Big prints keep hitting with no follow-through: someone is absorbing the buyers. Now you watch for the buyers to run out of fuel.':'The buyers are trapped and price fades back toward where it came from.'},
+  pick:{at:23,t:'Click the price where you would aim a fade.',check:p=>Math.abs(p-21440)<=4?[1,'Back toward where price came from (the previous balance). That is where price tends to return to.']:p>21455?[0,'That is the far side, the same direction as the spike. A fade aims back toward where price came from.']:[0,'Closer, but price tends to return to the previous balance, not to a random level in between.']}};
+
+/* ---- 9. the big-print filter ---- */
+FLAB.bub={n:40,seed:3,alt:'A chart with big prints filtered by size',layers:[['bub','Big prints'],['vol','Volume']],cases:[{n:'The tape'}],prof:false,th:true,
+  cap:'Drag the slider. At a low setting everything is a bubble and nothing stands out. Find the setting where only the meaningful prints show. Made-up data.',
+  gen(ci,r){const c=labPath([[0,21448],[10,21452],[20,21444],[30,21450],[39,21446]],40,r,1.6),cs=labCandles(c,r,{wick:1.1,v:i=>100});cs.forEach((x,i)=>{const k=2+Math.floor(r()*4);x.pr=[];for(let j=0;j<k;j++){const z=Math.round(3+Math.pow(r(),5)*70);x.pr.push([x.l+(x.h-x.l)*r(),z,r()<.5?'b':'s'])}});labDelta(cs,(i,x)=>(x.c-x.o)*10);return{cs}},
+  over(){return''},
+  say(x){const th=x.f._th||30,n=x.cs.reduce((a,c)=>a+(c.pr||[]).filter(p=>p[1]>=th).length,0);return`<b>${n}</b> prints of ${th} contracts or more. `+(th<=12?'Too low: bubbles everywhere, so none of them tells you anything.':th>=50?'Too high: you now miss real activity.':th>=25&&th<=40?'A useful range: only the large prints stand out. About 30 is a common start on NQ in the New York session, and about 20 in quieter hours.':'Getting closer. Keep going until only the prints that matter are left.')},
+  q:[{t:'Where would you start the big-print filter on NQ in the New York session?',o:['About 30 contracts','About 3 contracts','About 300 contracts','Wherever shows the most bubbles'],r:0,why:'A fixed filter gives everyone the same picture. Around 30 is a common start for New York, and around 20 for quieter sessions. Adjust only to cut noise.'}]};
+
+/* ---- 10. the return to your limit (Echo) ---- */
+const labRetGen=(ci,r)=>{const K=ci?[[0,21452],[7,21450],[9,21447],[11,21438],[13,21428]]:[[0,21452],[13,21440.6]],c=labPath(K,14,r,ci?.2:.12),cs=labCandles(c,r,{wick:ci?.8:.5,v:i=>ci?(i<8?90:i*38):Math.max(30,110-i*6)});labDelta(cs,(i,x)=>ci?(i<8?(x.c-x.o)*12:-(120+i*16)):-Math.max(6,46-i*3.4));return{cs}};
+FLAB.ret={n:14,seed:17,alt:'Price returning to a limit order, slowly or fast',layers:[['lim','My limit'],['pan','Delta bars']],cases:[{n:'Slow, fading return'},{n:'Fast, heavy return'}],panel:'delta',prof:false,
+  cap:'Press Play and switch the case. You have a limit buy waiting at the line. How price arrives tells you whether to leave it. Made-up data.',
+  gen:labRetGen,over(x){return x.off.lim?'':`<line x1="${x.L}" x2="${x.R}" y1="${x.Y(21440)}" y2="${x.Y(21440)}" stroke="${EXC.blue}" stroke-width="1.6" stroke-dasharray="6 4"/>`+exT(x.L+6,x.Y(21440)-6,'Your limit order',{c:EXC.blue,s:10.5})},
+  say(x){const t=x.step,ci=x.ci;return t<8?'Price starts to come back toward your limit.':ci?'Candles get bigger, volume climbs and delta stacks up against you. Price is being sold through, not drifting.':'Candles are small, volume dries up and delta shrinks. Price is drifting down with little selling behind it.'},
+  q:[{t:'The return is slow and the selling is fading. What do you do with the limit?',o:['Leave it in','Cancel it','Move it lower','Double it'],r:0,why:'A slow return on shrinking volume and delta means little is pushing price down. Leave the limit in.'},
+     {t:'The return is fast, volume is climbing and delta is stacking against you. What do you do?',o:['Cancel the limit','Leave it in and hope','Add more size','Move the stop wider'],r:0,why:'A fast, heavy return is selling through the level. Cancelling is allowed and often right.'}]};
+
+/* ---- the engine ---- */
+function labDraw(f,step){
+  const S=FLAB[f.dataset.ex],d=f._d,cs=d.cs,ci=f._ci||0,off=f._off,pan=S.panel&&!off.pan,W=800,H=pan?470:400,L=16,R=620,pt=46,pb=pan?322:372,n=cs.length,dx=(R-L)/n,X=i=>L+dx*(i+.5);
+  const lo=Math.min(...cs.map(c=>c.l))-3,hi=Math.max(...cs.map(c=>c.h))+3,Y=p=>pb-(p-lo)/(hi-lo)*(pb-pt);f._g={pt,pb,lo,hi};
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${S.alt}"><rect width="${W}" height="${H}" fill="${EXC.bg}"/>`;
+  const g=Math.max(2,Math.round((hi-lo)/6/5)*5)||5;
+  for(let p=Math.ceil(lo/g)*g;p<hi;p+=g)s+=`<line x1="${L}" x2="${R}" y1="${Y(p)}" y2="${Y(p)}" stroke="${EXC.grid}"/>`+exT(R+6,Y(p)+4,exN(p),{s:10});
+  /* profile column */
+  let dp=null;const X0=676,PW=112;
+  if(S.prof==='delta'&&!off.dp){dp={};for(let i=0;i<step;i++)Object.entries(cs[i].rowsD||{}).forEach(([p,v])=>{dp[p]=(dp[p]||0)+v});const ks=Object.keys(dp).map(Number),mx=Math.max(1,...ks.map(k=>Math.abs(dp[k]))),mid=X0+PW/2;
+    s+=`<line x1="${mid}" x2="${mid}" y1="${pt}" y2="${pb}" stroke="${EXC.line}"/>`+exT(mid,pt-6,'Delta at price',{a:'middle',s:10,c:EXC.dim});ks.forEach(k=>{const v=dp[k],w=Math.abs(v)/mx*(PW/2-2),y=Y(k+1);s+=`<rect x="${v>=0?mid:mid-w}" y="${y+1}" width="${w}" height="${Math.max(2,Y(k)-Y(k+1)-2)}" fill="${v>=0?EXC.up:EXC.dn}" fill-opacity=".8"/>`})}
+  let bands='';
+  if(S.prof!==false&&S.prof!=='delta'&&!off.prof){const bins={};for(let i=0;i<step;i++){const c=cs[i],a=Math.floor(c.l),b=Math.ceil(c.h),sp=Math.max(1,b-a+1);for(let p=a;p<=b;p++)bins[p]=(bins[p]||0)+c.v/sp}
+    const ks=Object.keys(bins).map(Number);if(ks.length){const mx=Math.max(...ks.map(k=>bins[k])),a=Math.min(...ks),b=Math.max(...ks);s+=exT(X0+PW/2,pt-6,'Volume at price',{a:'middle',s:10,c:EXC.dim});
+      let run=[];const runs=[];for(let p=a;p<=b;p++){const thin=(bins[p]||0)<.35*mx;if(thin)run.push(p);else{if(run.length)runs.push(run);run=[]}}if(run.length)runs.push(run);
+      for(let p=a;p<=b;p++){const v=bins[p]||0,w=v/mx*PW,nd=!off.nodes&&S.layers.some(l=>l[0]==='nodes'),hv=v>.7*mx&&nd;s+=`<rect x="${X0+PW-w}" y="${Y(p+1)+1}" width="${Math.max(1,w)}" height="${Math.max(2,Y(p)-Y(p+1)-1)}" fill="${hv?EXC.blue:EXC.dim}" fill-opacity="${hv?.75:.55}"/>`}
+      if(!off.nodes&&S.layers.some(l=>l[0]==='nodes'))runs.filter(q=>q.length>=3).forEach(q=>{s+=`<rect x="${X0}" y="${Y(q[q.length-1]+1)}" width="${PW}" height="${Y(q[0])-Y(q[q.length-1]+1)}" fill="${EXC.gold}" fill-opacity=".12" stroke="${EXC.gold}" stroke-width="1.3"/>`;bands+=`<rect x="${L}" y="${Y(q[q.length-1]+1)}" width="${R-L}" height="${Y(q[0])-Y(q[q.length-1]+1)}" fill="${EXC.gold}" fill-opacity=".05"/>`})}}
+  s+=bands;
+  const ctx={f,cs,ci,step,X,Y,L,R,dx,off,dp,pt,pb,v:f.dataset.v||''};
+  /* candles */
+  for(let i=0;i<Math.min(step,n);i++){const c=cs[i],up=c.c>=c.o,col=up?EXC.up:EXC.dn;s+=`<line x1="${X(i)}" x2="${X(i)}" y1="${Y(c.h)}" y2="${Y(c.l)}" stroke="${col}" stroke-width="1.4"/><rect x="${X(i)-dx*.28}" y="${Y(Math.max(c.o,c.c))}" width="${dx*.56}" height="${Math.max(2,Math.abs(Y(c.o)-Y(c.c)))}" fill="${col}"/>`}
+  s+=S.over(ctx)||'';
+  /* big prints */
+  if(!off.bub&&S.layers.some(l=>l[0]==='bub')){const th=S.th?(f._th||30):0;for(let i=0;i<Math.min(step,n);i++)(cs[i].pr||[]).forEach(p=>{if(p[1]<th)return;const col=p[2]==='b'?EXC.up:EXC.dn;s+=`<circle cx="${X(i)}" cy="${Y(p[0])}" r="${3+p[1]*.14}" fill="${col}" fill-opacity=".28" stroke="${col}" stroke-opacity=".85" stroke-width="1.2"/>`})}
+  /* bottom panel */
+  if(pan){const t0=pb+34,bh=96;let cv=0;const cum=cs.map(c=>cv+=c.d);
+    if(S.panel==='delta'){const mx=Math.max(1,...cs.map(c=>Math.abs(c.d)));s+=exT(L,t0-8,'Delta per candle',{s:10,c:EXC.dim})+`<line x1="${L}" x2="${R}" y1="${t0+bh/2}" y2="${t0+bh/2}" stroke="${EXC.line}"/>`;
+      for(let i=0;i<Math.min(step,n);i++){const v=cs[i].d,h=Math.abs(v)/mx*(bh/2-4);s+=`<rect x="${X(i)-dx*.28}" y="${v>=0?t0+bh/2-h:t0+bh/2}" width="${dx*.56}" height="${Math.max(1,h)}" fill="${v>=0?EXC.up:EXC.dn}" fill-opacity=".85"/>`}}
+    else{const a=Math.min(0,...cum),b=Math.max(0,...cum),CY=v=>t0+bh-((v-a)/Math.max(1,b-a))*bh;s+=exT(L,t0-8,'CVD: running total of buying minus selling',{s:10,c:EXC.dim})+`<line x1="${L}" x2="${R}" y1="${CY(0)}" y2="${CY(0)}" stroke="${EXC.line}" stroke-dasharray="3 4"/>`;
+      const pts=cum.slice(0,Math.min(step,n)).map((v,i)=>X(i)+','+CY(v));if(pts.length>1)s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${EXC.blue}" stroke-width="2.2" stroke-linejoin="round"/>`;if(pts.length){const q=pts[pts.length-1].split(',');s+=`<circle cx="${q[0]}" cy="${q[1]}" r="3.5" fill="${EXC.blue}"/>`}}}
+  /* the click-to-answer line */
+  const pk=(f._pk||{})[ci];if(S.pick&&pk!=null)s+=`<line x1="${L}" x2="${R}" y1="${Y(pk)}" y2="${Y(pk)}" stroke="#fff" stroke-width="1.6" stroke-dasharray="2 4"/>`+exT(R-4,Y(pk)-5,'your line',{a:'end',c:'#fff',s:10.5});
+  s+='</svg>';
+  f.querySelector('.ex-svg').innerHTML=s;
+  f.querySelector('.ex-leg').innerHTML=`<b>NQ</b> · 1m · practice data${S.cases.length>1?' · '+S.cases[ci].n:''}`;
+  /* the plain-words line, the question and the answer */
+  const say=S.say(ctx);let t=`<div class="ex-say">${say}</div>`;
+  const qs=S.q?S.q[Math.min(ci,S.q.length-1)]:null,done=step>=n;
+  if(S.pick){const p=S.pick,ready=step>=p.at;t+=`<div class="ex-q"><div class="ex-qt">${ready?p.t:'Play to the end of the story first, then answer.'}</div>`;if(ready&&pk!=null){const [ok,msg]=p.check(pk);t+=`<div class="ex-qf ${ok?'ok':'no'}"><b>${ok?'Good.':'Not quite.'}</b> ${msg}</div>`}t+='</div>'}
+  else if(qs){const a=(f._qa||{})[ci];t+=`<div class="ex-q"><div class="ex-qt">${done?qs.t:'Play to the end, then answer the question.'}</div>`;if(done){t+=`<div class="ex-qo">${qs.o.map((o,i)=>`<button type="button" class="${a==null?'':i===qs.r?'right':a===i?'wrong':''}" data-qa="${i}" ${a==null?'':'disabled'}>${o}</button>`).join('')}</div>`;if(a!=null)t+=`<div class="ex-qf ${a===qs.r?'ok':'no'}"><b>${a===qs.r?'Right.':'Not quite.'}</b> ${qs.why}</div>`}t+='</div>'}
+  f.querySelector('.ex-take').innerHTML=t}
+function labInit(f){const S=FLAB[f.dataset.ex];f._ci=0;f._qa={};f._pk={};f._th=30;f._d=S.gen(0,exRng(S.seed))}
+Object.keys(FLAB).forEach(id=>{EXK[id]={n:FLAB[id].n,draw:labDraw,init:labInit}});
+OFV.lab=(id,variant)=>{const S=FLAB[id];let h=exFig(id,S.layers.map(l=>[l[0],l[1]]),S.n,S.cap,variant?`data-v="${variant}"`:'');
+  const extra=(S.cases.length>1?`<div class="ex-cases" role="group" aria-label="Cases">${S.cases.map((c,i)=>`<button type="button" class="${i?'':'on'}" data-case="${i}">${c.n}</button>`).join('')}</div>`:'')+(S.th?`<label class="ex-thl">Big-print filter <input type="range" class="ex-th" min="5" max="60" value="30" aria-label="Big print size filter"><b class="ex-thv">30</b> contracts</label>`:'');
+  return h.replace('<div class="ex-leg"',extra+'<div class="ex-leg"')};
+(()=>{if(typeof document==='undefined')return;
+  const redraw=f=>f._k.draw(f,f._step);
+  document.addEventListener('click',e=>{const f=e.target.closest&&e.target.closest('.ex');if(!f||!FLAB[f.dataset.ex])return;
+    const cs=e.target.closest('[data-case]'),qa=e.target.closest('[data-qa]');
+    if(cs){f._ci=+cs.dataset.case;f._d=FLAB[f.dataset.ex].gen(f._ci,exRng(FLAB[f.dataset.ex].seed+f._ci*7));f.querySelectorAll('[data-case]').forEach(b=>b.classList.toggle('on',b===cs));const sc=f.querySelector('.ex-sc');sc.value=1;sc.dispatchEvent(new Event('input',{bubbles:true}));const pl=f.querySelector('.ex-play');if(pl&&pl.textContent.indexOf('Play')>-1)pl.click()}
+    else if(qa){f._qa[f._ci]=+qa.dataset.qa;redraw(f)}
+    else{const sv=e.target.closest('svg');const S=FLAB[f.dataset.ex];if(sv&&S.pick&&f._step>=S.pick.at&&f._g){const r=sv.getBoundingClientRect(),vb=sv.viewBox.baseVal,y=(e.clientY-r.top)/r.height*vb.height,g=f._g;if(y>=g.pt&&y<=g.pb){f._pk[f._ci]=g.hi-(y-g.pt)/(g.pb-g.pt)*(g.hi-g.lo);redraw(f)}}}});
+  document.addEventListener('input',e=>{if(e.target.classList&&e.target.classList.contains('ex-th')){const f=e.target.closest('.ex');f._th=+e.target.value;f.querySelector('.ex-thv').textContent=e.target.value;redraw(f)}})})();

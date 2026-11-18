@@ -65,16 +65,19 @@ quick({id:'e01',o:20.1,ph:0,t:'Two Strategies, One Flow of Messages',out:'Say wh
  examDesc:'What Echo and Orbit look for, the four messages, the candle rule and limit orders.'});
 /* ---------- e02 · Echo: is the rejection real ---------- */
 quick({id:'e02',o:20.2,ph:0,t:'Echo: Is the Rejection Real?',out:'Read the flow around a rejection wick and decide whether to keep the limit.',
- ls:['The question order flow answers','Green: a real rejection','Red: not rejected yet'],
+ ls:['The question order flow answers','The gap and the thin spot','Green: a real rejection','Red: not rejected yet'],
  task:'Find a rejection wick on a footprint chart. Write down: was there heavy aggressive volume into the level? Did the delta flip when price came back inside? Did the next candles hold beyond the wick?',
  learn:[
   {t:'The question order flow answers',h:key('<p>Echo\'s limit sits at the middle of a wick. Order flow answers one question: is this rejection real?</p>','In plain words')+`<p>Read the candle of the wick, and the candles around the sweep. A <b>failed auction</b> is when price pushed past a level, could not stay, and the buyers (for a high) or sellers (for a low) who pushed it got trapped.</p>`},
+  {t:'The gap and the thin spot',h:`<p>A fair value gap (FVG) is where one side was far more aggressive: the candles did not trade evenly. Profile the leg that made it and you will find the thin spot inside it. That is why a rejection block sitting in a clear gap is a stronger picture than one with no gap behind it.</p>`+key('<p>The gap, the thin spot and a rejection all describe the same thing: one side was in charge there.</p>','In plain words')+OFV.lab('lvn','fvg')},
   {t:'Green: a real rejection',h:tblx(['What you see','Reading','Action'],[['Heavy aggressive volume into the level, then delta flipped and price came back inside the range','A failed auction: the buyers got trapped','Green: keep the limit'],['Volume at the extreme of the wick is large, but price made no progress','Absorption: the level is being defended','Green'],['CVD diverges at the sweep extreme: price makes a new high, CVD does not','Fewer aggressive buyers pushed the high','Green']])+OFV.scene('e_failed')+OFV.scene('e_absorb')+OFV.scene('e_div')},
   {t:'Red: not rejected yet',h:`<p>Delta keeps pushing in the sweep direction after the wick, stacked imbalances continue, and the next candles hold beyond the wick. The sweep is <b>not rejected yet</b>. <b>Cancel the limit or skip.</b></p>`+OFV.scene('e_notrej')}],
  recall:rc('Two Strategies, One Flow of Messages','Is a limit that never fills a loss?',['No: it is a trade you did not take','Yes','Yes, a small one','Only on news days'],'A missed trade costs nothing.'),
  steps:[['<b>A real rejection.</b>',OFV.scene('e_failed')],['<b>Absorption.</b>',OFV.scene('e_absorb')],['<b>Not rejected yet.</b>',OFV.scene('e_notrej')]],
  gens:[echoAct,echoAct,echoRead,echoRead],
  bank:BANKS('Is the rejection real',[
+  ['What is a fair value gap in flow terms?',['A place where one side was far more aggressive','A random gap','A news level','A level that always holds'],'The thin spot inside it shows the same thing.'],
+
   ['What question does order flow answer for Echo?',['Is the rejection real?','What is the news?','Where is the stop?','Which day is it?'],'That is the check.'],
   ['What is a failed auction?',['Price pushed past a level but could not stay, so the pushers were trapped','A news spike','A gap','A trend'],'A real rejection.'],
   ['Heavy volume into the level, then delta flipped and price came back inside. What colour?',['Green: keep the limit','Red','Yellow','None'],'The buyers got trapped.'],
@@ -89,16 +92,20 @@ quick({id:'e02',o:20.2,ph:0,t:'Echo: Is the Rejection Real?',out:'Read the flow 
  examDesc:'Reading a rejection wick in the flow: failed auction, absorption, divergence, and not rejected yet.'});
 /* ---------- e03 · when price returns to your limit ---------- */
 quick({id:'e03',o:20.3,ph:0,t:'When Price Returns to Your Limit',out:'Tell a slow, fading return from a fast, heavy one, and cancel when you should.',
- ls:['Slow and fading','Fast, heavy and one-sided','Cancelling is allowed'],
+ ls:['Slow and fading','Fast, heavy and one-sided','Watch the return yourself','Cancelling is allowed'],
  task:'Watch price come back to a limit level on a footprint chart. Write down: was the volume thin or heavy? Was the delta fading or surging toward your stop?',
  learn:[
   {t:'Slow and fading',h:key('<p>If price drifts back to your limit quietly, with fading volume, the level is probably holding.</p>','In plain words')+`<p>When price comes back to your limit, how it arrives matters. If it arrives <b>slowly with fading volume</b>, and the delta is fading against your trade, <b>leave the limit in</b>.</p>`+OFV.scene('l_slow')},
   {t:'Fast, heavy and one-sided',h:`<p>If price arrives with a <b>fast, heavy, one-sided surge</b> (large delta and stacked imbalances in the direction that would take your stop), that is the market telling you the level may fail.</p>`+OFV.scene('l_surge')},
+  {t:'Watch the return yourself',h:`<p>You have a limit order waiting. How price <b>arrives</b> tells you whether to leave it. Switch between the two cases below and watch the candles, the volume and the delta bars.</p>`+key('<p>Slow and fading: leave it. Fast, heavy and stacked against you: cancelling is allowed.</p>','In plain words')+OFV.lab('ret')},
   {t:'Cancelling is allowed',h:`<p><b>Cancelling the limit is allowed.</b> A limit that never fills is not a loss. Order flow can make you cancel, but it never moves your stop or changes the target.</p>`}],
  recall:rc('Echo: Is the Rejection Real?','What do you do on red?',['Cancel the limit or skip','Keep it','Add size','Move the stop'],'Never size up.'),
  steps:[['<b>Slow.</b>',OFV.scene('l_slow')],['<b>Surge.</b>',OFV.scene('l_surge')],['<b>Cancel.</b>',`<p>Cancelling is allowed. A missed trade costs nothing.</p>`]],
  gens:[limitQ,limitQ,echoAct,neverQ],
  bank:BANKS('Returning to the limit',[
+  ['The return to your limit is slow with shrinking volume and delta. You...',['Leave the limit in','Cancel it','Move it lower','Double it'],'Little is pushing price down.'],
+  ['The return is fast with volume climbing and delta stacked against you. You...',['Can cancel the limit','Must leave it in','Add more','Move the stop wider'],'Cancelling is allowed.'],
+
   ['Price drifts back to your limit slowly on fading volume. What do you do?',['Leave the limit in','Cancel it','Add size','Move the stop'],'The level is probably holding.'],
   ['Price rushes to your limit with large delta and stacked imbalances toward your stop. What do you do?',['Cancel the limit','Leave it','Add size','Move the stop'],'The level may fail.'],
   ['Is cancelling a limit allowed?',['Yes','No','Only on news days','Only at night'],'It is allowed.'],
@@ -113,18 +120,21 @@ quick({id:'e03',o:20.3,ph:0,t:'When Price Returns to Your Limit',out:'Tell a slo
  examDesc:'How price arrives at your limit: slow and fading versus fast and heavy, and cancelling.'});
 /* ---------- e04 · Orbit ---------- */
 quick({id:'e04',o:20.4,ph:0,t:'Orbit: The Tap, the Inversion and the Limit',out:'Read the flow at each of Orbit\'s three moments, and work out the limit and the risk.',
- ls:['Orbit\'s order of events','The tap','The inversion','Your limit at the small 0.705','The numbers'],
+ ls:['Orbit\'s order of events','The tap','The inversion','When the inversion traps traders','Your limit at the small 0.705','The numbers'],
  task:'Take any short setup from Orbit (or invent one). Write the order of events, the internal range, your limit at the 0.705 of that range, and the risk to the inversion high. Is it 15 points or less?',
  learn:[
   {t:'Orbit\'s order of events',h:key('<p>Orbit always goes in the same order. If the order changes, there is no trade.</p>','In plain words')+`<ol><li><b>Tap:</b> price trades up into the 0.705 of a big range (the area of interest). No tap, no trade.</li><li><b>Inversion:</b> a 5-minute candle closes below the bottom of a fresh bullish gap. It tells you the retrace has failed.</li><li><b>Internal range:</b> a smaller 3-minute range from the inversion high down to the lowest-wick candle after it.</li><li><b>Limit:</b> a limit sell at its 0.705, stop at the inversion high, target 40 points. Maximum risk 15 points.</li></ol>`},
   {t:'The tap',h:`<p>Green: buyers (for shorts) push up into the 0.705 on <b>slowing volume</b>, delta fades, and there is absorption at the level. Yellow or red: the tap comes with <b>stacked buy imbalances</b> and price shoots through the top of the large range. The idea fails.</p>`+OFV.scene('o_tap')+OFV.scene('o_through')},
   {t:'The inversion',h:`<p>Green: the closing candle has <b>strong delta in the new direction</b> and clear volume, and the inversion high holds. Yellow or red: weak or opposite delta, or price is pushed straight back above the inversion high.</p>`+OFV.scene('o_inv')+OFV.scene('o_invweak')},
+  {t:'When the inversion traps traders',h:`<p>The inversion works when traders who bought the first move get trapped. They have to get out, and their exits add to the move back. That is a squeeze: the forced exit of the people on the wrong side.</p>`+key('<p>The inversion is a failed move. The trapped traders are what gives the move back its speed.</p>','In plain words')+OFV.lab('sq')},
   {t:'Your limit at the small 0.705',h:`<p>Green: price returns on <b>thin volume</b> with the delta fading against the trade, and stalls. Red: it returns with a strong one-sided push toward the stop. <b>Cancel.</b></p>`+OFV.scene('l_slow')},
   {t:'The numbers',h:warn('<p>Your limit is at the 0.705 of the internal range, measured up from its 0. The stop is the inversion high with no buffer. If the risk from the limit to the inversion high is more than 15 points, there is <b>no trade</b>, and you never move the stop closer to make it fit. After you are in: nothing. No break-even, no partials.</p>','Orbit\'s numbers')}],
  recall:rc('Echo: Is the Rejection Real?','Can the flow place the limit for you?',['No: Echo marks it','Yes','Sometimes','Only at night'],'The indicator marks the setup.'),
  steps:[['<b>Order of events.</b>',tblx(['1','2','3','4'],[['Tap','Inversion','Internal range','Limit']])],['<b>The inversion.</b>',OFV.scene('o_inv')],['<b>The limit.</b>',OFV.scene('l_slow')]],
  gens:[orbitOrder,tapQ,invQ,oteEntry,orbitRisk],eb:5,
  bank:BANKS('Orbit',[
+  ['Why can the move back after an inversion be fast?',['The trapped traders have to exit, adding to the move','It is random','News','Low volume only'],'Forced exits push price the way they did not want it to go.'],
+
   ['What is the first step in Orbit?',['The tap into the 0.705 of the big range','The inversion','The limit','The stop'],'No tap, no trade.'],
   ['What is an inversion?',['A 5-minute candle closing through a fresh gap, so the retrace has failed','A new high','A news candle','A tap'],'It tells you the retrace failed.'],
   ['Where is the stop?',['At the inversion high, no buffer','10 points away','At the open','At the 0.5'],'Fixed.'],
@@ -139,10 +149,11 @@ quick({id:'e04',o:20.4,ph:0,t:'Orbit: The Tap, the Inversion and the Limit',out:
  examDesc:'Orbit\'s order of events, the flow at the tap, the inversion and the limit, and the numbers.'});
 /* ---------- e05 · together and the rules ---------- */
 quick({id:'e05',o:20.5,ph:0,t:'Using Them Together, and the Rules That Never Change',out:'Use Echo and Orbit together, run your day, and know what order flow never does.',
- ls:['Take one idea at a time','The rules that never change','Footprint settings to start with','Extra flow checks (second opinion)','The one to watch: the first 3 minutes','A daily routine'],
+ ls:['Take one idea at a time','The lock: out of balance first','The rules that never change','Footprint settings to start with','Extra flow checks (second opinion)','The one to watch: the first 3 minutes','A daily routine'],
  task:'Write the five rules of this course on one card: one idea at a time, a limit is a request, size from the stop, stay out around news, and the rules that never change.',
  learn:[
   {t:'Take one idea at a time',h:key('<p>Echo and Orbit are two separate ideas. Take one at a time.</p>','In plain words')+tblx(['','Echo','Orbit'],[['Looks for','A wick that rejected a liquidity level','A retrace, a 5-minute gap closed through, then a small retrace'],['Order','Limit at the wick\'s midpoint','Limit at the 0.705 of a small 3-minute range'],['Stop','Just beyond the wick, small','At the inversion high, never more than 15 points'],['Target','The next draw on liquidity','40 points from the limit'],['Stop moves','None','None: no break-even, no partials']])+`<ul><li>If both give a limit in opposite directions, do not take both. Pick the one that matches your plan for the day, or skip.</li><li>A limit is a request, not a command. If price runs away without filling, cancel it.</li><li><b>Size from the stop:</b> contracts = the dollars you will lose ÷ (stop in points × $2 for MNQ), rounded down.</li><li>Stay out around big news: spreads and spikes break limit-order setups.</li></ul>`},
+  {t:'The lock: out of balance first',h:`<p>Echo and Orbit work best when price is already moving out of balance. The bigger-picture trend check you use before an idea is how you know. Inside a balanced day, a rejection block has little room to run.</p>`+key('<p>Out of balance first. The trend check is how you know.</p>','In plain words')+OFV.lab('bal')},
   {t:'The rules that never change',h:`<ol><li>Order flow can make you <b>skip, cancel, or take half size</b>. It never makes you take a trade the indicator did not mark.</li><li>It never moves a stop, adds a partial, or changes the 40-point or draw-on-liquidity target.</li><li>If you cannot read the footprint calmly in the time you have, <b>ignore it</b> and follow the indicator at your normal size, or skip the trade. A missed trade costs nothing.</li></ol>`+OFV.scene('e_failed')},
   {t:'Footprint settings to start with',h:`<p>On a footprint platform (such as DeepCharts): a <b>1-minute footprint</b> with bid and ask volume and delta, an <b>imbalance ratio of about 300%</b>, a <b>cumulative delta panel reset at the 6 PM open</b>, and a daily or session volume profile.</p>`},
   {t:'Extra flow checks (second opinion)',h:FLOWX.words()+FLOWX.echo()},
@@ -152,6 +163,8 @@ quick({id:'e05',o:20.5,ph:0,t:'Using Them Together, and the Rules That Never Cha
  steps:[['<b>One at a time.</b>',`<p>Pick the idea that matches your plan, or skip.</p>`],['<b>The never list.</b>',`<p>No unmarked trades, no stop moves, no partials, no target changes.</p>`],['<b>A picture.</b>',OFV.scene('e_failed')]],
  gens:[togetherQ,neverQ,mixQ,mixQ],
  bank:BANKS('Together and the rules',[
+  ['Echo and Orbit work best when price is...',['Already moving out of balance','Stuck in the middle of a range','Closed','Gapping every minute'],'A balanced day gives a rejection block little room.'],
+
   ['Echo and Orbit give limits in opposite directions. What do you do?',['Take one, or skip','Take both','Add size','Move the stop'],'One idea at a time.'],
   ['What is a limit?',['A request, not a command','An order that fills at once','A stop','A target'],'Cancel it if price runs away.'],
   ['How do you size?',['From the stop: dollars ÷ (stop × $2), rounded down','From a feeling','Always 1','Always max'],'MNQ is $2 a point.'],

@@ -108,6 +108,29 @@ const SCN=[
   notes:['Price runs through the thin area.','Another stacked push.','Heavy trading returns: price is slowing down.','Price stalls where the volume is heavy.'],
   next:'Check the profile: a thin path to your target is friendlier than a heavy node in front of it. Put your target before the heavy node.'}
 
+ ,{id:'squeeze',name:'Sellers get trapped',ideal:'long',ok:[],inv:{long:11},tgt:{long:[1,4]},decideAt:5,levels:[{row:10,label:'Where the sellers entered'}],
+  intro:'NQ has been sold hard near a low. The dashed gold line marks where the big sellers entered. Read the first five candles.',
+  c:[{a:5,b:9,bias:-.3,s:70},{a:8,b:11,bias:-.5,s:105,stack:[9,10,'sell'],big:[10,50,'sell']},{a:9,b:12,bias:-.55,s:115,big:[11,56,'sell'],hot:[11,2.5,.16]},{a:9,b:12,bias:.1,s:60,up:true,o:11,c:10},{a:7,b:11,bias:.5,s:80,stack:[8,10,'buy'],o:10,c:9,up:true},
+     {a:4,b:8,bias:.55,s:40,stack:[5,7,'buy']},{a:1,b:5,bias:.55,s:35,stack:[2,4,'buy']},{a:1,b:3,bias:0,s:60},{a:2,b:5,bias:-.2,s:70}],
+  qs:[['The gold diamonds are big sell prints near the low, but price did not fall. What does that suggest?',['The selling is being absorbed: buyers are soaking it up','The sellers are about to win','The data is wrong','Nothing'],'Big executed volume with no price result means someone is absorbing it.'],
+      ['Price has recovered above the dashed line where the sellers entered. What does that mean for them?',['They are losing and may have to buy back to get out','They are winning','Nothing changes','They will add more'],'Traders on the wrong side get trapped. Their exits add to the move.'],
+      ['Where would a buy idea be proven wrong?',['Just below the low of the heavy selling','Above the dashed line','At the top of the chart','There is no wrong place'],'If price trades below that low, the idea that the sellers were absorbed is wrong.']],
+  facts:['Big sell prints hit near the low but price did not follow: absorbed.','Price recovered above where the sellers entered, so they were trapped.','Candle 6 and 7 moved fast on thin volume: the forced exits added fuel, leaving a thin spot.'],
+  whyCall:{long:'A buy fits: the selling was absorbed, the sellers were trapped, and buyers took over.',short:'Selling here sells into trapped sellers who are being forced to buy back.',skip:'Staying out is safe, but the flow gave a clear reason and a clear stop.'},
+  notes:['The trapped sellers buy back: stacked green cells.','Price runs through the thin area quickly.','A pause at the top.','Price returns to fill part of the thin area.'],
+  next:'When aggressive sellers get absorbed and price recovers above their entry, they are trapped. Wait for buyers to take over, then put the stop beyond the low.'},
+ {id:'inside',name:'A poke that closes back inside',ideal:'skip',ok:['short'],inv:{short:6},tgt:{short:[11,14]},decideAt:5,levels:[{row:7,label:'The level (recent high)'}],
+  intro:'NQ has pushed up into a recent high. The dashed gold line is the level. Read the first five candles.',
+  c:[{a:11,b:15,bias:.2,s:70},{a:10,b:14,bias:.3,s:80},{a:9,b:13,bias:.35,s:85},{a:8,b:12,bias:.4,s:95,big:[8,46,'buy']},{a:5,b:10,bias:-.1,s:110,up:false,o:8,c:9,stack:[5,6,'sell']},
+     {a:8,b:12,bias:-.5,s:90,stack:[9,11,'sell']},{a:11,b:15,bias:-.5,s:90},{a:13,b:16,bias:-.3,s:60},{a:13,b:15,bias:.1,s:35}],
+  qs:[['Candle 5 went above the dashed level. Where did it close?',['Back below the level: inside the range','Above the level','Exactly on the level','It did not close'],'The poke did not hold. A wick above a level is not a break.'],
+      ['Look at the red highlighted cells at the top of candle 5. What are they?',['Sellers hitting hard right where price poked out','Buyers','Nothing important','The close'],'Sellers met the poke with stacked imbalances.'],
+      ['What is the safest call?',['Skip: the break did not hold, and a short would be chasing','Buy because price touched the level','Buy twice','Wait for no reason'],'A break counts on a close beyond the level. This one closed back inside.']],
+  facts:['Candle 5 poked above the level but closed back inside: not a break.','Stacked sell imbalances sat at the top of the poke: sellers met it.','A long here buys a poke that failed.'],
+  whyCall:{skip:'Skipping is right: the break did not hold and the entry for a short would be late.',short:'A sell can work, but the move is already underway and the stop has to go above the poke. Skipping was cleaner.',long:'Buying here buys a poke that closed back inside, right into the sellers.'},
+  notes:['Sellers keep hitting: stacked red cells.','Price falls back through the range.','A small bounce.','Price stalls near the lows.'],
+  next:'A break needs a close beyond the level and the big prints. If the candle closes back inside, stand aside.'}
+
 ];
 
 const wrapSvg=(inner,h)=>`<svg class="xsvg sim-svg" viewBox="0 0 ${W} ${h}" role="img" aria-label="A footprint chart you are practising on">${inner}</svg>`;
