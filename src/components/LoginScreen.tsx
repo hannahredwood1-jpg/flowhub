@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Logo } from "./AppShell";
 import { IconDiscord } from "./icons";
@@ -41,85 +41,88 @@ function LocalLogin({ onLocal }: { onLocal: (u: string, p: string) => Promise<st
 }
 
 
-const CANDLES: [number, number, number, number][] = [
-  // [open, close, high, low] on a 0..100 scale (higher = higher price)
-  [62, 55, 66, 50], [55, 47, 58, 42], [47, 40, 50, 34], [40, 33, 43, 27], [33, 28, 36, 20], [28, 36, 38, 18], [36, 44, 47, 33],
-  [44, 41, 48, 38], [41, 52, 55, 39], [52, 61, 64, 50], [61, 58, 65, 54], [58, 70, 73, 56], [70, 78, 81, 68],
-];
-function HeroChart() {
-  const W = 520, H = 210, left = 14, step = (W - left * 2) / CANDLES.length, y = (v: number) => H - 52 - v * 1.7;
-  const cvd = CANDLES.map((c, i) => [left + step * i + step / 2, H - 10 - (c[1] - 20) * 0.28] as const);
-  return (
-    <figure className="fh-hero relative overflow-hidden rounded-xl border border-line bg-panel p-4 shadow-sm" aria-label="An animated example of a price chart">
-      <style>{`
-        .fh-hero svg .c{transform-box:fill-box;transform-origin:center bottom;animation:fhGrow .55s cubic-bezier(.2,.8,.2,1) both}
-        .fh-hero svg .l{stroke-dasharray:640;stroke-dashoffset:640;animation:fhDraw 2.4s .5s ease-out forwards}
-        .fh-hero .chip{animation:fhFloat 4.5s ease-in-out infinite}
-        .fh-hero .pulse{animation:fhPulse 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
-        .fh-glow{background:radial-gradient(60% 60% at 20% 10%,rgb(255 106 0/.16),transparent 70%),radial-gradient(50% 60% at 90% 90%,rgb(27 102 194/.16),transparent 70%)}
-        @keyframes fhGrow{from{transform:scaleY(0);opacity:0}to{transform:none;opacity:1}}
-        @keyframes fhDraw{to{stroke-dashoffset:0}}
-        @keyframes fhFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-        @keyframes fhPulse{0%{transform:scale(.8);opacity:.9}100%{transform:scale(2.6);opacity:0}}
-        @media (prefers-reduced-motion:reduce){.fh-hero svg .c,.fh-hero svg .l,.fh-hero .chip,.fh-hero .pulse{animation:none!important}.fh-hero svg .l{stroke-dashoffset:0}}
-      `}</style>
-      <div className="fh-glow pointer-events-none absolute inset-0" aria-hidden />
-      <div className="relative">
-        <div className="mb-2 flex items-center justify-between text-xs text-ink-3"><span className="font-medium text-ink-2">NQ · 1 minute · practice data</span><span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-win" />Buyers take over</span></div>
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="presentation">
-          {[0, 1, 2, 3].map((i) => <line key={i} x1={left} x2={W - left} y1={30 + i * 40} y2={30 + i * 40} stroke="var(--color-line)" strokeDasharray="3 5" />)}
-          {CANDLES.map((c, i) => {
-            const x = left + step * i + step / 2, up = c[1] >= c[0], col = up ? "var(--color-win)" : "var(--color-loss)", top = y(Math.max(c[0], c[1])), bot = y(Math.min(c[0], c[1]));
-            return (
-              <g key={i} className="c" style={{ animationDelay: `${i * 0.12}s` }}>
-                <line x1={x} x2={x} y1={y(c[2])} y2={y(c[3])} stroke={col} strokeWidth="1.6" />
-                <rect x={x - step * 0.28} y={top} width={step * 0.56} height={Math.max(3, bot - top)} rx="2" fill={col} />
-              </g>
-            );
-          })}
-          <polyline className="l" points={cvd.map((p) => p.join(",")).join(" ")} fill="none" stroke="var(--color-ice)" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
-          <circle cx={cvd[cvd.length - 1][0]} cy={cvd[cvd.length - 1][1]} r="4" fill="var(--color-ice)" />
-          <circle className="pulse" cx={cvd[cvd.length - 1][0]} cy={cvd[cvd.length - 1][1]} r="4" fill="var(--color-ice)" />
-        </svg>
-        <div className="chip absolute left-[8%] top-[17%] rounded-md border border-line bg-panel/95 px-2 py-1 text-[11px] font-medium text-ink shadow-sm">Sellers absorbed</div>
-        <div className="chip absolute right-[6%] top-[14%] rounded-md border border-line bg-panel/95 px-2 py-1 text-[11px] font-medium text-win shadow-sm" style={{ animationDelay: "1.2s" }}>Delta +184</div>
-      </div>
-    </figure>
-  );
+/** Animated order-book style background: glowing liquidity bands, a drifting price line and trade bubbles. Decorative only. */
+function MarketBackdrop() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const ctx = cv.getContext("2d"); if (!ctx) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let w = 0, h = 0, raf = 0, alive = true;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const resize = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    resize(); window.addEventListener("resize", resize);
+    const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+    type Band = { y: number; t: number; k: number; hue: number; ph: number; sp: number };
+    const bands: Band[] = Array.from({ length: 16 }, () => ({ y: Math.random(), t: rnd(6, 34), k: rnd(0.3, 0.95), hue: Math.random() < 0.6 ? 24 : 212, ph: rnd(0, 6.28), sp: rnd(0.2, 0.9) }));
+    const SPEED = 38; // pixels per second the picture scrolls left
+    let py = 0.5, vel = 0, x0 = 0;
+    const path: { x: number; y: number }[] = [];
+    type Bub = { x: number; y: number; r: number; up: boolean; life: number };
+    const bubs: Bub[] = [];
+    const tip = () => w * 0.72;
+    const step = (dt: number) => {
+      vel += rnd(-0.0006, 0.0006) * (dt * 60); vel *= 0.985; py += vel * (dt * 60);
+      if (py < 0.18 || py > 0.82) vel *= -0.6; py = Math.min(0.85, Math.max(0.15, py));
+      for (const p of path) p.x -= SPEED * dt; for (const b of bubs) { b.x -= SPEED * dt; b.life += dt; }
+      path.push({ x: tip(), y: py * h });
+      while (path.length && path[0].x < -20) path.shift();
+      if (Math.random() < dt * 5) bubs.push({ x: tip(), y: py * h + rnd(-10, 10), r: rnd(3, 16), up: vel > 0 ? Math.random() < 0.7 : Math.random() < 0.3, life: 0 });
+      while (bubs.length && (bubs[0].x < -40 || bubs[0].life > 14)) bubs.shift();
+      x0 += dt;
+    };
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h);
+      for (const b of bands) {
+        const a = b.k * (0.55 + 0.45 * Math.sin(x0 * b.sp + b.ph)), y = b.y * h;
+        const g = ctx.createLinearGradient(0, 0, w, 0);
+        g.addColorStop(0, `hsla(${b.hue},95%,55%,0)`); g.addColorStop(0.3, `hsla(${b.hue},95%,55%,${a * 0.5})`); g.addColorStop(0.75, `hsla(${b.hue},95%,60%,${a})`); g.addColorStop(1, `hsla(${b.hue},95%,60%,0)`);
+        ctx.fillStyle = g; ctx.fillRect(0, y - b.t / 2, w, b.t);
+      }
+      for (const b of bubs) {
+        const c = b.up ? "62,224,161" : "255,93,115", fade = Math.max(0, 1 - b.life / 14);
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 6.283); ctx.fillStyle = `rgba(${c},${0.16 * fade})`; ctx.fill();
+        ctx.lineWidth = 1.2; ctx.strokeStyle = `rgba(${c},${0.55 * fade})`; ctx.stroke();
+      }
+      if (path.length > 1) {
+        ctx.save(); ctx.lineJoin = "round"; ctx.lineCap = "round";
+        ctx.beginPath(); path.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+        ctx.shadowColor = "rgba(255,138,43,.9)"; ctx.shadowBlur = 26; ctx.strokeStyle = "rgba(255,170,90,.95)"; ctx.lineWidth = 2.2; ctx.stroke();
+        const e = path[path.length - 1]; ctx.beginPath(); ctx.arc(e.x, e.y, 4, 0, 6.283); ctx.fillStyle = "#fff"; ctx.fill();
+        ctx.restore();
+      }
+    };
+    // warm the scene up so it is full from the first frame
+    for (let i = 0; i < 1500; i++) step(1 / 60);
+    draw();
+    if (!reduce) {
+      let last = performance.now();
+      const loop = (t: number) => { if (!alive) return; const dt = Math.min(0.05, (t - last) / 1000); last = t; step(dt); draw(); raf = requestAnimationFrame(loop); };
+      raf = requestAnimationFrame(loop);
+    }
+    return () => { alive = false; cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, []);
+  return <canvas ref={ref} aria-hidden className="pointer-events-none absolute inset-0 h-full w-full" />;
 }
 
-function PathSteps() {
-  const steps = [["1", "Foundations", "10 lessons", "var(--color-signal)"], ["2", "Orderflow", "11 lessons", "var(--color-ice)"], ["3", "Strategies", "LUMEN · INVERTIX · ECHO x ORBIT", "var(--color-win)"]] as const;
-  return (
-    <ol className="grid gap-2 sm:grid-cols-3">
-      {steps.map(([n, t, d, c]) => (
-        <li key={n} className="rounded-lg border border-line bg-panel p-3 transition-transform hover:-translate-y-0.5">
-          <div className="flex items-center gap-2"><span className="grid h-6 w-6 place-items-center rounded-full text-xs font-bold text-white" style={{ background: c }}>{n}</span><span className="text-sm font-semibold text-ink">{t}</span></div>
-          <div className="mt-1 text-xs text-ink-3">{d}</div>
-        </li>
-      ))}
-    </ol>
-  );
-}
+// The sign-in screen is always dark, whatever theme the app uses.
+const DARK_CH: Record<string, string> = { void: "7 9 12", abyss: "10 12 16", panel: "13 16 20", "panel-2": "18 22 28", line: "27 33 41", "line-2": "42 50 61", ink: "234 238 243", "ink-2": "163 173 186", "ink-3": "107 118 132", ice: "140 196 255", "ice-dim": "59 95 134", win: "62 224 161", loss: "255 93 115" };
+// both the channel variables (Tailwind classes) and the resolved colours (the .btn and .field styles) are set here
+const DARK_VARS = Object.assign({ colorScheme: "dark" }, ...Object.entries(DARK_CH).flatMap(([k, v]) => [{ [`--ch-${k}`]: v }, { [`--color-${k}`]: `rgb(${v})` }])) as React.CSSProperties;
 
 export function LoginScreen({ action, notice, onLocal }: { action: (fd: FormData) => void | Promise<void>; notice?: string; onLocal?: (u: string, p: string) => Promise<string | undefined> }) {
   return (
-    <main className="grid min-h-dvh grid-rows-[auto_1fr]">
-      <header className="bg-[#0b0d10] text-white"><div className="mx-auto flex h-14 max-w-[1200px] items-center px-4 sm:px-6"><Logo onDark /></div></header>
-      <div className="mx-auto grid w-full max-w-[1200px] items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_1fr]">
+    <main className="relative grid min-h-dvh grid-rows-[auto_1fr] overflow-hidden bg-[#06080b] text-ink" style={DARK_VARS}>
+      <MarketBackdrop />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_60%_at_30%_40%,transparent,rgba(6,8,11,.65)_75%)]" aria-hidden />
+      <header className="relative z-10"><div className="mx-auto flex h-14 max-w-[1200px] items-center px-4 sm:px-6"><Logo onDark /></div></header>
+      <div className="relative z-10 mx-auto grid w-full max-w-[1200px] items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_1fr]">
         <section className="grid max-w-xl gap-5">
           <div className="label !uppercase tracking-[0.06em]">Trading School</div>
-          <h1 className="text-[clamp(32px,5vw,46px)] font-semibold leading-[1.1] tracking-[-0.02em]">Learn to read the market, <span className="bg-gradient-to-r from-[var(--color-signal)] to-[#ffa24d] bg-clip-text text-transparent">one lesson at a time.</span></h1>
+          <h1 className="text-[clamp(34px,5.5vw,54px)] font-semibold leading-[1.05] tracking-[-0.02em] drop-shadow-[0_2px_24px_rgba(0,0,0,.6)]">Learn to read the market, <span className="bg-gradient-to-r from-[#ff6a00] to-[#ffb36b] bg-clip-text text-transparent">one lesson at a time.</span></h1>
           <p className="text-[17px] leading-relaxed text-ink-2">A step-by-step school for new traders: the basics, then orderflow, then three strategies. Practice, quizzes and a coach who can see how you are doing.</p>
-          <HeroChart />
-          <PathSteps />
-          <ul className="grid gap-2 text-[15px] text-ink-2">
-            <li>• Start from zero. Every term is explained in plain words.</li>
-            <li>• Interactive charts you can play, pause and explore.</li>
-            <li>• Your plan, journal and prop firm tracker in the same place.</li>
-          </ul>
         </section>
-        <section className="card-lite grid gap-4 rounded-xl border border-line bg-panel p-7 shadow-sm">
+        <section className="grid gap-4 rounded-2xl border border-white/10 bg-[rgba(10,12,16,.72)] p-7 shadow-[0_20px_80px_rgba(0,0,0,.55)] backdrop-blur-md">
           <h2 className="text-xl font-semibold">Sign in</h2>
           <p className="text-[14.5px] text-ink-2">Use your FLOWMTD Discord account if you have one. We only read your name, avatar and your roles in the server. No Discord? Use the email button below.</p>
           <form action={action} className="grid gap-3">
