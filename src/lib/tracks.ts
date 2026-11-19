@@ -112,6 +112,8 @@ export const trackModuleIds = (t: TrackId): string[] => [...trackModules(t).map(
 export const trackTotalFor = (t: TrackId, path: LearnPath) => (path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t].length : trackTotal(t));
 /** Lessons passed on the given path (only the Basic lessons count on the Basic path). */
 export const passedOnPath = (state: unknown, t: TrackId, path: LearnPath) => passedIn(state, new Set(path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t] : trackModules(t).map((m) => m.id)));
+/** A strategy is done on a path when every lesson of that path is passed. LUMEN opens after INVERTIX is done, and ECHO x ORBIT after LUMEN is done (on both paths). */
+export const strategyDone = (state: unknown, t: TrackId, path: LearnPath) => passedOnPath(state, t, path) >= trackTotalFor(t, path);
 /** A Basic lesson whose lesson before it in the full course is not a Basic lesson is exempt from the "in order" rule. */
 export function basicOrderSkip(t: TrackId): ReadonlySet<string> {
   if (!isBasicTrack(t)) return new Set();

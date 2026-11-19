@@ -105,7 +105,7 @@ test("a passing exam attempt on record counts as a pass even if the save lost it
 });
 
 /* ---- the learning path: Orderflow path (default) or Basic path ---- */
-import { BASIC_MODULES, BASIC_ONLY_IDS, BASIC_ONLY_MODULES, basicOrderSkip, passedOnPath, strategyOpen, trackModuleIds, trackModules as trackMods, trackTotalFor } from "./tracks";
+import { BASIC_MODULES, BASIC_ONLY_IDS, BASIC_ONLY_MODULES, basicOrderSkip, passedOnPath, strategyDone, strategyOpen, trackModuleIds, trackModules as trackMods, trackTotalFor } from "./tracks";
 const fundDone = { v2: { m: Object.fromEntries(trackMods("fundamentals").map((m) => [m.id, { p: 1 }])) } };
 const ofDone = { v2: { m: Object.fromEntries(trackMods("orderflow").map((m) => [m.id, { p: 1 }])) } };
 test("the strategies open after Foundations only on the Basic path, and always with the Orderflow certificate", () => {
@@ -151,4 +151,13 @@ test("the Basic-only lessons exist in the strategy content, flagged bonly, with 
       assert.ok(src.includes(`bonly:1,t:'${m.title}'`), `${m.id} is flagged bonly with the title ${m.title}`);
     }
   }
+});
+
+test("a strategy is done when every lesson of the member's path is passed", () => {
+  const all = (ids: string[]) => ({ v2: { m: Object.fromEntries(ids.map((id) => [id, { p: 1 }])) } });
+  assert.equal(strategyDone(all(["n01", "bn1"]), "invertix", "basic"), false);
+  assert.equal(strategyDone(all(["n01", "bn1", "bn2"]), "invertix", "basic"), true);
+  assert.equal(strategyDone(all(["n01", "bn1", "bn2"]), "invertix", "orderflow"), false);
+  assert.equal(strategyDone(all(["n01", "n02", "n03"]), "invertix", "orderflow"), true);
+  assert.equal(strategyDone(null, "lumen", "basic"), false);
 });
