@@ -128,7 +128,7 @@ The live site runs from `deploy/` so it can be updated without GitHub:
 
 - **Server:** `deploy/server.ts` (Bun + Hono) → built into one file by `deploy/build.mjs` → pasted into the Railway Function `flowhub` (project **FLOWHUB**). Same rules, security model and planner code as the Next.js app (`src/lib/*` is shared).
 - **Browser app:** `deploy/client.tsx` (the same React components) → gzipped into the `AppAsset` table in Supabase and served by the server. React loads from esm.sh.
-- **Database:** Supabase project in the FLOWMTD organization. Schema = `supabase/migrations/0001_flowhub_schema.sql` (identical table/column names to `prisma/schema.prisma`, so the Next.js app can take over the same database later). The server connects as a dedicated `flowhub_app` role; RLS blocks the public Supabase API.
+- **Database:** Supabase project in the FLOWMTD organization. Schema = `supabase/migrations/0001_flowhub_schema.sql` (identical table/column names to `prisma/schema.prisma`, so the Next.js app can take over the same database later). The server connects as a dedicated `flowhub_app` role; RLS blocks the public Supabase API. A new table needs a grant and a policy for `flowhub_app` (see `0015_learning_path.sql`), or the server gets "permission denied".
 - **Railway variables:** `DATABASE_URL`, `SESSION_SECRET`, `TOKEN_ENCRYPTION_KEY`, `PUBLIC_URL`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_GUILD_ID`, `DISCORD_ADMIN_ROLE_IDS`, `DISCORD_COACH_ROLE_IDS`, `DISCORD_MEMBER_ROLE_IDS`, `DISCORD_BOT_TOKEN`, `FLOWHUB_LAUNCHED`.
 - **Access gate:**
   - The Discord **Coach** role gets the admin and coach views, and always has access.
