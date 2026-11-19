@@ -137,6 +137,7 @@ export type ProjectionDTO = {
 
 export type CoachDirectoryRow = {
   trader: PersonDTO;
+  learnPath?: "orderflow" | "basic" | null;   // the path chosen after Foundations (none chosen yet = null)
   accounts: number;
   fundedAccounts: number;
   drawdownRisk: number;        // 0 safe → 1 about to fail

@@ -573,3 +573,9 @@ select{height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:8p
 .sim-row{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
 .sim-row>b{display:inline-block;margin-right:10px}.sim-row p{margin:6px 0 0;color:var(--ink2);font-size:14px}.sim-row ul{margin:6px 0 0;padding-left:18px;color:var(--ink2);font-size:14px}
 .chip.bad{color:var(--loss)}
+
+.ofcalc{border:1px solid #2a2e39;border-radius:12px;background:#131722;color:#d1d4dc;overflow:hidden}
+.ofcalc-h{padding:10px 14px;font-weight:650;color:#fff;border-bottom:1px solid #1e222d;display:flex;justify-content:space-between;gap:10px}.ofcalc-h span{color:#868993;font-weight:500;font-size:12.5px}
+.ofcalc-b{padding:12px 14px;display:grid;gap:12px}.ofcalc-b label{display:grid;gap:6px;font-size:13.5px;color:#9aa0ac}.ofcalc-b label b{color:#fff}.ofcalc-b input{width:100%;accent-color:#ff6a00}
+.ofcalc-r{padding:10px 12px;border-radius:8px;background:#0f131d;border:1px solid #232733;font-size:14.5px;color:#fff}
+.ofcalc figcaption{padding:8px 14px 11px;color:#868993;font-size:12.5px}

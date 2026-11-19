@@ -27,7 +27,15 @@ const SIDE=!!(window.VAULT||window.INV||window.LUMEN);
 const LITE=['m37','m38','m19','m20','m39','m41','m42','m01','m15','m25','m12','m14','m24','m50'];
 if(NOEX)MODS.forEach(m=>{if(LITE.includes(m.id))m.lite=1});
 /* The modules that count toward a track's certificate and pace (the vault's sealed Orderflow room is not part of the course). */
-const COURSE=()=>MODS.filter(m=>!optSkip(m));
+/* The learning path: after the Foundations a student picks the Orderflow path (the full course) or the Basic path (strategy rules and sizing only, no order-flow reading).
+   On the Basic path the lessons that read the order flow are hidden here (the server also opens the strategy doors after the Foundations). A test keeps this list in step with src/lib/tracks.ts. */
+const BASIC_IDS={invertix:['n01','bn1','bn2'],lumen:['l01','bl1','bl2'],exo:['e01','be1','be2','be3']};
+const BASIC_ONLY=['bl1','bl2','bn1','bn2','be1','be2','be3'];
+const BASIC_ON=window.LEARN_PATH==='basic'&&SIDE&&!!TRACK&&!!BASIC_IDS[TRACK.id];
+if(BASIC_ON){MODS.forEach(m=>{if(!BASIC_IDS[TRACK.id].includes(m.id))m.hid=1});let k=0;MODS.forEach(m=>{if(!m.hid)m.n=++k});
+  TRACK.certA=TRACK.certA.replace('passed every module exam,','passed every Basic path exam,');TRACK.certB='and demonstrated an understanding of the strategy rules: the entry, the stop, the target and the size.'}
+if(SIDE&&TRACK&&!BASIC_ON)MODS.forEach(m=>{if(BASIC_ONLY.includes(m.id))m.hid=1});   /* the Basic-only lessons belong to the Basic Path */
+const COURSE=()=>MODS.filter(m=>!m.hid&&!optSkip(m));
 /* The vault is one course now (ECHO x ORBIT), so there are no separate strategy sections. */
 const STRATS=[];
 const stratOf=m=>STRATS.find(s=>s.ids(m));

@@ -1041,10 +1041,25 @@ function nextModule(t, state) {
 }
 var fundamentalsComplete = (fundState) => passedIn(fundState, new Set(SCHOOL_MODULES.map((m) => m.id))) >= SCHOOL_MODULES.length;
 var orderflowOpen = (fundState) => fundamentalsComplete(fundState);
+var isLearnPath = (v) => v === "orderflow" || v === "basic";
+var BASIC_ONLY_MODULES = {
+  lumen: [{ id: "bl1", title: "Reading the Tap and the Break on TradingView" }, { id: "bl2", title: "Your LUMEN Day on TradingView: Size, Checklist and Routine" }],
+  invertix: [{ id: "bn1", title: "Reading the News Spike on TradingView" }, { id: "bn2", title: "Size Small, Then the Routine (TradingView)" }],
+  exo: [{ id: "be1", title: "Echo on TradingView: Is the Rejection Clean?" }, { id: "be2", title: "The Return to Your Limit, on TradingView" }, { id: "be3", title: "Orbit on TradingView: the Tap, the Inversion and the Limit" }]
+};
+var BASIC_ONLY_IDS = { lumen: BASIC_ONLY_MODULES.lumen.map((m) => m.id), invertix: BASIC_ONLY_MODULES.invertix.map((m) => m.id), exo: BASIC_ONLY_MODULES.exo.map((m) => m.id) };
+var BASIC_MODULES = { invertix: ["n01", ...BASIC_ONLY_IDS.invertix], lumen: ["l01", ...BASIC_ONLY_IDS.lumen], exo: ["e01", ...BASIC_ONLY_IDS.exo] };
+var isBasicTrack = (t) => t === "invertix" || t === "lumen" || t === "exo";
+var trackModuleIds = (t) => [...trackModules(t).map((m) => m.id), ...isBasicTrack(t) ? BASIC_ONLY_IDS[t] : []];
+var trackTotalFor = (t, path) => path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t].length : trackTotal(t);
+var passedOnPath = (state, t, path) => passedIn(state, new Set(path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t] : trackModules(t).map((m) => m.id)));
+function basicOrderSkip(t) {
+  if (!isBasicTrack(t)) return /* @__PURE__ */ new Set();
+  const ids2 = trackModuleIds(t), basic = new Set(BASIC_MODULES[t]);
+  return new Set(ids2.filter((id, i) => basic.has(id) && i > 0 && !basic.has(ids2[i - 1])));
+}
+var strategyOpen = (ofState, fundState, path) => orderflowComplete(ofState) || path === "basic" && fundamentalsComplete(fundState);
 var orderflowComplete = (ofState) => passedIn(ofState, new Set(ORDERFLOW_MODULE_IDS)) >= ORDERFLOW_MODULE_IDS.length;
-var invertixOpen = (ofState) => orderflowComplete(ofState);
-var lumenOpen = (ofState) => orderflowComplete(ofState);
-var vaultStrategiesOpen = (ofState) => orderflowComplete(ofState);
 function normalizeOrder(ids2, m, open = 0, skip = /* @__PURE__ */ new Set()) {
   const out = { ...m };
   for (let i = open + 1; i < ids2.length; i++) {
@@ -1797,6 +1812,7 @@ app.get("/api/school", async (c) => {
     name: u.globalName ?? u.username,
     pace: pace ? { perWeek: Number(pace.perWeek), preset: pace.preset, baseline: pace.baseline, startedAt: new Date(pace.startedAt).toISOString(), emails: pace.emails } : null,
     hasEmail: !!acct,
+    learnPath: (await sql`select path from "LearningPath" where "userId" = ${u.id}`)[0]?.path ?? null,
     path: path ? { modes: js(path.modes), answers: js(path.answers), committedAt: new Date(path.committedAt).toISOString(), locked: !!path.lockedAt } : null,
     proofs
   });
@@ -1903,14 +1919,44 @@ var SETS = { fundamentals: SCHOOL_MODULE_SET, orderflow: new Set(ORDERFLOW_MODUL
 var passedIn2 = (state, track = "fundamentals") => passedIn(state, SETS[track]);
 async function trackState(userId, track) {
   const [r] = track === "fundamentals" ? await sql`select state from "SchoolProgress" where "userId" = ${userId}` : track === "invertix" || track === "orderflow" || track === "lumen" ? await sql`select state from "TrackProgress" where "userId" = ${userId} and track = ${track}` : await sql`select state from "VaultAccess" where "userId" = ${userId}`;
-  const proven = (await sql`select distinct ref from "SchoolAttempt" where "userId" = ${userId} and kind = 'ex' and pass = true`).map((x) => x.ref).filter((x) => SETS[track].has(x));
+  const proven = (await sql`select distinct ref from "SchoolAttempt" where "userId" = ${userId} and kind = 'ex' and pass = true`).map((x) => x.ref).filter((x) => SETS[track].has(x) || BASIC_ONLY_IDS[track]?.includes(x));
   return proven.length ? withPasses(r?.state ?? null, proven) : r?.state ?? null;
 }
+var pathTag = (p) => p === "basic" ? '<script>window.LEARN_PATH="basic";</script>' : "";
+async function learnPathOf(userId) {
+  const [r] = await sql`select path from "LearningPath" where "userId" = ${userId}`;
+  return isLearnPath(r?.path) ? r.path : "orderflow";
+}
+async function pathMap() {
+  const rows = await sql`select "userId", path from "LearningPath"`;
+  return new Map(rows.filter((r) => isLearnPath(r.path)).map((r) => [r.userId, r.path]));
+}
+var effPath = (chosen, ofState) => orderflowComplete(ofState) ? "orderflow" : chosen ?? "orderflow";
+function nextOnPath(t, state, path) {
+  if (path === "basic" && (t === "invertix" || t === "lumen" || t === "exo")) {
+    const st = unwrapState(state), ids2 = BASIC_MODULES[t];
+    const id = ids2.find((x) => st?.v2?.m?.[x]?.p !== 1) ?? ids2[ids2.length - 1];
+    return { title: trackModules(t).find((m) => m.id === id)?.title ?? "" };
+  }
+  return nextModule(t, state);
+}
+app.get("/api/learn-path", async (c) => {
+  const u = c.get("user"), fs = await trackState(u.id, "fundamentals");
+  const [r] = await sql`select path from "LearningPath" where "userId" = ${u.id}`;
+  return c.json({ path: isLearnPath(r?.path) ? r.path : null, fundamentalsDone: isStaff(u) || fundamentalsComplete(fs) });
+});
+app.put("/api/learn-path", async (c) => {
+  const u = c.get("user"), b = await c.req.json().catch(() => ({}));
+  if (!isLearnPath(b.path)) throw new HttpError(400, "Pick a path");
+  if (!isStaff(u) && !fundamentalsComplete(await trackState(u.id, "fundamentals"))) throw new HttpError(403, "Finish the Foundations first");
+  await sql`insert into "LearningPath" ("userId", path) values (${u.id}, ${b.path}) on conflict ("userId") do update set path = excluded.path, "updatedAt" = now()`;
+  return c.json({ path: b.path });
+});
 function normState(state, track, skip = /* @__PURE__ */ new Set()) {
   if (!state) return state;
   const st = unwrapState(state);
   if (!st?.v2?.m) return st;
-  return { ...st, v2: { ...st.v2, m: normalizeOrder(trackModules(track).map((x) => x.id), st.v2.m, OPEN_FIRST[track], skip) } };
+  return { ...st, v2: { ...st.v2, m: normalizeOrder(trackModuleIds(track), st.v2.m, OPEN_FIRST[track], skip) } };
 }
 var trackOf = (v) => isTrack(v) ? v : "fundamentals";
 var rowState = (r, t) => t === "fundamentals" ? r.fstate : t === "orderflow" ? r.ostate : t === "invertix" ? r.istate : t === "lumen" ? r.lstate : r.xstate;
@@ -1956,10 +2002,11 @@ app.get("/api/coach/pace", async (c) => {
   const okRows = await sql`select "userId", ref from "SchoolAttempt" where kind = 'ex' and pass = true group by "userId", ref`;
   const passBy = /* @__PURE__ */ new Map();
   for (const a of okRows) if (SCHOOL_MODULE_SET.has(a.ref)) passBy.set(a.userId, [...passBy.get(a.userId) ?? [], a.ref]);
+  const lpm = await pathMap();
   const out = rows.map((r) => {
-    const track = trackOf(r.track), total = trackTotal(track), active = rowActive(r, track);
+    const track = trackOf(r.track), pth = effPath(lpm.get(r.id), r.ostate), total = trackTotalFor(track, pth), active = rowActive(r, track);
     const state = track === "fundamentals" ? withPasses(rowState(r, track), passBy.get(r.id)) : rowState(r, track);
-    const passed = passedIn2(state, track), perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
+    const passed = passedOnPath(state, track, pth), perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
     const left = total - passed, fin = passed >= total ? null : new Date(now.getTime() + left / perWeek * 7 * 864e5).toISOString();
     const act = active ? new Date(active).toISOString() : null;
     return {
@@ -2010,9 +2057,10 @@ async function runPaceNudges(now = /* @__PURE__ */ new Date()) {
     left join "SchoolProgress" sp on sp."userId" = p."userId" left join "TrackProgress" tp on tp."userId" = p."userId" and tp.track = 'invertix' left join "TrackProgress" tf on tf."userId" = p."userId" and tf.track = 'orderflow' left join "TrackProgress" tl on tl."userId" = p."userId" and tl.track = 'lumen' left join "VaultAccess" v on v."userId" = p."userId"
     where p.emails and u.role = 'MEMBER'::"Role" limit 1000`;
   let sent = 0;
+  const lpm2 = await pathMap();
   for (const r of rows) {
-    const track = trackOf(r.track), total = trackTotal(track), state = rowState(r, track), activeAt = rowActive(r, track);
-    const passed = passedIn2(state, track);
+    const track = trackOf(r.track), pth = effPath(lpm2.get(r.userId), r.ostate), total = trackTotalFor(track, pth), state = rowState(r, track), activeAt = rowActive(r, track);
+    const passed = passedOnPath(state, track, pth);
     if (passed >= total) continue;
     const perWeek = Number(r.perWeek), exp = expectedPassed(r.baseline, perWeek, new Date(r.startedAt), now, total);
     if (paceStatus(passed, exp, total) === "ahead") continue;
@@ -2192,8 +2240,9 @@ async function vaultAccess(u) {
   const [row] = await sql`select * from "VaultAccess" where "userId" = ${u.id}`;
   if (!row || row.revokedAt || !(hasMentorRole(u) || row.mentorshipOverride)) return { level: "none", orderflow: false, row: row ?? null };
   if (!row.redeemedAt) return { level: "code", orderflow: false, row };
-  if (!vaultStrategiesOpen(await trackState(u.id, "orderflow"))) return { level: "orderflow", orderflow: false, row };
-  return { level: "open", orderflow: !!row.orderflow, row };
+  const [os, fs, chosen] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "fundamentals"), learnPathOf(u.id)]);
+  if (!strategyOpen(os, fs, chosen)) return { level: "orderflow", orderflow: false, row };
+  return { level: "open", orderflow: !!row.orderflow, row, path: orderflowComplete(os) ? "orderflow" : chosen };
 }
 var readPrivate = async (name) => {
   const f = Bun.file(`${import.meta.dir}/assets/${name}`);
@@ -2236,7 +2285,7 @@ app.get("/vault", async (c) => {
   const acc = await vaultAccess(user);
   if (acc.level === "orderflow") {
     const os = await trackState(user.id, "orderflow");
-    return c.html(pageShell(`<h1>ECHO and ORBIT open with your Orderflow certificate</h1><p>Your vault code is in. Pass every Orderflow test to open the strategies. You have passed <b>${passedIn2(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+    return c.html(pageShell(`<h1>ECHO and ORBIT open after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Your vault code is in. Choose your path in the Trading School, or pass every Orderflow test. You have passed <b>${passedIn2(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   }
   if (acc.level !== "open") return c.html(LOCK_PAGE, 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("vault.html.gz");
@@ -2244,7 +2293,7 @@ app.get("/vault", async (c) => {
   const etag = String(Bun.hash(gz));
   if (!vaultHtml || vaultHtml.etag !== etag) vaultHtml = { etag, html: gunzipSync(gz).toString("utf8") };
   const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-  return c.html(vaultHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+  return c.html(vaultHtml.html.replace("<!--FH_NAV-->", nav + pathTag(acc.path ?? "orderflow")), 200, { "Cache-Control": "no-store" });
 });
 app.post("/api/vault/redeem", async (c) => {
   const u = c.get("user");
@@ -2274,21 +2323,21 @@ app.get("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
   if (acc.level !== "open") throw new HttpError(403, "Not open");
   const [row] = acc.row ? await sql`select state from "VaultAccess" where "userId" = ${u.id}` : [];
-  const state = row?.state ? normState(row.state, "exo") : null;
+  const state = row?.state ? normState(row.state, "exo", acc.path === "basic" ? basicOrderSkip("exo") : void 0) : null;
   return c.json({ state, unlocks: isStaff(u) ? ["all"] : [], name: u.globalName ?? u.username, orderflow: acc.orderflow, ...await paceFor(u.id, "exo") });
 });
 app.put("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
   if (acc.level !== "open") throw new HttpError(403, "Not open");
   if (!acc.row) return c.json({ ok: true });
-  const set = new Set(VAULT_MODULE_IDS), o = await c.req.json().catch(() => ({}));
+  const set = /* @__PURE__ */ new Set([...VAULT_MODULE_IDS, ...BASIC_ONLY_IDS.exo]), o = await c.req.json().catch(() => ({}));
   const m = {};
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const mv = isStaff(u) ? m : normalizeOrder(EXO_MODULE_IDS, m, 0);
+  const mv = isStaff(u) ? m : normalizeOrder(trackModuleIds("exo"), m, 0, acc.path === "basic" ? basicOrderSkip("exo") : void 0);
   await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m: mv } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
   return c.json({ ok: true });
 });
@@ -2341,22 +2390,22 @@ app.put("/api/orderflow/progress", async (c) => {
   return c.json({ ok: true });
 });
 async function invertixAccess(u) {
-  const [os, is] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "invertix")]);
-  const earned = invertixOpen(os);
-  return { open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn2(os, "orderflow"), oTotal: trackTotal("orderflow"), iPassed: passedIn2(is, "invertix"), iTotal: trackTotal("invertix"), state: is };
+  const [os, is, fs, path] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "invertix"), trackState(u.id, "fundamentals"), learnPathOf(u.id)]);
+  const earned = strategyOpen(os, fs, path);
+  return { path: orderflowComplete(os) ? "orderflow" : path, open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn2(os, "orderflow"), oTotal: trackTotal("orderflow"), iPassed: passedIn2(is, "invertix"), iTotal: trackTotal("invertix"), state: is };
 }
 var invHtml = null;
 app.get("/invertix", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await invertixAccess(user);
-  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens with your Orderflow certificate</h1><p>Pass every Orderflow test to open INVERTIX. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("invertix.html.gz");
   if (!gz) return c.text("INVERTIX is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!invHtml || invHtml.etag !== etag) invHtml = { etag, html: gunzipSync(gz).toString("utf8") };
   const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-  return c.html(invHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+  return c.html(invHtml.html.replace("<!--FH_NAV-->", nav + pathTag(acc.path)), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/invertix/status", async (c) => {
   const acc = await invertixAccess(c.get("user"));
@@ -2365,41 +2414,41 @@ app.get("/api/invertix/status", async (c) => {
 app.get("/api/invertix/progress", async (c) => {
   const u = c.get("user"), acc = await invertixAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const state = acc.state ? normState(acc.state, "invertix") : null;
+  const state = acc.state ? normState(acc.state, "invertix", acc.path === "basic" ? basicOrderSkip("invertix") : void 0) : null;
   return c.json({ state, unlocks: isStaff(u) ? ["all"] : [], name: u.globalName ?? u.username, ...await paceFor(u.id, "invertix") });
 });
 app.put("/api/invertix/progress", async (c) => {
   const u = c.get("user"), acc = await invertixAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const set = new Set(INVERTIX_MODULE_IDS), o = await c.req.json().catch(() => ({}));
+  const set = new Set(trackModuleIds("invertix")), o = await c.req.json().catch(() => ({}));
   const m = {};
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const mi = isStaff(u) ? m : normalizeOrder(INVERTIX_MODULE_IDS, m, 0);
+  const mi = isStaff(u) ? m : normalizeOrder(trackModuleIds("invertix"), m, 0, acc.path === "basic" ? basicOrderSkip("invertix") : void 0);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'invertix', ${JSON.stringify({ v2: { m: mi } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
 });
 async function lumenAccess(u) {
-  const [os, ls] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "lumen")]);
-  const earned = lumenOpen(os);
-  return { open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn2(os, "orderflow"), oTotal: trackTotal("orderflow"), lPassed: passedIn2(ls, "lumen"), lTotal: trackTotal("lumen"), state: ls };
+  const [os, ls, fs, path] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "lumen"), trackState(u.id, "fundamentals"), learnPathOf(u.id)]);
+  const earned = strategyOpen(os, fs, path);
+  return { path: orderflowComplete(os) ? "orderflow" : path, open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn2(os, "orderflow"), oTotal: trackTotal("orderflow"), lPassed: passedIn2(ls, "lumen"), lTotal: trackTotal("lumen"), state: ls };
 }
 var lumHtml = null;
 app.get("/lumen", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await lumenAccess(user);
-  if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens with your Orderflow certificate</h1><p>Pass every Orderflow test to open LUMEN. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("lumen.html.gz");
   if (!gz) return c.text("LUMEN is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
   if (!lumHtml || lumHtml.etag !== etag) lumHtml = { etag, html: gunzipSync(gz).toString("utf8") };
   const nav = `<nav class="fh-nav" aria-label="FLOWHUB"><a href="/school">Trading School</a><a href="/practice">Practice</a><a href="/#plan">Trading Plan</a><a href="/#stats">Stats</a>${isStaff(user) ? '<a href="/#coach">Coach Portal</a>' : ""}</nav>`;
-  return c.html(lumHtml.html.replace("<!--FH_NAV-->", nav), 200, { "Cache-Control": "no-store" });
+  return c.html(lumHtml.html.replace("<!--FH_NAV-->", nav + pathTag(acc.path)), 200, { "Cache-Control": "no-store" });
 });
 app.get("/api/lumen/status", async (c) => {
   const acc = await lumenAccess(c.get("user"));
@@ -2408,20 +2457,20 @@ app.get("/api/lumen/status", async (c) => {
 app.get("/api/lumen/progress", async (c) => {
   const u = c.get("user"), acc = await lumenAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const state = acc.state ? normState(acc.state, "lumen") : null;
+  const state = acc.state ? normState(acc.state, "lumen", acc.path === "basic" ? basicOrderSkip("lumen") : void 0) : null;
   return c.json({ state, unlocks: isStaff(u) ? ["all"] : [], name: u.globalName ?? u.username, ...await paceFor(u.id, "lumen") });
 });
 app.put("/api/lumen/progress", async (c) => {
   const u = c.get("user"), acc = await lumenAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const set = new Set(LUMEN_MODULE_IDS), o = await c.req.json().catch(() => ({}));
+  const set = new Set(trackModuleIds("lumen")), o = await c.req.json().catch(() => ({}));
   const m = {};
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const ml = isStaff(u) ? m : normalizeOrder(LUMEN_MODULE_IDS, m, 0);
+  const ml = isStaff(u) ? m : normalizeOrder(trackModuleIds("lumen"), m, 0, acc.path === "basic" ? basicOrderSkip("lumen") : void 0);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'lumen', ${JSON.stringify({ v2: { m: ml } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
@@ -2459,10 +2508,13 @@ app.get("/api/coach/members", async (c) => {
   const passBy = /* @__PURE__ */ new Map();
   for (const r of ok) if (SCHOOL_MODULE_SET.has(r.ref)) passBy.set(r.userId, [...passBy.get(r.userId) ?? [], r.ref]);
   const COURSES = [["fundamentals", "Foundations"], ["orderflow", "Orderflow"], ["invertix", "INVERTIX"], ["lumen", "LUMEN"], ["exo", "ECHO x ORBIT"]];
+  const lpm3 = await pathMap();
   for (const r of rows) {
     const mine = { ...st.get(r.trader.id) ?? {} };
     mine.fundamentals = withPasses(mine.fundamentals, passBy.get(r.trader.id));
-    r.path = COURSES.map(([id, name]) => ({ id, name, passed: passedIn2(mine[id], id), total: trackTotal(id), next: nextModule(id, mine[id]).title }));
+    const chosen = lpm3.get(r.trader.id), pth = effPath(chosen, mine.orderflow);
+    r.learnPath = chosen ?? null;
+    r.path = COURSES.map(([id, name]) => ({ id, name, passed: passedOnPath(mine[id], id, pth), total: trackTotalFor(id, pth), next: nextOnPath(id, mine[id], pth).title }));
     r.lastActive = seen.get(r.trader.id) ?? null;
   }
   return c.json(sortDirectory(rows, sort));
