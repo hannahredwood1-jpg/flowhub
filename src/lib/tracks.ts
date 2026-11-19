@@ -98,9 +98,33 @@ export const isLearnPath = (v: unknown): v is LearnPath => v === "orderflow" || 
 export const LEARN_PATH_NAME: Record<LearnPath, string> = { orderflow: "Orderflow Path", basic: "Basic Path" };
 /** Lessons written only for the Basic Path (trading the strategy on TradingView alone). They are not part of the Orderflow Path or its totals. */
 export const BASIC_ONLY_MODULES = {
-  lumen: [{ id: "bl1", title: "Reading the Tap and the Break on TradingView" }, { id: "bl2", title: "Your LUMEN Day on TradingView: Size, Checklist and Routine" }],
-  invertix: [{ id: "bn1", title: "Reading the News Spike on TradingView" }, { id: "bn2", title: "Size Small, Then the Routine (TradingView)" }],
-  exo: [{ id: "be1", title: "Echo on TradingView: Is the Rejection Clean?" }, { id: "be2", title: "The Return to Your Limit, on TradingView" }, { id: "be3", title: "Orbit on TradingView: the Tap, the Inversion and the Limit" }],
+  lumen: [
+    { id: "bl3", title: "Zones: Finding the Supply or Demand Zone on TradingView" },
+    { id: "bl4", title: "The Four Opens on TradingView" },
+    { id: "bl1", title: "Reading the Tap and the Break on TradingView" },
+    { id: "bl5", title: "The Models, the Tags, and Your Stop and Target" },
+    { id: "bl2", title: "Your LUMEN Day on TradingView: Size, Checklist and Routine" },
+  ],
+  invertix: [
+    { id: "bn3", title: "The News Calendar and the Clock" },
+    { id: "bn1", title: "Reading the News Spike on TradingView" },
+    { id: "bn4", title: "Placing the Fade on the Chart" },
+    { id: "bn5", title: "The FOMC Evening Trade (Optional)" },
+    { id: "bn2", title: "Size Small, Then the Routine (TradingView)" },
+  ],
+  exo: [
+    { id: "be4", title: "Echo Step 1: Build the Narrative" },
+    { id: "be5", title: "Echo Step 2: Delivery Out of a Gap" },
+    { id: "be1", title: "Echo on TradingView: Is the Rejection Clean?" },
+    { id: "be6", title: "CISD and the Rejection Retest" },
+    { id: "be7", title: "Grading a Setup: A, A+ and A++" },
+    { id: "be2", title: "The Return to Your Limit, on TradingView" },
+    { id: "be8", title: "Why Echo Trades Lose, and the Daily Rules" },
+    { id: "bo1", title: "Orbit Step 1: The Area of Interest" },
+    { id: "bo2", title: "Orbit Step 2: The 5-Minute Inversion" },
+    { id: "be3", title: "Orbit Step 3: The Internal Range and Your Limit" },
+    { id: "bo3", title: "Orbit Step 4: Your Orbit Day" },
+  ],
 } as const;
 export const BASIC_ONLY_IDS: Record<"invertix" | "lumen" | "exo", string[]> = { lumen: BASIC_ONLY_MODULES.lumen.map((m) => m.id), invertix: BASIC_ONLY_MODULES.invertix.map((m) => m.id), exo: BASIC_ONLY_MODULES.exo.map((m) => m.id) };
 /** The strategy lessons on the Basic Path: the lessons that are rules, plus the Basic-only lessons (a test keeps school/src/tracks.js in step with this). */
