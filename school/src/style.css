@@ -579,3 +579,11 @@ select{height:38px;padding:0 12px;border:1px solid var(--line2);border-radius:8p
 .ofcalc-b{padding:12px 14px;display:grid;gap:12px}.ofcalc-b label{display:grid;gap:6px;font-size:13.5px;color:#9aa0ac}.ofcalc-b label b{color:#fff}.ofcalc-b input{width:100%;accent-color:#ff6a00}
 .ofcalc-r{padding:10px 12px;border-radius:8px;background:#0f131d;border:1px solid #232733;font-size:14.5px;color:#fff}
 .ofcalc figcaption{padding:8px 14px 11px;color:#868993;font-size:12.5px}
+.ofrev,.ofgr{border:1px solid #2a2e39;border-radius:12px;background:#131722;color:#d1d4dc;overflow:hidden}
+.ofrev-b{padding:8px 12px;display:grid;gap:8px}
+.ofrev-q{text-align:left;padding:10px 12px;border-radius:8px;border:1px solid #2a2e39;background:#151a26;color:#d1d4dc;font-size:14px}
+.ofrev-q:hover,.ofrev-q.on{border-color:#ff6a00;color:#fff}
+.ofrev-a{padding:10px 12px;border-radius:8px;background:#0f131d;border:1px solid #232733;font-size:14px;line-height:1.55}
+.ofgr-b{padding:12px 14px;display:grid;gap:9px}.ofgr-b label{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:#c4c8d1}.ofgr-b input{margin-top:3px;accent-color:#ff6a00}
+.ofgr figcaption{padding:8px 14px 11px;color:#868993;font-size:12.5px}
+.ofmodel select{width:100%;padding:8px;border-radius:8px;background:#0f131d;color:#fff;border:1px solid #2a2e39}

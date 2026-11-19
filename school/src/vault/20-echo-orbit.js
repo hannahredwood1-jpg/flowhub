@@ -7,9 +7,9 @@
 const BP=window.LEARN_PATH==='basic';
 const pathBanner=BP?`<div class="callout key"><span class="hud">Your path: Basic Path</span><p>You trade this strategy on <b>TradingView only</b>: the candles, the volume bars and the indicator. It is easier to follow and quicker to learn than the Orderflow Path, and not as precise, because you read what price did, not who was trading.</p></div>`:`<div class="callout key"><span class="hud">Your path: Orderflow Path</span><p>You trade this strategy with an <b>orderflow platform</b> such as ATAS, DeepCharts or Bookmap beside TradingView, so you can see who is buying and selling. It is the more precise and accurate way, and it is more intricate.</p></div>`;
 /* ---------- generators ---------- */
-const echoContracts=numGen('Contracts',r=>{const risk=pick(r,[100,200,300,400]),st=pick(r,[10,12,15]),n=Math.floor(risk/(st*2));
+const echoContracts=numGen('Contracts',r=>{const risk=pick(r,[100,200,300,400]),st=pick(r,[10,15]),n=Math.floor(risk/(st*2));
   return{q:`An Echo limit has a ${st}-point stop. The most you will lose is $${risk}. MNQ is $2 a point. How many MNQ contracts, rounded down?`,ans:n,unit:'',tol:.01,why:`$${risk} ÷ (${st} × $2) = ${(risk/(st*2)).toFixed(2)}, rounded down: ${n}.`}});
-const echoNums=numGen('Stop and target',r=>{const k=pick(r,[['Model 1',10,40],['Model 2 (CISD)',12,40],['Model 3 (1-minute)',10,30]]),w=pick(r,['stop','target']);
+const echoNums=numGen('Stop and target',r=>{const k=pick(r,[['Model 1 (sweep)',15,40],['Model 2 (CISD retest)',15,40],['Model 3 (1-minute continuation)',10,30]]),w=pick(r,['stop','target']);
   return{q:`Echo ${k[0]} uses a ${k[1]}-point stop and a ${k[2]}-point target by default. How many points is the ${w}?`,ans:w==='stop'?k[1]:k[2],unit:'pts',tol:.01,why:`${k[0]}: stop ${k[1]} points, target ${k[2]} points.`}});
 const oteEntry=numGen('The internal OTE',r=>{const R=pick(r,[28,34,40,46,52,60]),lo=pick(r,[21210,24480,27930,29180]),hi=lo+R,e=Math.round((lo+.705*R)*4)/4,risk=Math.round((hi-e)*100)/100;
   return{q:`On a short, the internal 3-minute range runs from the inversion high ${fm(hi,2)} (the 1 level) down to ${fm(lo,2)} (the 0 level). Your entry is a limit sell at the 0.705 of that range, measured up from the 0. What price is the limit? (Round to the nearest 0.25.)`,ans:e,unit:'',tol:.13,why:`The range is ${R} points. 0.705 × ${R} = ${(.705*R).toFixed(2)}, so the limit is ${fm(lo,2)} + ${(.705*R).toFixed(2)} ≈ ${fm(e,2)}. The stop is the inversion high ${fm(hi,2)}, so the risk is about ${risk} points.`}});
@@ -188,18 +188,18 @@ quick({id:'be1',o:20.6,ph:0,bonly:1,t:'Echo on TradingView: Is the Rejection Cle
  learn:[
   {t:'The wick: poke and fail',h:key('<p>A clean rejection is a poke past an obvious level, a wick, and a close back inside.</p>','In plain words')+`<p>Price often pokes just past an obvious high or low to grab the orders sitting there, then fails to stay beyond it. The <b>close</b> tells you whether it failed: a close back inside means rejection. A close beyond the level means it did not fail yet. Echo marks the rejection block and your limit at the middle of the wick.</p>`+OFV.lab('bbrk')},
   {t:'The gap behind it',h:`<p>A <b>fair value gap (FVG)</b> is where the candles moved so fast that one side was clearly in charge. A rejection block sitting in a clear gap is a stronger picture than one with no gap behind it. You can see the gap on any TradingView chart.</p>`+OFV.lab('bfvg','fvg')},
-  {t:'The limit, the stop and the target',h:tblx(['Model','Stop','Target'],[['Model 1','10 points','40 points'],['Model 2 (CISD)','12 points','40 points'],['Model 3 (1-minute)','10 points','30 points']])+`<p>Place your limit order at the middle of the wick once a candle <b>in your direction</b> has formed (bearish for a short, bullish for a long). The four messages are WATCHING, LIMIT, FILLED and NO LONGER WATCHING. A limit that never fills is a trade you did not take, not a loss.</p>`},
+  {t:'The limit, the stop and the target',h:tblx(['Model','Stop','Target'],[['Model 1 (sweep)','15 points','40 points'],['Model 2 (CISD retest)','15 points','40 points'],['Model 3 (1-minute continuation, off by default)','10 points','30 points']])+`<p>Place your limit order at the middle of the wick once a candle <b>in your direction</b> has formed (bearish for a short, bullish for a long). The four messages are WATCHING, LIMIT, FILLED and NO LONGER WATCHING. A limit that never fills is a trade you did not take, not a loss.</p>`},
   {t:'What you cannot see',h:bNote+`<p>Because you cannot see who is trading, be strict about the picture: if the close did not clearly come back inside, or the setup is unclear, <b>skip it</b>.</p>`}],
  recall:rc('Two Strategies, One Flow of Messages','Is a limit that never fills a loss?',['No: it is a trade you did not take','Yes','Yes, a small one','Only on news days'],'A missed trade costs nothing.'),
- steps:[['<b>The wick.</b>',OFV.lab('bbrk')],['<b>The gap.</b>',OFV.lab('bfvg','fvg')],['<b>The numbers.</b>',tblx(['Model','Stop','Target'],[['1','10','40'],['2','12','40'],['3','10','30']])]],
+ steps:[['<b>The wick.</b>',OFV.lab('bbrk')],['<b>The gap.</b>',OFV.lab('bfvg','fvg')],['<b>The numbers.</b>',tblx(['Model','Stop','Target'],[['1','15','40'],['2','15','40'],['3','10','30']])]],
  gens:[stageQ,echoNums,echoContracts],
  bank:BANKS('Echo on TradingView',[
   ['What does a clean rejection look like?',['A poke past an obvious level, a wick, and a close back inside','A close beyond the level','A gap','A news spike'],'The close back inside is the key.'],
   ['Price closes beyond the level. Has it been rejected?',['Not yet','Yes','Always','Only at night'],'It did not fail yet.'],
   ['What is a fair value gap?',['A place where one side was clearly in charge and price moved fast','A random gap','A news level','A level that always holds'],'A stronger picture when a block sits in one.'],
   ['Where does Echo place the limit?',['At the middle of the rejection wick','At the high','At the open','At market'],'The middle of the wick.'],
-  ['What is the stop for Echo Model 1?',['10 points','40 points','5 points','There is none'],'Fixed by the model.'],
-  ['What is the target for Echo Model 3 (1-minute)?',['30 points','40 points','10 points','100 points'],'Model 3 is 30.'],
+  ['What is the stop for Echo Model 1?',['15 points','40 points','5 points','There is none'],'The indicator uses a fixed 15-point stop.'],
+  ['What is the target for Echo Model 3 (1-minute continuation)?',['30 points','40 points','10 points','100 points'],'Model 3 is 30.'],
   ['When do you place your limit?',['Once a candle in your direction has formed','During a run against you','At market','Never'],'The candle rule.'],
   ['A limit never fills. What is it?',['A trade you did not take','A loss','A small loss','A mistake'],'It costs nothing.'],
   ['What can you NOT see on TradingView alone?',['Who is buying and selling','The wick','The gap','The close'],'That is what orderflow software shows.'],
@@ -227,7 +227,7 @@ quick({id:'be2',o:20.7,ph:0,bonly:1,t:'The Return to Your Limit, on TradingView'
   ['Big news is about to come out. What do you do?',['Stay out','Place bigger limits','Trade the spike','Ignore the calendar'],'Spreads and spikes break limit setups.'],
   ['What do the volume bars show on TradingView?',['How much traded in each candle','Who was buying','The stop','The target'],'They show amount, not who.']]),
  examDesc:'Telling a slow return from a fast one, the candle rule, and when to cancel.'});
-quick({id:'be3',o:20.8,ph:0,bonly:1,t:'Orbit on TradingView: the Tap, the Inversion and the Limit',out:'Put the limit at the 0.705 of the internal range, check the risk is within 15 points, and know what to do after you are in.',
+quick({id:'be3',o:20.8,ph:0,bonly:1,t:'Orbit Step 3: The Internal Range and Your Limit',out:'Put the limit at the 0.705 of the internal range, check the risk is within 15 points, and know what to do after you are in.',
  ls:['Orbit\'s order of events','Find your 0.705','The numbers'],
  task:'On a 3-minute NQ chart, draw the internal range from the inversion high to the lowest point after it. Mark the 0.705 measured up from the 0 and write the limit price and the risk.',
  learn:[
@@ -249,5 +249,191 @@ quick({id:'be3',o:20.8,ph:0,bonly:1,t:'Orbit on TradingView: the Tap, the Invers
   ['What order do the steps come in?',['Tap, inversion, internal range, limit','Limit, tap, inversion, range','Inversion, tap, limit, range','Any order'],'If the order changes there is no trade.'],
   ['What can you NOT see on TradingView alone?',['Who is buying and selling','The range','The gap','The price'],'That is what orderflow software shows.']]),
  examDesc:'Orbit\'s order of events, finding the 0.705, and the numbers.'});
+
+/* ===== BASIC PATH · ECHO x ORBIT, the rest of the course (TradingView only) ===== */
+quick({id:'be4',o:20.9,ph:0,bonly:1,t:'Echo Step 1: Build the Narrative',out:'Mark the gaps, the key opens and the liquidity pools before the session, and pick your draw on liquidity.',
+ ls:['No draw, no trade','Marking your chart','Premium and discount','Pick the draw'],
+ task:'Before the next New York open, mark the unfilled 1-hour and 4-hour gaps, the midnight and 10 AM opens, and the previous day\'s high and low. Write your draw on liquidity and which way it points.',
+ learn:[
+  {t:'No draw, no trade',h:pathBanner+key('<p>Before any entry, you need to know where the trade pays. That place is called the draw on liquidity.</p>','In plain words')+`<p>The market keeps rebalancing. Price sweeps liquidity, rejects, and runs to the next pool. Your job is to mark where a rejection is most likely, get in at the most precise point, and be wrong small. <b>If there is no draw, there is no trade.</b></p>`},
+  {t:'Marking your chart',h:tblx(['Mark','Why'],[['Unfilled 1-hour and 4-hour gaps','They are where price is likely headed: your draws'],['Key opens: midnight, 6 PM, 8 PM, 10 AM, and the new week gap','They act as targets and reaction points'],['Liquidity pools: equal highs and lows, session highs and lows, previous day high and low','They are where stops sit: price is drawn to them']])+`<p>The 10 AM open is only valid from 10 AM until the next day's 10 AM, and it is a New York morning level.</p>`},
+  {t:'Premium and discount',h:`<p>Zoom out to the 1-hour and take the prominent high and low. <b>Below 50%</b> is discount: favour longs. <b>Above 50%</b> is premium: favour shorts. Within roughly 50 to 100 points of the prominent high or low you are <b>external</b>; deeper inside you are <b>internal</b>.</p><p>Never trade against your draw. If the draw is higher, only look for longs. If the draw has already been hit, that idea is done.</p>`},
+  {t:'Pick the draw',h:`<p>Play the figure to the end. Price has climbed far above an unfilled gap and swept equal highs. You are looking for a short. Click your draw on liquidity.</p>`+OFV.lab('bnarr')}],
+ recall:rc('Echo on TradingView: Is the Rejection Clean?','Where does Echo place the limit?',['At the middle of the rejection wick','At the high','At the open','At market'],'The middle of the wick.'),
+ steps:[['<b>Mark the chart.</b>',tblx(['Gaps','Opens','Pools'],[['1H and 4H, unfilled','Midnight, 10 AM, 6 PM, 8 PM','Equal highs and lows, session highs and lows']])],['<b>Premium or discount.</b>',`<p>Above 50% of the range favours shorts; below favours longs.</p>`],['<b>The draw.</b>',OFV.lab('bnarr')]],
+ gens:[stageQ,echoContracts,togetherQ],
+ bank:BANKS('Echo: the narrative',[
+  ['What is a draw on liquidity?',['The place the trade pays: an unfilled gap, a key open or an untaken high or low','Any support line','A moving average','The open'],'It is your target and your bias.'],
+  ['There is no draw. What do you do?',['No trade','Take it smaller','Take it anyway','Add size'],'No draw, no trade.'],
+  ['Which gaps are your narrative?',['Unfilled 1-hour and 4-hour gaps','Every 1-minute gap','Gaps from last month','Gaps already filled'],'They are where price is likely headed.'],
+  ['The draw is above price. Which trades are you allowed?',['Only longs','Only shorts','Both','None'],'Never trade against your draw.'],
+  ['The draw has already been hit. What do you do?',['The idea is done: do not take a new entry toward a target that is gone','Take another entry','Double size','Move the stop'],'The target is gone.'],
+  ['Price is above 50% of the 1-hour range. Which side do you favour?',['Shorts: premium','Longs: discount','Neither','Both'],'Above 50% is premium.'],
+  ['Which key open is only valid from 10 AM until the next day\'s 10 AM?',['The 10 AM open','The midnight open','The week open','The 6 PM open'],'A New York morning level.'],
+  ['What are equal highs?',['A liquidity pool where stops sit','A gap','A news level','A moving average'],'Price is drawn to them.'],
+  ['What does it mean to be external?',['Near the prominent high or low of the range','In the middle of the range','Outside the market','In the Asian session'],'Within roughly 50 to 100 points.'],
+  ['How far away should the draw be?',['At least 2 times your stop','Right next to your entry','Anywhere','Exactly 10 points'],'It has to pay.']]),
+ examDesc:'Building the narrative: gaps, opens, pools, premium and discount, and the draw.'});
+quick({id:'be5',o:20.91,ph:0,bonly:1,t:'Echo Step 2: Delivery Out of a Gap',out:'Check that price has tapped a gap, key open or pool and failed to close through it before you trust a rejection.',
+ ls:['The rule most people skip','Tapped, and failed to close through','Do not catch a falling knife','Your checklist before the limit'],
+ task:'Find a rejection wick on a 5-minute chart. Write what higher-timeframe gap, key open or pool price had just tapped, and whether any candle closed through it.',
+ learn:[
+  {t:'The rule most people skip',h:pathBanner+key('<p>Before a rejection counts, price must first tap a higher-timeframe gap, a key open or a liquidity pool, and fail to close through it.</p>','In plain words')+`<p>This is called <b>delivery out of a PD array</b> (premium and discount reference: a gap, a rejection block or an order block). Without it, a wick that looks like a rejection often just gets blown through.</p>`},
+  {t:'Tapped, and failed to close through',h:`<p>Switch between the two cases. The first shows price tapping a 1-hour gap and failing to close through it. The second shows a wick with nothing tapped.</p>`+OFV.lab('bdeliv')},
+  {t:'Do not catch a falling knife',h:`<p>If price has not swept or tapped anything yet, <b>wait</b>. Let it tap the level, distribute out of it, then find the entry on the way out. Also, the draw has to be <b>at least 2 times your stop away</b>, and an unfilled higher-timeframe gap just beyond your level can run your stop first.</p>`},
+  {t:'Your checklist before the limit',h:tblx(['Check','Must be true'],[['Delivery','Price tapped a gap, key open or pool and did not close through it'],['Higher-timeframe gap','The rejection sits in or out of a 1-hour or 4-hour gap (a 15-minute gap at least)'],['Draw','Still open, in the direction, at least 2 times the stop away'],['Level','Not closed through, and its middle (CE) not already played']])+warn('<p>If any box is unticked, there is no trade.</p>','Remember')}],
+ recall:rc('Echo Step 1: Build the Narrative','There is no draw. What do you do?',['No trade','Take it smaller','Take it anyway','Add size'],'No draw, no trade.'),
+ steps:[['<b>Delivery.</b>',OFV.lab('bdeliv')],['<b>The draw.</b>',`<p>At least 2 times your stop away.</p>`],['<b>The level.</b>',`<p>Not closed through, and not already played.</p>`]],
+ gens:[stageOrder,echoNums,echoContracts],
+ bank:BANKS('Echo: delivery out of a gap',[
+  ['What must price do before a rejection counts?',['Tap a higher-timeframe gap, key open or pool and fail to close through it','Close above the high','Make a new low','Gap up'],'Delivery out of a PD array.'],
+  ['Price has not tapped anything but shows a long wick. What do you do?',['Wait: do not catch a falling knife','Take it now','Double size','Place the limit anyway'],'A wick alone is not enough.'],
+  ['How far away must the draw be?',['At least 2 times your stop','Right next to the entry','Exactly 10 points','It does not matter'],'It has to pay.'],
+  ['An unfilled 4-hour gap sits just beyond your level. What can happen?',['Price taps it first and runs your stop','Nothing','The trade always wins','The gap disappears'],'Wait for the tap, or scale in so your stop sits inside the gap.'],
+  ['The candle closes through the level. Is it still valid?',['No: a close through ends it','Yes','Only at night','Only on news'],'The level is dead.'],
+  ['The middle (CE) of the level already played once. Do you take it again?',['No','Yes','Only twice','At double size'],'Do not re-take a level that already played.'],
+  ['What is a PD array?',['A gap, rejection block or order block that price reacts from','A moving average','The daily open','A news release'],'A premium and discount reference.'],
+  ['Which is the minimum gap behind a rejection?',['A 15-minute gap','No gap','A 1-minute gap','A weekly gap'],'A 1-hour or 4-hour gap is better.'],
+  ['What do you do if any checklist box is unticked?',['No trade','Take half size','Take it anyway','Move the stop'],'Every box is required.'],
+  ['What is the main danger of entering before delivery?',['Catching a falling knife','Nothing','Too much profit','The spread'],'Wait for the tap first.']]),
+ examDesc:'Delivery out of a gap, the draw, and the checklist before the limit.'});
+quick({id:'be6',o:20.92,ph:0,bonly:1,t:'CISD and the Rejection Retest',out:'Read a change in state of delivery, the retest, and what to do when there is no retest or a close back through.',
+ ls:['What a CISD is','External and internal','The retest','No retest, or a close back through'],
+ task:'On a 5-minute chart, find a bearish CISD (a candle closing below the open of the last up candle of a rally). Mark the level and write whether price retested it without closing through.',
+ learn:[
+  {t:'What a CISD is',h:pathBanner+key('<p>A CISD (change in state of delivery) is a candle that closes beyond the open of the last opposite candle of a leg. It signals a flip.</p>','In plain words')+`<p>A <b>bearish CISD</b> is a candle that closes <b>below the open</b> of the last up candle that drove the rally. A bullish CISD is the mirror. It can be found on any timeframe: 15-minute, 5-minute or 1-minute.</p>`},
+  {t:'External and internal',h:`<p><b>External</b> means the CISD is measured from the candle that started the whole leg. <b>Internal</b> means it is measured from a lesser candle inside it. External is stronger. For a higher-timeframe CISD (15-minute), require a close of 15 minutes or more: 1-minute closes do not count.</p>`},
+  {t:'The retest',h:`<p>A CISD with no retest is just a candle closing. You want price to come back, wick into the CISD level and <b>fail to close through it</b>. That wick is the rejection: your limit goes at its CE (middle). Switch between the three cases.</p>`+OFV.lab('bcisd')},
+  {t:'No retest, or a close back through',h:tblx(['What happens','What you do'],[['Retest, no close through','Limit at the CE of the retest wick'],['No retest after about 10 to 15 candles','The CISD becomes liquidity: use the CE of the wick of the candle that caused the CISD'],['A candle closes back through the CISD level','Exit at once, wherever price is']])+warn('<p>The exit rule is a hard rule: a close through the CISD level ends the idea.</p>','Remember')}],
+ recall:rc('Echo Step 2: Delivery Out of a Gap','What must price do before a rejection counts?',['Tap a higher-timeframe gap, key open or pool and fail to close through it','Close above the high','Make a new low','Gap up'],'Delivery out of a PD array.'),
+ steps:[['<b>The CISD.</b>',OFV.lab('bcisd')],['<b>The retest.</b>',`<p>Wick into the level, no close through it.</p>`],['<b>The exit rule.</b>',`<p>A close back through the CISD level: exit.</p>`]],
+ gens:[stageQ,echoNums,echoContracts],
+ bank:BANKS('Echo: CISD and the retest',[
+  ['What is a bearish CISD?',['A candle closing below the open of the last up candle of a rally','A candle closing above a high','A gap','A news spike'],'It signals a flip.'],
+  ['Which is stronger, external or internal?',['External','Internal','Neither','Both the same'],'External is measured from where the whole leg started.'],
+  ['Where does the limit go on a CISD retest?',['At the CE of the wick that retested it','At the CISD level','At the high','At market'],'The middle of the rejection wick.'],
+  ['What makes a CISD a confirmed entry?',['Price retests it and fails to close through it','A single candle close','A news spike','A gap'],'A retest is required.'],
+  ['No retest after 10 to 15 candles. What is the CISD now?',['Liquidity: use the wick of the candle that caused it','A sure entry','Dead for ever','A news level'],'Price often sweeps it first.'],
+  ['A candle closes back through the CISD level. What do you do?',['Exit at once','Hold','Add size','Move the stop wider'],'A hard rule.'],
+  ['Do 1-minute closes count for a 15-minute CISD?',['No: a 15-minute CISD needs a 15-minute close at least','Yes','Only at night','Always'],'Use the same timeframe.'],
+  ['Can a CISD be found on a 5-minute chart?',['Yes: on any timeframe','No: only daily','Only on 1-hour','Only on weekends'],'Keep it fractal.'],
+  ['What is the stop on a CISD retest trade?',['15 points by default','5 points','50 points','None'],'The indicator uses 15.'],
+  ['The CISD must point toward what?',['Your draw on liquidity','The open','The previous low','A news level'],'Never against the draw.']]),
+ examDesc:'Reading a CISD, the retest, the unretested CISD and the exit rule.'});
+quick({id:'be7',o:20.93,ph:0,bonly:1,t:'Grading a Setup: A, A+ and A++',out:'Grade a rejection from the gap behind it, know the confluences that add weight, and recognise the automatic no-trades.',
+ ls:['The three grades','Confluences that add weight','Automatic no-trades','Grade it yourself'],
+ task:'Find three rejection wicks on a 15-minute chart. For each, write which gap it overlaps (15-minute, 1-hour, 4-hour), how close the entry is to that gap\'s CE, and the grade.',
+ learn:[
+  {t:'The three grades',h:pathBanner+tblx(['Grade','What it means'],[['A','The rejection wick overlaps a 15-minute gap'],['A+','The wick overlaps a 1-hour or 4-hour gap'],['A++','An A+ with the entry within about 4 points of that gap\'s middle (CE)']])+`<p>The indicator shows <b>A+ and higher</b> by default, because 15-minute-only gaps are lower quality. Below a good grade, the setup is not worth the risk.</p>`},
+  {t:'Confluences that add weight',h:`<p>A confluence is a reason, not a strategy. Stack them at one level.</p>`+tblx(['Confluence','What it is'],[['SMT divergence','NQ and ES disagree at the level'],['A key open','Midnight, 10 AM, 6 PM or 8 PM at the level'],['An order block','Consecutive aligned candles at the level, used at its middle'],['A liquidity pool','Equal highs or lows, session highs or lows'],['New York morning','The highest-quality session for the model']])},
+  {t:'Automatic no-trades',h:`<ul><li>No higher-timeframe gap behind it.</li><li>No draw, or the draw is already hit.</li><li>The level or its CE was closed through or already played.</li><li>Trading against the draw, or shorting at all-time highs.</li><li>You have hit your daily trade limit.</li></ul>`},
+  {t:'Grade it yourself',h:`<p>Tick what is true for a setup and see the grade and whether it is tradeable.</p>`+OFV.grader()}],
+ recall:rc('CISD and the Rejection Retest','Where does the limit go on a CISD retest?',['At the CE of the wick that retested it','At the CISD level','At the high','At market'],'The middle of the rejection wick.'),
+ steps:[['<b>The grades.</b>',tblx(['A','A+','A++'],[['15-minute gap','1-hour or 4-hour gap','Within about 4 points of the CE']])],['<b>The confluences.</b>',`<p>SMT, a key open, an order block, a liquidity pool, and the New York morning.</p>`],['<b>Grade one.</b>',OFV.grader()]],
+ gens:[echoNums,echoContracts,togetherQ],
+ bank:BANKS('Echo: grading a setup',[
+  ['What makes a rejection grade A?',['The wick overlaps a 15-minute gap','It overlaps a 4-hour gap','Nothing','It overlaps a key open'],'A is a 15-minute gap.'],
+  ['What makes a rejection grade A+?',['The wick overlaps a 1-hour or 4-hour gap','A 15-minute gap only','A news spike','A big wick'],'A higher-timeframe gap.'],
+  ['What makes it A++?',['An A+ with the entry within about 4 points of the gap\'s CE','Any A','A long wick','A gap fill'],'Close to the gap\'s middle.'],
+  ['What does the indicator show by default?',['A+ and higher','Every wick','Only A','Nothing'],'15-minute-only gaps are lower quality.'],
+  ['Is a confluence a strategy on its own?',['No: it is a reason, stacked with others','Yes','Only SMT','Only key opens'],'Stack them.'],
+  ['What is SMT divergence?',['NQ and ES disagree at the level','A news spike','A gap','A key open'],'One makes a new high, the other does not.'],
+  ['There is no higher-timeframe gap behind the wick. What do you do?',['No trade','Take half size','Take it anyway','Double size'],'An automatic no-trade.'],
+  ['The draw has already been hit. What do you do?',['No trade','Take it','Add size','Move the stop'],'An automatic no-trade.'],
+  ['Are you allowed to short at all-time highs?',['No','Yes','Only at open','Only on news'],'There is no draw above.'],
+  ['Which session is highest quality for the model?',['New York morning','Lunch','Late afternoon','Weekend'],'The 9:30 open is the main window.']]),
+ examDesc:'The three grades, the confluences, and the automatic no-trades.'});
+quick({id:'be8',o:20.94,ph:0,bonly:1,t:'Why Echo Trades Lose, and the Daily Rules',out:'Name why a trade lost, and follow the daily rules that keep you from overtrading.',
+ ls:['Name the cause','The daily limits','All-time highs','When price action is bad'],
+ task:'Look at your last three Echo losses (or any losses). For each, name the cause from the list and write what would have prevented it.',
+ learn:[
+  {t:'Name the cause',h:pathBanner+key('<p>Almost every loss traces to one cause. Name it after every loss. If you cannot, journal it until you can.</p>','In plain words')+OFV.reveal('Why did it lose?',[['A wick that looked like a rejection got blown through','<b>No higher-timeframe gap behind it.</b> Only trade rejections delivering out of a 1-hour or 4-hour gap (a 15-minute gap at least).'],['Stopped by a few points, then price reversed exactly as planned','<b>An untapped higher-timeframe gap just beyond the level.</b> Wait for the tap, or place the stop so it sits inside the gap.'],['The level reacted earlier, now it fails','<b>A used level.</b> Never re-take a CE that already played or a level that was closed through.'],['The entry was valid but price had nowhere to go','<b>The draw was already taken.</b> Confirm it is still open before every entry.'],['Entered at a flip with no retest, and price swept it','<b>A CISD with no retest.</b> Require a retest, or use the causing candle\'s wick.'],['A third and fourth trade after a loss','<b>Overtrading or revenge.</b> Keep to the daily limits.']])},
+  {t:'The daily limits',h:tblx(['Situation','What you do'],[['One win','Done for the day, no matter how good the next setup looks'],['Two losses','Done for the day'],['One loss, then one win','Done for the day'],['Already up on the day','Do not take a second trade']])+`<p>Ask after any loss: would I rather be down one trade, or at my daily loss limit? Size so two full losses in a day cannot breach your limit.</p>`},
+  {t:'All-time highs',h:`<p>At or near all-time highs (within about 60 points on the daily chart) there is no gap or old high above to draw to. <b>Never short all-time highs.</b> Longs treat price discovery as the draw. A 1-minute continuation (Model 3: stop 10, target 30) is the entry there; it is off by default and runs automatically only in this zone.</p>`},
+  {t:'When price action is bad',h:`<p>If you lose two higher-timeframe trades, or higher-timeframe rejections keep failing day after day, stop taking them at face value. Use the higher timeframe only to identify the trade, then scale down to the 15-minute and 5-minute rejection inside it. Skip Asia and London, trade New York morning only, and leave no limits overnight.</p>`+warn('<p>Skipping a session when you feel off is a valid decision. No-trade days are part of the plan.</p>','Remember')}],
+ recall:rc('Grading a Setup: A, A+ and A++','There is no higher-timeframe gap behind the wick. What do you do?',['No trade','Take half size','Take it anyway','Double size'],'An automatic no-trade.'),
+ steps:[['<b>Name the cause.</b>',`<p>No gap, an untapped gap beyond, a used level, a hit draw, no retest, or overtrading.</p>`],['<b>The limits.</b>',tblx(['One win','Two losses'],[['Done','Done']])],['<b>All-time highs.</b>',`<p>Never short them.</p>`]],
+ gens:[togetherQ,echoContracts,stageOrder],
+ bank:BANKS('Why Echo trades lose',[
+  ['A wick looked like a rejection but got blown through. What was missing?',['A higher-timeframe gap behind it','A bigger stop','More size','A news spike'],'Only trade rejections delivering out of a gap.'],
+  ['You were stopped by a few points, then price reversed as planned. What was the likely cause?',['An untapped higher-timeframe gap just beyond the level','Bad luck only','Too small a size','The spread'],'Wait for the tap.'],
+  ['What is the daily limit after one win?',['Done for the day','Two more trades','Unlimited','One more'],'One win, done.'],
+  ['What is the daily limit after two losses?',['Done for the day','One more trade','Double size','Unlimited'],'Two losses, done.'],
+  ['You are already up on the day. Do you take a second trade?',['No','Yes','At double size','Only after 3 PM'],'Protect the day.'],
+  ['Can you short at all-time highs?',['No','Yes','Only on news','Only at night'],'There is no draw above.'],
+  ['What is the 1-minute continuation (Model 3) stop and target?',['10 points and 30 points','15 and 40','5 and 15','None'],'Off by default.'],
+  ['You lost two higher-timeframe trades. What do you do?',['Scale down to the 15-minute and 5-minute rejection inside the higher timeframe','Double size','Take the same trade again','Stop journalling'],'Do not take it at face value.'],
+  ['In bad price action, which sessions do you skip?',['Asia and London','New York morning','All of them','None'],'Trade New York morning only.'],
+  ['A third trade after a loss is called what?',['Overtrading or revenge','A good plan','Scaling in','A partial'],'Keep to the daily limits.']]),
+ examDesc:'Why trades lose, the daily limits, all-time highs, and bad price action.'});
+quick({id:'bo1',o:20.95,ph:0,bonly:1,t:'Orbit Step 1: The Area of Interest',out:'Draw the 3-minute range after a big move, find the 0.705, and know where to start looking for an entry.',
+ ls:['The one-line model','Drawing the range','The area of interest','One area at a time'],
+ task:'On a 3-minute chart, find a big drop out of a consolidation. Draw the range with the fib tool (0, 0.5, 0.705, 1). Mark the 0.705 and write where the area of interest begins.',
+ learn:[
+  {t:'The one-line model',h:pathBanner+key('<p>Orbit trades a piece of the move: a retrace into an area of interest, a 5-minute inversion, then an entry on a smaller internal range.</p>','In plain words')+`<p>Orbit is a <b>retracement model</b>. After a big displacement, wait for price to retrace into the 0.705, confirm the turn with a 5-minute inversion, then enter on a smaller internal 3-minute range. It works best in consolidating, two-sided markets. In a straight run to new highs there are no retracements, so there are few or no entries.</p>`},
+  {t:'Drawing the range',h:tblx(['Setup','Anchor 1 (the wick)','Anchor 2 (the body)','Entry'],[['Short after a drop','The highest wick of the high that started the drop','The bottom of the body of the candle with the lowest wick','The 0.705 retrace up'],['Long after a rally','The lowest wick of the swing low','The top of the body of the candle with the highest wick','The 0.705 retrace down']])+`<p>Always draw on the <b>3-minute chart</b>, with the fib levels 0, 0.5, 0.705 and 1 only. The extreme you anchor to must be untapped. As new lowest wicks print, move anchor 2 to that candle's body.</p>`},
+  {t:'The area of interest',h:`<p>The best area of interest is the <b>untapped 3-minute 0.705 to 1 zone</b> of a large displacement that came out of a long consolidation. Nothing happens until price reaches the 0.705. Play the figure to the end, then click where the area of interest begins.</p>`+OFV.lab('baoi')},
+  {t:'One area at a time',h:`<p>One drop-off, one area of interest, one entry. If you are juggling several, you are looking for reasons to trade. If price hits an OTE level and blows straight through with no inversion, your bias or your range was wrong: zoom out and redraw.</p>`}],
+ recall:rc('Orbit on TradingView: the Tap, the Inversion and the Limit','What is the first step in Orbit?',['The tap into the 0.705 of the big range','The inversion','The limit','The stop'],'No tap, no trade.'),
+ steps:[['<b>The anchors.</b>',tblx(['Wick','Body'],[['Stop side','Target side']])],['<b>The area of interest.</b>',OFV.lab('baoi')],['<b>One at a time.</b>',`<p>One area of interest, one entry.</p>`]],
+ gens:[orbitOrder,oteEntry,orbitRisk],eb:5,
+ bank:BANKS('Orbit: the area of interest',[
+  ['Which chart do you draw the Orbit range on?',['The 3-minute chart','The daily chart','The 4-hour chart','Any chart'],'The 3-minute, even for a higher-timeframe move.'],
+  ['Which fib levels does Orbit use?',['0, 0.5, 0.705 and 1','0.382 and 0.618','0.786 only','All of them'],'Nothing else.'],
+  ['For a short, where is anchor 1?',['The highest wick of the high that started the drop','The lowest body','The open','The close'],'The stop side is the wick.'],
+  ['For a short, where is anchor 2?',['The bottom of the body of the candle with the lowest wick','The lowest wick','The high','The open'],'The target side is the body.'],
+  ['Where does the area of interest begin?',['At the 0.705 and runs to the 1','At the 0','At the 0.5 only','At the 0.382'],'0.705 to 1.'],
+  ['What is the best area of interest?',['The untapped 0.705 to 1 zone of a big displacement out of a long consolidation','A random wick','A news level','The open'],'The bigger the time range behind it, the more it is worth.'],
+  ['Price blows through the 0.705 with no inversion. What does it mean?',['Your bias or your range was wrong: zoom out and redraw','Add size','Wait for the open','Nothing'],'Redraw.'],
+  ['How many areas of interest at a time?',['One','Three','As many as you can find','None'],'One drop-off, one area, one entry.'],
+  ['In a straight run to new highs, how many Orbit entries do you expect?',['Few or none','Many','One every hour','Ten'],'No retracements.'],
+  ['Which markets does Orbit shine in?',['Consolidating, two-sided markets','Straight trends','Closed markets','News-only days'],'It needs retracements.']]),
+ examDesc:'Orbit\'s model, drawing the range, the area of interest, and one at a time.'});
+quick({id:'bo2',o:20.96,ph:0,bonly:1,t:'Orbit Step 2: The 5-Minute Inversion',out:'Spot a real 5-minute inversion, and know which gaps do not count.',
+ ls:['What an inversion is','Which gaps count','Why it matters','What to do next'],
+ task:'On a 5-minute chart inside an area of interest, find a fresh bullish gap and a bearish candle that closes below its bottom. Write the time of the inversion and the high it came from.',
+ learn:[
+  {t:'What an inversion is',h:pathBanner+key('<p>An inversion is a candle closing through a fair value gap from the other side. For a short, a bearish candle closes below a fresh bullish gap.</p>','In plain words')+`<p>A <b>fair value gap</b> is three candles where the first and third candles' wicks leave a gap around the middle candle. Switch between the two cases.</p>`+OFV.lab('binv')},
+  {t:'Which gaps count',h:tblx(['Counts','Does not count'],[['A gap formed out of the area of interest','An old gap from before'],['A fresh gap','A gap already inversed earlier: use the next fresh gap'],['Even a tiny real three-candle gap','Gaps and inversions during the 4 PM to 6 PM close'],['A gap left by the 6 PM open','A candle that only dips into the gap and closes back above it']])},
+  {t:'Why it matters',h:`<p>The inversion is the confirmation. Until a 5-minute candle closes through the gap, the retrace has not failed, and there is no trade. It tells you the turn has started and gives you the high that becomes the top of your internal range, and your stop.</p>`},
+  {t:'What to do next',h:`<p>Once the inversion prints, go back to the 3-minute chart and draw the internal range: anchor 1 is the high of the move that made the inversion, anchor 2 is the body of the candle with the lowest wick after it. That is the next lesson.</p>`}],
+ recall:rc('Orbit Step 1: The Area of Interest','Where does the area of interest begin?',['At the 0.705 and runs to the 1','At the 0','At the 0.5 only','At the 0.382'],'0.705 to 1.'),
+ steps:[['<b>A fresh gap.</b>',OFV.lab('binv')],['<b>Closed through.</b>',`<p>A candle must close through the gap.</p>`],['<b>Then the internal range.</b>',`<p>Drawn on the 3-minute chart from the inversion high.</p>`]],
+ gens:[orbitOrder,orbitRisk,oteEntry],eb:5,
+ bank:BANKS('Orbit: the inversion',[
+  ['What is an inversion?',['A candle closing through a fair value gap from the other side','A new high','A news candle','A tap'],'It confirms the turn.'],
+  ['For a short, what closes through what?',['A bearish candle closes below a fresh bullish gap','A bullish candle closes above a gap','A wick touches a gap','A gap closes the day'],'The mirror of a long.'],
+  ['What is a fair value gap?',['Three candles where the first and third wicks leave a gap around the middle','Any big candle','A news release','A moving average'],'An imbalance.'],
+  ['Price dips into the gap but the candle closes back above it. Is it an inversion?',['No: it must close through','Yes','Yes at night','Only on high volume'],'A close, not a dip.'],
+  ['A gap was already inversed earlier. Can you use it?',['No: use the next fresh gap','Yes','Only twice','At half size'],'It must be fresh.'],
+  ['Do gaps in the 4 PM to 6 PM close count?',['No','Yes','Only some','Always'],'Ignore that window.'],
+  ['Do gaps left by the 6 PM open count?',['Yes','No','Only on Sundays','Never'],'They are valid.'],
+  ['Where must the gap be formed?',['Out of the area of interest','Anywhere','On the daily chart','From last week'],'Not an old gap.'],
+  ['What do you do after the inversion?',['Draw the internal 3-minute range','Enter at market','Add size','Close the chart'],'The next step.'],
+  ['What does the inversion high become?',['The top of your internal range and your stop','Your target','The open','Nothing'],'The stop goes there.']]),
+ examDesc:'The 5-minute inversion: what counts and what does not.'});
+quick({id:'bo3',o:20.97,ph:0,bonly:1,t:'Orbit Step 4: Your Orbit Day',out:'Run Orbit from the area of interest to the exit, including missed entries, continuation entries and the rules that never change.',
+ ls:['The whole sequence','Continuation entries','Missed entries','The rules that never change'],
+ task:'Write Orbit\'s four steps in order, then list the three numbers that never change (limit, stop, target) and the maximum risk.',
+ learn:[
+  {t:'The whole sequence',h:pathBanner+tblx(['Step','What happens'],[['1. Area of interest','Price retraces into the 0.705 to 1 of the big 3-minute range'],['2. Inversion','A 5-minute candle closes through a fresh gap'],['3. Internal range','Drawn on the 3-minute from the inversion high to the lowest-wick body'],['4. Entry','A limit at the 0.705 of the internal range, stop above its high, target 40 points']])+`<p>The limit has to be hit: if price turns three ticks early, there is no trade. You trade the internal range, a piece of the move, not the whole move.</p>`},
+  {t:'Continuation entries',h:`<p>After an entry plays, the entry candle's high becomes anchor 1 for the next internal range. Repeat the steps down to the draw. Wait for the next full setup rather than chasing.</p>`},
+  {t:'Missed entries',h:`<p>If you miss the entry, <b>let it go</b>. Each later range you chase as price runs away is a watered-down version of the setup. A good setup can take many hours to form. Wait for the next one. A limit that never fills is a trade you did not take.</p>`},
+  {t:'The rules that never change',h:warn('<p>The limit is at the 0.705 of the internal range. The stop is the inversion high, with no buffer. The maximum risk is 15 points: over that, there is <b>no trade</b>, and you never move the stop closer to make it fit. The target is 40 points. After you are in, you do nothing: no break-even, no partials. Never short at all-time highs.</p>','Orbit\'s numbers')+OFV.lab('bote')}],
+ recall:rc('Orbit Step 2: The 5-Minute Inversion','For a short, what closes through what?',['A bearish candle closes below a fresh bullish gap','A bullish candle closes above a gap','A wick touches a gap','A gap closes the day'],'The mirror of a long.'),
+ steps:[['<b>The sequence.</b>',tblx(['1','2','3','4'],[['Area of interest','Inversion','Internal range','Limit']])],['<b>The 0.705.</b>',OFV.lab('bote')],['<b>The numbers.</b>',`<p>Stop at the inversion high, target 40, maximum risk 15, nothing after you are in.</p>`]],
+ gens:[orbitOrder,oteEntry,orbitRisk],eb:5,
+ bank:BANKS('Your Orbit day',[
+  ['What is the first step in Orbit?',['The area of interest is tapped','The inversion','The limit','The stop'],'Nothing happens until the 0.705 of the area of interest.'],
+  ['Where is the entry?',['A limit at the 0.705 of the internal range','At market','At the 0','At the high'],'The 0.705 must be hit.'],
+  ['Where is the stop?',['At the inversion high, no buffer','10 points away','At the open','At the 0.5'],'Fixed.'],
+  ['What is the maximum risk?',['15 points','40 points','5 points','There is none'],'Over 15 means no trade.'],
+  ['What is the target?',['40 points','15 points','100 points','There is none'],'Fixed.'],
+  ['Price turns three ticks before the 0.705. What do you do?',['No trade: the limit was not hit','Chase it','Move the limit','Add size'],'The 0.705 must be hit.'],
+  ['After you are in, what do you do?',['Nothing','Move to break-even','Take a partial','Add size'],'The trade ends at the stop or the target.'],
+  ['You missed the entry. What do you do?',['Let it go and wait for the next full setup','Chase it','Double the next size','Move the stop'],'A missed trade costs nothing.'],
+  ['After an entry plays, what becomes anchor 1 for the next internal range?',['The entry candle\'s high','The open','The low','The close'],'Repeat down to the draw.'],
+  ['Can you take Orbit shorts at all-time highs?',['No','Yes','Only on news','Only at night'],'There is no draw above.']]),
+ examDesc:'Running Orbit from the area of interest to the exit, and the rules that never change.'});
 
 })();

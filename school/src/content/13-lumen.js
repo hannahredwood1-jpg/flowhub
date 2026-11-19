@@ -208,4 +208,75 @@ quick({id:'bl2',o:15.77,ph:0,bonly:1,t:'Your LUMEN Day on TradingView: Size, Che
   ['What do you do with a late entry after price has already run?',['Skip it','Chase it','Add size','Move the stop'],'Late entries cost more than they give.']]),
  examDesc:'Turning a stop into contracts, the chart checklist, why trades lose and the daily routine.'});
 
+/* ===== BASIC PATH · LUMEN, the rest of the course (TradingView only) ===== */
+quick({id:'bl3',o:15.78,ph:0,bonly:1,t:'Zones: Finding the Supply or Demand Zone on TradingView',out:'Find LUMEN\'s zone on the chart yourself: the last opposite candle before a strong move, and what happens when price comes back.',
+ ls:['What a zone is','Marking it on the 15-minute chart','Armed for an hour','When a zone is dead'],
+ task:'On a 15-minute NQ chart, find one strong drop and one strong rise. For each, mark the last opposite candle before it with a box from its low to its high. Write which is supply and which is demand.',
+ learn:[
+  {t:'What a zone is',h:pathBanner+key('<p>A zone is the last opposite candle before a strong move. Price often comes back to touch it and then continues.</p>','In plain words')+tblx(['Zone','Where it comes from','Why price may react'],[['Supply zone','The last UP candle before a strong drop','Sellers were in charge there, and may be again when price returns'],['Demand zone','The last DOWN candle before a strong rise','Buyers were in charge there, and may be again when price returns']])},
+  {t:'Marking it on the 15-minute chart',h:`<p>LUMEN draws its zones on the 15-minute chart. To see for yourself why, find a strong, one-way move. Look at the candle just before it started and draw a box from that candle's low to its high, then extend the box to the right. Play the figure to the end, then click the zone candle.</p>`+OFV.lab('bzone')},
+  {t:'Armed for an hour',h:`<p>When price trades into the zone it is <b>tapped</b>. LUMEN turns the zone orange: it is <b>armed for the next hour</b>. During that hour it is watching for step two, a break away from the zone. If no break comes in the hour, the zone goes quiet.</p>`+tblx(['Step','What you see'],[['Zone drawn','A box on the 15-minute chart'],['Tapped','Price trades into the box and it turns orange'],['Armed','One hour of watching for the break']])},
+  {t:'When a zone is dead',h:`<p>A 15-minute candle that <b>closes through</b> the zone ends it. A wick through it does not. A dead zone is not used again. If you are not sure whether a zone is still alive, check the last 15-minute close against its far edge. If you are still unsure, skip it.</p>`+warn('<p>A zone is a place to look, not a reason to trade on its own. The tap, the break and the opens all have to line up.</p>','Remember')}],
+ recall:rc('LUMEN in Plain Words','How many things does LUMEN wait for?',['Three, one after another','One','Five at once','None'],'Tap, break, opens agree.'),
+ steps:[['<b>Find the zone.</b>',OFV.lab('bzone')],['<b>Supply and demand.</b>',tblx(['Zone','Candle'],[['Supply','Last up candle before a drop'],['Demand','Last down candle before a rise']])],['<b>Armed.</b>',`<p>Tapped turns it orange, armed for one hour.</p>`]],
+ gens:[orderQ,opensQ,stopTarget],
+ bank:BANKS('LUMEN zones on TradingView',[
+  ['What is a supply zone?',['The last up candle before a strong drop','The last down candle before a rise','A gap','A news candle'],'Price may fall again when it returns.'],
+  ['What is a demand zone?',['The last down candle before a strong rise','The last up candle before a drop','A moving average','The daily low'],'Price may rise again when it returns.'],
+  ['Which chart does LUMEN draw its zones on?',['The 15-minute chart','The 1-minute chart only','The daily chart','The 4-hour chart'],'The 15-minute chart.'],
+  ['What does an orange zone mean?',['Price tapped it: it is armed for the next hour','The trade is over','A news day','Price broke it'],'LUMEN is now watching for the break.'],
+  ['How long is a tapped zone armed?',['The next hour','The whole day','Five minutes','Forever'],'One hour.'],
+  ['What ends a zone?',['A 15-minute candle closing through it','A wick through it','A news release','The weekend'],'A close, not a wick.'],
+  ['A wick pokes through the far edge of the zone but the candle closes back inside. Is the zone dead?',['No: a wick is not a close','Yes','Only at night','Yes, always'],'A close ends a zone.'],
+  ['Is a zone a reason to trade on its own?',['No: the tap, the break and the opens all have to line up','Yes','Yes on Mondays','Yes in New York'],'It is a place to look.'],
+  ['You are unsure whether a zone is still alive. What do you do?',['Skip it','Take it anyway','Double size','Move the stop'],'A skipped trade costs nothing.'],
+  ['How do you mark a zone?',['A box from the candle\'s low to its high, extended to the right','A line at the close','A circle around the open','A line at the high only'],'The whole candle, wick to wick.']]),
+ examDesc:'Finding supply and demand zones, how a tap arms a zone, and when a zone is dead.'});
+quick({id:'bl4',o:15.79,ph:0,bonly:1,t:'The Four Opens on TradingView',out:'Read the four key opens against price and apply the 3-of-4 rule yourself.',
+ ls:['What an open is','Marking the opens','The 3-of-4 rule','The model that skips the opens'],
+ task:'On a 1-minute NQ chart, mark the open of the current hour, 4-hour period, day and week with a horizontal line. Write how many of the four price is above, and which way that favours.',
+ learn:[
+  {t:'What an open is',h:pathBanner+key('<p>An open is the price at the start of a period. Above it, buyers have been in control of that period. Below it, sellers have.</p>','In plain words')+tblx(['Open','The period it starts'],[['1-hour open','The current hour'],['4-hour open','The current 4-hour candle'],['Day open','The trading day'],['Week open','The trading week']])},
+  {t:'Marking the opens',h:`<p>LUMEN checks the four opens for you. To see what it sees, draw a <b>horizontal line</b> at each period's opening price on your TradingView chart. Four lines, four colours. Price is either above or below each one.</p>`},
+  {t:'The 3-of-4 rule',h:`<p>For a <b>long</b>, price must be above at least <b>3 of the 4 opens</b>. For a <b>short</b>, below at least 3. If fewer agree, the bigger picture does not support the trade. Switch between the cases and answer the questions.</p>`+OFV.lab('bopens')},
+  {t:'The model that skips the opens',h:`<p>One model, <b>G Daily</b>, runs <b>without the opens test</b>. All the other models need 3 of 4. Check the model tag on the entry before you apply the rule.</p>`+warn('<p>The opens are the bigger-picture check. They never replace the tap and the break.</p>','Remember')}],
+ recall:rc('Zones: Finding the Supply or Demand Zone on TradingView','How long is a tapped zone armed?',['The next hour','The whole day','Five minutes','Forever'],'One hour.'),
+ steps:[['<b>The four opens.</b>',tblx(['1-hour','4-hour','Day','Week'],[['Current hour','Current 4-hour candle','Trading day','Trading week']])],['<b>The 3-of-4 test.</b>',OFV.lab('bopens')],['<b>Model G.</b>',`<p>Runs without the opens test.</p>`]],
+ gens:[opensQ,orderQ,contracts],
+ bank:BANKS('The four opens on TradingView',[
+  ['What is an open?',['The price at the start of a period','The highest price of a period','The close of the day','A news price'],'Above it means buyers were in control of that period.'],
+  ['Which four opens does LUMEN use?',['1-hour, 4-hour, day and week','Only the day','Only the week','Only the 1-hour'],'Four opens.'],
+  ['How many of the four must agree by default?',['At least 3','All 4','1','None'],'3 of 4.'],
+  ['Price is above 3 of the 4 opens. Does a long pass the opens test?',['Yes','No','Only on Mondays','Only with a partial'],'3 of 4 passes.'],
+  ['Price is above only 2 of the 4 opens. What about a long?',['No trade: fewer than 3 agree','Take it at half size','Take it anyway','Wait for the week open'],'The bigger picture does not agree.'],
+  ['For a short, where must price be?',['Below at least 3 of the 4 opens','Above at least 3','Above all 4','Anywhere'],'The mirror of a long.'],
+  ['Which model runs without the opens test?',['G Daily','A Core','M Micro','E Early'],'G skips it.'],
+  ['How do you see the opens on TradingView yourself?',['Draw a horizontal line at each period\'s opening price','Change the timeframe','Add a volume bar','Close the chart'],'Four lines at four prices.'],
+  ['Do the opens replace the tap and the break?',['No: they are only the bigger-picture check','Yes','Only at night','Only on news days'],'All three steps are needed.'],
+  ['Which side of an open means buyers are in control of that period?',['Above it','Below it','On it','There is none'],'Above means buyers.']]),
+ examDesc:'The four opens, how to mark them, and the 3-of-4 rule.'});
+quick({id:'bl5',o:15.8,ph:0,bonly:1,t:'The Models, the Tags, and Your Stop and Target',out:'Know each LUMEN model\'s trigger, stop and target, and what the tags mean.',
+ ls:['The seven models','The tags','The entry and the close','Do not learn them all'],
+ task:'Pick one LUMEN model tag from your alerts. Write its trigger, its stop in points and its target in points. Then work out how many MNQ contracts you could trade for the most you will risk.',
+ learn:[
+  {t:'The seven models',h:pathBanner+tblx(['Model','Trigger','Stop','Target'],[['A Core','5-minute','30 pts','1:6'],['B Selective','3-minute, big candle and volume','70 pts','1:6'],['C Mid','5-minute, big candle','30 pts','1:6'],['D Wide','5-minute, big candle and volume','80 pts','1:6'],['E Early','3-minute, big candle and volume','70 pts','1:4'],['G Daily','5-minute, big candle, no opens test','60 pts','1:6'],['M Micro','1-minute, 8:30 to 10:00 AM only','40 pts','1:6']])+`<p>The target is the stop times 6 (4 for model E). Try them in the calculator.</p>`+OFV.modelCalc()},
+  {t:'The tags',h:`<p><b>PRIME</b> (a star) and <b>GOOD HRS</b> (entries during the night or the lunch hour) are labels only. They never block a trade. LUMEN is valid in every session.</p>`},
+  {t:'The entry and the close',h:`<ol><li>All three steps line up: the tap, the break and the opens.</li><li>The entry is the <b>next 1-minute open</b>.</li><li>The stop and target are fixed by the model.</li><li>If the trade is still open at <b>15:55 New York time</b>, it is closed.</li></ol><p>After you are in, you do nothing: no moving the stop, no partials.</p>`},
+  {t:'Do not learn them all',h:`<p>You do not need to memorise each model. The <b>tag on the entry</b> tells you which one fired, and the alert gives you the stop and target. Your job is to size from that stop.</p>`+warn('<p>Most trades are stopped out. A few run a long way, and many profitable ones are simply still open and winning at the 15:55 close. Judge LUMEN over many trades, not a week.</p>','Honest note')}],
+ recall:rc('The Four Opens on TradingView','How many of the four opens must agree by default?',['At least 3','All 4','1','None'],'3 of 4.'),
+ steps:[['<b>Pick the model.</b>',OFV.modelCalc()],['<b>The close.</b>',`<p>Any open trade is closed at 15:55 New York time.</p>`],['<b>After entry.</b>',`<p>Nothing: no moving the stop, no partials.</p>`]],
+ gens:[stopTarget,contracts,orderQ],
+ bank:BANKS('LUMEN models on TradingView',[
+  ['What is the stop for model A Core?',['30 points','70 points','80 points','15 points'],'Model A: 30.'],
+  ['What is the target ratio for most LUMEN models?',['1:6','1:2','1:10','There is none'],'Six times the stop.'],
+  ['Which model uses a 1:4 target?',['E Early','A Core','M Micro','D Wide'],'Model E is 1:4.'],
+  ['What is model M Micro?',['A 1-minute model, 8:30 to 10:00 AM only','An all-day model','A news model','A night model'],'A short window.'],
+  ['Which model has an 80-point stop?',['D Wide','A Core','C Mid','M Micro'],'Model D: 80.'],
+  ['Do PRIME and GOOD HRS block a trade?',['No: they are labels only','Yes','Only at night','Only at lunch'],'Labels only.'],
+  ['Where is the LUMEN entry?',['The next 1-minute open','At the zone','At a retest','At the close of the day'],'After all three steps.'],
+  ['When is an open LUMEN trade closed?',['15:55 New York time','9:30 AM','4:00 PM sharp','Never'],'The indicator closes the idea then.'],
+  ['What do you do after you are in?',['Nothing: no moving the stop, no partials','Move the stop to break-even','Take a partial','Add size'],'The stop and target are fixed.'],
+  ['Do you need to memorise every model?',['No: the tag and the alert give you the stop and target','Yes','Only three','Only the first'],'Size from the stop on the alert.']]),
+ examDesc:'The seven models, the tags, the entry and the 15:55 close.'});
+
 })();

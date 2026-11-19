@@ -164,4 +164,73 @@ quick({id:'bn2',o:15.65,ph:0,bonly:1,t:'Size Small, Then the Routine (TradingVie
   ['A prop-firm account has a daily loss limit. What does that mean for size?',['Even smaller size','Bigger size','No change','Trade twice'],'The limit caps your risk.']]),
  examDesc:'Turning a stop into contracts, why trades lose, and the news-day routine.'});
 
+/* ===== BASIC PATH · INVERTIX, the rest of the course (TradingView only) ===== */
+quick({id:'bn3',o:15.66,ph:0,bonly:1,t:'The News Calendar and the Clock',out:'Know which releases are red folders, when the news candle prints, and how to plan your week around them.',
+ ls:['Red folders','The clock','Plan your week'],
+ task:'Open an economic calendar for this week. List every red-folder release with its time in New York. Mark which are 8:30 AM releases and which is the 2:00 PM FOMC statement.',
+ learn:[
+  {t:'Red folders',h:pathBanner+key('<p>Economic calendars mark the most market-moving releases with a red folder. INVERTIX only trades on those days.</p>','In plain words')+`<p>Red-folder releases include CPI (inflation), PPI (producer prices), the jobs report, jobless claims, retail sales and the FOMC decision. Tap each one to test yourself.</p>`+OFV.reveal('Is it a red folder?',[['CPI (a measure of inflation)','<b>Yes.</b> A red-folder release, usually at 8:30 AM New York.'],['The jobs report','<b>Yes.</b> A red-folder release at 8:30 AM New York.'],['The FOMC decision','<b>Yes.</b> The statement comes at 2:00 PM New York.'],['A small regional survey','<b>No.</b> Not market-moving enough to be a red folder. No INVERTIX trade.'],['A speech from a minor official','<b>No.</b> Not a red-folder release.']])},
+  {t:'The clock',h:tblx(['Release','Time (New York)','The news candle'],[['Most data (CPI, PPI, jobs, claims, retail sales)','8:30 AM','The 1-minute candle at 8:30'],['The FOMC statement','2:00 PM','The 1-minute candle at 2:00']])+`<p>You do nothing before the news candle closes. Right after it, the first minutes are rough: spreads widen and fills slip.</p>`},
+  {t:'Plan your week',h:`<ol><li><b>Sunday evening:</b> open the calendar and list every red-folder release this week with its time.</li><li><b>The evening before each one:</b> check the time again and set your alert.</li><li><b>On the day:</b> decide the most dollars you will risk, and do nothing until the news candle closes.</li></ol>`+warn('<p>Most days have no red folder. No news day means no trade, and that is the normal state.</p>','Remember')}],
+ recall:rc('The News Fade: Just Enough to Know the Trade','When is the news candle for most data?',['8:30 AM New York','9:30 AM New York','4:00 PM New York','Midnight'],'The 1-minute candle at the release.'),
+ steps:[['<b>Red folders.</b>',tblx(['Releases','Time'],[['CPI, PPI, jobs, claims, retail sales','8:30 AM'],['FOMC statement','2:00 PM']])],['<b>The clock.</b>',`<p>Wait for the news candle to close.</p>`],['<b>Plan the week.</b>',`<p>Calendar on Sunday, alert the evening before, risk decided that morning.</p>`]],
+ gens:[newsStop,dirQ,spikeQ],
+ bank:BANKS('The news calendar',[
+  ['What is a red-folder release?',['One of the most market-moving releases, like CPI or the jobs report','Any news at all','A weekend event','A company earnings call'],'Calendars mark them with a red folder.'],
+  ['When is the news candle for most data?',['8:30 AM New York','9:30 AM New York','4:00 PM New York','Midnight'],'The 1-minute candle at the release.'],
+  ['When is the FOMC statement?',['2:00 PM New York','8:30 AM New York','6:00 PM New York','11:00 PM New York'],'On decision days.'],
+  ['Is CPI a red-folder release?',['Yes','No','Only on Fridays','Only in summer'],'It is one of the main ones.'],
+  ['Is a small regional survey a red-folder release?',['No','Yes','Only in the morning','Always'],'Not market-moving enough.'],
+  ['What do you do before the news candle closes?',['Nothing','Trade the first tick','Buy','Sell'],'Wait for the candle.'],
+  ['What is the normal state on most days?',['No trade','A trade every day','Two trades','Only trades at night'],'Quiet is normal.'],
+  ['What do you do on Sunday evening?',['List the week\'s red-folder releases and their times','Place a trade','Nothing','Close the chart'],'Plan the week.'],
+  ['What happens to spreads right after big news?',['They widen','They shrink','Nothing','They close'],'Fills slip.'],
+  ['What do you decide before the release?',['The most dollars you will risk','Which way price goes','Nothing','The target after'],'Size is decided before.']]),
+ examDesc:'Red folders, the news clock, and planning the week.'});
+quick({id:'bn4',o:15.67,ph:0,bonly:1,t:'Placing the Fade on the Chart',out:'Place the entry, the stop and the target for a news fade on TradingView.',
+ ls:['The entry','The stop','The target and the time exit','Check it before you act'],
+ task:'On a past news day, measure the news candle from its low to its high. Write the entry (the next open, against the spike), the stop (one candle range from the entry, at least 15 points) and the target (two times the stop).',
+ learn:[
+  {t:'The entry',h:pathBanner+key('<p>If the news candle was up, you look to sell at the next open. If it was down, you look to buy.</p>','In plain words')+tblx(['News candle','You look to'],[['Up spike','Sell at the next open'],['Down spike','Buy at the next open']])},
+  {t:'The stop',h:`<p>The stop sits <b>one news-candle range</b> from your entry, beyond it, and never less than 15 points. Press Play, then click where the stop goes for the sell.</p>`+OFV.lab('bfade')},
+  {t:'The target and the time exit',h:tblx(['Item','Rule'],[['Take profit','Two times the stop'],['Time exit','The trade closes after two hours if neither the stop nor the target is hit'],['Trades per day','One']])},
+  {t:'Check it before you act',h:`<ol><li>Was the news candle a spike (about 6 times the average candle or more)?</li><li>Are the candles after it slowing, or still running the same way?</li><li>Is the stop one candle range away, and can you afford it at your size?</li></ol><p>If you cannot say yes to all three, skip the trade.</p>`+OFV.calc()}],
+ recall:rc('Reading the News Spike on TradingView','How big is a news spike?',['About 6 times the recent average candle or more','Any big candle','Exactly 100 points','Twice the average'],'Six times or more.'),
+ steps:[['<b>The entry.</b>',tblx(['Candle','You look to'],[['Up spike','Sell'],['Down spike','Buy']])],['<b>The stop.</b>',OFV.lab('bfade')],['<b>The size.</b>',OFV.calc()]],
+ gens:[newsStop,newsTarget,dirQ,contracts],
+ bank:BANKS('Placing the fade',[
+  ['The news candle was a spike up. What do you look to do at the next open?',['Sell: against the spike','Buy: with the spike','Wait for a retest','Nothing'],'A fade is against the move.'],
+  ['Where is the stop?',['One news-candle range from the entry, never less than 15 points','At the open','10 points always','There is none'],'Fixed by the candle.'],
+  ['The news candle ranged 40 points. How far is the stop?',['40 points','15 points','20 points','80 points'],'One candle range.'],
+  ['The news candle ranged 8 points. How far is the stop?',['15 points: that is the minimum','8 points','4 points','16 points'],'Never less than 15.'],
+  ['Where is the take profit?',['Two times the stop','Equal to the stop','Ten times the stop','There is none'],'Fixed.'],
+  ['What happens if neither the stop nor the target is hit?',['The trade closes after two hours','It stays open overnight','It doubles','Nothing'],'A time limit.'],
+  ['How many news-fade trades a day?',['One','As many as you like','Three','Five'],'One per day.'],
+  ['The candles after the spike keep running the same way. What do you do?',['Skip it: still being fed','Fade at once','Add size','Move the stop'],'The main risk of a fade.'],
+  ['The stop is too large for your risk. What do you do?',['Skip the trade','Move the stop closer','Add size','Ignore the risk'],'Never size past your risk.'],
+  ['Which way does a down spike fade?',['Buy at the next open','Sell at the next open','Wait','Nothing'],'Against the spike.']]),
+ examDesc:'Placing the entry, the stop and the target for a news fade.'});
+quick({id:'bn5',o:15.68,ph:0,bonly:1,t:'The FOMC Evening Trade (Optional)',out:'Read the evening range after an FOMC decision and apply the second INVERTIX trade.',
+ ls:['The setup','The range and the trigger','The numbers'],
+ task:'On the next FOMC decision day, mark the 6:00 PM to 6:30 PM range on a 1-minute chart. Write the first candle that closes outside it and which way the trade would go.',
+ learn:[
+  {t:'The setup',h:pathBanner+`<p>On an FOMC decision day the <b>2:00 PM statement candle</b> is the news candle. The market then reopens at <b>6:00 PM</b>, and the <b>first 30 minutes</b> form a range. This second trade is optional.</p>`},
+  {t:'The range and the trigger',h:`<p>The first candle that <b>closes outside</b> the 6:00 to 6:30 PM range, before 11 PM, triggers the trade in that direction. Switch between the two cases.</p>`+OFV.lab('bfomc')},
+  {t:'The numbers',h:tblx(['Item','Rule'],[['Trigger','The first close outside the range before 11 PM'],['Stop','The other side of the range'],['Target','Two times the stop'],['Close','Any open trade closes at 3 AM']])+warn('<p>This is an optional trade, and an evening one. Size small, and skip it if you are not set up for it.</p>','Optional')}],
+ recall:rc('Placing the Fade on the Chart','Where is the take profit?',['Two times the stop','Equal to the stop','Ten times the stop','There is none'],'Fixed.'),
+ steps:[['<b>The range.</b>',OFV.lab('bfomc')],['<b>The trigger.</b>',`<p>The first close outside the range before 11 PM.</p>`],['<b>The numbers.</b>',`<p>Stop at the other side, target two times the stop, closes at 3 AM.</p>`]],
+ gens:[newsTarget,dirQ,dollars],
+ bank:BANKS('The FOMC evening trade',[
+  ['When is the FOMC statement?',['2:00 PM New York','8:30 AM','6:00 PM','11:00 PM'],'On decision days.'],
+  ['When does the evening range start forming?',['At the 6:00 PM reopen','At 2:00 PM','At 9:30 AM','At midnight'],'The first 30 minutes after the reopen.'],
+  ['How long is the range?',['The first 30 minutes','The first 5 minutes','The first 3 hours','All night'],'30 minutes.'],
+  ['What triggers the evening trade?',['The first close outside the range before 11 PM','A touch of the range','The 2:00 PM candle','A news headline'],'A close.'],
+  ['Where is the stop?',['The other side of the range','At the open','10 points away','There is none'],'The opposite edge.'],
+  ['What is the target?',['Two times the stop','The same as the stop','Ten times the stop','There is none'],'Fixed.'],
+  ['When does an open evening trade close?',['3 AM','4 PM','Never','After 5 minutes'],'A time exit.'],
+  ['Is the FOMC evening trade required?',['No: it is optional','Yes','Only on Fridays','Always'],'Optional.'],
+  ['A candle closes above the range at 7:10 PM. Which way is the trade?',['Long','Short','No trade','Wait until 11 PM'],'The direction of the first close outside.'],
+  ['A candle only wicks above the range and closes inside. Is it a trigger?',['No: it must close outside','Yes','Yes at night','Only on high volume'],'A close, not a wick.']]),
+ examDesc:'The FOMC evening range, its trigger, and its numbers.'});
+
 })();

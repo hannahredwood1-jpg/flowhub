@@ -129,9 +129,9 @@ test("Basic path lessons exist in each strategy, and the totals and passes follo
   assert.equal(passedOnPath(st, "invertix", "orderflow"), 3);   // the Basic-only lesson does not count here
 });
 test("a Basic lesson after a skipped lesson is exempt from the in-order rule", () => {
-  assert.deepEqual([...basicOrderSkip("invertix")], ["bn1"]);
-  assert.deepEqual([...basicOrderSkip("lumen")], ["bl1"]);
-  assert.deepEqual([...basicOrderSkip("exo")], ["be1"]);
+  assert.deepEqual([...basicOrderSkip("invertix")], ["bn3"]);
+  assert.deepEqual([...basicOrderSkip("lumen")], ["bl3"]);
+  assert.deepEqual([...basicOrderSkip("exo")], ["be4"]);
   assert.deepEqual([...basicOrderSkip("orderflow")], []);
 });
 test("the school page keeps the same Basic lesson list as the server", () => {
@@ -155,9 +155,9 @@ test("the Basic-only lessons exist in the strategy content, flagged bonly, with 
 
 test("a strategy is done when every lesson of the member's path is passed", () => {
   const all = (ids: string[]) => ({ v2: { m: Object.fromEntries(ids.map((id) => [id, { p: 1 }])) } });
-  assert.equal(strategyDone(all(["n01", "bn1"]), "invertix", "basic"), false);
-  assert.equal(strategyDone(all(["n01", "bn1", "bn2"]), "invertix", "basic"), true);
-  assert.equal(strategyDone(all(["n01", "bn1", "bn2"]), "invertix", "orderflow"), false);
+  assert.equal(strategyDone(all(["n01", "bn3", "bn1"]), "invertix", "basic"), false);
+  assert.equal(strategyDone(all(["n01", "bn3", "bn1", "bn4", "bn5", "bn2"]), "invertix", "basic"), true);
+  assert.equal(strategyDone(all(["n01", "bn3", "bn1", "bn4", "bn5", "bn2"]), "invertix", "orderflow"), false);
   assert.equal(strategyDone(all(["n01", "n02", "n03"]), "invertix", "orderflow"), true);
   assert.equal(strategyDone(null, "lumen", "basic"), false);
 });
