@@ -1053,6 +1053,7 @@ var isBasicTrack = (t) => t === "invertix" || t === "lumen" || t === "exo";
 var trackModuleIds = (t) => [...trackModules(t).map((m) => m.id), ...isBasicTrack(t) ? BASIC_ONLY_IDS[t] : []];
 var trackTotalFor = (t, path) => path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t].length : trackTotal(t);
 var passedOnPath = (state, t, path) => passedIn(state, new Set(path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t] : trackModules(t).map((m) => m.id)));
+var strategyDone = (state, t, path) => passedOnPath(state, t, path) >= trackTotalFor(t, path);
 function basicOrderSkip(t) {
   if (!isBasicTrack(t)) return /* @__PURE__ */ new Set();
   const ids2 = trackModuleIds(t), basic = new Set(BASIC_MODULES[t]);
@@ -2242,7 +2243,9 @@ async function vaultAccess(u) {
   if (!row.redeemedAt) return { level: "code", orderflow: false, row };
   const [os, fs, chosen] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "fundamentals"), learnPathOf(u.id)]);
   if (!strategyOpen(os, fs, chosen)) return { level: "orderflow", orderflow: false, row };
-  return { level: "open", orderflow: !!row.orderflow, row, path: orderflowComplete(os) ? "orderflow" : chosen };
+  const eff = orderflowComplete(os) ? "orderflow" : chosen, ls = await trackState(u.id, "lumen");
+  if (!strategyDone(ls, "lumen", eff) && !(row.state && passedIn2(row.state, "exo") > 0)) return { level: "lumen", orderflow: false, row, path: eff };
+  return { level: "open", orderflow: !!row.orderflow, row, path: eff };
 }
 var readPrivate = async (name) => {
   const f = Bun.file(`${import.meta.dir}/assets/${name}`);
@@ -2287,6 +2290,10 @@ app.get("/vault", async (c) => {
     const os = await trackState(user.id, "orderflow");
     return c.html(pageShell(`<h1>ECHO and ORBIT open after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Your vault code is in. Choose your path in the Trading School, or pass every Orderflow test. You have passed <b>${passedIn2(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   }
+  if (acc.level === "lumen") {
+    const ls = await trackState(user.id, "lumen");
+    return c.html(pageShell(`<h1>ECHO and ORBIT open when you pass LUMEN</h1><p>Your vault code is in. The strategies go in order. You have passed <b>${passedOnPath(ls, "lumen", acc.path ?? "orderflow")} of ${trackTotalFor("lumen", acc.path ?? "orderflow")}</b> LUMEN lessons.</p><p><a href="/lumen" style="color:#8cc4ff">Continue LUMEN \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  }
   if (acc.level !== "open") return c.html(LOCK_PAGE, 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("vault.html.gz");
   if (!gz) return c.text("The vault is not installed yet.", 404);
@@ -2317,7 +2324,7 @@ app.post("/api/vault/redeem", async (c) => {
 });
 app.get("/api/vault/status", async (c) => {
   const acc = await vaultAccess(c.get("user"));
-  return c.json({ status: acc.level === "open" ? "open" : acc.level === "code" ? "code" : acc.level === "orderflow" ? "orderflow" : "restricted" });
+  return c.json({ status: acc.level === "open" ? "open" : acc.level === "code" ? "code" : acc.level === "orderflow" ? "orderflow" : acc.level === "lumen" ? "lumen" : "restricted" });
 });
 app.get("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
@@ -2433,15 +2440,17 @@ app.put("/api/invertix/progress", async (c) => {
   return c.json({ ok: true });
 });
 async function lumenAccess(u) {
-  const [os, ls, fs, path] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "lumen"), trackState(u.id, "fundamentals"), learnPathOf(u.id)]);
-  const earned = strategyOpen(os, fs, path);
-  return { path: orderflowComplete(os) ? "orderflow" : path, open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn2(os, "orderflow"), oTotal: trackTotal("orderflow"), lPassed: passedIn2(ls, "lumen"), lTotal: trackTotal("lumen"), state: ls };
+  const [os, ls, fs, path, is] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "lumen"), trackState(u.id, "fundamentals"), learnPathOf(u.id), trackState(u.id, "invertix")]);
+  const eff = orderflowComplete(os) ? "orderflow" : path, doorOpen = strategyOpen(os, fs, path);
+  const earned = doorOpen && (strategyDone(is, "invertix", eff) || passedIn2(ls, "lumen") > 0);
+  return { path: eff, doorOpen, prev: { passed: passedOnPath(is, "invertix", eff), total: trackTotalFor("invertix", eff) }, open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn2(os, "orderflow"), oTotal: trackTotal("orderflow"), lPassed: passedIn2(ls, "lumen"), lTotal: trackTotal("lumen"), state: ls };
 }
 var lumHtml = null;
 app.get("/lumen", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await lumenAccess(user);
+  if (!acc.open && acc.doorOpen) return c.html(pageShell(`<h1>LUMEN opens when you pass INVERTIX</h1><p>The strategies go in order. You have passed <b>${acc.prev.passed} of ${acc.prev.total}</b> INVERTIX lessons.</p><p><a href="/invertix" style="color:#8cc4ff">Continue INVERTIX \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("lumen.html.gz");
   if (!gz) return c.text("LUMEN is not installed yet.", 404);

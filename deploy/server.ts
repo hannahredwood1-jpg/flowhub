@@ -27,7 +27,7 @@ import { clampPace, expectedPassed, nudgeGapDays, paceStatus, PACE_MAX_NUDGES } 
 import { SCHOOL_MODULES, SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
 import { cleanPlanModels, type TradingPlanDTO } from "../src/lib/tradingPlan";
 import { VAULT_MODULE_IDS, hashCode, makeCode, vaultPassed } from "../src/lib/vault";
-import { BASIC_MODULES, BASIC_ONLY_IDS, trackModuleIds, basicOrderSkip, fundamentalsComplete, isLearnPath, LEARN_PATH_NAME, passedOnPath, strategyOpen, trackTotalFor, type LearnPath, EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, LUMEN_MODULE_IDS, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_OPTIONAL_IDS, orderflowComplete, orderflowOpen, vaultStrategiesOpen, passedIn as passedInSet, unwrapState, withPasses, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
+import { BASIC_MODULES, BASIC_ONLY_IDS, trackModuleIds, basicOrderSkip, fundamentalsComplete, isLearnPath, LEARN_PATH_NAME, passedOnPath, strategyDone, strategyOpen, trackTotalFor, type LearnPath, EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, LUMEN_MODULE_IDS, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_OPTIONAL_IDS, orderflowComplete, orderflowOpen, vaultStrategiesOpen, passedIn as passedInSet, unwrapState, withPasses, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
 
 // ─────────────────────────────────────────────────────────────
 // Config
@@ -1160,7 +1160,7 @@ const rolesOf = (u: { guildRoleIds?: unknown }): string[] => {
 const hasMentorRole = (u: { guildRoleIds?: unknown }) => rolesOf(u).some((id) => CFG.mentorshipRoles.includes(id) || /mentor/i.test(ROLE_NAMES.get(id) ?? ""));
 type VaultRow = { userId: string; codeHash: string; codeHint: string; redeemedAt: Date | null; revokedAt: Date | null; mentorshipOverride: boolean; orderflow: boolean; state: unknown };
 // "orderflow": the member has the mentorship role and the code, but has not passed the Orderflow tests yet
-type VaultAccess = { level: "open" | "code" | "orderflow" | "none"; orderflow: boolean; row: VaultRow | null; path?: LearnPath };
+type VaultAccess = { level: "open" | "code" | "orderflow" | "lumen" | "none"; orderflow: boolean; row: VaultRow | null; path?: LearnPath };
 async function vaultAccess(u: UserRow): Promise<VaultAccess> {
   if (isStaff(u)) return { level: "open", orderflow: u.role === "ADMIN", row: null }; // staff can look around; only an admin sees the sealed room
   const [row] = (await sql`select * from "VaultAccess" where "userId" = ${u.id}`) as VaultRow[];
@@ -1169,7 +1169,10 @@ async function vaultAccess(u: UserRow): Promise<VaultAccess> {
   // every strategy is behind the Orderflow tests (someone already partway through the vault keeps their way in)
   const [os, fs, chosen] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "fundamentals"), learnPathOf(u.id)]);
   if (!strategyOpen(os, fs, chosen)) return { level: "orderflow", orderflow: false, row };
-  return { level: "open", orderflow: !!row.orderflow, row, path: orderflowComplete(os) ? "orderflow" : chosen };
+  const eff: LearnPath = orderflowComplete(os) ? "orderflow" : chosen, ls = await trackState(u.id, "lumen");
+  // the strategies go in order: ECHO x ORBIT opens when LUMEN is passed (someone already partway through the vault keeps their way in)
+  if (!strategyDone(ls, "lumen", eff) && !(row.state && passedIn(row.state, "exo") > 0)) return { level: "lumen", orderflow: false, row, path: eff };
+  return { level: "open", orderflow: !!row.orderflow, row, path: eff };
 }
 const readPrivate = async (name: string) => {
   const f = Bun.file(`${import.meta.dir}/assets/${name}`);
@@ -1214,6 +1217,10 @@ app.get("/vault", async (c) => {
     const os = await trackState(user.id, "orderflow");
     return c.html(pageShell(`<h1>ECHO and ORBIT open after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Your vault code is in. Choose your path in the Trading School, or pass every Orderflow test. You have passed <b>${passedIn(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   }
+  if (acc.level === "lumen") {
+    const ls = await trackState(user.id, "lumen");
+    return c.html(pageShell(`<h1>ECHO and ORBIT open when you pass LUMEN</h1><p>Your vault code is in. The strategies go in order. You have passed <b>${passedOnPath(ls, "lumen", acc.path ?? "orderflow")} of ${trackTotalFor("lumen", acc.path ?? "orderflow")}</b> LUMEN lessons.</p><p><a href="/lumen" style="color:#8cc4ff">Continue LUMEN →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  }
   if (acc.level !== "open") return c.html(LOCK_PAGE, 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("vault.html.gz");
   if (!gz) return c.text("The vault is not installed yet.", 404);
@@ -1242,7 +1249,7 @@ app.post("/api/vault/redeem", async (c) => {
 // what the home screen shows: the open door, the code door (a code was issued), or a dim "restricted" tile
 app.get("/api/vault/status", async (c) => {
   const acc = await vaultAccess(c.get("user"));
-  return c.json({ status: acc.level === "open" ? "open" : acc.level === "code" ? "code" : acc.level === "orderflow" ? "orderflow" : "restricted" });
+  return c.json({ status: acc.level === "open" ? "open" : acc.level === "code" ? "code" : acc.level === "orderflow" ? "orderflow" : acc.level === "lumen" ? "lumen" : "restricted" });
 });
 app.get("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
@@ -1372,15 +1379,18 @@ app.put("/api/invertix/progress", async (c) => {
 // LUMEN: its own page, opened by the Orderflow certificate (every Orderflow test passed). Coaches and admins can always open it.
 // ─────────────────────────────────────────────────────────────
 async function lumenAccess(u: UserRow) {
-  const [os, ls, fs, path] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "lumen"), trackState(u.id, "fundamentals"), learnPathOf(u.id)]);
-  const earned = strategyOpen(os, fs, path);
-  return { path: orderflowComplete(os) ? ("orderflow" as LearnPath) : path, open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn(os, "orderflow"), oTotal: trackTotal("orderflow"), lPassed: passedIn(ls, "lumen"), lTotal: trackTotal("lumen"), state: ls };
+  const [os, ls, fs, path, is] = await Promise.all([trackState(u.id, "orderflow"), trackState(u.id, "lumen"), trackState(u.id, "fundamentals"), learnPathOf(u.id), trackState(u.id, "invertix")]);
+  const eff: LearnPath = orderflowComplete(os) ? "orderflow" : path, doorOpen = strategyOpen(os, fs, path);
+  // the strategies go in order: LUMEN opens when INVERTIX is passed (someone already partway through LUMEN keeps their way in)
+  const earned = doorOpen && (strategyDone(is, "invertix", eff) || passedIn(ls, "lumen") > 0);
+  return { path: eff, doorOpen, prev: { passed: passedOnPath(is, "invertix", eff), total: trackTotalFor("invertix", eff) }, open: isStaff(u) || earned, earned, staff: isStaff(u), oPassed: passedIn(os, "orderflow"), oTotal: trackTotal("orderflow"), lPassed: passedIn(ls, "lumen"), lTotal: trackTotal("lumen"), state: ls };
 }
 let lumHtml: { etag: string; html: string } | null = null;
 app.get("/lumen", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await lumenAccess(user);
+  if (!acc.open && acc.doorOpen) return c.html(pageShell(`<h1>LUMEN opens when you pass INVERTIX</h1><p>The strategies go in order. You have passed <b>${acc.prev.passed} of ${acc.prev.total}</b> INVERTIX lessons.</p><p><a href="/invertix" style="color:#8cc4ff">Continue INVERTIX →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("lumen.html.gz");
   if (!gz) return c.text("LUMEN is not installed yet.", 404);
