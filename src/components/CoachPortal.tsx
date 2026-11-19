@@ -185,7 +185,7 @@ function MemberRow({ r, now, today, open, onToggle }: { r: CoachDirectoryRow; no
         </div>
         <div className="col-span-3 col-start-1 row-start-2 md:col-span-1 md:col-start-auto md:row-start-auto">
           {r.path ? <PathBar path={r.path} /> : <div className="text-[12.5px] text-ink-3">No progress yet</div>}
-          {r.path && <div className="mt-1 hidden text-[11.5px] text-ink-3 md:block">{lessons} of {total} lessons passed{r.learnPath ? ` · ${r.learnPath === "basic" ? "Basic" : "Orderflow"} path` : ""}</div>}
+          {r.path && <div className="mt-1 hidden text-[11.5px] text-ink-3 md:block">{lessons} of {total} lessons passed{r.learnPath ? ` · ${r.learnPath === "basic" ? "Basic" : "Orderflow"} Path` : ""}</div>}
         </div>
         <Cell l="Last active" v={ago(r.lastActive, now)} />
         <Cell l="Last trade" v={relDays(r.lastTradeDate, today)} />

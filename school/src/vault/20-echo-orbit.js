@@ -177,4 +177,74 @@ quick({id:'e05',o:20.5,ph:0,t:'Using Them Together, and the Rules That Never Cha
   ['What imbalance ratio do you start with?',['About 300%','10%','50%','1000%'],'A common starting setting.'],
   ['These strategies are…',['Decision aids, not a promise of profit','Guarantees','Free money','Always right'],'Losing streaks are normal.']]),
  examDesc:'Using Echo and Orbit together, the rules that never change, and the daily routine.'});
+/* ===== BASIC PATH · ECHO x ORBIT on TradingView only. ===== */
+const bNote=warn('<p>On the Basic Path you trade on TradingView only. The chart shows <b>what price did</b>, not <b>who was trading</b>. Orderflow software shows both, which is why the Orderflow Path is more precise. The Basic Path is easier to follow and quicker to learn, and the rules make up for what you cannot see.</p>','Be honest about what you can see');
+quick({id:'be1',o:20.6,ph:0,bonly:1,t:'Echo on TradingView: Is the Rejection Clean?',out:'Read a rejection wick and the gap behind it from the candles alone, and know the stop and target for each Echo model.',
+ ls:['The wick: poke and fail','The gap behind it','The limit, the stop and the target','What you cannot see'],
+ task:'Find an obvious high or low that price poked past and failed to hold. Write where the candle closed and whether a gap (FVG) sits behind the wick.',
+ learn:[
+  {t:'The wick: poke and fail',h:key('<p>A clean rejection is a poke past an obvious level, a wick, and a close back inside.</p>','In plain words')+`<p>Price often pokes just past an obvious high or low to grab the orders sitting there, then fails to stay beyond it. The <b>close</b> tells you whether it failed: a close back inside means rejection. A close beyond the level means it did not fail yet. Echo marks the rejection block and your limit at the middle of the wick.</p>`+OFV.lab('bbrk')},
+  {t:'The gap behind it',h:`<p>A <b>fair value gap (FVG)</b> is where the candles moved so fast that one side was clearly in charge. A rejection block sitting in a clear gap is a stronger picture than one with no gap behind it. You can see the gap on any TradingView chart.</p>`+OFV.lab('bfvg','fvg')},
+  {t:'The limit, the stop and the target',h:tblx(['Model','Stop','Target'],[['Model 1','10 points','40 points'],['Model 2 (CISD)','12 points','40 points'],['Model 3 (1-minute)','10 points','30 points']])+`<p>Place your limit order at the middle of the wick once a candle <b>in your direction</b> has formed (bearish for a short, bullish for a long). The four messages are WATCHING, LIMIT, FILLED and NO LONGER WATCHING. A limit that never fills is a trade you did not take, not a loss.</p>`},
+  {t:'What you cannot see',h:bNote+`<p>Because you cannot see who is trading, be strict about the picture: if the close did not clearly come back inside, or the setup is unclear, <b>skip it</b>.</p>`}],
+ recall:rc('Two Strategies, One Flow of Messages','Is a limit that never fills a loss?',['No: it is a trade you did not take','Yes','Yes, a small one','Only on news days'],'A missed trade costs nothing.'),
+ steps:[['<b>The wick.</b>',OFV.lab('bbrk')],['<b>The gap.</b>',OFV.lab('bfvg','fvg')],['<b>The numbers.</b>',tblx(['Model','Stop','Target'],[['1','10','40'],['2','12','40'],['3','10','30']])]],
+ gens:[stageQ,echoNums,echoContracts],
+ bank:BANKS('Echo on TradingView',[
+  ['What does a clean rejection look like?',['A poke past an obvious level, a wick, and a close back inside','A close beyond the level','A gap','A news spike'],'The close back inside is the key.'],
+  ['Price closes beyond the level. Has it been rejected?',['Not yet','Yes','Always','Only at night'],'It did not fail yet.'],
+  ['What is a fair value gap?',['A place where one side was clearly in charge and price moved fast','A random gap','A news level','A level that always holds'],'A stronger picture when a block sits in one.'],
+  ['Where does Echo place the limit?',['At the middle of the rejection wick','At the high','At the open','At market'],'The middle of the wick.'],
+  ['What is the stop for Echo Model 1?',['10 points','40 points','5 points','There is none'],'Fixed by the model.'],
+  ['What is the target for Echo Model 3 (1-minute)?',['30 points','40 points','10 points','100 points'],'Model 3 is 30.'],
+  ['When do you place your limit?',['Once a candle in your direction has formed','During a run against you','At market','Never'],'The candle rule.'],
+  ['A limit never fills. What is it?',['A trade you did not take','A loss','A small loss','A mistake'],'It costs nothing.'],
+  ['What can you NOT see on TradingView alone?',['Who is buying and selling','The wick','The gap','The close'],'That is what orderflow software shows.'],
+  ['The setup is unclear. What do you do?',['Skip it','Take it anyway','Double size','Move the stop'],'A skipped trade costs nothing.']]),
+ examDesc:'A clean rejection, the gap behind it, and the stop and target for each Echo model.'});
+quick({id:'be2',o:20.7,ph:0,bonly:1,t:'The Return to Your Limit, on TradingView',out:'Tell a slow, fading return from a fast, heavy one using candles and volume bars, and cancel when you should.',
+ ls:['Slow or fast?','The candle rule','Cancelling is allowed'],
+ task:'Next time price comes back to a limit order, note the size of the candles and whether the volume bars are shrinking or climbing. Write what you did.',
+ learn:[
+  {t:'Slow or fast?',h:key('<p>Small candles and shrinking volume: leave it. Big candles and climbing volume: cancelling is allowed.</p>','In plain words')+`<p>You have a limit order waiting. How price <b>arrives</b> tells you whether to leave it. Switch between the two cases and watch the candles and the volume bars.</p>`+OFV.lab('bret')},
+  {t:'The candle rule',h:`<p>Place your limit once a candle <b>in your direction</b> has formed: a bearish candle for a short, a bullish candle for a long. Do not place it during a run of candles going against you.</p>`},
+  {t:'Cancelling is allowed',h:`<p>A limit order is a request, not a command. If price is coming back fast with big candles and rising volume, you can cancel it. If the indicator sends NO LONGER WATCHING, cancel any unfilled limit. A missed trade costs nothing.</p>`+warn('<p>Cancelling never means moving your stop or changing your target. Once you are filled, the stop and target are fixed.</p>','The rules that never change')}],
+ recall:rc('Echo on TradingView: Is the Rejection Clean?','Where does Echo place the limit?',['At the middle of the rejection wick','At the high','At the open','At market'],'The middle of the wick.'),
+ steps:[['<b>Slow or fast.</b>',OFV.lab('bret')],['<b>The candle rule.</b>',`<p>Bearish candle for a short, bullish candle for a long, before you place the limit.</p>`],['<b>Cancelling.</b>',`<p>Allowed. A missed trade costs nothing.</p>`]],
+ gens:[stageOrder,echoContracts,togetherQ],
+ bank:BANKS('Returning to the limit on TradingView',[
+  ['The return is slow with small candles and shrinking volume. What do you do?',['Leave the limit in','Cancel it','Move it lower','Double it'],'Little is pushing price down.'],
+  ['The return is fast with big candles and climbing volume. What do you do?',['You can cancel the limit','Must leave it in','Add more','Move the stop wider'],'Cancelling is allowed.'],
+  ['When do you place your limit?',['Once a candle in your direction has formed','During a run against you','At market','Never'],'The candle rule.'],
+  ['The indicator sends NO LONGER WATCHING. What do you do?',['Cancel any unfilled limit','Keep it','Add size','Move the stop'],'The setup ended.'],
+  ['Once you are filled, can you move the stop?',['No: the stop and target are fixed','Yes','Yes at break-even','Yes if it looks bad'],'Fixed.'],
+  ['A limit order is...',['A request, not a command','A guarantee','A market order','A stop'],'It only fills at your price or better.'],
+  ['Price runs away from your limit without filling. What do you do?',['Cancel it: a limit that never fills is a trade you did not take','Chase it at market','Move the limit','Double the size'],'A missed trade costs nothing.'],
+  ['Echo and Orbit give limits in opposite directions at the same time. What do you do?',['Take one idea at a time, or skip','Take both','Take the bigger one','Add size'],'One idea at a time.'],
+  ['Big news is about to come out. What do you do?',['Stay out','Place bigger limits','Trade the spike','Ignore the calendar'],'Spreads and spikes break limit setups.'],
+  ['What do the volume bars show on TradingView?',['How much traded in each candle','Who was buying','The stop','The target'],'They show amount, not who.']]),
+ examDesc:'Telling a slow return from a fast one, the candle rule, and when to cancel.'});
+quick({id:'be3',o:20.8,ph:0,bonly:1,t:'Orbit on TradingView: the Tap, the Inversion and the Limit',out:'Put the limit at the 0.705 of the internal range, check the risk is within 15 points, and know what to do after you are in.',
+ ls:['Orbit\'s order of events','Find your 0.705','The numbers'],
+ task:'On a 3-minute NQ chart, draw the internal range from the inversion high to the lowest point after it. Mark the 0.705 measured up from the 0 and write the limit price and the risk.',
+ learn:[
+  {t:'Orbit\'s order of events',h:key('<p>Orbit always goes in the same order. If the order changes, there is no trade.</p>','In plain words')+`<ol><li><b>Tap:</b> price trades up into the 0.705 of a big range (the area of interest). No tap, no trade.</li><li><b>Inversion:</b> a 5-minute candle closes below the bottom of a fresh bullish gap. It tells you the retrace has failed.</li><li><b>Internal range:</b> a smaller 3-minute range from the inversion high down to the lowest-wick candle after it.</li><li><b>Limit:</b> a limit sell at its 0.705, stop at the inversion high, target 40 points. Maximum risk 15 points.</li></ol>`},
+  {t:'Find your 0.705',h:`<p>For a short, measure the 0.705 <b>up from the 0</b> (the lowest point) toward the 1 (the inversion high). Play the figure to the end, then click where your limit sell goes.</p>`+OFV.lab('bote')},
+  {t:'The numbers',h:warn('<p>Your limit is at the 0.705 of the internal range. The stop is the inversion high with no buffer. If the risk from the limit to the inversion high is more than 15 points, there is <b>no trade</b>, and you never move the stop closer to make it fit. After you are in: nothing. No break-even, no partials.</p>','Orbit\'s numbers')+bNote}],
+ recall:rc('The Return to Your Limit, on TradingView','What do you do when the return is fast with climbing volume?',['You can cancel the limit','Must leave it in','Add more','Move the stop'],'Cancelling is allowed.'),
+ steps:[['<b>Order of events.</b>',tblx(['1','2','3','4'],[['Tap','Inversion','Internal range','Limit']])],['<b>The 0.705.</b>',OFV.lab('bote')],['<b>The numbers.</b>',`<p>Stop at the inversion high, target 40 points, risk 15 points at most, then nothing after you are in.</p>`]],
+ gens:[orbitOrder,oteEntry,orbitRisk],eb:5,
+ bank:BANKS('Orbit on TradingView',[
+  ['What is the first step in Orbit?',['The tap into the 0.705 of the big range','The inversion','The limit','The stop'],'No tap, no trade.'],
+  ['What is an inversion?',['A 5-minute candle closing through a fresh gap, so the retrace has failed','A new high','A news candle','A tap'],'It tells you the retrace failed.'],
+  ['Where is the stop?',['At the inversion high, no buffer','10 points away','At the open','At the 0.5'],'Fixed.'],
+  ['What is the maximum risk?',['15 points','40 points','5 points','There is none'],'Over 15 means no trade.'],
+  ['What is the take profit?',['40 points from the limit','15 points','100 points','There is none'],'Fixed.'],
+  ['After you are in, what do you do?',['Nothing: no break-even, no partials, no moving the stop','Move the stop to break-even','Take a partial','Add size'],'The trade ends at the stop or the target.'],
+  ['Where do you measure the 0.705 from on a short?',['From the 0 (the lowest point) up toward the 1','From the high down','From the open','From the close'],'For a short.'],
+  ['Risk over 15 points. What do you do?',['No trade','Take it with a wider stop','Move the stop closer','Take half size'],'The stop never moves to make it fit.'],
+  ['What order do the steps come in?',['Tap, inversion, internal range, limit','Limit, tap, inversion, range','Inversion, tap, limit, range','Any order'],'If the order changes there is no trade.'],
+  ['What can you NOT see on TradingView alone?',['Who is buying and selling','The range','The gap','The price'],'That is what orderflow software shows.']]),
+ examDesc:'Orbit\'s order of events, finding the 0.705, and the numbers.'});
+
 })();

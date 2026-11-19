@@ -95,10 +95,19 @@ export const orderflowOpen = (fundState: unknown) => fundamentalsComplete(fundSt
 export type LearnPath = "orderflow" | "basic";
 export const LEARN_PATHS: LearnPath[] = ["orderflow", "basic"];
 export const isLearnPath = (v: unknown): v is LearnPath => v === "orderflow" || v === "basic";
-export const LEARN_PATH_NAME: Record<LearnPath, string> = { orderflow: "Orderflow path", basic: "Basic path" };
-/** The strategy lessons on the Basic path (a test keeps school/src/tracks.js in step with this). */
-export const BASIC_MODULES: Record<"invertix" | "lumen" | "exo", string[]> = { invertix: ["n01", "n03"], lumen: ["l01"], exo: ["e01"] };
+export const LEARN_PATH_NAME: Record<LearnPath, string> = { orderflow: "Orderflow Path", basic: "Basic Path" };
+/** Lessons written only for the Basic Path (trading the strategy on TradingView alone). They are not part of the Orderflow Path or its totals. */
+export const BASIC_ONLY_MODULES = {
+  lumen: [{ id: "bl1", title: "Reading the Tap and the Break on TradingView" }, { id: "bl2", title: "Your LUMEN Day on TradingView: Size, Checklist and Routine" }],
+  invertix: [{ id: "bn1", title: "Reading the News Spike on TradingView" }, { id: "bn2", title: "Size Small, Then the Routine (TradingView)" }],
+  exo: [{ id: "be1", title: "Echo on TradingView: Is the Rejection Clean?" }, { id: "be2", title: "The Return to Your Limit, on TradingView" }, { id: "be3", title: "Orbit on TradingView: the Tap, the Inversion and the Limit" }],
+} as const;
+export const BASIC_ONLY_IDS: Record<"invertix" | "lumen" | "exo", string[]> = { lumen: BASIC_ONLY_MODULES.lumen.map((m) => m.id), invertix: BASIC_ONLY_MODULES.invertix.map((m) => m.id), exo: BASIC_ONLY_MODULES.exo.map((m) => m.id) };
+/** The strategy lessons on the Basic Path: the lessons that are rules, plus the Basic-only lessons (a test keeps school/src/tracks.js in step with this). */
+export const BASIC_MODULES: Record<"invertix" | "lumen" | "exo", string[]> = { invertix: ["n01", ...BASIC_ONLY_IDS.invertix], lumen: ["l01", ...BASIC_ONLY_IDS.lumen], exo: ["e01", ...BASIC_ONLY_IDS.exo] };
+/** Every lesson id a track can save progress for, in order: the Orderflow Path lessons, then the Basic-only lessons. */
 export const isBasicTrack = (t: TrackId): t is "invertix" | "lumen" | "exo" => t === "invertix" || t === "lumen" || t === "exo";
+export const trackModuleIds = (t: TrackId): string[] => [...trackModules(t).map((m) => m.id), ...(isBasicTrack(t) ? BASIC_ONLY_IDS[t] : [])];
 /** How many lessons a track has for someone on the given path. */
 export const trackTotalFor = (t: TrackId, path: LearnPath) => (path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t].length : trackTotal(t));
 /** Lessons passed on the given path (only the Basic lessons count on the Basic path). */
@@ -106,7 +115,7 @@ export const passedOnPath = (state: unknown, t: TrackId, path: LearnPath) => pas
 /** A Basic lesson whose lesson before it in the full course is not a Basic lesson is exempt from the "in order" rule. */
 export function basicOrderSkip(t: TrackId): ReadonlySet<string> {
   if (!isBasicTrack(t)) return new Set();
-  const ids = trackModules(t).map((m) => m.id), basic = new Set(BASIC_MODULES[t]);
+  const ids = trackModuleIds(t), basic = new Set(BASIC_MODULES[t]);
   return new Set(ids.filter((id, i) => basic.has(id) && i > 0 && !basic.has(ids[i - 1])));
 }
 /** The strategies open with the Orderflow certificate, or on the Basic path with the Foundations certificate. */

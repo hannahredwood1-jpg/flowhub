@@ -27,7 +27,7 @@ import { clampPace, expectedPassed, nudgeGapDays, paceStatus, PACE_MAX_NUDGES } 
 import { SCHOOL_MODULES, SCHOOL_MODULE_IDS, summarizeSchool, type ModuleProgress, type SchoolAttemptRow, type SchoolState } from "../src/lib/school";
 import { cleanPlanModels, type TradingPlanDTO } from "../src/lib/tradingPlan";
 import { VAULT_MODULE_IDS, hashCode, makeCode, vaultPassed } from "../src/lib/vault";
-import { BASIC_MODULES, basicOrderSkip, fundamentalsComplete, isLearnPath, LEARN_PATH_NAME, passedOnPath, strategyOpen, trackTotalFor, type LearnPath, EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, LUMEN_MODULE_IDS, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_OPTIONAL_IDS, orderflowComplete, orderflowOpen, vaultStrategiesOpen, passedIn as passedInSet, unwrapState, withPasses, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
+import { BASIC_MODULES, BASIC_ONLY_IDS, trackModuleIds, basicOrderSkip, fundamentalsComplete, isLearnPath, LEARN_PATH_NAME, passedOnPath, strategyOpen, trackTotalFor, type LearnPath, EXO_MODULE_IDS, INVERTIX_MODULE_IDS, invertixOpen, isTrack, LUMEN_MODULE_IDS, lumenOpen, nextModule, normalizeOrder, OPEN_FIRST, ORDERFLOW_MODULE_IDS, ORDERFLOW_OPTIONAL_IDS, orderflowComplete, orderflowOpen, vaultStrategiesOpen, passedIn as passedInSet, unwrapState, withPasses, trackModules, trackTotal, TRACK_NAME, TRACK_URL, type TrackId } from "../src/lib/tracks";
 
 // ─────────────────────────────────────────────────────────────
 // Config
@@ -849,7 +849,7 @@ async function trackState(userId: string, track: TrackId): Promise<unknown> {
     : track === "invertix" || track === "orderflow" || track === "lumen" ? await sql`select state from "TrackProgress" where "userId" = ${userId} and track = ${track}`
     : await sql`select state from "VaultAccess" where "userId" = ${userId}`;
   // A passing exam attempt on the server is proof of the pass, even when the saved progress missed it (a failed or stale save must never lock someone out).
-  const proven = ((await sql`select distinct ref from "SchoolAttempt" where "userId" = ${userId} and kind = 'ex' and pass = true`) as { ref: string }[]).map((x) => x.ref).filter((x) => SETS[track].has(x));
+  const proven = ((await sql`select distinct ref from "SchoolAttempt" where "userId" = ${userId} and kind = 'ex' and pass = true`) as { ref: string }[]).map((x) => x.ref).filter((x) => SETS[track].has(x) || (BASIC_ONLY_IDS as Record<string, string[]>)[track]?.includes(x));
   return proven.length ? withPasses(r?.state ?? null, proven) : (r?.state ?? null);
 }
 /** A tiny script that tells a strategy page which path the student is on (placed before the page's own script). */
@@ -890,7 +890,7 @@ function normState(state: unknown, track: TrackId, skip: ReadonlySet<string> = n
   if (!state) return state;
   const st = unwrapState(state) as { v2?: { m?: Record<string, ModuleProgress> } } | null;
   if (!st?.v2?.m) return st;
-  return { ...st, v2: { ...st.v2, m: normalizeOrder(trackModules(track).map((x) => x.id), st.v2.m, OPEN_FIRST[track], skip) } };
+  return { ...st, v2: { ...st.v2, m: normalizeOrder(trackModuleIds(track), st.v2.m, OPEN_FIRST[track], skip) } };
 }
 const trackOf = (v: unknown): TrackId => (isTrack(v) ? v : "fundamentals");
 /** One track's saved state and last activity out of a pace row that joined all four progress tables. */
@@ -1212,7 +1212,7 @@ app.get("/vault", async (c) => {
   const acc = await vaultAccess(user);
   if (acc.level === "orderflow") {
     const os = await trackState(user.id, "orderflow");
-    return c.html(pageShell(`<h1>ECHO and ORBIT open after Foundations on the Basic path, or with your Orderflow certificate</h1><p>Your vault code is in. Choose your path in the Trading School, or pass every Orderflow test. You have passed <b>${passedIn(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+    return c.html(pageShell(`<h1>ECHO and ORBIT open after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Your vault code is in. Choose your path in the Trading School, or pass every Orderflow test. You have passed <b>${passedIn(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   }
   if (acc.level !== "open") return c.html(LOCK_PAGE, 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("vault.html.gz");
@@ -1255,14 +1255,14 @@ app.put("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
   if (acc.level !== "open") throw new HttpError(403, "Not open");
   if (!acc.row) return c.json({ ok: true }); // staff preview: nothing is saved
-  const set = new Set(VAULT_MODULE_IDS), o = (await c.req.json().catch(() => ({}))) as { v2?: { m?: Record<string, Record<string, unknown>> } };
+  const set = new Set([...VAULT_MODULE_IDS, ...BASIC_ONLY_IDS.exo]), o = (await c.req.json().catch(() => ({}))) as { v2?: { m?: Record<string, Record<string, unknown>> } };
   const m: Record<string, ModuleProgress> = {};
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const mv = isStaff(u) ? m : normalizeOrder(EXO_MODULE_IDS, m, 0, acc.path === "basic" ? basicOrderSkip("exo") : undefined);
+  const mv = isStaff(u) ? m : normalizeOrder(trackModuleIds("exo"), m, 0, acc.path === "basic" ? basicOrderSkip("exo") : undefined);
   await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m: mv } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
   return c.json({ ok: true });
 });
@@ -1334,7 +1334,7 @@ app.get("/invertix", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await invertixAccess(user);
-  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens after Foundations on the Basic path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("invertix.html.gz");
   if (!gz) return c.text("INVERTIX is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
@@ -1356,14 +1356,14 @@ app.get("/api/invertix/progress", async (c) => {
 app.put("/api/invertix/progress", async (c) => {
   const u = c.get("user"), acc = await invertixAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const set = new Set(INVERTIX_MODULE_IDS), o = (await c.req.json().catch(() => ({}))) as { v2?: { m?: Record<string, Record<string, unknown>> } };
+  const set = new Set(trackModuleIds("invertix")), o = (await c.req.json().catch(() => ({}))) as { v2?: { m?: Record<string, Record<string, unknown>> } };
   const m: Record<string, ModuleProgress> = {};
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const mi = isStaff(u) ? m : normalizeOrder(INVERTIX_MODULE_IDS, m, 0, acc.path === "basic" ? basicOrderSkip("invertix") : undefined);
+  const mi = isStaff(u) ? m : normalizeOrder(trackModuleIds("invertix"), m, 0, acc.path === "basic" ? basicOrderSkip("invertix") : undefined);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'invertix', ${JSON.stringify({ v2: { m: mi } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
@@ -1381,7 +1381,7 @@ app.get("/lumen", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await lumenAccess(user);
-  if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens after Foundations on the Basic path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow →</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("lumen.html.gz");
   if (!gz) return c.text("LUMEN is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
@@ -1402,14 +1402,14 @@ app.get("/api/lumen/progress", async (c) => {
 app.put("/api/lumen/progress", async (c) => {
   const u = c.get("user"), acc = await lumenAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const set = new Set(LUMEN_MODULE_IDS), o = (await c.req.json().catch(() => ({}))) as { v2?: { m?: Record<string, Record<string, unknown>> } };
+  const set = new Set(trackModuleIds("lumen")), o = (await c.req.json().catch(() => ({}))) as { v2?: { m?: Record<string, Record<string, unknown>> } };
   const m: Record<string, ModuleProgress> = {};
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const ml = isStaff(u) ? m : normalizeOrder(LUMEN_MODULE_IDS, m, 0, acc.path === "basic" ? basicOrderSkip("lumen") : undefined);
+  const ml = isStaff(u) ? m : normalizeOrder(trackModuleIds("lumen"), m, 0, acc.path === "basic" ? basicOrderSkip("lumen") : undefined);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'lumen', ${JSON.stringify({ v2: { m: ml } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });

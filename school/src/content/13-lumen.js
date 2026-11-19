@@ -155,4 +155,54 @@ quick({id:'l05',o:15.75,ph:0,t:'How to Act, and Your Routine',out:'Turn the thre
   ['What happens to TradingView alerts?',['They expire: re-create when needed','They last forever','They never work','They trade for you'],'Check them.'],
   ['LUMEN is…',['A decision aid, not a promise of profit','A guarantee','Free money','Always right'],'Losing streaks are normal.']]),
  examDesc:'Turning the three checks into a decision, the footprint settings, why trades lose, and the routine.'});
+/* ===== BASIC PATH · LUMEN on TradingView only: the same rules, read from candles and the volume bars. No order-flow software. ===== */
+const bNote=warn('<p>On the Basic Path you trade on TradingView only. The chart shows <b>what price did</b>, not <b>who was trading</b>. Orderflow software shows both, which is why the Orderflow Path is more precise. The Basic Path is easier to follow and quicker to learn, and the rules below make up for what you cannot see.</p>','Be honest about what you can see');
+quick({id:'bl1',o:15.76,ph:0,bonly:1,t:'Reading the Tap and the Break on TradingView',out:'Read a LUMEN zone tap and break from the candles and the volume bars alone, and know when to skip.',
+ ls:['What you have on TradingView','The tap: holds or fails','The break: close, not wick','The zone, and where it comes from','What you cannot see'],
+ task:'Open a 1-minute NQ chart with LUMEN. Find a zone tap and the break after it. Write what the candle did at the tap (closed back out, or closed through) and whether the break candle closed beyond the swing.',
+ learn:[
+  {t:'What you have on TradingView',h:key('<p>Your whole toolkit is the candles, the volume bars under the chart, and the levels LUMEN draws.</p>','In plain words')+`<p>You do not need any extra software. LUMEN marks the zone, the tap and the break on your chart. Your job is to read three things yourself: <b>where the candle closed</b>, <b>how big the candle is</b> compared with the ones before it, and <b>whether the volume bar is bigger</b> than recent ones.</p>`+tblx(['You look at','It tells you'],[['Where the candle closed','Whether price was rejected or pushed through'],['The size of the body','How strongly one side pushed'],['The volume bar under it','Whether more trading happened than usual'],['The 4 opens','Which side of the bigger picture price is on']])},
+  {t:'The tap: holds or fails',h:`<p><b>Good:</b> a candle pokes into the zone and <b>closes back outside it</b>, with a wick into the zone, often on a jump in volume. The zone is defending itself.</p><p><b>Warning:</b> a big candle <b>closes beyond the far edge</b> of the zone. The zone is failing. Skip it.</p>`+OFV.lab('btap')},
+  {t:'The break: close, not wick',h:`<p>LUMEN's break is a candle that <b>closes</b> beyond the last 8 candles' swing, away from the zone. A wick through the level is not a break. A good break candle has a <b>solid body</b> (not mostly wick) and a volume bar bigger than the ones before it.</p>`+OFV.lab('bbrk')},
+  {t:'The zone, and where it comes from',h:`<p>A LUMEN zone is the last opposite candle before a strong move. That strong move is the shaded area below: big candles all one way. When price comes back to the zone, you check the tap with the candles, as above.</p>`+OFV.lab('bfvg','zone')},
+  {t:'What you cannot see',h:bNote+`<p>Because you cannot see who is trading, use the chart evidence more strictly: if the tap or the break looks unclear, <b>skip it</b>. A skipped trade costs nothing.</p>`}],
+ recall:rc('LUMEN in Plain Words','How many of the 4 opens must agree?',['At least 3','All 4 always','1','None'],'The default is 3 of 4.'),
+ steps:[['<b>The tap.</b>',OFV.lab('btap')],['<b>The break.</b>',OFV.lab('bbrk')],['<b>The zone.</b>',OFV.lab('bfvg','zone')]],
+ gens:[orderQ,opensQ,stopTarget],
+ bank:BANKS('LUMEN on TradingView',[
+  ['At a tap, a candle pokes into the zone and closes back outside it. What does that say?',['The zone is defending itself: a good tap','The zone failed','Nothing','Sell'],'A close back outside shows price was rejected.'],
+  ['A big candle closes beyond the far edge of the zone. What do you do?',['Skip: the zone is failing','Buy anyway','Add size','Move the stop'],'The zone did not hold.'],
+  ['What counts as a LUMEN break?',['A candle that closes beyond the last 8 candles\' swing, away from the zone','Any wick through the level','Any big candle','The open'],'The close matters.'],
+  ['Price wicks through a level and the candle closes back inside. Is it a break?',['No: a wick is not a break','Yes','Only at night','Only on high volume'],'A touch is not a break.'],
+  ['What makes a good break candle on TradingView?',['A solid body and a volume bar bigger than the recent ones','A long wick','A tiny body','A gap'],'Strong push, more trading.'],
+  ['What is a LUMEN zone?',['The last opposite candle before a strong move','Any support line','A moving average','The daily high'],'It marks where the strong move started.'],
+  ['What can you NOT see on TradingView alone?',['Who is buying and selling','The price','The candle size','The volume bar'],'That is what orderflow software shows.'],
+  ['The tap or the break looks unclear. What do you do?',['Skip it','Take it anyway','Double the size','Move the stop'],'A skipped trade costs nothing.'],
+  ['How many of the 4 opens must agree by default?',['At least 3','All 4','1','None'],'3 of 4.'],
+  ['What is the LUMEN entry once all three steps line up?',['The next 1-minute open','A limit at the zone','Any time','The close of the day'],'Then a fixed stop and a target.']]),
+ examDesc:'Reading the tap and the break from candles and volume bars, and when to skip.'});
+quick({id:'bl2',o:15.77,ph:0,bonly:1,t:'Your LUMEN Day on TradingView: Size, Checklist and Routine',out:'Turn a stop into contracts, run a chart-only checklist, and run a LUMEN day.',
+ ls:['Size from the stop','The chart checklist','Why trades lose','A daily routine'],
+ task:'Write down the most you would risk on one LUMEN trade. For a 30-point stop, work out how many MNQ contracts that is. If the answer is zero, write "skip".',
+ learn:[
+  {t:'Size from the stop',h:key('<p>Decide your size from the stop, not from how good the trade looks.</p>','In plain words')+`<p>LUMEN's stops are fixed by the model (for example 30 points for the core model). One MNQ point is $2. Use the sliders to see what you can trade.</p>`+OFV.calc()},
+  {t:'The chart checklist',h:tblx(['Check','Green','Yellow or red'],[['The tap','A candle closed back outside the zone','A big candle closed beyond the far edge: skip'],['The break','A closed candle with a solid body and bigger volume','A wick only, or a weak body: wait or skip'],['The opens','3 of 4 agree','Fewer agree: skip'],['The bigger picture','Price has room before the next obvious level','A level is right in front of you: half size or skip']])+`<ul><li><b>All green:</b> take your planned size.</li><li><b>One yellow:</b> half size, or wait one candle.</li><li><b>Red:</b> skip.</li><li>Never size up because the chart looks great.</li></ul>`},
+  {t:'Why trades lose',h:tblx(['What happened','What to do'],[['Stopped out right after a zone tap','Normal. Most trades are stopped. Keep risk small'],['Several losses in a row','Expected. Do not increase size to win it back'],['Too many trades open together','Keep to the maximum open trades'],['Entered late, after price ran','Skip late entries']])+warn('<p>LUMEN is a decision aid, not a promise of profit. Losing streaks are normal. Trade only money you can afford to lose.</p>')},
+  {t:'A daily routine',h:`<ol><li><b>Before the session:</b> check the day's news and the 1-hour, 4-hour, day and week opens.</li><li>Check your alert is active. TradingView alerts expire: re-create it when needed.</li><li><b>When a message arrives:</b> read the chart checklist, decide.</li><li><b>After the session:</b> write down each trade, its model tag, and how it ended. Review weekly.</li></ol>`}],
+ recall:rc('Reading the Tap and the Break on TradingView','What do you do when the tap or the break looks unclear?',['Skip it','Take it anyway','Double size','Move the stop'],'A skipped trade costs nothing.'),
+ steps:[['<b>Size from the stop.</b>',OFV.calc()],['<b>The checklist.</b>',tblx(['Result','Action'],[['All green','Planned size'],['One yellow','Half size'],['Red','Skip']])],['<b>The routine.</b>',`<p>Opens and news first, alert on, read the checklist, act or skip, log.</p>`]],
+ gens:[contracts,stopTarget,orderQ],
+ bank:BANKS('Your LUMEN day on TradingView',[
+  ['How much is one point on MNQ?',['$2','$20','$0.50','$5'],'NQ is $20.'],
+  ['How do you work out contracts?',['The most you will lose ÷ (stop in points × $2)','The account size ÷ 100','Always 1','Whatever looks good'],'Round down.'],
+  ['What do you do if even one MNQ risks too much?',['Skip the trade','Trade it anyway','Move the stop','Add a contract'],'Never size past your risk.'],
+  ['All checks green. What size?',['Your planned size, never more','Double','Half','Skip'],'Never size up because it looks great.'],
+  ['One check is yellow. What do you do?',['Half size, or wait one candle','Double size','Move the stop','Ignore it'],'Slow down.'],
+  ['A check is red. What do you do?',['Skip','Take it anyway','Add size','Move the stop'],'Red means skip.'],
+  ['Several losses in a row. What do you do?',['Do not increase size to win it back','Double size','Move the stop','Stop journalling'],'Losing streaks are normal.'],
+  ['Why do TradingView alerts need checking?',['They can expire','They are always on','They cost money','They show profit'],'Re-create them when needed.'],
+  ['What do you do after the session?',['Write down each trade and review weekly','Nothing','Delete the chart','Add size'],'Build your own record.'],
+  ['What do you do with a late entry after price has already run?',['Skip it','Chase it','Add size','Move the stop'],'Late entries cost more than they give.']]),
+ examDesc:'Turning a stop into contracts, the chart checklist, why trades lose and the daily routine.'});
+
 })();

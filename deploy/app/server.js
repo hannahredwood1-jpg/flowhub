@@ -1042,13 +1042,20 @@ function nextModule(t, state) {
 var fundamentalsComplete = (fundState) => passedIn(fundState, new Set(SCHOOL_MODULES.map((m) => m.id))) >= SCHOOL_MODULES.length;
 var orderflowOpen = (fundState) => fundamentalsComplete(fundState);
 var isLearnPath = (v) => v === "orderflow" || v === "basic";
-var BASIC_MODULES = { invertix: ["n01", "n03"], lumen: ["l01"], exo: ["e01"] };
+var BASIC_ONLY_MODULES = {
+  lumen: [{ id: "bl1", title: "Reading the Tap and the Break on TradingView" }, { id: "bl2", title: "Your LUMEN Day on TradingView: Size, Checklist and Routine" }],
+  invertix: [{ id: "bn1", title: "Reading the News Spike on TradingView" }, { id: "bn2", title: "Size Small, Then the Routine (TradingView)" }],
+  exo: [{ id: "be1", title: "Echo on TradingView: Is the Rejection Clean?" }, { id: "be2", title: "The Return to Your Limit, on TradingView" }, { id: "be3", title: "Orbit on TradingView: the Tap, the Inversion and the Limit" }]
+};
+var BASIC_ONLY_IDS = { lumen: BASIC_ONLY_MODULES.lumen.map((m) => m.id), invertix: BASIC_ONLY_MODULES.invertix.map((m) => m.id), exo: BASIC_ONLY_MODULES.exo.map((m) => m.id) };
+var BASIC_MODULES = { invertix: ["n01", ...BASIC_ONLY_IDS.invertix], lumen: ["l01", ...BASIC_ONLY_IDS.lumen], exo: ["e01", ...BASIC_ONLY_IDS.exo] };
 var isBasicTrack = (t) => t === "invertix" || t === "lumen" || t === "exo";
+var trackModuleIds = (t) => [...trackModules(t).map((m) => m.id), ...isBasicTrack(t) ? BASIC_ONLY_IDS[t] : []];
 var trackTotalFor = (t, path) => path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t].length : trackTotal(t);
 var passedOnPath = (state, t, path) => passedIn(state, new Set(path === "basic" && isBasicTrack(t) ? BASIC_MODULES[t] : trackModules(t).map((m) => m.id)));
 function basicOrderSkip(t) {
   if (!isBasicTrack(t)) return /* @__PURE__ */ new Set();
-  const ids2 = trackModules(t).map((m) => m.id), basic = new Set(BASIC_MODULES[t]);
+  const ids2 = trackModuleIds(t), basic = new Set(BASIC_MODULES[t]);
   return new Set(ids2.filter((id, i) => basic.has(id) && i > 0 && !basic.has(ids2[i - 1])));
 }
 var strategyOpen = (ofState, fundState, path) => orderflowComplete(ofState) || path === "basic" && fundamentalsComplete(fundState);
@@ -1912,7 +1919,7 @@ var SETS = { fundamentals: SCHOOL_MODULE_SET, orderflow: new Set(ORDERFLOW_MODUL
 var passedIn2 = (state, track = "fundamentals") => passedIn(state, SETS[track]);
 async function trackState(userId, track) {
   const [r] = track === "fundamentals" ? await sql`select state from "SchoolProgress" where "userId" = ${userId}` : track === "invertix" || track === "orderflow" || track === "lumen" ? await sql`select state from "TrackProgress" where "userId" = ${userId} and track = ${track}` : await sql`select state from "VaultAccess" where "userId" = ${userId}`;
-  const proven = (await sql`select distinct ref from "SchoolAttempt" where "userId" = ${userId} and kind = 'ex' and pass = true`).map((x) => x.ref).filter((x) => SETS[track].has(x));
+  const proven = (await sql`select distinct ref from "SchoolAttempt" where "userId" = ${userId} and kind = 'ex' and pass = true`).map((x) => x.ref).filter((x) => SETS[track].has(x) || BASIC_ONLY_IDS[track]?.includes(x));
   return proven.length ? withPasses(r?.state ?? null, proven) : r?.state ?? null;
 }
 var pathTag = (p) => p === "basic" ? '<script>window.LEARN_PATH="basic";</script>' : "";
@@ -1949,7 +1956,7 @@ function normState(state, track, skip = /* @__PURE__ */ new Set()) {
   if (!state) return state;
   const st = unwrapState(state);
   if (!st?.v2?.m) return st;
-  return { ...st, v2: { ...st.v2, m: normalizeOrder(trackModules(track).map((x) => x.id), st.v2.m, OPEN_FIRST[track], skip) } };
+  return { ...st, v2: { ...st.v2, m: normalizeOrder(trackModuleIds(track), st.v2.m, OPEN_FIRST[track], skip) } };
 }
 var trackOf = (v) => isTrack(v) ? v : "fundamentals";
 var rowState = (r, t) => t === "fundamentals" ? r.fstate : t === "orderflow" ? r.ostate : t === "invertix" ? r.istate : t === "lumen" ? r.lstate : r.xstate;
@@ -2278,7 +2285,7 @@ app.get("/vault", async (c) => {
   const acc = await vaultAccess(user);
   if (acc.level === "orderflow") {
     const os = await trackState(user.id, "orderflow");
-    return c.html(pageShell(`<h1>ECHO and ORBIT open after Foundations on the Basic path, or with your Orderflow certificate</h1><p>Your vault code is in. Choose your path in the Trading School, or pass every Orderflow test. You have passed <b>${passedIn2(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+    return c.html(pageShell(`<h1>ECHO and ORBIT open after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Your vault code is in. Choose your path in the Trading School, or pass every Orderflow test. You have passed <b>${passedIn2(os, "orderflow")} of ${trackTotal("orderflow")}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   }
   if (acc.level !== "open") return c.html(LOCK_PAGE, 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("vault.html.gz");
@@ -2323,14 +2330,14 @@ app.put("/api/vault/progress", async (c) => {
   const u = c.get("user"), acc = await vaultAccess(u);
   if (acc.level !== "open") throw new HttpError(403, "Not open");
   if (!acc.row) return c.json({ ok: true });
-  const set = new Set(VAULT_MODULE_IDS), o = await c.req.json().catch(() => ({}));
+  const set = /* @__PURE__ */ new Set([...VAULT_MODULE_IDS, ...BASIC_ONLY_IDS.exo]), o = await c.req.json().catch(() => ({}));
   const m = {};
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, t: v.t ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const mv = isStaff(u) ? m : normalizeOrder(EXO_MODULE_IDS, m, 0, acc.path === "basic" ? basicOrderSkip("exo") : void 0);
+  const mv = isStaff(u) ? m : normalizeOrder(trackModuleIds("exo"), m, 0, acc.path === "basic" ? basicOrderSkip("exo") : void 0);
   await sql`update "VaultAccess" set state = ${JSON.stringify({ v2: { m: mv } })}::jsonb, "updatedAt" = now() where "userId" = ${u.id}`;
   return c.json({ ok: true });
 });
@@ -2392,7 +2399,7 @@ app.get("/invertix", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await invertixAccess(user);
-  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens after Foundations on the Basic path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  if (!acc.open) return c.html(pageShell(`<h1>INVERTIX opens after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("invertix.html.gz");
   if (!gz) return c.text("INVERTIX is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
@@ -2413,14 +2420,14 @@ app.get("/api/invertix/progress", async (c) => {
 app.put("/api/invertix/progress", async (c) => {
   const u = c.get("user"), acc = await invertixAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const set = new Set(INVERTIX_MODULE_IDS), o = await c.req.json().catch(() => ({}));
+  const set = new Set(trackModuleIds("invertix")), o = await c.req.json().catch(() => ({}));
   const m = {};
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const mi = isStaff(u) ? m : normalizeOrder(INVERTIX_MODULE_IDS, m, 0, acc.path === "basic" ? basicOrderSkip("invertix") : void 0);
+  const mi = isStaff(u) ? m : normalizeOrder(trackModuleIds("invertix"), m, 0, acc.path === "basic" ? basicOrderSkip("invertix") : void 0);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'invertix', ${JSON.stringify({ v2: { m: mi } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });
@@ -2435,7 +2442,7 @@ app.get("/lumen", async (c) => {
   const user = await currentUser(c);
   if (!user) return c.redirect("/");
   const acc = await lumenAccess(user);
-  if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens after Foundations on the Basic path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
+  if (!acc.open) return c.html(pageShell(`<h1>LUMEN opens after Foundations on the Basic Path, or with your Orderflow certificate</h1><p>Finish the Foundations and choose your path, or pass every Orderflow test. You have passed <b>${acc.oPassed} of ${acc.oTotal}</b> modules.</p><p><a href="/orderflow" style="color:#8cc4ff">Continue Orderflow \u2192</a></p><p><a href="/" style="color:#66717f">FLOWHUB home</a></p>`), 200, { "Cache-Control": "no-store" });
   const gz = await readPrivate("lumen.html.gz");
   if (!gz) return c.text("LUMEN is not installed yet.", 404);
   const etag = String(Bun.hash(gz));
@@ -2456,14 +2463,14 @@ app.get("/api/lumen/progress", async (c) => {
 app.put("/api/lumen/progress", async (c) => {
   const u = c.get("user"), acc = await lumenAccess(u);
   if (!acc.open) throw new HttpError(403, "Not open");
-  const set = new Set(LUMEN_MODULE_IDS), o = await c.req.json().catch(() => ({}));
+  const set = new Set(trackModuleIds("lumen")), o = await c.req.json().catch(() => ({}));
   const m = {};
   for (const [k, v] of Object.entries(o.v2?.m ?? {}).slice(0, 30)) {
     if (!set.has(k) || !v || typeof v !== "object") continue;
     const s = String(v.s ?? "000");
     m[k] = { s: /^[01]{3,4}$/.test(s) ? s.slice(0, 3) : "000", p: v.p ? 1 : 0, sc: clampInt(v.sc, 0, 100), a: clampInt(v.a, 1, 999), n: clampInt(v.n, 0, 999), at: Math.max(0, Number(v.at) || 0) };
   }
-  const ml = isStaff(u) ? m : normalizeOrder(LUMEN_MODULE_IDS, m, 0, acc.path === "basic" ? basicOrderSkip("lumen") : void 0);
+  const ml = isStaff(u) ? m : normalizeOrder(trackModuleIds("lumen"), m, 0, acc.path === "basic" ? basicOrderSkip("lumen") : void 0);
   await sql`insert into "TrackProgress" ("userId", track, state) values (${u.id}, 'lumen', ${JSON.stringify({ v2: { m: ml } })}::jsonb)
             on conflict ("userId", track) do update set state = excluded.state, "updatedAt" = now()`;
   return c.json({ ok: true });

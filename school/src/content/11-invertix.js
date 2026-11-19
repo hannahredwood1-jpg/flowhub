@@ -112,4 +112,53 @@ quick({id:'n03',o:15.63,ph:0,t:'Size Small, Then the Routine',out:'Turn a stop i
   ['What do you log afterwards?',['The event, the spike size, your flow colour and the result','Only the result','Nothing','Only the news'],'Build your own record.'],
   ['What is the normal state on most days?',['No trade','A trade every day','Two trades','Only trades at night'],'Quiet is normal.']]),
  examDesc:'Turning a stop into contracts, the flow and your size, why trades lose, and the news-day routine.'});
+/* ===== BASIC PATH · INVERTIX on TradingView only. ===== */
+const bNote=warn('<p>On the Basic Path you trade on TradingView only. The chart shows <b>what price did</b>, not <b>who was trading</b>. Orderflow software shows both, which is why the Orderflow Path is more precise. The Basic Path is easier to follow and quicker to learn, and the rules make up for what you cannot see.</p>','Be honest about what you can see');
+const bRoutine=()=>({kind:'order',topic:'The routine',q:'Put the news-day routine in order.',steps:['The evening before: check tomorrow\'s calendar for red-folder releases and note the times','Morning: confirm your alert is on and decide the most dollars you will risk','At the release: do nothing until the news candle closes','When the message arrives: read the stop and target, size it, then act or skip, and log it'],why:'Calendar, alert and risk, wait for the candle, then size and act.'});
+quick({id:'bn1',o:15.64,ph:0,bonly:1,t:'Reading the News Spike on TradingView',out:'Tell a real news spike from a big candle, and read from the candles whether the rush is slowing or still running.',
+ ls:['What counts as a news spike','After the spike: slowing or still running','The fade and its numbers','What you cannot see'],
+ task:'Find the last red-folder news candle on a 1-minute NQ chart. Compare its size with the average candle before it, then describe what the next five candles did: shrinking and wicky, or big and the same way.',
+ learn:[
+  {t:'What counts as a news spike',h:key('<p>A news spike is a news candle about 6 times the recent average candle, or more.</p>','In plain words')+`<p>Look at the candles in the minutes before the release. They are small and quiet. Then the news candle prints. Compare its size with the average candle just before it. If it is about 6 times bigger or more, INVERTIX treats it as a news day. If not, there is <b>no trade</b>.</p>`+OFV.lab('bspike')},
+  {t:'After the spike: slowing or still running',h:`<p>The candles after the spike tell you more than the spike itself.</p>`+tblx(['What the candles do','What it suggests'],[['Candles shrink and grow long wicks against the move','The rush may be running out: the fade is more reasonable'],['Candles keep coming the same way, bigger each time','Still being fed: early to fade. Wait or skip'],['Volume bars shrink as price stalls','Less and less behind the push']])+`<p>Use the switch in the figure above to compare both.</p>`},
+  {t:'The fade and its numbers',h:tblx(['Item','Rule'],[['Direction','Against the spike, at the next open'],['Stop','One news-candle range from your entry, never less than 15 points'],['Take profit','Two times the stop'],['If neither is hit','The trade closes after two hours']])+`<p>On a news day price can whip and fills can slip. Keep your size small.</p>`},
+  {t:'What you cannot see',h:bNote+`<p>Because you cannot see who is buying and selling, do not fade a spike that is still running. If you are unsure, skip. Quiet days with no trade are normal.</p>`}],
+ recall:rc('The News Fade: Just Enough to Know the Trade','How big is a news spike?',['About 6 times the recent average candle or more','Any big candle','Exactly 100 points','Twice the average'],'Six times or more.'),
+ steps:[['<b>Is it a spike?</b>',OFV.lab('bspike')],['<b>The numbers.</b>',tblx(['Stop','Target'],[['One candle range (min 15)','Two times the stop']])],['<b>Slowing or running.</b>',`<p>Shrinking candles with wicks against the move suggest slowing. Big candles the same way suggest still running.</p>`]],
+ gens:[newsStop,newsTarget,dirQ,spikeQ],
+ bank:BANKS('Reading the news spike on TradingView',[
+  ['How big is a news spike?',['About 6 times the recent average candle or more','Any big candle','Exactly 100 points','Twice the average'],'Six times or more.'],
+  ['The news candle is only 4 times the average. What do you do?',['Nothing: it is not a spike, so no trade','Fade it','Trade with it','Add size'],'Under about 6 times is not a news spike.'],
+  ['After the spike the candles shrink and grow wicks against the move. What does it suggest?',['The rush may be running out','The move will accelerate','Nothing','Add size'],'The push is fading.'],
+  ['After the spike the candles keep coming the same way, bigger each time. What do you do?',['Wait or skip: it is early to fade','Fade at once','Add size','Move the stop'],'Still being fed.'],
+  ['Which way does the news fade trade?',['Against the spike, at the next open','With the spike','Only after a retest','Only at night'],'A fade is against the move.'],
+  ['Where is the stop?',['One news-candle range from your entry, never less than 15 points','At the open','10 points always','There is none'],'Fixed by the candle.'],
+  ['Where is the take profit?',['Two times the stop','Equal to the stop','Ten times the stop','There is none'],'Fixed.'],
+  ['What happens if neither the stop nor the target is hit?',['The trade closes after two hours','It stays open overnight','It is doubled','Nothing'],'A time limit.'],
+  ['What can you NOT see on TradingView alone?',['Who is buying and selling','The candle size','The price','The volume bars'],'That is what orderflow software shows.'],
+  ['What is the normal state on most days?',['No trade','A trade every day','Two trades','Only trades at night'],'Quiet is normal.']]),
+ examDesc:'Spotting a real news spike, reading the candles after it, and the fade numbers.'});
+quick({id:'bn2',o:15.65,ph:0,bonly:1,t:'Size Small, Then the Routine (TradingView)',out:'Turn a stop into contracts and run a news day from the calendar to the log.',
+ ls:['Sizing: the most important part','Why trades lose','A daily routine'],
+ task:'Write down the most you would risk on a news trade. Then, for a 100-point stop, work out how many MNQ contracts that is. If the answer is zero, write "skip".',
+ learn:[
+  {t:'Sizing: the most important part',h:key('<p>Decide your size from the stop, not from how good the trade looks.</p>','In plain words')+`<p>News stops can be 100 to 300 points, so the money at risk is large. Try the sliders with a big stop.</p>`+OFV.calc()},
+  {t:'Why trades lose',h:tblx(['What happened','What to do'],[['Price kept going in the news direction (a trend day)','The main risk of any fade. The stop handles it. Skip spikes that are still running'],['Stopped out by a quick second spike','News days whip. Size small'],['The fill was far from the alert price','Normal in the first minutes. Lower size and do not chase'],['Several losses in a row','Expected. Do not increase size to win it back']])+warn('<p>INVERTIX is a decision aid, not a promise of profit. Trade only money you can afford to lose.</p>')},
+  {t:'A daily routine',h:`<ol><li><b>The evening before:</b> look at tomorrow's calendar for red-folder items and note the times.</li><li><b>Morning:</b> open the 1-minute NQ chart, confirm the alert is on, and decide the most dollars you will risk.</li><li><b>At the release:</b> do nothing until the news candle closes and a message arrives.</li><li><b>When the message arrives:</b> read the stop and target, size it, then act or skip.</li><li><b>Afterwards:</b> log the event, the spike size and the result.</li></ol>`}],
+ recall:rc('Reading the News Spike on TradingView','What do you do when the candles after the spike keep running the same way?',['Wait or skip','Fade at once','Add size','Move the stop'],'Still being fed.'),
+ steps:[['<b>Contracts from the stop.</b>',OFV.calc()],['<b>The routine.</b>',`<p>Calendar the night before, alert on in the morning, wait for the candle, size, act or skip, log.</p>`],['<b>Why trades lose.</b>',tblx(['Cause','Answer'],[['A trend day','The stop, and skipping a rush that is still running']])]],
+ gens:[contracts,dollars,bRoutine],
+ bank:BANKS('Size and the routine on TradingView',[
+  ['How much is one point on MNQ?',['$2','$20','$0.50','$5'],'NQ is $20.'],
+  ['How do you work out contracts?',['The most you will lose ÷ (stop in points × $2)','The account size ÷ 100','Always 1','Whatever looks good'],'Round down.'],
+  ['What do you do if even one MNQ risks too much?',['Skip the trade','Trade it anyway','Move the stop','Add a contract'],'Never size past your risk.'],
+  ['What do you do at the release?',['Nothing until the news candle closes and a message arrives','Trade the first tick','Buy at once','Sell at once'],'Wait for the candle.'],
+  ['The fill was far from the alert price. What do you do?',['Lower size next time and do not chase','Chase it','Double size','Move the stop'],'Normal in the first minutes.'],
+  ['The spike kept running (a trend day). What is the protection?',['The stop, and skipping a rush that is still running','Hoping','Adding size','Moving the target'],'The main risk of any fade.'],
+  ['What do you log afterwards?',['The event, the spike size and the result','Only the result','Nothing','Only the news'],'Build your own record.'],
+  ['What do you do the evening before?',['Check tomorrow\'s calendar for red-folder releases','Place a trade','Nothing','Close the chart'],'Know the times.'],
+  ['Several losses in a row. What do you do?',['Do not increase size to win it back','Double size','Move the stop','Stop logging'],'Losing streaks are normal.'],
+  ['A prop-firm account has a daily loss limit. What does that mean for size?',['Even smaller size','Bigger size','No change','Trade twice'],'The limit caps your risk.']]),
+ examDesc:'Turning a stop into contracts, why trades lose, and the news-day routine.'});
+
 })();
